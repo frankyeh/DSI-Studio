@@ -45,18 +45,18 @@ QPushButton#ai_new_chat {
     font-weight: bold;
     padding: 8px;
 }
-QWidget#tab_8 QPushButton#ai_project_title {
+QListWidget#ai_project_list QPushButton {
     color: #202124;
     background: transparent;
     border: 0;
     padding: 6px 2px;
     text-align: left;
 }
-QWidget#tab_8 QPushButton#ai_project_title:hover {
+QListWidget#ai_project_list QPushButton:hover {
     color: #202124;
     background-color: #e9e9eb;
 }
-QWidget#tab_8 QPushButton#ai_project_title:pressed {
+QListWidget#ai_project_list QPushButton:pressed {
     color: #202124;
     background-color: #dddddf;
 }

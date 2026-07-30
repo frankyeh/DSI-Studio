@@ -37,6 +37,7 @@ struct ai_info{
     static QString history_file(const QString&);
     static bool save_title(ai_info&,QString);
     static void record_history(ai_info&,QJsonObject);
+    static void record_reply(ai_info&,const QString&,const QString&);
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };
@@ -58,12 +59,12 @@ class AIAgent : public QMainWindow
     void add_ai_reply(ai_info&,const QString&,const QString&);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(ai_info&,QJsonObject = {});
-    void update_agent_models(int,QStringList,QJsonObject);
+    void update_agent_models(int,const QStringList&,bool);
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
     void start_ai(QString,const QString&,ai_input);
-    void start_codex(QString,const QString&,ai_input);
-    void start_claude(QString,const QString&,ai_input);
+    QStringList configure_codex(ai_launch,QString,const QString&);
+    QStringList configure_claude(ai_launch,QString,const QString&,bool);
     ai_launch prepare_ai(ai_provider,QString&,const QString&,ai_input);
 
 public:

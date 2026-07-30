@@ -123,9 +123,11 @@ void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
                         QJsonObject selected_info = {})
 {
     auto profiles = agents.itemData(index,Qt::UserRole+2).toJsonObject();
+    auto names = profiles.keys();
+    names.sort(Qt::CaseInsensitive);
     model.clear();
     model.addItem("default");
-    for(const auto& name : agents.itemData(index).toStringList())
+    for(const auto& name : names)
         model.addItem(name,profiles[name].toObject());
     auto selected_index = model.findText(selected.isEmpty() ? fallback : selected);
     if(selected_index < 0 && !selected.isEmpty())
@@ -383,10 +385,7 @@ AIAgent::~AIAgent()
 
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
 {
-    QByteArray reply;
-    ai_command(info,QJsonDocument(QJsonObject{
-        {"request","CHAT"},{"reasoning",reasoning},{"chat",chat}}).
-        toJson(QJsonDocument::Compact),reply);
+    ai_info::record_reply(info,chat,reasoning);
     refresh_ai_info(info);
 }
 
@@ -435,6 +434,16 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     info.projects.append(entry);
     write_history(info,QIODevice::Append,QList<QJsonObject>{entry});
 }
+void ai_info::record_reply(
+    ai_info& info,const QString& chat,const QString& reasoning)
+{
+    if(chat.isEmpty() && reasoning.isEmpty())
+        return;
+    QJsonObject entry{{"type","assistant"},{"text",chat}};
+    if(!reasoning.isEmpty())
+        entry["reasoning"] = reasoning;
+    record_history(info,entry);
+}
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
@@ -479,13 +488,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     QString chat,reasoning;
     auto reply_object = [&](QJsonObject result)
     {
-        if(!chat.isEmpty() || !reasoning.isEmpty())
-        {
-            QJsonObject entry{{"type","assistant"},{"text",chat}};
-            if(!reasoning.isEmpty())
-                entry["reasoning"] = reasoning;
-            ai_info::record_history(info,entry);
-        }
+        ai_info::record_reply(info,chat,reasoning);
         if(!info.prompts.isEmpty())
             result["prompt"] = QJsonArray::fromStringList(info.prompts);
         reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
@@ -594,7 +597,6 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
         ai_info::record_history(info,QJsonObject{
             {"type","request"},
             {"text",compact+" \u2192 "+target_type+" window "+target_title},
-            {"compact",compact},
             {"window",window}});
 
 
@@ -819,11 +821,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     if(current != item)
         return;
 
-    auto request_compact = [](const QJsonObject& entry)
-    {
-        auto compact = entry["compact"].toString();
-        return compact.isEmpty() ? entry["text"].toString() : compact;
-    };
     auto to_html = [](QString text)
     {
         return text.toHtmlEscaped().replace('\n',"<br>");
@@ -898,18 +895,19 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                 if(!standalone_request(index))
                     continue;
                 auto combined = entry;
-                auto full = entry["text"].toString();
-                QStringList activities{request_compact(entry)};
+                QStringList activities{
+                    entry["text"].toString().section(" \u2192 ",0,0)};
                 auto window = entry["window"].toVariant().toString();
                 auto end = index;
                 while(!window.isEmpty() && end+1 < history.size() &&
                       standalone_request(end+1) &&
                       history[end+1]["window"].toVariant().toString() == window)
-                    activities << request_compact(history[++end]);
+                    activities << history[++end]["text"].toString().
+                                  section(" \u2192 ",0,0);
                 if(end != index)
                 {
-                    auto target = full;
-                    target = target.mid(target.lastIndexOf(" \u2192 ")+3);
+                    auto target =
+                        entry["text"].toString().section(" \u2192 ",1);
                     combined["text"] = activities.join(", ")+" \u2192 "+target;
                 }
                 append(combined,{},end == index ? QString() :
@@ -936,11 +934,19 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 }
 
 void AIAgent::update_agent_models(
-    int index,QStringList models,QJsonObject profiles)
+    int index,const QStringList& names,bool ollama)
 {
-    models.removeDuplicates();
-    models.sort(Qt::CaseInsensitive);
-    ui->ai_agent_selector->setItemData(index,models);
+    auto profiles = ui->ai_agent_selector->itemData(
+        index,Qt::UserRole+2).toJsonObject();
+    auto previous = profiles;
+    for(auto i = profiles.begin();i != profiles.end();)
+        if(i.value().toObject().contains("provider") == ollama)
+            i = profiles.erase(i);
+        else
+            ++i;
+    for(const auto& name : names)
+        profiles[name] = ollama ?
+            QJsonObject{{"provider",true}} : previous[name].toObject();
     ui->ai_agent_selector->setItemData(
         index,QVariant::fromValue(profiles),Qt::UserRole+2);
 
@@ -972,11 +978,7 @@ void AIAgent::refresh_codex_models(const QString& path)
             if(!model.isEmpty()) models << model;
         }
 
-        auto index = int(ai_provider::Codex);
-        update_agent_models(
-            index,std::move(models),
-            ui->ai_agent_selector->itemData(
-                index,Qt::UserRole+2).toJsonObject());
+        update_agent_models(int(ai_provider::Codex),models,false);
         refresh_ollama_models();
         process->deleteLater();
     });
@@ -986,27 +988,12 @@ void AIAgent::refresh_codex_models(const QString& path)
 }
 void AIAgent::refresh_ollama_models()
 {
-    auto set_models = [this](QStringList ollama_models)
+    auto set_models = [this](const QStringList& models)
     {
         for(auto index : {int(ai_provider::Codex),int(ai_provider::Claude)})
-        {
-            if(ui->ai_agent_selector->itemData(index,Qt::UserRole+1).toString().isEmpty())
-                continue;
-
-            auto models = ui->ai_agent_selector->itemData(index).toStringList();
-            auto profiles = ui->ai_agent_selector->itemData(
-                                                     index,Qt::UserRole+2).toJsonObject();
-
-            for(auto i = models.size();i--;)
-                if(profiles[models[i]].toObject().contains("provider"))
-                    profiles.remove(models.takeAt(i));
-
-            models += ollama_models;
-            for(const auto& model : ollama_models)
-                profiles[model] = QJsonObject{{"provider",true}};
-
-            update_agent_models(index,std::move(models),std::move(profiles));
-        }
+            if(!ui->ai_agent_selector->itemData(
+                    index,Qt::UserRole+1).toString().isEmpty())
+                update_agent_models(index,models,true);
     };
 
     auto [url,configured] = ai_ollama_url(settings);
@@ -1303,12 +1290,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
     return launch;
 }
 
-void AIAgent::start_claude(QString session,const QString& text,ai_input input)
+QStringList AIAgent::configure_claude(
+    ai_launch launch,QString session,const QString& text,bool new_session)
 {
-    bool new_session = session.isEmpty();
-    auto launch = prepare_ai(ai_provider::Claude,session,text,input);
-    if(!launch.process)
-        return;
     auto* process = launch.process;
     if(!launch.model_url.isEmpty())
     {
@@ -1377,15 +1361,11 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         new_session ? "--session-id" : "--resume",session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
-    ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
-    set_ai_status("Starting "+launch.name+"...");
-    process->start(launch.executable,args);
+    return args;
 }
-void AIAgent::start_codex(QString session,const QString& text,ai_input input)
+QStringList AIAgent::configure_codex(
+    ai_launch launch,QString session,const QString& text)
 {
-    auto launch = prepare_ai(ai_provider::Codex,session,text,input);
-    if(!launch.process)
-        return;
     auto* process = launch.process;
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
@@ -1450,9 +1430,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         args << "resume" << session;
     args << "--json" << "--skip-git-repo-check";
     args << text;
-    ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
-    set_ai_status("Starting "+launch.name+"...");
-    process->start(launch.executable,args);
+    return args;
 }
 void AIAgent::start_ai(QString session,const QString& text,ai_input input)
 {
@@ -1481,9 +1459,17 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
         ai_provider(ui->ai_agent_selector->currentIndex());
     Q_ASSERT(provider != ai_provider::Unknown);
 
-    if(provider == ai_provider::Codex)
-        return start_codex(session,text,input);
-    start_claude(session,text,input);
+    bool new_session = session.isEmpty();
+    auto launch = prepare_ai(provider,session,text,input);
+    if(!launch.process)
+        return;
+    auto args = provider == ai_provider::Codex ?
+        configure_codex(launch,session,text) :
+        configure_claude(launch,session,text,new_session);
+    ai_log("start " + launch.executable +
+           " args: " + args.join(" ").remove("\n"));
+    set_ai_status("Starting "+launch.name+"...");
+    launch.process->start(launch.executable,args);
 }
 
 void AIAgent::on_ai_send_message_clicked()
