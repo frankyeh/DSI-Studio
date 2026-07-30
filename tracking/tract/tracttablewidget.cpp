@@ -781,13 +781,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 buffer.push_back(points1[index][2]);
             }
 
-            if (tipl::ends_with(cmd[1],".txt"))
-            {
-                std::ofstream out(cmd[1].c_str(),std::ios::out);
-                if (!out)
-                    return run->failed("cannot write to file at " + cmd[1]);
-                std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
-            }
+            if(tipl::ends_with(cmd[1],".txt") &&
+               !tipl::write_text_file(cmd[1],buffer.empty() ?
+                    std::string() : tipl::merge(buffer,' ')+" ",tipl::error()))
+                return run->failed("cannot write to file at " + cmd[1]);
             if (tipl::ends_with(cmd[1],".mat"))
             {
                 tipl::io::mat_write out(cmd[1].c_str());
@@ -1567,6 +1564,4 @@ void TractTableWidget::edit_tracts(void)
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
 
 }
-
-
 
