@@ -2303,10 +2303,8 @@ bool GLWidget::command(std::vector<std::string> cmd)
     {
         if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
-        std::ofstream out(cmd[1]);
-        if(!out)
+        if(!tipl::write_text_file(cmd[1],get_camera(),tipl::error()))
             return run->failed("cannot write " + cmd[1]);
-        out << get_camera();
         return true;
     }
     if(tipl::begins_with(cmd[0],"store_camera"))
