@@ -1007,10 +1007,11 @@ void AIAgent::refresh_ollama_models()
                 update_agent_models(index,models,true);
     };
 
-    auto [url,configured] = ai_ollama_url(settings);
-    if(!configured)
+    auto ollama = ai_ollama_url(settings);
+    if(!ollama.second)
         return set_models({});
 
+    auto url = ollama.first;
     url.setPath("/api/tags");
 
     auto* network = new QNetworkAccessManager(this);
