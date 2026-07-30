@@ -46,8 +46,8 @@ int xnat(tipl::program_option<tipl::out>& po)
     if(!po.has("id"))
     {
         tipl::out() << "write experiment info to " << output;
-        if(!(std::ofstream(output) << xnat_connection.result))
-            return tipl::error() << "cannot write to " << output,1;
+        if(!tipl::write_text_file(output,xnat_connection.result,tipl::error()))
+            return 1;
     }
     return 0;
 }
