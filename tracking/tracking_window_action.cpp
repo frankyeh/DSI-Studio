@@ -1335,6 +1335,17 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
     return run->failed("unknown command: " + cmd[0]);
 }
+bool tracking_window::command(std::vector<std::string> cmd,
+                              command_source source)
+{
+    struct restore_source{
+        command_history& history;
+        command_source source;
+        ~restore_source(){history.source = source;}
+    } restore{history,history.source};
+    history.source = source;
+    return command(std::move(cmd));
+}
 
 std::string tracking_window::get_parameter_id(void)
 {

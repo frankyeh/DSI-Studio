@@ -86,8 +86,9 @@ void command_history::add_record(const std::string& output)
     }
 }
 std::string command_history::command_json(
-    const std::vector<std::string>& cmd) const
+    const std::vector<std::string>& cmd,command_source source) const
 {
+    static const char* sources[]{"user","ai","internal"};
     QJsonArray param;
     for(size_t index = 1;index < cmd.size();++index)
         param.append(QString::fromUtf8(cmd[index]));
@@ -95,6 +96,7 @@ std::string command_history::command_json(
         {"request","CMD"},
         {"window","tracking"+QString::number(
                       reinterpret_cast<quintptr>(window),16)},
+        {"source",sources[int(source)]},
         {"command",QJsonObject{{"cmd",QString::fromUtf8(cmd[0])},
                                {"param",param}}}}).
         toJson(QJsonDocument::Compact).toStdString();

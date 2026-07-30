@@ -19,14 +19,16 @@ namespace Ui {
     class tracking_window;
 }
 std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
+enum class command_source{User,AI,Internal};
 struct command_history{
 private:
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
-    std::string command_json(const std::vector<std::string>&) const;
+    std::string command_json(const std::vector<std::string>&,command_source) const;
 public:
     command_history(QWidget* window):window(window){}
     QWidget* window;
+    command_source source = command_source::User;
     int current_recording_instance = 0;
     bool has_other_thread = false,running_commands = false;
     std::string default_parent_path,default_stem,default_stem2,current_cmd;
@@ -37,9 +39,13 @@ public:
         command_history& owner;
         std::vector<std::string>& cmd;
         std::string& error_msg;
+        command_source source;
         surrogate(command_history& owner,
                   std::vector<std::string>& cmd_,
-                  std::string& error_msg_) : owner(owner),cmd(cmd_),error_msg(error_msg_)
+                  std::string& error_msg_) :
+            owner(owner),cmd(cmd_),error_msg(error_msg_),
+            source(owner.current_recording_instance || owner.running_commands ?
+                   command_source::Internal : owner.source)
         {
             ++owner.current_recording_instance;
         }
@@ -96,9 +102,8 @@ public:
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
             std::string output(tipl::merge(cmd,','));
-            if(!owner.current_recording_instance && !output.empty() &&
-               !owner.running_commands)
-                tipl::out() << owner.command_json(cmd);
+            if(!output.empty())
+                tipl::out() << owner.command_json(cmd,source);
             if(!error_msg.empty())
             {
                 tipl::error() << error_msg;
@@ -210,6 +215,7 @@ public:
 public:
     std::string error_msg;
     bool command(std::vector<std::string> cmd);
+    bool command(std::vector<std::string> cmd,command_source);
     QString get_action_data(void) const
     {
         QAction *action = qobject_cast<QAction *>(sender());
