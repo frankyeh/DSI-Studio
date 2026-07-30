@@ -176,9 +176,8 @@ void db_window::on_actionSave_Subject_Name_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(tipl::qt::to_path(filename));
-    for(const auto& each : vbc->handle->db.subject_names)
-        out << each << std::endl;
+    tipl::write_text_file(
+        tipl::qt::to_path(filename),vbc->handle->db.subject_names,tipl::error());
 }
 
 void db_window::on_action_Save_R2_values_as_triggered()
@@ -190,8 +189,10 @@ void db_window::on_action_Save_R2_values_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(tipl::qt::to_path(filename));
-    std::copy(vbc->handle->db.R2.begin(),vbc->handle->db.R2.end(),std::ostream_iterator<float>(out,"\n"));
+    auto result = tipl::merge(vbc->handle->db.R2,'\n');
+    if(!result.empty())
+        result += '\n';
+    tipl::write_text_file(tipl::qt::to_path(filename),result,tipl::error());
 }
 
 void db_window::on_view_x_toggled(bool checked)
@@ -400,7 +401,8 @@ void db_window::on_actionSave_Demographics_triggered()
                 "Comma- or Tab-Separated Values(*.csv *.tsv);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream(tipl::qt::to_path(filename)) << vbc->handle->db.demo;
+    tipl::write_text_file(
+        tipl::qt::to_path(filename),vbc->handle->db.demo,tipl::error());
 }
 
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data> handle)
