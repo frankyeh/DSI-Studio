@@ -1020,10 +1020,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!cmd[1].empty())
         {
             tipl::out() << "save " << cmd[1];
-            std::ofstream out(cmd[1]);
-            if(!out)
+            if(!tipl::write_text_file(cmd[1],result,tipl::error()))
                 return run->failed("cannot write to " + cmd[1]);
-            out << result;
         }
         else
         {
