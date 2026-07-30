@@ -99,13 +99,18 @@ std::string command_record(QWidget* window,const char* type,
     QJsonObject command{{"cmd",QString::fromUtf8(cmd[0])}};
     if(!param.isEmpty())
         command["param"] = param;
+    auto window_id = QString(type)+(type[0] == 'm' ? QString() :
+        QString::number(reinterpret_cast<quintptr>(window),16));
+    auto quote = [](const QString& text)
+    {
+        auto json = QJsonDocument(QJsonArray{text}).
+                    toJson(QJsonDocument::Compact);
+        return json.mid(1,json.size()-2);
+    };
     return sources[int(source)]+std::string(" operation: ")+
-        QJsonDocument(QJsonObject{
-        {"request","CMD"},
-        {"window",QString(type)+(type[0] == 'm' ? QString() :
-                  QString::number(reinterpret_cast<quintptr>(window),16))},
-        {"command",command}}).
-        toJson(QJsonDocument::Compact).toStdString();
+        ("{\"request\":\"CMD\",\"window\":"+quote(window_id)+
+         ",\"command\":"+QJsonDocument(command).
+         toJson(QJsonDocument::Compact)+"}").toStdString();
 }
 thread_local int command_depth = 0;
 command_source command_origin(command_source source)
