@@ -433,8 +433,8 @@ void DeviceTableWidget::save_device(void)
     if (filename.isEmpty())
         return;
     devices[uint32_t(currentRow())]->name = item(currentRow(),0)->text().toStdString();
-    std::ofstream out(tipl::qt::to_path(filename));
-    out << devices[uint32_t(currentRow())]->to_str();
+    tipl::write_text_file(tipl::qt::to_path(filename),
+                          devices[uint32_t(currentRow())]->to_str(),tipl::error());
 }
 void DeviceTableWidget::assign_colors(void)
 {
