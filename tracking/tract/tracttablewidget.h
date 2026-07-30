@@ -90,12 +90,16 @@ public:
                 }
             });
         }
+        bool updated = false;
         for(unsigned int i = 0;i < selected.size();++i)
             if(changed[i])
             {
+                updated = true;
                 item(int(selected[i]),1)->setText(QString::number(tract_models[selected[i]]->get_visible_track_count()));
                 item(int(selected[i]),2)->setText(QString::number(tract_models[selected[i]]->get_deleted_track_count()));
             }
+        if(updated)
+            emit show_tracts();
         return true;
     }
 public:
