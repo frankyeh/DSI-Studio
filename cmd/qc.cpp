@@ -180,7 +180,7 @@ std::string quality_check_nii_files(const std::vector<std::filesystem::path>& fi
 /**
  perform reconstruction
  */
-size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
+extern std::vector<std::string> template_name_list;
 int qc(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source","*.sz");
@@ -205,6 +205,7 @@ int qc(tipl::program_option<tipl::out>& po)
                       quality_check_nii_files(file_list) :
                       is_fib ? quality_check_fib_files(file_list) :
                           quality_check_src_files(file_list,po.get("check_btable",0),
-                                                  po.has("template"),get_template_id(po,0));
+                                                  po.has("template"),
+                                                  po.get("template",template_name_list,size_t(0)));
     return (std::ofstream(report_file_name) << report) ? 0:1;
 }

@@ -201,20 +201,12 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
     std::ofstream report(file_name);
     if(!report)
         return tipl::error() << "cannot write to " << file_name,false;
-    report << "position\t";
-    std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
-    report << "\nvalue\t";
-    std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
+    report << "position\t" << tipl::merge(values,'\t') << '\t'
+           << "\nvalue\t" << tipl::merge(data_profile,'\t') << '\t';
     if(!data_ci1.empty())
-    {
-        report << "\nCI\t";
-        std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
-    }
+        report << "\nCI\t" << tipl::merge(data_ci1,'\t') << '\t';
     if(!data_ci2.empty())
-    {
-        report << "\nCI\t";
-        std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
-    }
+        report << "\nCI\t" << tipl::merge(data_ci2,'\t') << '\t';
     report << std::endl;
     return true;
 }
@@ -262,26 +254,20 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 
         auto connectivity_value = tipl::split(po.get("connectivity_value","all"),',');
         auto connectivity_output = po.get("connectivity_output","matrix");
-        std::string ignoring_list;
+        bool all = connectivity_value.size() == 1 &&
+                   connectivity_value.front() == "all";
         for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
         {
             data.set_metrics(m_index);
             std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
             std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
-            bool included = connectivity_value.size() == 1 && connectivity_value.front() == "all";
-            for(const auto& each_connectivity_value : connectivity_value)
-                if(tipl::contains(metrics_name,each_connectivity_value))
-                {
-                    included = true;
-                    break;
-                }
-            if(!included)
-            {
-                if(!ignoring_list.empty())
-                    ignoring_list += ",";
-                ignoring_list += metrics_name;
+            if(!all && std::none_of(
+                   connectivity_value.begin(),connectivity_value.end(),
+                   [&](const auto& value)
+                   {
+                       return tipl::contains(metrics_name,value);
+                   }))
                 continue;
-            }
             if(tipl::contains(connectivity_output,"connectogram"))
                 data.save_connectogram(std::filesystem::path(save_file_name) += ("." + metrics_name + ".connectogram.txt"));
             if(tipl::contains(connectivity_output,"network"))
@@ -586,20 +572,11 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
 
 }
 extern std::vector<std::string> template_name_list;
-size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel)
-{
-    if(!po.has("template"))
-        return default_sel;
-    std::string tempate_prompt;
-    for(size_t id = 0;id < template_name_list.size();++id)
-        tempate_prompt += std::to_string(id) + ":" + template_name_list[id] + " ";
-    tipl::out() << "template " << tempate_prompt;
-    return po.get("template",template_name_list,default_sel);
-}
 void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po)
 {
     if(po.has("template") || handle->tractography_atlas_file_name.empty())
-        handle->set_template_id(get_template_id(po,0));
+        handle->set_template_id(
+            po.get("template",template_name_list,size_t(0)));
     if(po.has("tractography_atlas"))
         handle->set_tractography_atlas(po.get("tractography_atlas"));
     if(po.has("search_count"))
@@ -612,16 +589,16 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
             return tipl::error() << "cannot find the index",1;
     }
-    if(po.has("dt_metric1") != po.has("dt_metric2"))
+    bool differential = po.has("dt_metric1");
+    if(differential != po.has("dt_metric2"))
         return tipl::error() << "both --dt_metric1 and --dt_metric2 are required",1;
-
-    if(po.has("dt_metric1") && po.has("dt_metric2"))
+    if(differential)
     {
-        std::string prompt("available metrics:");
-        for(const auto& each : handle->get_index_list())
-            prompt += " " + each;
-        tipl::out() << "enable differential tracking. " << prompt;
-        if(!handle->set_dt_index(std::make_pair(po.get("dt_metric1"),po.get("dt_metric2")),po.get("dt_threshold_type",0)))
+        tipl::out() << "enable differential tracking. available metrics: "
+                    << tipl::merge(handle->get_index_list(),' ');
+        if(!handle->set_dt_index(
+               {po.get("dt_metric1"),po.get("dt_metric2")},
+               po.get("dt_threshold_type",0)))
             return tipl::error() << handle->error_msg,1;
     }
 

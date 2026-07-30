@@ -15,7 +15,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
     return true;
 }
 
-size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
+extern std::vector<std::string> template_name_list;
 int db(tipl::program_option<tipl::out>& po)
 {
     auto name_list = po.get_files("source","*.qsdr.fz");
@@ -50,7 +50,8 @@ int db(tipl::program_option<tipl::out>& po)
     }
     {
         fib_data fib;
-        if(!fib.load_template_fib(get_template_id(po,0),template_reso) ||
+        if(!fib.load_template_fib(
+               po.get("template",template_name_list,size_t(0)),template_reso) ||
            !fib.db.create_db(name_list,index_list) ||
            (!default_demo.empty() && !fib.db.parse_demo(po.get("demo",default_demo))))
             return tipl::error() << fib.error_msg,1;
