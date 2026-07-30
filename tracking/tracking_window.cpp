@@ -85,9 +85,9 @@ void command_history::add_record(const std::string& output)
             default_stem = default_stem2;
     }
 }
-std::string command_json(QWidget* window,const char* type,
-                         const std::vector<std::string>& cmd,
-                         command_source source)
+std::string command_record(QWidget* window,const char* type,
+                           const std::vector<std::string>& cmd,
+                           command_source source)
 {
     static const char* sources[]{"user","ai","internal"};
     QJsonArray param;
@@ -96,11 +96,11 @@ std::string command_json(QWidget* window,const char* type,
         --size;
     for(size_t index = 1;index < size;++index)
         param.append(QString::fromUtf8(cmd[index]));
-    return QJsonDocument(QJsonObject{
+    return sources[int(source)]+std::string(" operation: ")+
+        QJsonDocument(QJsonObject{
         {"request","CMD"},
         {"window",QString(type)+(type[0] == 'm' ? QString() :
                   QString::number(reinterpret_cast<quintptr>(window),16))},
-        {"source",sources[int(source)]},
         {"command",QJsonObject{{"cmd",QString::fromUtf8(cmd[0])},
                                {"param",param}}}}).
         toJson(QJsonDocument::Compact).toStdString();
@@ -121,7 +121,7 @@ command_report::command_report(
 command_report::~command_report()
 {
     --command_depth;
-    tipl::out() << command_json(window,type,cmd,source);
+    tipl::out() << command_record(window,type,cmd,source);
 }
 std::string command_history::file_stem(bool extended) const
 {

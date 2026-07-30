@@ -20,8 +20,8 @@ namespace Ui {
 }
 std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
 enum class command_source{User,AI,Internal};
-std::string command_json(QWidget*,const char*,
-                         const std::vector<std::string>&,command_source);
+std::string command_record(QWidget*,const char*,
+                           const std::vector<std::string>&,command_source);
 command_source command_origin(command_source);
 struct command_report{
     QWidget* window;
@@ -114,7 +114,7 @@ public:
                 cmd.pop_back();
             std::string output(tipl::merge(cmd,','));
             if(!output.empty())
-                tipl::out() << command_json(
+                tipl::out() << command_record(
                     owner.window,"tracking",cmd,source);
             if(!error_msg.empty())
             {
