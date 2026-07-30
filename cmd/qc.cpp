@@ -207,5 +207,6 @@ int qc(tipl::program_option<tipl::out>& po)
                           quality_check_src_files(file_list,po.get("check_btable",0),
                                                   po.has("template"),
                                                   po.get("template",template_name_list,size_t(0)));
-    return (std::ofstream(report_file_name) << report) ? 0:1;
+    return tipl::write_text_file(
+        report_file_name,report,tipl::error()) ? 0:1;
 }
