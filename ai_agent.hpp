@@ -58,14 +58,13 @@ class AIAgent : public QMainWindow
     void add_ai_reply(ai_info&,const QString&,const QString&);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(ai_info&,QJsonObject = {});
-    void stop_ai_blink();
     void update_agent_models(int,QStringList,QJsonObject);
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
     void start_ai(QString,const QString&,ai_input);
     void start_codex(QString,const QString&,ai_input);
     void start_claude(QString,const QString&,ai_input);
-    ai_launch prepare_ai(ai_provider,QString,const QString&,ai_input);
+    ai_launch prepare_ai(ai_provider,QString&,const QString&,ai_input);
 
 public:
     explicit AIAgent(MainWindow*);

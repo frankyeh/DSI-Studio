@@ -70,6 +70,13 @@ QByteArray claude_input(const QString& text)
                 {"type","text"},{"text",text}}}}}}}).
         toJson(QJsonDocument::Compact)+'\n';
 }
+static void stop_blink(QWidget* row)
+{
+    if(!row)
+        return;
+    row->findChild<QTimer*>()->stop();
+    row->setStyleSheet({});
+}
 
 ai_provider ai_info::identify_provider(const QString& name)
 {
@@ -326,14 +333,14 @@ AIAgent::AIAgent(MainWindow* parent):
         for(auto* i : {previous,item})
             if(i)
                 ui->ai_project_list->itemWidget(i)->
-                    findChild<QPushButton*>("ai_project_title")->
+                    findChild<QPushButton*>()->
                     setStyleSheet(i == item ?
                         "color:#202124;background:#dce9f9;" : "");
         ui->ai_agent_selector->setEnabled(!item);
         if(!item)
             return ui->ai_chat_history->clear();
 
-        stop_ai_blink();
+        stop_blink(ui->ai_project_list->itemWidget(item));
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
         ui->ai_agent_selector->setCurrentIndex(int(info.provider));
         set_model_selector(
@@ -432,7 +439,8 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    stop_ai_blink();
+    auto* item = ui->ai_project_list->currentItem();
+    stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
 
 void AIAgent::set_ai_status(QString status,bool temporary)
@@ -744,8 +752,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     if(history.isEmpty())
         return;
 
-    auto agent_name = info.agent_name;
-    auto project_title = info.title();
     auto* item = info.project_items;
     if(!item)
     {
@@ -756,7 +762,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
         auto* row = new QWidget;
         auto* title = new QPushButton(row);
-        title->setObjectName("ai_project_title");
         title->setFlat(true);
         title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
 
@@ -776,7 +781,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         ui->ai_project_list->setItemWidget(item,row);
 
         auto* blink = new QTimer(row);
-        blink->setObjectName("ai_chat_blink");
         blink->setInterval(500);
         connect(blink,&QTimer::timeout,row,[row]
         {
@@ -791,14 +795,11 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     }
 
     auto* row = ui->ai_project_list->itemWidget(item);
-    // Update project title
-    {
-        auto* title = row->findChild<QPushButton*>("ai_project_title");
-        item->setText({});
-        title->setText(project_title);
-        title->setToolTip(project_title);
-        item->setSizeHint(QSize(0,row->sizeHint().height()));
-    }
+    auto* title = row->findChild<QPushButton*>();
+    item->setText({});
+    title->setText(info.title());
+    title->setToolTip(title->text());
+    item->setSizeHint(QSize(0,row->sizeHint().height()));
 
     auto* current = ui->ai_project_list->currentItem();
     if(!current)
@@ -813,7 +814,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     if(!added_type.isEmpty() && added_type != "user" && !visible)
     {
         row->setStyleSheet("background:#ffe082;border-radius:5px;");
-        row->findChild<QTimer*>("ai_chat_blink")->start();
+        row->findChild<QTimer*>()->start();
     }
 
     if(current != item)
@@ -866,7 +867,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
-                        .arg(color,(user ? QString("You") : agent_name).toHtmlEscaped()+" &middot; ",time,content);
+                        .arg(color,(user ? QString("You") : info.agent_name).toHtmlEscaped()+" &middot; ",time,content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
@@ -935,15 +936,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     });
 }
 
-void AIAgent::stop_ai_blink()
-{
-    auto* item = ui->ai_project_list->currentItem();
-    auto* row = item ? ui->ai_project_list->itemWidget(item) : nullptr;
-    if(!row)
-        return;
-    row->findChild<QTimer*>("ai_chat_blink")->stop();
-    row->setStyleSheet({});
-}
 void AIAgent::update_agent_models(
     int index,QStringList models,QJsonObject profiles)
 {
@@ -1110,25 +1102,23 @@ void AIAgent::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
+ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
                                  const QString& text,ai_input input)
 {
     ai_launch launch;
 
     // Resolve agent
+    launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
+    launch.executable = ui->ai_agent_selector->itemData(
+                            int(provider),Qt::UserRole+1).toString();
+    if(launch.executable.isEmpty())
     {
-        launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
-        launch.executable = ui->ai_agent_selector->itemData(
-                                int(provider),Qt::UserRole+1).toString();
-        if(launch.executable.isEmpty())
-        {
-            if(input == ai_input::Pending && !session.isEmpty())
-                ai_infos[session].prompts.append(text);
-            auto message = launch.name+" executable was not found.";
-            set_ai_status(message,true);
-            QMessageBox::warning(this,"AI Agent",message);
-            return launch;
-        }
+        if(input == ai_input::Pending && !session.isEmpty())
+            ai_infos[session].prompts.append(text);
+        auto message = launch.name+" executable was not found.";
+        set_ai_status(message,true);
+        QMessageBox::warning(this,"AI Agent",message);
+        return launch;
     }
 
     // Resolve work directory
@@ -1136,50 +1126,46 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     ui->ai_work_dir->setText(
         project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
-    // Resolve session
-    {
-        if(session.isEmpty() && provider == ai_provider::Claude)
-        {
-            session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-            ai_info::create(session,launch.name);
-        }
-    }
     auto* info = session.isEmpty() ? nullptr : &ai_infos[session];
 
     // Resolve model
-    {
-        QJsonObject selected{
-            {"model",ui->ai_model_selector->currentText()},
-            {"info",ui->ai_model_selector->currentData().toJsonObject()}};
-        launch.model_setting =
-            info && selected["model"].toString() ==
-                    info->model_settings["model"].toString() ?
-            info->model_settings : selected;
+    QJsonObject selected{
+        {"model",ui->ai_model_selector->currentText()},
+        {"info",ui->ai_model_selector->currentData().toJsonObject()}};
+    launch.model_setting =
+        info && selected["model"].toString() ==
+                info->model_settings["model"].toString() ?
+        info->model_settings : selected;
 
-        launch.model = launch.model_setting["model"].toString().trimmed();
-        if(launch.model_setting["info"].toObject().contains("provider"))
+    launch.model = launch.model_setting["model"].toString().trimmed();
+    if(launch.model_setting["info"].toObject().contains("provider"))
+    {
+        auto [url,configured] = ai_ollama_url(settings);
+        launch.model_url = url;
+        launch.name += "/Ollama("+launch.model_url.host()+")";
+        if(!configured)
         {
-            auto [url,configured] = ai_ollama_url(settings);
-            launch.model_url = url;
-            launch.name += "/Ollama("+launch.model_url.host()+")";
-            if(!configured)
-            {
-                set_ai_status("Ollama is not configured.",true);
-                QMessageBox::warning(
-                    this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
-                return launch;
-            }
+            set_ai_status("Ollama is not configured.",true);
+            QMessageBox::warning(
+                this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
+            return launch;
         }
-        if(launch.model.startsWith("default",Qt::CaseInsensitive))
-            launch.model.clear();
-        if(info && info->model_settings != launch.model_setting)
+    }
+    if(launch.model.startsWith("default",Qt::CaseInsensitive))
+        launch.model.clear();
+
+    if(session.isEmpty() && provider == ai_provider::Claude)
+    {
+        session = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        info = ai_info::create(session,launch.name);
+    }
+    if(info && info->model_settings != launch.model_setting)
+    {
+        info->model_settings = launch.model_setting;
+        if(!info->projects.isEmpty())
         {
-            info->model_settings = launch.model_setting;
-            if(!info->projects.isEmpty())
-            {
-                info->projects[0]["model_settings"] = info->model_settings;
-                write_history(*info,QIODevice::Truncate,info->projects);
-            }
+            info->projects[0]["model_settings"] = info->model_settings;
+            write_history(*info,QIODevice::Truncate,info->projects);
         }
     }
 
@@ -1201,18 +1187,30 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                provider == ai_provider::Codex ? "Codex" : "Claude");
     if(provider == ai_provider::Claude)
         env.insert("CODEX_THREAD_ID",session);
+
+#ifdef Q_OS_WIN
+    // locate bash for windows
+    for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
+                            qEnvironmentVariable("LOCALAPPDATA") + "/Programs/Git/bin"})
+        if(QFile::exists(path + "/bash.exe"))
+        {
+            tipl::out() << "bash found:" << (path + "/bash.exe").toStdString();
+            env.insert("PATH",path + ";" + env.value("PATH"));
+            break;
+        }
+#endif
     process->setProcessEnvironment(env);
 
-    if(!session.isEmpty())
-        ai_infos[session].processes = process;
+    if(info)
+        info->processes = process;
     else
         for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
             button->setEnabled(false);
 
     if(input == ai_input::User)
     {
-        if(!session.isEmpty())
-            add_ai_history(ai_infos[session],"user",text);
+        if(info)
+            add_ai_history(*info,"user",text);
         ui->ai_chat_input->clear();
     }
 
@@ -1308,11 +1306,11 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
 void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 {
+    bool new_session = session.isEmpty();
     auto launch = prepare_ai(ai_provider::Claude,session,text,input);
     if(!launch.process)
         return;
     auto* process = launch.process;
-    auto session_id = process->objectName();
     if(!launch.model_url.isEmpty())
     {
         auto env = process->processEnvironment();
@@ -1330,7 +1328,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         process->setProcessEnvironment(env);
     }
 
-    process->setProperty("history_size",ai_infos[session_id].projects.size());
+    process->setProperty("history_size",ai_infos[session].projects.size());
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
@@ -1377,7 +1375,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
         "--allowedTools","Bash(bash ./dsi.sh:*)",
-        session.isEmpty() ? "--session-id" : "--resume",session_id};
+        new_session ? "--session-id" : "--resume",session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
     ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
@@ -1468,29 +1466,25 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
             ui->ai_chat_input->clear();
         }
 
-        if(info->provider == ai_provider::Claude &&
-           info->processes->state() == QProcess::Running)
-        {
+        bool send = info->provider == ai_provider::Claude &&
+                    info->processes->state() == QProcess::Running;
+        if(send)
             info->processes->write(claude_input(text));
-            set_ai_status("Message sent to Claude.");
-        }
         else
-        {
             info->prompts.append(text);
-            set_ai_status("Message queued for the AI agent.",true);
-        }
+
+        set_ai_status(send ? "Message sent to Claude." :
+                             "Message queued for the AI agent.",!send);
         return;
     }
 
     auto provider = info ? info->provider :
         ai_provider(ui->ai_agent_selector->currentIndex());
+    Q_ASSERT(provider != ai_provider::Unknown);
+
     if(provider == ai_provider::Codex)
         return start_codex(session,text,input);
-    if(provider == ai_provider::Claude)
-        return start_claude(session,text,input);
-
-    set_ai_status("Unsupported AI provider.",true);
-    QMessageBox::warning(this,"AI Agent","Unsupported AI provider.");
+    start_claude(session,text,input);
 }
 
 void AIAgent::on_ai_send_message_clicked()
