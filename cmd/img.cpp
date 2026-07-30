@@ -476,6 +476,17 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 extern std::vector<std::filesystem::path> iso_template_list,t1w_template_list,t2w_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
+    auto get_param = [](std::string& cmd,bool comma_first)
+    {
+        auto pos = comma_first ? cmd.find(',') : std::string::npos;
+        if(pos == std::string::npos)
+            pos = cmd.find(':');
+        auto param = pos == std::string::npos ?
+                         std::string() : cmd.substr(pos+1);
+        if(pos != std::string::npos)
+            cmd.resize(pos);
+        return param;
+    };
     std::string source(po.get_file("source",".nii.gz")),info;
     std::filesystem::path output = po.get("output");
     if(std::filesystem::is_directory(output))
@@ -500,13 +511,7 @@ int img(tipl::program_option<tipl::out>& po)
 
         for(auto& cmd : tipl::split(po.get("cmd"),'+'))
         {
-            std::string param;
-            auto sep_pos = cmd.find(':');
-            if(sep_pos != std::string::npos)
-            {
-                param = cmd.substr(sep_pos+1);
-                cmd = cmd.substr(0,sep_pos);
-            }
+            auto param = get_param(cmd,false);
             if(!modify_fib(mat_reader,cmd,param))
                 return tipl::error() << mat_reader.error_msg,1;
         }
@@ -543,22 +548,7 @@ int img(tipl::program_option<tipl::out>& po)
         tipl::progress prog("run command");
         for(auto& cmd : tipl::split(po.get("cmd","info"),'+'))
         {
-            std::string param;
-            auto sep_pos = cmd.find(',');
-            if(sep_pos != std::string::npos)
-            {
-                param = cmd.substr(sep_pos+1);
-                cmd = cmd.substr(0,sep_pos);
-            }
-            else
-            {
-                auto sep_pos = cmd.find(':');
-                if(sep_pos != std::string::npos)
-                {
-                    param = cmd.substr(sep_pos+1);
-                    cmd = cmd.substr(0,sep_pos);
-                }
-            }
+            auto param = get_param(cmd,true);
             if(cmd == "brain_extraction" || cmd == "segmentation" || cmd == "deface")
             {
                 if(po.has("model"))

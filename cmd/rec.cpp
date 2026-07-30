@@ -275,22 +275,14 @@ int rec(tipl::program_option<tipl::out>& po)
         for(const auto& each : po.get_files("other_image"))
         {
             tipl::out() << "add image: " << each;
-            std::string name;
-            std::filesystem::path path;
             auto value = each.u8string();
             auto pos = value.find(':');
-            if(tipl::begins_with(value,"http") ||
-                pos == std::string::npos ||
-                pos == 1)
-            {
-                name = tipl::remove_all_suffix(each.filename().u8string());
-                path = value;
-            }
-            else
-            {
-                name = value.substr(0,pos);
-                path = value.substr(pos+1);
-            }
+            bool named = pos != std::string::npos && pos != 1 &&
+                         !tipl::begins_with(value,"http");
+            auto name = named ? value.substr(0,pos) :
+                        tipl::remove_all_suffix(each.filename().u8string());
+            std::filesystem::path path =
+                named ? value.substr(pos+1) : value;
             if(!src.add_other_image(name,path))
                 return fail();
         }

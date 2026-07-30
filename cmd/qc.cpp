@@ -7,7 +7,7 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
 {
     std::ostringstream out;
     out << "file name\tdimension\tresolution\tdwi count(b0/dwi)\tmax b-value\tDWI contrast\tneighboring DWI correlation\tneighboring DWI correlation(masked)\t#bad slices\toutlier" << std::endl;
-    std::vector<std::vector<std::string> > output(file_list.size());
+    std::vector<std::string> output(file_list.size());
     std::vector<std::string> errors(file_list.size());
     std::vector<float> ndc(file_list.size());
     tipl::progress prog("checking SRC files");
@@ -17,63 +17,42 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
         prog(++p,file_list.size());
         if(prog.aborted())
             return;
-        std::vector<std::string> output_each;
         tipl::out() << "checking " << file_list[i];
-        output_each.push_back(file_list[i].filename().u8string());
         src_data handle;
         if(!handle.load_from_file(file_list[i]))
         {
             errors[i] = "cannot load SRC file " + file_list[i].u8string();
             return;
         }
-        // output image dimension
-        {
-            std::ostringstream out1;
-            out1 << tipl::vector<3,int>(handle.voxel.dim.begin());
-            output_each.push_back(out1.str());
-        }
-        // output image resolution
-        {
-            std::ostringstream out1;
-            out1 << handle.voxel.vs;
-            output_each.push_back(out1.str());
-        }
-        // output DWI count
-        {
-            size_t cur_dwi_count = handle.src_bvalues.size();
-            size_t b0_count = std::count(handle.src_bvalues.begin(),handle.src_bvalues.end(),0.0f);
-            output_each.push_back(std::to_string(b0_count)+"/" + std::to_string(cur_dwi_count-b0_count));
-            if(check_btable)
-            {
-                if(use_template)
-                {
-                    handle.voxel.template_id = template_id;
-                    handle.check_b_table(true);
-                }
-                else
-                    handle.check_b_table(false);
 
-                size_t pos = handle.error_msg.find_last_of(' ');
-                if(pos != std::string::npos)
-                    output_each.back() += handle.error_msg.substr(pos + 1);
-
-            }
+        auto cur_dwi_count = handle.src_bvalues.size();
+        auto b0_count = std::count(
+            handle.src_bvalues.begin(),handle.src_bvalues.end(),0.0f);
+        std::string dwi_count =
+            std::to_string(b0_count)+"/"+
+            std::to_string(cur_dwi_count-b0_count);
+        if(check_btable)
+        {
+            if(use_template)
+                handle.voxel.template_id = template_id;
+            handle.check_b_table(use_template);
+            if(auto pos = handle.error_msg.find_last_of(' ');
+               pos != std::string::npos)
+                dwi_count += handle.error_msg.substr(pos+1);
         }
 
-        // output max_b
-        output_each.push_back(std::to_string(tipl::max_value(handle.src_bvalues)));
-
-        // dwi contrast
-        output_each.push_back(std::to_string(handle.dwi_contrast()));
-
-        // calculate neighboring DWI correlation
         auto n = handle.quality_control_neighboring_dwi_corr();
         ndc[i] = n.second;
-
-        output_each.push_back(std::to_string(n.first));
-        output_each.push_back(std::to_string(n.second)); // masked
-        output_each.push_back(std::to_string(handle.get_bad_slices().size()));
-        output[i] = std::move(output_each);
+        std::ostringstream row;
+        row << file_list[i].filename().u8string() << '\t'
+            << tipl::vector<3,int>(handle.voxel.dim.begin()) << '\t'
+            << handle.voxel.vs << '\t' << dwi_count << '\t'
+            << std::to_string(tipl::max_value(handle.src_bvalues)) << '\t'
+            << std::to_string(handle.dwi_contrast()) << '\t'
+            << std::to_string(n.first) << '\t'
+            << std::to_string(n.second) << '\t'
+            << std::to_string(handle.get_bad_slices().size());
+        output[i] = row.str();
     });
 
     for(const auto& error : errors)
@@ -92,9 +71,8 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
     {
         if(output[i].empty())
             continue;
-        for(const auto& each : output[i])
-            out << each << "\t";
-        out << (ndc[i] < outlier_threshold ? "1" : "0") << std::endl;
+        out << output[i] << '\t'
+            << (ndc[i] < outlier_threshold ? "1" : "0") << '\n';
     }
     return out.str();
 }

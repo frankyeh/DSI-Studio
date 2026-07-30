@@ -13,49 +13,37 @@ void check_name(std::string& name)
 std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
                                    std::filesystem::path output)
 {
-    std::string person, sequence, imagename;
-    {
-        tipl::io::dicom header;
-        if (!header.load_from_file(file_name))
-        {
-            tipl::out() << "not a DICOM file. Skipping";
-            return std::string();
-        }
-        header.get_patient(person);
-        header.get_sequence(sequence);
-        header.get_image_name(imagename);
-    }
-    check_name(person);
-    check_name(sequence);
-    check_name(imagename);
-    output = output/person;
-    output = output/sequence;
-    output = output/imagename;
-    if(file_name != output)
-    {
-        tipl::out() << file_name << "->" << output;
-        auto parent = output.parent_path();
-        std::error_code ec;
-        std::filesystem::create_directories(parent,ec);
-        if(ec)
-        {
-            tipl::error() << "cannot create directory " << parent
-                          << ": " << ec.message();
-            return {};
-        }
-        if(file_name != output && std::filesystem::exists(output))
-        {
-            tipl::error() << "destination already exists: " << output;
-            return {};
-        }
-        std::filesystem::rename(file_name,output,ec);
-        if(ec)
-        {
-            tipl::error() << "cannot rename " << file_name
-                          << " to " << output << ": " << ec.message();
-            return {};
-        }
-    }
+    std::string person,sequence,imagename;
+    tipl::io::dicom header;
+    if(!header.load_from_file(file_name))
+        return tipl::out() << "not a DICOM file. Skipping",
+               std::filesystem::path();
+
+    header.get_patient(person);
+    header.get_sequence(sequence);
+    header.get_image_name(imagename);
+    for(auto* name : {&person,&sequence,&imagename})
+        check_name(*name);
+
+    output = output/person/sequence/imagename;
+    if(file_name == output)
+        return output;
+
+    tipl::out() << file_name << "->" << output;
+    std::error_code ec;
+    std::filesystem::create_directories(output.parent_path(),ec);
+    if(ec)
+        return tipl::error() << "cannot create directory "
+               << output.parent_path() << ": " << ec.message(),
+               std::filesystem::path();
+    if(std::filesystem::exists(output))
+        return tipl::error() << "destination already exists: "
+               << output,std::filesystem::path();
+    std::filesystem::rename(file_name,output,ec);
+    if(ec)
+        return tipl::error() << "cannot rename " << file_name
+               << " to " << output << ": " << ec.message(),
+               std::filesystem::path();
     return output;
 }
 

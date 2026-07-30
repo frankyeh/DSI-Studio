@@ -120,25 +120,24 @@ bool handle_bids_folder(const std::vector<std::filesystem::path>& dwi_nii_files,
                     [](const auto& each){return std::get<1>(each).empty();}))
     {
         tipl::out() << "no phase encoding information found in json files, try using file name to determine";
+        constexpr const char* phase_markers[] =
+            {"_ap","ap_","_pa","pa_","_lr","lr_","_rl","rl_"};
         for(auto& each : dwi_info)
         {
-            const auto& file_name = std::get<std::filesystem::path>(each);
-            auto& phase_str = std::get<std::string>(each);
+            const auto& file_name = std::get<0>(each);
+            auto& phase_str = std::get<1>(each);
             auto stem = file_name.stem().string();
-            for(auto dir : {"_ap","ap_","_pa","pa_","_lr","lr_","_rl","rl_"})
-                if(tipl::contains_case_insensitive(stem,dir))
-                {
-                    tipl::out() << file_name << " suggests phase direction is " << (phase_str = dir);
-                    break;
-                }
-            if(phase_str.empty())
-            {
-                if(tipl::contains_case_insensitive(stem,"rev"))
-                    phase_str = "pa";
-                else
-                    phase_str = "ap";
-                tipl::out() << file_name << " assume phase encoding of " << phase_str;
-            }
+            auto iter = std::find_if(
+                std::begin(phase_markers),std::end(phase_markers),
+                [&](auto dir){return tipl::contains_case_insensitive(stem,dir);});
+            if(iter != std::end(phase_markers))
+                tipl::out() << file_name << " suggests phase direction is "
+                            << (phase_str = *iter);
+            else
+                tipl::out() << file_name << " assume phase encoding of "
+                            << (phase_str =
+                                tipl::contains_case_insensitive(stem,"rev") ?
+                                    "pa" : "ap");
         }
     }
 
