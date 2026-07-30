@@ -104,6 +104,16 @@ void command_history::report(
     }
     replacing = false;
 }
+QString command_window_id(QWidget* window,const char* type)
+{
+    return QString(type)+(type[0] == 'm' ? QString() :
+           QString::number(reinterpret_cast<quintptr>(window),16));
+}
+void report_window_created(QWidget* window,const char* type)
+{
+    tipl::out() << type << " window created, id: "
+                << command_window_id(window,type).toStdString();
+}
 std::string command_record(QWidget* window,const char* type,
                            const std::vector<std::string>& cmd,
                            command_source source)
@@ -118,8 +128,7 @@ std::string command_record(QWidget* window,const char* type,
     QJsonObject command{{"cmd",QString::fromUtf8(cmd[0])}};
     if(!param.isEmpty())
         command["param"] = param;
-    auto window_id = QString(type)+(type[0] == 'm' ? QString() :
-        QString::number(reinterpret_cast<quintptr>(window),16));
+    auto window_id = command_window_id(window,type);
     auto quote = [](const QString& text)
     {
         auto json = QJsonDocument(QJsonArray{text}).
