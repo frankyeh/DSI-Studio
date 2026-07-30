@@ -1365,7 +1365,7 @@ QStringList AIAgent::configure_claude(
         "--output-format","stream-json",
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
-        "--allowedTools","Bash(bash ./dsi.sh:*)",
+        "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*)",
         new_session ? "--session-id" : "--resume",session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
