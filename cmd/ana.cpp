@@ -502,11 +502,8 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
             file_name = std::filesystem::path(file_name) += ".txt";
     }
     tipl::out() << "saving " << file_name;
-    std::ofstream out(file_name);
-    if(!out)
-        return tipl::error() << "cannot write to " << file_name,1;
-    out << result <<std::endl;
-    return 0;
+    return tipl::write_text_file(
+        file_name,result+'\n',tipl::error()) ? 0:1;
 }
 void get_tract_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tracts,
@@ -629,10 +626,9 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             auto file_name_stat = tract_files[0];
             file_name_stat += ".stat.txt";
             get_tract_statistics(handle,tracts,result);
-            std::ofstream out(file_name_stat);
-            if(!out)
-                return tipl::error() << "cannot write to " << file_name_stat,1;
-            out << result;
+            if(!tipl::write_text_file(
+                   file_name_stat,result,tipl::error()))
+                return 1;
         }
         return 0;
     }
