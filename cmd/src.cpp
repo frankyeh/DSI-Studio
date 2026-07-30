@@ -331,16 +331,11 @@ int src(tipl::program_option<tipl::out>& po)
                 if(po.has("output"))
                 {
                     output_dir = po.get("output");
-                    if(!std::filesystem::exists(output_dir) && !std::filesystem::create_directories(output_dir))
-                    {
-                        tipl::error() << "cannot create the output folder. please check write privileges";
-                        return 1;
-                    }
-                    if(!std::filesystem::is_directory(output_dir))
-                    {
-                        tipl::error() << output_dir << " is not a valid output directory.";
-                        return 1;
-                    }
+                    std::error_code ec;
+                    std::filesystem::create_directories(output_dir,ec);
+                    if(ec || !std::filesystem::is_directory(output_dir))
+                        return tipl::error()
+                               << "invalid output directory: " << output_dir,1;
                 }
                 else
                     tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
@@ -394,31 +389,20 @@ int src(tipl::program_option<tipl::out>& po)
 
     if(po.has("b_table"))
     {
-        std::string table_file_name = po.get("b_table");
+        auto table_file_name = po.get("b_table");
         std::ifstream in(table_file_name);
         if(!in)
-        {
-            tipl::error() << "failed to open b-table" <<std::endl;
-            return 1;
-        }
-        std::string line;
-        std::vector<double> b_table;
-        while(std::getline(in,line))
-        {
-            std::istringstream read_line(line);
-            std::copy(std::istream_iterator<double>(read_line),
-                      std::istream_iterator<double>(),
-                      std::back_inserter(b_table));
-        }
+            return tipl::error() << "failed to open b-table",1;
+        std::vector<double> b_table(
+            (std::istream_iterator<double>(in)),
+            std::istream_iterator<double>());
         if(b_table.size() != dwi_files.size()*4)
+            return tipl::error()
+                   << "mismatch between b-table and the loaded images",1;
+        for(size_t index = 0;index < dwi_files.size();++index)
         {
-            tipl::error() << "mismatch between b-table and the loaded images" << std::endl;
-            return 1;
-        }
-        for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
-        {
-            dwi_files[index]->bvalue = float(b_table[b_index]);
-            dwi_files[index]->bvec = tipl::vector<3>(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
+            dwi_files[index]->bvalue = float(b_table[index*4]);
+            dwi_files[index]->bvec = tipl::vector<3>(&b_table[index*4+1]);
         }
         tipl::out() << "b-table " << table_file_name << " loaded" << std::endl;
     }
