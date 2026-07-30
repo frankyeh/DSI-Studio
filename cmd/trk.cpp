@@ -136,14 +136,11 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
 
         if(cmd == "stat")
         {
-            file_name_stat += ".txt";
-            tipl::out() << "saving " << file_name_stat;
-            std::ofstream out_stat(file_name_stat);
-            if(!out_stat)
-                return tipl::error() << "cannot write to " << file_name_stat,false;
+            tipl::out() << "saving " << (file_name_stat += ".txt");
             std::string result;
             tract_model->get_quantitative_info(handle,result);
-            out_stat << result;
+            if(!tipl::write_text_file(file_name_stat,result,tipl::error()))
+                return false;
             continue;
         }
 
@@ -192,17 +189,14 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
     std::replace(cmd.begin(),cmd.end(),' ','.');
     file_name += "." + cmd + ".txt";
     tipl::out() << "save " << file_name;
-    std::ofstream report(file_name);
-    if(!report)
-        return tipl::error() << "cannot write to " << file_name,false;
-    report << "position\t" << tipl::merge(values,'\t') << '\t'
-           << "\nvalue\t" << tipl::merge(data_profile,'\t') << '\t';
+    std::string result =
+        "position\t"+tipl::merge(values,'\t')+
+        "\t\nvalue\t"+tipl::merge(data_profile,'\t')+'\t';
     if(!data_ci1.empty())
-        report << "\nCI\t" << tipl::merge(data_ci1,'\t') << '\t';
+        result += "\nCI\t"+tipl::merge(data_ci1,'\t')+'\t';
     if(!data_ci2.empty())
-        report << "\nCI\t" << tipl::merge(data_ci2,'\t') << '\t';
-    report << std::endl;
-    return true;
+        result += "\nCI\t"+tipl::merge(data_ci2,'\t')+'\t';
+    return tipl::write_text_file(file_name,result+'\n',tipl::error());
 }
 
 bool load_nii(tipl::program_option<tipl::out>& po,
@@ -358,10 +352,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
         auto name_file_name = po.get("recognize") + ".name.txt";
         tipl::out() << "saving " << name_file_name;
-        std::ofstream out2(name_file_name);
-        if(!out2)
-            return tipl::error() << "cannot write to " << name_file_name,1;
-        std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2,"\n"));
+        if(!tipl::write_text_file(name_file_name,names,tipl::error()))
+            return 1;
         tract_model->tract_cluster = labels;
     }
 
@@ -597,13 +589,10 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         tipl::progress prog("fiber tracking");
         tracking_thread.run(tipl::max_thread_count,true);
         tract_model->report += tracking_thread.report.str();
-        if(po.has("report"))
-        {
-            std::ofstream out(po.get("report"));
-            if(!out)
-                return tipl::error() << "cannot write to " << po.get("report"),1;
-            out << tract_model->report;
-        }
+        if(po.has("report") &&
+           !tipl::write_text_file(
+               po.get("report"),tract_model->report,tipl::error()))
+            return 1;
 
         tracking_thread.fetchTracks(tract_model.get());
     }
