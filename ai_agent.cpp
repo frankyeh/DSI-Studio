@@ -222,7 +222,6 @@ AIAgent::AIAgent(MainWindow* parent):
             ai_log(agent+" models: none detected");
     }
     refresh_codex_models(codex_path);
-    refresh_ollama_models();
 
     if(codex_path.isEmpty() && !claude_path.isEmpty())
         ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
@@ -954,7 +953,7 @@ void AIAgent::update_agent_models(
 void AIAgent::refresh_codex_models(const QString& path)
 {
     if(path.isEmpty())
-        return;
+        return refresh_ollama_models();
 
     auto* process = new QProcess(this);
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),

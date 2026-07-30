@@ -146,8 +146,6 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     if(!ui->workDir->count())
         ui->workDir->addItem(QDir::currentPath());
-    ai_agent = new AIAgent(this);
-
     for(auto& each : fib_template_list)
     {
         QString name = std::filesystem::path(each).stem().string().c_str();
@@ -1075,7 +1073,8 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 void MainWindow::ai_command(ai_info& info,const QByteArray& request,QByteArray& reply)
 {
     ::ai_command(info,request,reply);
-    ai_agent->refresh_ai_info(info);
+    if(ai_agent)
+        ai_agent->refresh_ai_info(info);
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
@@ -1654,6 +1653,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     {
         if(cmd.size() != 1)
             return fail("open_ai takes no arguments");
+        if(!ai_agent)
+            ai_agent = new AIAgent(this);
         ai_agent->showNormal();
         ai_agent->raise();
         ai_agent->activateWindow();
