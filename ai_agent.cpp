@@ -527,11 +527,11 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     auto get_window_id = [](QWidget* window)
     {
         if(qobject_cast<MainWindow*>(window))
-            return QString("main");
-        QString type = qobject_cast<tracking_window*>(window) ? "tracking" :
-                       qobject_cast<view_image*>(window) ? "image" : "";
-        return type.isEmpty() ? type :
-               type+QString::number(reinterpret_cast<quintptr>(window),16);
+            return command_window_id(window,"main");
+        if(qobject_cast<tracking_window*>(window))
+            return command_window_id(window,"tracking");
+        return qobject_cast<view_image*>(window) ?
+            command_window_id(window,"image") : QString();
     };
 
     chat = request["chat"].toString().trimmed();
