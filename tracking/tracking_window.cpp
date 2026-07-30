@@ -3,6 +3,9 @@
 
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStringListModel>
 #include <QCompleter>
 #include <QSplitter>
@@ -81,6 +84,20 @@ void command_history::add_record(const std::string& output)
         if(default_stem.empty())
             default_stem = default_stem2;
     }
+}
+std::string command_history::command_json(
+    const std::vector<std::string>& cmd) const
+{
+    QJsonArray param;
+    for(size_t index = 1;index < cmd.size();++index)
+        param.append(QString::fromUtf8(cmd[index]));
+    return QJsonDocument(QJsonObject{
+        {"request","CMD"},
+        {"window","tracking"+QString::number(
+                      reinterpret_cast<quintptr>(window),16)},
+        {"command",QJsonObject{{"cmd",QString::fromUtf8(cmd[0])},
+                               {"param",param}}}}).
+        toJson(QJsonDocument::Compact).toStdString();
 }
 std::string command_history::file_stem(bool extended) const
 {
@@ -260,7 +277,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-    QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle),work_path(tipl::qt::to_qstring(new_handle->fib_file_name.parent_path()))
+    QMainWindow(parent),ui(new Ui::tracking_window),history(this),scene(*this),handle(new_handle),work_path(tipl::qt::to_qstring(new_handle->fib_file_name.parent_path()))
 {
 
     setAcceptDrops(true);
