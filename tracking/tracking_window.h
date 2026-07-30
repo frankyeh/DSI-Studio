@@ -41,8 +41,9 @@ public:
     QWidget* window;
     command_source source = command_source::User;
     int current_recording_instance = 0;
-    bool has_other_thread = false,running_commands = false;
-    std::string default_parent_path,default_stem,default_stem2,current_cmd;
+    bool has_other_thread = false,running_commands = false,replacing = false;
+    std::string default_parent_path,default_stem,default_stem2,current_cmd,
+                pending_command,pending_report;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd,char type);
 public:
@@ -113,14 +114,13 @@ public:
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
             std::string output(tipl::merge(cmd,','));
-            if(!output.empty())
-                tipl::out() << command_record(
-                    owner.window,"tracking",cmd,source);
             if(!error_msg.empty())
             {
                 tipl::error() << error_msg;
                 return;
             }
+            if(!output.empty())
+                owner.report(cmd,source);
             if(owner.current_recording_instance || output.empty() || owner.running_commands)
                 return;
             owner.add_record(output);
@@ -129,11 +129,13 @@ public:
     std::shared_ptr<surrogate> record(std::string& error_msg_,
                                       std::vector<std::string>& cmd);
     void add_record(const std::string& output);
+    void report(const std::vector<std::string>&,command_source);
     std::string file_stem(bool extended = true) const;
     bool get_directory(QWidget* parent,std::string& cmd);
     bool get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix = "");
     void overwrite(const std::string& cmd)
     {
+        replacing = true;
         if(commands.empty())
             return;
         if(tipl::begins_with(commands.back(),cmd))

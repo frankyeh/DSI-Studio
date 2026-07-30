@@ -85,6 +85,25 @@ void command_history::add_record(const std::string& output)
             default_stem = default_stem2;
     }
 }
+void command_history::report(
+    const std::vector<std::string>& cmd,command_source source)
+{
+    auto report = command_record(window,"tracking",cmd,source);
+    if(source != command_source::User || !replacing)
+    {
+        if(!pending_report.empty())
+            tipl::out() << pending_report;
+        pending_command.clear(); pending_report.clear();
+        tipl::out() << report;
+    }
+    else
+    {
+        if(!pending_report.empty() && pending_command != cmd[0])
+            tipl::out() << pending_report;
+        pending_command = cmd[0]; pending_report = std::move(report);
+    }
+    replacing = false;
+}
 std::string command_record(QWidget* window,const char* type,
                            const std::vector<std::string>& cmd,
                            command_source source)
