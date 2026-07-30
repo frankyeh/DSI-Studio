@@ -27,39 +27,28 @@ int exp(tipl::program_option<tipl::out>& po)
     }
     if(tipl::ends_with(file_name,{".fib.gz",".fz"}))
     {
-        std::shared_ptr<fib_data> handle;
-        handle = cmd_load_fib(po);
-        if(!handle.get())
+        auto handle = cmd_load_fib(po);
+        if(!handle)
             return 1;
         if(po.has("match"))
         {
             if(!handle->db.has_db())
-            {
-                tipl::error() << "the FIB file is not a connectometry database" << std::endl;
-                return 1;
-            }
+                return tipl::error()
+                       << "the FIB file is not a connectometry database",1;
             if(handle->db.demo.empty())
-            {
-                tipl::error() << "the connectometry database does not include demographics for matching." << std::endl;
-                return 1;
-            }
+                return tipl::error()
+                       << "the connectometry database does not include "
+                          "demographics for matching.",1;
             if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
-            {
-                tipl::error() << handle->error_msg << std::endl;
-                return 1;
-            }
+                return tipl::error() << handle->error_msg,1;
             return 0;
         }
 
         for(const auto& each : tipl::split(po.get("export"),','))
             if(!handle->save_slice(each,file_name + "." + each + ".nii.gz",po.has("export_to_mni")))
-            {
-                tipl::error() << handle->error_msg;
-                return 1;
-            }
+                return tipl::error() << handle->error_msg,1;
         return 0;
     }
 
-    tipl::error() << "unsupported file format" << std::endl;
-    return 1;
+    return tipl::error() << "unsupported file format",1;
 }
