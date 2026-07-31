@@ -1177,11 +1177,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
     process->setObjectName(session);
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
     auto env = QProcessEnvironment::systemEnvironment();
-    env.insert("DSI_STUDIO_AGENT",
-               provider == ai_provider::Codex ? "Codex" : "Claude");
-    if(provider == ai_provider::Claude)
-        env.insert("CODEX_THREAD_ID",session);
-
 #ifdef Q_OS_WIN
     // locate bash for windows
     for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
