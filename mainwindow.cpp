@@ -670,7 +670,7 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     try
     {
-        tipl::progress prog("[Step T2][Reconstruction]");
+        tipl::progress prog("SRC reconstruction");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
@@ -692,7 +692,7 @@ void MainWindow::open_DWI(QStringList filenames)
 {
     if(filenames.isEmpty() || filenames[0].isEmpty())
         return;
-    tipl::progress prog("[Step T1][Open Source Images]");
+    tipl::progress prog("Open DWI");
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
