@@ -181,7 +181,6 @@ public:
     auto dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
     // max b=4000 -> param=1.25,  optimal param = 1.25*sqrt(4000)/sqrt(max_b)
     float get_optimal_L(void) const {return 80.0f/std::sqrt(tipl::max_value(src_bvalues));}
-    void set_recon_default(void);
 public:
     void draw_mask(tipl::color_image& buffer,int position);
     void update_dwi_sum(void);
