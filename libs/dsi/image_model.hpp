@@ -1,6 +1,5 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-#include <map>
 #include "basic_voxel.hpp"
 struct distortion_map{
     const float pi_2 = 3.14159265358979323846f/2.0f;
@@ -256,8 +255,7 @@ private:
     bool load_topup_eddy_result(void);
 public:
     bool command(std::vector<std::string> cmd);
-    bool run_steps(const std::string& reg_file_name,const std::string& steps,
-                   const std::map<std::string,std::string>& legacy_cmd = {});
+    bool run_steps(const std::string& reg_file_name,const std::string& steps);
 public:
     bool load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable);
     bool load_from_file(const std::vector<std::filesystem::path>& nii_names,bool need_bval_bvec);
