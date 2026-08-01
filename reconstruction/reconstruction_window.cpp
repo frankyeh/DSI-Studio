@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <map>
 #include <QSplitter>
 #include <QThread>
 #include <QImage>
@@ -19,7 +18,7 @@
 void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
-const std::map<std::string,std::string> legacy_cmd{
+const std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2a][Open]","src_mask_open"},
     {"[Step T2a][Erosion]","src_mask_erosion"},
     {"[Step T2a][Dilation]","src_mask_dilation"},
@@ -403,8 +402,12 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     command_report report(this,"recon",cmds,source);
     cmds.resize(2);
     std::string cmd = cmds[0],param = cmds[1];
-    if(auto legacy = legacy_cmd.find(cmd);legacy != legacy_cmd.end())
-        cmd = legacy->second;
+    for(const auto& [old_cmd,new_cmd] : legacy_cmd)
+        if(cmd == old_cmd)
+        {
+            cmd = new_cmd;
+            break;
+        }
 
     error_msg.clear();
     auto fail = [&](const std::string& msg = std::string())
