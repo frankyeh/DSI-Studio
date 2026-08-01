@@ -429,7 +429,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         handle->voxel.template_id = param.empty() ?
             (source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id) :
             std::stoi(param);
-    if(cmd == "src_resample" || cmd == "src_align_acpc")
+    if((cmd == "src_resample" || cmd == "src_align_acpc") && param.empty())
     {
         bool ok;
         float nv = float(QInputDialog::getDouble(this,
@@ -438,8 +438,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = std::to_string(nv);
     }
-    if(cmd == "src_save_nifti" || cmd == "src_save_b0" ||
-       cmd == "src_save_dwi_sum")
+    if((cmd == "src_save_nifti" || cmd == "src_save_b0" ||
+        cmd == "src_save_dwi_sum") && param.empty())
     {
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -447,7 +447,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if(cmd == "src_probabilistic_masking" || cmd == "src_correct_by_t2w")
+    if((cmd == "src_probabilistic_masking" || cmd == "src_correct_by_t2w") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -455,7 +455,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if(cmd == "src_save_src")
+    if(cmd == "src_save_src" && param.empty())
     {
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
