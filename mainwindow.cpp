@@ -672,6 +672,7 @@ void MainWindow::loadSrc(QStringList filenames)
     {
         tipl::progress prog("SRC reconstruction");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
+        report_window_created(new_mdi,"recon");
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
         if(filenames.size() == 1)
