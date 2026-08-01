@@ -331,6 +331,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         std::string ref_file_name = handle->file_name.u8string();
         std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         std::shared_ptr<src_data> ref_handle = handle;
+        std::string ref_existing_steps = existing_steps;
         std::vector<std::filesystem::path> output_files;
         bool ok = true;
         auto report_file_error = [&](int index,const std::string& msg)
@@ -417,6 +418,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             output_files.push_back(handle->output_file_name);
         }
         handle = ref_handle;
+        existing_steps = ref_existing_steps;
         update_dimension();
         load_b_table();
         on_SlicePos_valueChanged(ui->SlicePos->value());
