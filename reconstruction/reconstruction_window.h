@@ -53,54 +53,7 @@ private slots:
     void on_DTI_toggled(bool checked);
     void on_save_mask_clicked();
     void on_doDTI_clicked();
-
-    void on_actionSave_SRC_file_as_triggered()  {command("src_save_src");}
-    void on_actionSave_4D_nifti_triggered()     {command("src_save_nifti");}
-    void on_actionSave_b0_triggered()     {command("src_save_b0");}
-    void on_actionSave_DWI_sum_triggered()     {command("src_save_dwi_sum");}
-
-    void on_smoothing_clicked(){command("src_mask_smoothing");}
-
-    void on_fit_clicked(){command("src_mask_fit");}
-    void on_defragment_clicked(){command("src_mask_defragment");}
-    void on_slice_defragment_clicked(){command("src_mask_slice_defragment");}
-    void on_dilation_clicked(){command("src_mask_dilation");}
-    void on_erosion_clicked(){command("src_mask_erosion");}
-    void on_negate_clicked(){command("src_mask_negate");}
     void on_from_template_clicked();
-    void on_actionErase_Background_Signals_triggered(){command("src_mask_remove_background");}
-    void on_thresholding_clicked(){command("src_mask_threshold");}
-
-    void on_load_mask_clicked() {command("src_mask_open");}
-    void on_actionSmooth_Signals_triggered(){command("src_smooth_signals");}
-    void on_actionFlip_x_triggered(){command("src_flip_x");}
-    void on_actionFlip_y_triggered(){command("src_flip_y");}
-    void on_actionFlip_z_triggered(){command("src_flip_z");}
-    void on_actionFlip_xy_triggered(){command("src_swap_xy");}
-    void on_actionFlip_yz_triggered(){command("src_swap_yz");}
-    void on_actionFlip_xz_triggered(){command("src_swap_xz");}
-    void on_actionResample_triggered(){command("src_resample");}
-    void on_actionAlign_ACPC_triggered(){command("src_align_acpc");}
-    void on_actionTrim_image_triggered(){command("src_crop_background","5");}
-    void on_actionProbablistic_Masking_triggered(){command("src_probabilistic_masking");}
-
-
-    void on_actionCheck_b_table_triggered() {command("src_check_btable");}
-    void on_actionCheck_b_table2_triggered() {command("src_check_btable2");}
-    void on_actionFlip_bx_triggered()       {command("src_flip_bx");}
-    void on_actionFlip_by_triggered()       {command("src_flip_by");}
-    void on_actionFlip_bz_triggered()       {command("src_flip_bz");}
-    void on_actionswap_bxby_triggered()     {command("src_swap_bxby");}
-    void on_actionswap_bybz_triggered()     {command("src_swap_bybz");}
-    void on_actionswap_bxbz_triggered()     {command("src_swap_bxbz");}
-
-    void on_actionRun_FSL_Topup_triggered()         {command("src_topup_eddy");}
-    void on_actionTOPUP_only_triggered()            {command("src_topup");}
-    void on_actionEDDY_triggered()                  {command("src_eddy");}
-    void on_actionCorrect_Distortion_by_T2w_triggered()                  {command("src_correct_by_t2w");}
-    void on_actionCorrect_Bias_Field_triggered()                  {command("src_bias_field_correction");}
-    void on_actionEddy_Motion_Correction_triggered(){command("src_motion_correction");}
-    void on_actionVolume_Orientation_Correction_triggered(){command("src_orientation_correction");}
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();

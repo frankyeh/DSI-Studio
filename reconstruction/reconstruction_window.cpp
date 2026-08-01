@@ -160,6 +160,25 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->mask_edit->setVisible(false);
 
+    {
+        auto run_tip = [this](const std::string& tip)
+        {
+            std::string cmd = tip.substr(4),param;
+            size_t pos = cmd.find('=');
+            if(pos != std::string::npos)
+            {
+                param = cmd.substr(pos+1);
+                cmd.resize(pos);
+            }
+            command(cmd,param);
+        };
+        foreach (QAction* action, findChildren<QAction*>())
+            if(action->toolTip().startsWith("run "))
+                connect(action,&QAction::triggered,this,[run_tip,action](){run_tip(action->toolTip().toStdString());});
+        foreach (QPushButton* pb, findChildren<QPushButton*>())
+            if(pb->toolTip().startsWith("run "))
+                connect(pb,&QPushButton::clicked,this,[run_tip,pb](){run_tip(pb->toolTip().toStdString());});
+    }
 }
 void reconstruction_window::update_dimension(void)
 {

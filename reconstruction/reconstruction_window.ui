@@ -446,6 +446,9 @@
                   </property>
                   <item>
                    <widget class="QPushButton" name="load_mask">
+                    <property name="toolTip">
+                     <string>run src_mask_open</string>
+                    </property>
                     <property name="text">
                      <string>Open...</string>
                     </property>
@@ -468,6 +471,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="thresholding">
+                    <property name="toolTip">
+                     <string>run src_mask_threshold</string>
+                    </property>
                     <property name="text">
                      <string>Thresholding</string>
                     </property>
@@ -475,6 +481,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="dilation">
+                    <property name="toolTip">
+                     <string>run src_mask_dilation</string>
+                    </property>
                     <property name="text">
                      <string>Dilation</string>
                     </property>
@@ -482,6 +491,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="erosion">
+                    <property name="toolTip">
+                     <string>run src_mask_erosion</string>
+                    </property>
                     <property name="text">
                      <string>Erosion</string>
                     </property>
@@ -489,6 +501,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="smoothing">
+                    <property name="toolTip">
+                     <string>run src_mask_smoothing</string>
+                    </property>
                     <property name="text">
                      <string>Smoothing</string>
                     </property>
@@ -496,6 +511,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="fit">
+                    <property name="toolTip">
+                     <string>run src_mask_fit</string>
+                    </property>
                     <property name="text">
                      <string>Fit</string>
                     </property>
@@ -503,6 +521,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="defragment">
+                    <property name="toolTip">
+                     <string>run src_mask_defragment</string>
+                    </property>
                     <property name="text">
                      <string>Defragment</string>
                     </property>
@@ -510,6 +531,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="slice_defragment">
+                    <property name="toolTip">
+                     <string>run src_mask_slice_defragment</string>
+                    </property>
                     <property name="text">
                      <string>Slice Defrag</string>
                     </property>
@@ -517,6 +541,9 @@
                   </item>
                   <item>
                    <widget class="QPushButton" name="negate">
+                    <property name="toolTip">
+                     <string>run src_mask_negate</string>
+                    </property>
                     <property name="text">
                      <string>Negate</string>
                     </property>
@@ -1422,6 +1449,9 @@ Reconstruction</string>
    <property name="text">
     <string>Save 4D NIFTI...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_save_nifti</string>
+   </property>
   </action>
   <action name="actionSave_b_table">
    <property name="icon">
@@ -1454,30 +1484,48 @@ Reconstruction</string>
    <property name="text">
     <string>Image Flip X</string>
    </property>
+   <property name="toolTip">
+    <string>run src_flip_x</string>
+   </property>
   </action>
   <action name="actionFlip_y">
    <property name="text">
     <string>Image Flip Y</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_flip_y</string>
    </property>
   </action>
   <action name="actionFlip_z">
    <property name="text">
     <string>Image Flip Z</string>
    </property>
+   <property name="toolTip">
+    <string>run src_flip_z</string>
+   </property>
   </action>
   <action name="actionFlip_xy">
    <property name="text">
     <string>Image Swap XY</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_swap_xy</string>
    </property>
   </action>
   <action name="actionFlip_xz">
    <property name="text">
     <string>Image Swap XZ</string>
    </property>
+   <property name="toolTip">
+    <string>run src_swap_xz</string>
+   </property>
   </action>
   <action name="actionFlip_yz">
    <property name="text">
     <string>Image Swap YZ</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_swap_yz</string>
    </property>
   </action>
   <action name="actionRotate">
@@ -1488,6 +1536,9 @@ Reconstruction</string>
   <action name="actionTrim_image">
    <property name="text">
     <string>Crop Background Volume</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_crop_background=5</string>
    </property>
   </action>
   <action name="actionManual_Rotation">
@@ -1513,6 +1564,9 @@ Reconstruction</string>
    <property name="text">
     <string>Save B0...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_save_b0</string>
+   </property>
   </action>
   <action name="actionEnable_TEST_features">
    <property name="text">
@@ -1528,25 +1582,40 @@ Reconstruction</string>
    <property name="text">
     <string>Align AC-PC...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_align_acpc</string>
+   </property>
   </action>
   <action name="actionFlip_bx">
    <property name="text">
     <string>Flip Bx</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_flip_bx</string>
    </property>
   </action>
   <action name="actionFlip_by">
    <property name="text">
     <string>Flip By</string>
    </property>
+   <property name="toolTip">
+    <string>run src_flip_by</string>
+   </property>
   </action>
   <action name="actionFlip_bz">
    <property name="text">
     <string>Flip Bz</string>
    </property>
+   <property name="toolTip">
+    <string>run src_flip_bz</string>
+   </property>
   </action>
   <action name="actionResample">
    <property name="text">
     <string>Resample to Isotropic</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_resample</string>
    </property>
   </action>
   <action name="actionSave_SRC_file_as">
@@ -1557,15 +1626,24 @@ Reconstruction</string>
    <property name="text">
     <string>Save SRC File as...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_save_src</string>
+   </property>
   </action>
   <action name="actionErase_Background_Signals">
    <property name="text">
     <string>Erase Background Signals</string>
    </property>
+   <property name="toolTip">
+    <string>run src_mask_remove_background</string>
+   </property>
   </action>
   <action name="actionEddy_Motion_Correction">
    <property name="text">
     <string>Motion Correction...</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_motion_correction</string>
    </property>
   </action>
   <action name="actionSave_DWI_sum">
@@ -1575,6 +1653,9 @@ Reconstruction</string>
    </property>
    <property name="text">
     <string>Save DWI Sum...</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_save_dwi_sum</string>
    </property>
   </action>
   <action name="actionOverwrite_Voxel_Size">
@@ -1586,40 +1667,64 @@ Reconstruction</string>
    <property name="text">
     <string>TOPUP/EDDY...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_topup_eddy</string>
+   </property>
   </action>
   <action name="actionEDDY">
    <property name="text">
     <string>EDDY...</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_eddy</string>
    </property>
   </action>
   <action name="actionSmooth_Signals">
    <property name="text">
     <string>Smooth Signals</string>
    </property>
+   <property name="toolTip">
+    <string>run src_smooth_signals</string>
+   </property>
   </action>
   <action name="actionswap_bxby">
    <property name="text">
     <string>Swap BxBy</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_swap_bxby</string>
    </property>
   </action>
   <action name="actionswap_bybz">
    <property name="text">
     <string>Swap ByBz</string>
    </property>
+   <property name="toolTip">
+    <string>run src_swap_bybz</string>
+   </property>
   </action>
   <action name="actionswap_bxbz">
    <property name="text">
     <string>Swap BxBz</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_swap_bxbz</string>
    </property>
   </action>
   <action name="actionTOPUP_only">
    <property name="text">
     <string>TOPUP...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_topup</string>
+   </property>
   </action>
   <action name="actionCheck_b_table">
    <property name="text">
     <string>Check B-table (Template-Based)...</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_check_btable</string>
    </property>
   </action>
   <action name="actionManual_Align">
@@ -1646,25 +1751,40 @@ Reconstruction</string>
    <property name="text">
     <string>Check B-table...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_check_btable2</string>
+   </property>
   </action>
   <action name="actionVolume_Orientation_Correction">
    <property name="text">
     <string>Volume Orientation Correction...</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_orientation_correction</string>
    </property>
   </action>
   <action name="actionProbablistic_Masking">
    <property name="text">
     <string>Probablistic Masking...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_probabilistic_masking</string>
+   </property>
   </action>
   <action name="actionCorrect_Distortion_by_T2w">
    <property name="text">
     <string>T2w Distortion Correction...</string>
    </property>
+   <property name="toolTip">
+    <string>run src_correct_by_t2w</string>
+   </property>
   </action>
   <action name="actionCorrect_Bias_Field">
    <property name="text">
     <string>Bias Field Correction......</string>
+   </property>
+   <property name="toolTip">
+    <string>run src_bias_field_correction</string>
    </property>
   </action>
  </widget>
