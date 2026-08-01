@@ -18,52 +18,7 @@
 void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
-const std::vector<std::pair<std::string,std::string> > legacy_cmd{
-    {"[Step T2a][Open]","src_mask_open"},
-    {"[Step T2a][Erosion]","src_mask_erosion"},
-    {"[Step T2a][Dilation]","src_mask_dilation"},
-    {"[Step T2a][Unet]","src_mask_unet"},
-    {"[Step T2a][Defragment]","src_mask_defragment"},
-    {"[Step T2a][Slice Defragment]","src_mask_slice_defragment"},
-    {"[Step T2a][Smoothing]","src_mask_smoothing"},
-    {"[Step T2a][Fit]","src_mask_fit"},
-    {"[Step T2a][Negate]","src_mask_negate"},
-    {"[Step T2a][Template]","src_mask_from_template"},
-    {"[Step T2a][Threshold]","src_mask_threshold"},
-    {"[Step T2a][Remove Background]","src_mask_remove_background"},
-    {"[Step T2][File][Save Src File]","src_save_src"},
-    {"[Step T2][File][Save 4D NIFTI]","src_save_nifti"},
-    {"[Step T2][File][Save B0]","src_save_b0"},
-    {"[Step T2][File][Save DWI Sum]","src_save_dwi_sum"},
-    {"[Step T2][Edit][Image swap xy]","src_swap_xy"},
-    {"[Step T2][Edit][Image swap yz]","src_swap_yz"},
-    {"[Step T2][Edit][Image swap xz]","src_swap_xz"},
-    {"[Step T2][Edit][Image flip x]","src_flip_x"},
-    {"[Step T2][Edit][Image flip y]","src_flip_y"},
-    {"[Step T2][Edit][Image flip z]","src_flip_z"},
-    {"[Step T2][Edit][Resample]","src_resample"},
-    {"[Step T2][Edit][Align ACPC]","src_align_acpc"},
-    {"[Step T2][Edit][Crop Background]","src_crop_background"},
-    {"[Step T2][Edit][Probablistic Masking]","src_probabilistic_masking"},
-    {"[Step T2][Edit][Overwrite Voxel Size]","src_set_voxel_size"},
-    {"[Step T2][Edit][Smooth Signals]","src_smooth_signals"},
-    {"[Step T2][B-table][Check B-table]","src_check_btable"},
-    {"[Step T2][B-table][Check B-table2]","src_check_btable2"},
-    {"[Step T2][B-table][flip bx]","src_flip_bx"},
-    {"[Step T2][B-table][flip by]","src_flip_by"},
-    {"[Step T2][B-table][flip bz]","src_flip_bz"},
-    {"[Step T2][B-table][swap bxby]","src_swap_bxby"},
-    {"[Step T2][B-table][swap bybz]","src_swap_bybz"},
-    {"[Step T2][B-table][swap bxbz]","src_swap_bxbz"},
-    {"[Step T2][Corrections][TOPUP]","src_topup"},
-    {"[Step T2][Corrections][TOPUP EDDY]","src_topup_eddy"},
-    {"[Step T2][Corrections][EDDY]","src_eddy"},
-    {"[Step T2][Corrections][Motion Correction]","src_motion_correction"},
-    {"[Step T2][Corrections][Bias Field]","src_bias_field_correction"},
-    {"[Step T2][Corrections][By T2w]","src_correct_by_t2w"},
-    {"[Step T2][Corrections][Volume Orientation Correction]","src_orientation_correction"},
-    {"[Step T2][Reconstruction]","src_reconstruction"},
-    {"[Step T2b(2)][Partial FOV]","src_partial_fov"}};
+extern const std::vector<std::pair<std::string,std::string> > legacy_cmd;
 
 bool reconstruction_window::load_src(int index)
 {
