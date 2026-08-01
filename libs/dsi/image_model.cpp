@@ -729,7 +729,7 @@ void src_data::correction_axis(void)
     if(op_count & 1)
         command({"src_flip_x"});
 }
-const std::vector<std::pair<std::string,std::string> > legacy_cmd{
+std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2a][Open]","src_mask_open"},
     {"[Step T2a][Erosion]","src_mask_erosion"},
     {"[Step T2a][Dilation]","src_mask_dilation"},

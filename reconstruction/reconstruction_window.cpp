@@ -18,7 +18,7 @@
 void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
-extern const std::vector<std::pair<std::string,std::string> > legacy_cmd;
+extern std::vector<std::pair<std::string,std::string> > legacy_cmd;
 
 bool reconstruction_window::load_src(int index)
 {
