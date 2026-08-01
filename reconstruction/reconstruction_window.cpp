@@ -320,6 +320,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         if(!param.empty())
         {
             method_id = uint8_t(std::stoi(param));
+            handle->voxel.method_id = method_id;
             handle->output_file_name = handle->file_name;
             handle->check_output_file_name();
         }
