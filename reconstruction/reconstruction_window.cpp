@@ -318,12 +318,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         unsigned char method_id = source == command_source::User ?
             (ui->DTI->isChecked() ? 1 : ui->QSDR->isChecked() ? 7 : 4) : handle->voxel.method_id;
         if(!param.empty())
-        {
-            int v = std::stoi(param);
-            if(v != 1 && v != 4 && v != 6 && v != 7)
-                return fail("method must be 1 (DTI), 4 (GQI), 6 (HARDI), or 7 (QSDR)");
-            method_id = uint8_t(v);
-        }
+            method_id = uint8_t(std::stoi(param));
         if(method_id != handle->voxel.method_id)
         {
             handle->voxel.method_id = method_id;
