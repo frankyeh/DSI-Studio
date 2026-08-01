@@ -319,7 +319,10 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             (ui->DTI->isChecked() ? 1 : ui->QSDR->isChecked() ? 7 : 4) : handle->voxel.method_id;
         if(!param.empty())
         {
-            method_id = uint8_t(std::stoi(param));
+            int v = std::stoi(param);
+            if(v != 1 && v != 4 && v != 6 && v != 7)
+                return fail("method must be 1 (DTI), 4 (GQI), 6 (HARDI), or 7 (QSDR)");
+            method_id = uint8_t(v);
             handle->voxel.method_id = method_id;
             handle->output_file_name = handle->file_name;
             handle->check_output_file_name();
@@ -440,9 +443,17 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         return true;
     }
     if(cmd == "mask_from_template")
-        handle->voxel.template_id = param.empty() ?
-            (source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id) :
-            std::stoi(param);
+    {
+        if(param.empty())
+            handle->voxel.template_id = source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id;
+        else
+        {
+            size_t v = size_t(std::stoll(param));
+            if(v >= qa_template_list.size() || v >= iso_template_list.size())
+                return fail("invalid template index");
+            handle->voxel.template_id = v;
+        }
+    }
     if((cmd == "resample" || cmd == "align_acpc") && param.empty())
     {
         bool ok;
