@@ -684,13 +684,13 @@ void src_data::correction_axis(void)
     size_t op_count = 0;
     if(long_axis_dir == 0)
     {
-        command({"src_swap_xy"});
+        command({"swap_xy"});
         ++op_count;
     }
     else
         if(long_axis_dir == 2)
         {
-            command({"src_swap_yz"});
+            command({"swap_yz"});
             ++op_count;
         }
 
@@ -698,13 +698,13 @@ void src_data::correction_axis(void)
     tipl::out() << "symmetric axis direction: " << int(sym_axis_dir);
     if(sym_axis_dir == 1)
     {
-        command({"src_swap_xy"});
+        command({"swap_xy"});
         ++op_count;
     }
     else
         if(sym_axis_dir == 2)
         {
-            command({"src_swap_xz"});
+            command({"swap_xz"});
             ++op_count;
         }
 
@@ -715,66 +715,66 @@ void src_data::correction_axis(void)
     tipl::out() << "bottom and top slices difference: " << bottom_top_dif;
     if(bottom_top_dif < 0)
     {
-        command({"src_flip_z"});
+        command({"flip_z"});
         ++op_count;
     }
     int64_t anterior_posterior_dif = anterior_posterior_difference();
     tipl::out() << "anterior and posterior mask difference: " << anterior_posterior_dif;
     if(anterior_posterior_dif < 0)
     {
-        command({"src_flip_y"});
+        command({"flip_y"});
         ++op_count;
     }
 
     if(op_count & 1)
-        command({"src_flip_x"});
+        command({"flip_x"});
 }
 std::vector<std::pair<std::string,std::string> > legacy_cmd{
-    {"[Step T2a][Open]","src_mask_open"},
-    {"[Step T2a][Erosion]","src_mask_erosion"},
-    {"[Step T2a][Dilation]","src_mask_dilation"},
-    {"[Step T2a][Unet]","src_mask_unet"},
-    {"[Step T2a][Defragment]","src_mask_defragment"},
-    {"[Step T2a][Slice Defragment]","src_mask_slice_defragment"},
-    {"[Step T2a][Smoothing]","src_mask_smoothing"},
-    {"[Step T2a][Fit]","src_mask_fit"},
-    {"[Step T2a][Negate]","src_mask_negate"},
-    {"[Step T2a][Template]","src_mask_from_template"},
-    {"[Step T2a][Threshold]","src_mask_threshold"},
-    {"[Step T2a][Remove Background]","src_mask_remove_background"},
-    {"[Step T2][File][Save Src File]","src_save_src"},
-    {"[Step T2][File][Save 4D NIFTI]","src_save_nifti"},
-    {"[Step T2][File][Save B0]","src_save_b0"},
-    {"[Step T2][File][Save DWI Sum]","src_save_dwi_sum"},
-    {"[Step T2][Edit][Image swap xy]","src_swap_xy"},
-    {"[Step T2][Edit][Image swap yz]","src_swap_yz"},
-    {"[Step T2][Edit][Image swap xz]","src_swap_xz"},
-    {"[Step T2][Edit][Image flip x]","src_flip_x"},
-    {"[Step T2][Edit][Image flip y]","src_flip_y"},
-    {"[Step T2][Edit][Image flip z]","src_flip_z"},
-    {"[Step T2][Edit][Resample]","src_resample"},
-    {"[Step T2][Edit][Align ACPC]","src_align_acpc"},
-    {"[Step T2][Edit][Crop Background]","src_crop_background"},
-    {"[Step T2][Edit][Probablistic Masking]","src_probabilistic_masking"},
-    {"[Step T2][Edit][Overwrite Voxel Size]","src_set_voxel_size"},
-    {"[Step T2][Edit][Smooth Signals]","src_smooth_signals"},
-    {"[Step T2][B-table][Check B-table]","src_check_btable"},
-    {"[Step T2][B-table][Check B-table2]","src_check_btable2"},
-    {"[Step T2][B-table][flip bx]","src_flip_bx"},
-    {"[Step T2][B-table][flip by]","src_flip_by"},
-    {"[Step T2][B-table][flip bz]","src_flip_bz"},
-    {"[Step T2][B-table][swap bxby]","src_swap_bxby"},
-    {"[Step T2][B-table][swap bybz]","src_swap_bybz"},
-    {"[Step T2][B-table][swap bxbz]","src_swap_bxbz"},
-    {"[Step T2][Corrections][TOPUP]","src_topup"},
-    {"[Step T2][Corrections][TOPUP EDDY]","src_topup_eddy"},
-    {"[Step T2][Corrections][EDDY]","src_eddy"},
-    {"[Step T2][Corrections][Motion Correction]","src_motion_correction"},
-    {"[Step T2][Corrections][Bias Field]","src_bias_field_correction"},
-    {"[Step T2][Corrections][By T2w]","src_correct_by_t2w"},
-    {"[Step T2][Corrections][Volume Orientation Correction]","src_orientation_correction"},
-    {"[Step T2][Reconstruction]","src_reconstruction"},
-    {"[Step T2b(2)][Partial FOV]","src_partial_fov"}};
+    {"[Step T2a][Open]","mask_open"},
+    {"[Step T2a][Erosion]","mask_erosion"},
+    {"[Step T2a][Dilation]","mask_dilation"},
+    {"[Step T2a][Unet]","mask_unet"},
+    {"[Step T2a][Defragment]","mask_defragment"},
+    {"[Step T2a][Slice Defragment]","mask_slice_defragment"},
+    {"[Step T2a][Smoothing]","mask_smoothing"},
+    {"[Step T2a][Fit]","mask_fit"},
+    {"[Step T2a][Negate]","mask_negate"},
+    {"[Step T2a][Template]","mask_from_template"},
+    {"[Step T2a][Threshold]","mask_threshold"},
+    {"[Step T2a][Remove Background]","mask_remove_background"},
+    {"[Step T2][File][Save Src File]","save_src"},
+    {"[Step T2][File][Save 4D NIFTI]","save_nifti"},
+    {"[Step T2][File][Save B0]","save_b0"},
+    {"[Step T2][File][Save DWI Sum]","save_dwi_sum"},
+    {"[Step T2][Edit][Image swap xy]","swap_xy"},
+    {"[Step T2][Edit][Image swap yz]","swap_yz"},
+    {"[Step T2][Edit][Image swap xz]","swap_xz"},
+    {"[Step T2][Edit][Image flip x]","flip_x"},
+    {"[Step T2][Edit][Image flip y]","flip_y"},
+    {"[Step T2][Edit][Image flip z]","flip_z"},
+    {"[Step T2][Edit][Resample]","resample"},
+    {"[Step T2][Edit][Align ACPC]","align_acpc"},
+    {"[Step T2][Edit][Crop Background]","crop_background"},
+    {"[Step T2][Edit][Probablistic Masking]","probabilistic_masking"},
+    {"[Step T2][Edit][Overwrite Voxel Size]","set_voxel_size"},
+    {"[Step T2][Edit][Smooth Signals]","smooth_signals"},
+    {"[Step T2][B-table][Check B-table]","check_btable"},
+    {"[Step T2][B-table][Check B-table2]","check_btable2"},
+    {"[Step T2][B-table][flip bx]","flip_bx"},
+    {"[Step T2][B-table][flip by]","flip_by"},
+    {"[Step T2][B-table][flip bz]","flip_bz"},
+    {"[Step T2][B-table][swap bxby]","swap_bxby"},
+    {"[Step T2][B-table][swap bybz]","swap_bybz"},
+    {"[Step T2][B-table][swap bxbz]","swap_bxbz"},
+    {"[Step T2][Corrections][TOPUP]","topup"},
+    {"[Step T2][Corrections][TOPUP EDDY]","topup_eddy"},
+    {"[Step T2][Corrections][EDDY]","eddy"},
+    {"[Step T2][Corrections][Motion Correction]","motion_correction"},
+    {"[Step T2][Corrections][Bias Field]","bias_field_correction"},
+    {"[Step T2][Corrections][By T2w]","correct_by_t2w"},
+    {"[Step T2][Corrections][Volume Orientation Correction]","orientation_correction"},
+    {"[Step T2][Reconstruction]","reconstruction"},
+    {"[Step T2b(2)][Partial FOV]","partial_fov"}};
 bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
@@ -834,7 +834,7 @@ bool src_data::command(std::vector<std::string> cmds)
         return true;
     };
 
-    if(cmd == "src_set_param" || cmd == "src_set_params" || cmd == "src_list_param")
+    if(cmd == "set_param" || cmd == "set_params" || cmd == "list_param")
     {
         auto make_entry = [](const char* name,auto& field)
         {
@@ -878,7 +878,7 @@ bool src_data::command(std::vector<std::string> cmds)
             std::function<void(const std::string&)>([&](const std::string& v)
             {voxel.vs[0] = voxel.vs[1] = voxel.vs[2] = std::stof(v);})));
 
-        if(cmd == "src_list_param")
+        if(cmd == "list_param")
         {
             auto print = [&](const std::string& name,const std::string& value)
             {tipl::out() << name << "\t" << value;};
@@ -923,12 +923,12 @@ bool src_data::command(std::vector<std::string> cmds)
         return log_step();
     }
 
-    if(cmd == "src_reconstruction")
+    if(cmd == "reconstruction")
         return true;
     tipl::progress prog(cmd,true);
     if(!param.empty())
         tipl::out() << "param: " << param;
-    if(cmd == "src_save_src" || cmd == "src_save_nifti")
+    if(cmd == "save_src" || cmd == "save_nifti")
     {
         if(param.empty())
         {
@@ -937,7 +937,7 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         return save_to_file(param);
     }
-    if(cmd == "src_save_b0")
+    if(cmd == "save_b0")
     {
         if(param.empty())
         {
@@ -946,7 +946,7 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         return save_b0_to_nii(param);
     }
-    if(cmd == "src_save_dwi_sum")
+    if(cmd == "save_dwi_sum")
     {
         if(param.empty())
         {
@@ -956,7 +956,7 @@ bool src_data::command(std::vector<std::string> cmds)
         return save_dwi_sum_to_nii(param);
     }
 
-    if(cmd == "src_mask_open")
+    if(cmd == "mask_open")
     {
         if(!std::filesystem::exists(param))
         {
@@ -969,7 +969,7 @@ bool src_data::command(std::vector<std::string> cmds)
         region.to_mask(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_erosion")
+    if(cmd == "mask_erosion")
     {
         if(voxel.mask.depth() == 1)
         {
@@ -980,7 +980,7 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::erosion(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_dilation")
+    if(cmd == "mask_dilation")
     {
         if(voxel.mask.depth() == 1)
         {
@@ -991,13 +991,13 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::dilation(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_unet")
+    if(cmd == "mask_unet")
     {
         if(!mask_from_unet())
             return false;
         return log_step();
     }
-    if(cmd == "src_mask_defragment")
+    if(cmd == "mask_defragment")
     {
         if(voxel.mask.depth() == 1)
             tipl::morphology::defragment(voxel.mask.slice_at(0));
@@ -1005,12 +1005,12 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::defragment(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_slice_defragment")
+    if(cmd == "mask_slice_defragment")
     {
         tipl::morphology::fill_holes_by_slice(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_smoothing")
+    if(cmd == "mask_smoothing")
     {
         if(voxel.mask.depth() == 1)
             tipl::morphology::smoothing(voxel.mask.slice_at(0));
@@ -1018,23 +1018,23 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::smoothing(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_fit")
+    if(cmd == "mask_fit")
     {
         tipl::morphology::fit(voxel.mask,dwi);
         return log_step();
     }
-    if(cmd == "src_mask_negate")
+    if(cmd == "mask_negate")
     {
         tipl::morphology::negate(voxel.mask);
         return log_step();
     }
-    if(cmd == "src_mask_from_template")
+    if(cmd == "mask_from_template")
     {
         if(!mask_from_template())
             return false;
         return log_step();
     }
-    if(cmd == "src_mask_threshold")
+    if(cmd == "mask_threshold")
     {
         int threshold;
         if(param.empty())
@@ -1054,7 +1054,7 @@ bool src_data::command(std::vector<std::string> cmds)
         param = std::to_string(threshold);
         return log_step();
     }
-    if(cmd == "src_probabilistic_masking")
+    if(cmd == "probabilistic_masking")
     {
         if(param.empty())
         {
@@ -1080,7 +1080,7 @@ bool src_data::command(std::vector<std::string> cmds)
         update_dwi_sum();
         return log_step();
     }
-    if(cmd == "src_mask_remove_background")
+    if(cmd == "mask_remove_background")
     {
         for(size_t index = 0,sz = voxel.mask.size();index < sz;++index)
             if(voxel.mask[index] == 0)
@@ -1095,114 +1095,114 @@ bool src_data::command(std::vector<std::string> cmds)
         apply_mask = true;
         return log_step();
     }
-    if(cmd == "src_set_voxel_size")
+    if(cmd == "set_voxel_size")
     {
         std::istringstream in(param);
         in >> voxel.vs[0] >> voxel.vs[1] >> voxel.vs[2];
         voxel.report = get_report();
         return log_step();
     }
-    if(cmd == "src_smooth_signals")
+    if(cmd == "smooth_signals")
     {
         smoothing();
         return log_step();
     }
-    if(cmd == "src_crop_background")
+    if(cmd == "crop_background")
     {
         trim(param.empty() ? 0 : std::stoi(param));
         return log_step();
     }
-    if(cmd == "src_flip_x")
+    if(cmd == "flip_x")
     {
         flip_dwi(0);
         return log_step();
     }
-    if(cmd == "src_flip_y")
+    if(cmd == "flip_y")
     {
         flip_dwi(1);
         return log_step();
     }
-    if(cmd == "src_flip_z")
+    if(cmd == "flip_z")
     {
         flip_dwi(2);
         return log_step();
     }
-    if(cmd == "src_swap_xy")
+    if(cmd == "swap_xy")
     {
         flip_dwi(3);
         return log_step();
     }
-    if(cmd == "src_swap_yz")
+    if(cmd == "swap_yz")
     {
         flip_dwi(4);
         return log_step();
     }
-    if(cmd == "src_swap_xz")
+    if(cmd == "swap_xz")
     {
         flip_dwi(5);
         return log_step();
     }
-    if(cmd == "src_resample")
+    if(cmd == "resample")
     {
         resample(std::stof(param));
         return log_step();
     }
-    if(cmd == "src_align_acpc")
+    if(cmd == "align_acpc")
     {
         if(!align_acpc(param.empty() ? voxel.vs[0] : std::stof(param)))
             return false;
         return log_step();
     }
     // correct for b-table orientation
-    if(cmd == "src_check_btable")
+    if(cmd == "check_btable")
     {
         if(!check_b_table(true))
             return false;
         return log_step();
     }
-    if(cmd == "src_check_btable2")
+    if(cmd == "check_btable2")
     {
         if(!check_b_table(false))
             return false;
         return log_step();
     }
-    if(cmd == "src_flip_bx")
+    if(cmd == "flip_bx")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][0] = -src_bvectors[i][0];
         return log_step();
     }
-    if(cmd == "src_flip_by")
+    if(cmd == "flip_by")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][1] = -src_bvectors[i][1];
         return log_step();
     }
-    if(cmd == "src_flip_bz")
+    if(cmd == "flip_bz")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][2] = -src_bvectors[i][2];
         return log_step();
     }
-    if(cmd == "src_swap_bxby")
+    if(cmd == "swap_bxby")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][0],src_bvectors[i][1]);
         return log_step();
     }
-    if(cmd == "src_swap_bybz")
+    if(cmd == "swap_bybz")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][1],src_bvectors[i][2]);
         return log_step();
     }
-    if(cmd == "src_swap_bxbz")
+    if(cmd == "swap_bxbz")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][0],src_bvectors[i][2]);
         return log_step();
     }
-    if(cmd == "src_topup")
+    if(cmd == "topup")
     {
         if(!load_existing_corrections())
         {
@@ -1211,7 +1211,7 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         return log_step();
     }
-    if(cmd == "src_topup_eddy")
+    if(cmd == "topup_eddy")
     {
         if(!load_existing_corrections())
         {
@@ -1230,7 +1230,7 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         return log_step();
     }
-    if(cmd == "src_eddy")
+    if(cmd == "eddy")
     {
         if(!load_existing_corrections())
         {
@@ -1239,35 +1239,35 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         return log_step();
     }
-    if(cmd == "src_motion_correction")
+    if(cmd == "motion_correction")
     {
         if(!correct_motion())
             return false;
         return log_step();
     }
-    if(cmd == "src_bias_field_correction")
+    if(cmd == "bias_field_correction")
     {
         if(!correct_bias_field())
             return false;
         return log_step();
     }
 
-    if(cmd == "src_correct_by_t2w")
+    if(cmd == "correct_by_t2w")
     {
         if(!correct_distortion_by_t2w(param))
             return false;
         return log_step();
     }
-    if(cmd == "src_orientation_correction")
+    if(cmd == "orientation_correction")
     {
         correction_axis();
         return log_step();
     }
-    if(cmd == "src_partial_fov")
+    if(cmd == "partial_fov")
     {
         std::istringstream in(param);
         in >> voxel.partial_min >> voxel.partial_max;
-        return true;
+        return log_step();
     }
     error_msg = "unknown command: ";
     error_msg += cmd;
