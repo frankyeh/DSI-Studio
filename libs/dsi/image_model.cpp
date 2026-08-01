@@ -12,6 +12,7 @@
 #include "dwi_header.hpp"
 #include "tracking/region/Regions.h"
 #include <filesystem>
+#include <functional>
 
 bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,bool must_have_bval_bvec,std::string& error_msg);
@@ -728,7 +729,52 @@ void src_data::correction_axis(void)
     if(op_count & 1)
         command({"src_flip_x"});
 }
-extern const std::vector<std::pair<std::string,std::string> > legacy_cmd;
+const std::vector<std::pair<std::string,std::string> > legacy_cmd{
+    {"[Step T2a][Open]","src_mask_open"},
+    {"[Step T2a][Erosion]","src_mask_erosion"},
+    {"[Step T2a][Dilation]","src_mask_dilation"},
+    {"[Step T2a][Unet]","src_mask_unet"},
+    {"[Step T2a][Defragment]","src_mask_defragment"},
+    {"[Step T2a][Slice Defragment]","src_mask_slice_defragment"},
+    {"[Step T2a][Smoothing]","src_mask_smoothing"},
+    {"[Step T2a][Fit]","src_mask_fit"},
+    {"[Step T2a][Negate]","src_mask_negate"},
+    {"[Step T2a][Template]","src_mask_from_template"},
+    {"[Step T2a][Threshold]","src_mask_threshold"},
+    {"[Step T2a][Remove Background]","src_mask_remove_background"},
+    {"[Step T2][File][Save Src File]","src_save_src"},
+    {"[Step T2][File][Save 4D NIFTI]","src_save_nifti"},
+    {"[Step T2][File][Save B0]","src_save_b0"},
+    {"[Step T2][File][Save DWI Sum]","src_save_dwi_sum"},
+    {"[Step T2][Edit][Image swap xy]","src_swap_xy"},
+    {"[Step T2][Edit][Image swap yz]","src_swap_yz"},
+    {"[Step T2][Edit][Image swap xz]","src_swap_xz"},
+    {"[Step T2][Edit][Image flip x]","src_flip_x"},
+    {"[Step T2][Edit][Image flip y]","src_flip_y"},
+    {"[Step T2][Edit][Image flip z]","src_flip_z"},
+    {"[Step T2][Edit][Resample]","src_resample"},
+    {"[Step T2][Edit][Align ACPC]","src_align_acpc"},
+    {"[Step T2][Edit][Crop Background]","src_crop_background"},
+    {"[Step T2][Edit][Probablistic Masking]","src_probabilistic_masking"},
+    {"[Step T2][Edit][Overwrite Voxel Size]","src_set_voxel_size"},
+    {"[Step T2][Edit][Smooth Signals]","src_smooth_signals"},
+    {"[Step T2][B-table][Check B-table]","src_check_btable"},
+    {"[Step T2][B-table][Check B-table2]","src_check_btable2"},
+    {"[Step T2][B-table][flip bx]","src_flip_bx"},
+    {"[Step T2][B-table][flip by]","src_flip_by"},
+    {"[Step T2][B-table][flip bz]","src_flip_bz"},
+    {"[Step T2][B-table][swap bxby]","src_swap_bxby"},
+    {"[Step T2][B-table][swap bybz]","src_swap_bybz"},
+    {"[Step T2][B-table][swap bxbz]","src_swap_bxbz"},
+    {"[Step T2][Corrections][TOPUP]","src_topup"},
+    {"[Step T2][Corrections][TOPUP EDDY]","src_topup_eddy"},
+    {"[Step T2][Corrections][EDDY]","src_eddy"},
+    {"[Step T2][Corrections][Motion Correction]","src_motion_correction"},
+    {"[Step T2][Corrections][Bias Field]","src_bias_field_correction"},
+    {"[Step T2][Corrections][By T2w]","src_correct_by_t2w"},
+    {"[Step T2][Corrections][Volume Orientation Correction]","src_orientation_correction"},
+    {"[Step T2][Reconstruction]","src_reconstruction"},
+    {"[Step T2b(2)][Partial FOV]","src_partial_fov"}};
 bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
@@ -787,6 +833,95 @@ bool src_data::command(std::vector<std::string> cmds)
         voxel.steps += param.empty() ? (log_cmd+"\n") : (log_cmd+"="+param+"\n");
         return true;
     };
+
+    if(cmd == "src_set_param" || cmd == "src_set_params" || cmd == "src_list_param")
+    {
+        auto make_entry = [](const char* name,auto& field)
+        {
+            using T = std::decay_t<decltype(field)>;
+            return std::make_tuple(std::string(name),
+                std::function<std::string(void)>([&field]()
+                {
+                    if constexpr(std::is_same_v<T,std::string>)
+                        return field;
+                    else
+                        return std::to_string(field);
+                }),
+                std::function<void(const std::string&)>([&field](const std::string& v)
+                {
+                    if constexpr(std::is_same_v<T,std::string>)
+                        field = v;
+                    else if constexpr(std::is_floating_point_v<T>)
+                        field = T(std::stof(v));
+                    else
+                        field = T(std::stoll(v));
+                }));
+        };
+        std::vector<std::tuple<std::string,std::function<std::string(void)>,std::function<void(const std::string&)> > > params{
+            make_entry("method",voxel.method_id),
+            make_entry("thread_count",voxel.thread_count),
+            make_entry("other_output",voxel.other_output),
+            make_entry("dti_ignore_high_b",voxel.dti_ignore_high_b),
+            make_entry("odf_resolving",voxel.odf_resolving),
+            make_entry("r2_weighted",voxel.r2_weighted),
+            make_entry("param",voxel.param[0]),
+            make_entry("template",voxel.template_id),
+            make_entry("qsdr_reso",voxel.qsdr_reso),
+            make_entry("reg_resolution",voxel.reg_param.resolution),
+            make_entry("reg_speed",voxel.reg_param.speed),
+            make_entry("reg_smoothing",voxel.reg_param.smoothing),
+            make_entry("hist_downsampling",voxel.hist_downsampling),
+            make_entry("hist_raw_smoothing",voxel.hist_raw_smoothing),
+            make_entry("hist_tensor_smoothing",voxel.hist_tensor_smoothing)};
+        params.push_back(std::make_tuple(std::string("hist_resolution"),
+            std::function<std::string(void)>([&](){return std::to_string(voxel.vs[0]);}),
+            std::function<void(const std::string&)>([&](const std::string& v)
+            {voxel.vs[0] = voxel.vs[1] = voxel.vs[2] = std::stof(v);})));
+
+        if(cmd == "src_list_param")
+        {
+            auto print = [&](const std::string& name,const std::string& value)
+            {tipl::out() << name << "\t" << value;};
+            if(param.empty() || param == "all")
+            {
+                for(const auto& [name,get,set] : params)
+                    print(name,get());
+                return true;
+            }
+            for(const auto& [name,get,set] : params)
+                if(name == param)
+                {
+                    print(name,get());
+                    return true;
+                }
+            return error_msg = "invalid parameter: "+param,false;
+        }
+        // set_param and set_params both accept name=value[&name=value...]
+        if(param.empty())
+            return error_msg = "missing name=value assignment",false;
+        std::vector<std::pair<std::function<void(const std::string&)>,std::string> > assignments;
+        for(const auto& each : tipl::split(param,'&'))
+        {
+            auto pos = each.find('=');
+            if(pos == std::string::npos)
+                return error_msg = "invalid assignment: "+each,false;
+            auto name = each.substr(0,pos);
+            auto value = each.substr(pos+1);
+            bool found = false;
+            for(const auto& [pname,get,set] : params)
+                if(pname == name)
+                {
+                    assignments.push_back({set,value});
+                    found = true;
+                    break;
+                }
+            if(!found)
+                return error_msg = "invalid parameter: "+name,false;
+        }
+        for(const auto& [set,value] : assignments)
+            set(value);
+        return log_step();
+    }
 
     if(cmd == "src_reconstruction")
         return true;
