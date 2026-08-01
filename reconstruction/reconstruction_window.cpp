@@ -89,14 +89,13 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
     populate_templates(ui->primary_template,handle->voxel.template_id);
-    ui->diffusion_sampling->setValue(tipl::max_value(handle->src_bvalues) < 5000.0f ? 1.25 :
-                                         handle->get_optimal_L());
+    ui->diffusion_sampling->setValue(handle->voxel.param[0]);
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
 
     ui->fib_output_widget->setVisible(filenames.size() == 1);
-    switch(settings.value("rec_method_id",4).toInt())
+    switch(settings.value("rec_method_id",int(handle->voxel.method_id)).toInt())
     {
     case 1:
         ui->DTI->setChecked(true);
@@ -114,32 +113,17 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->odf_resolving->setVisible(false);
 
-    ui->ThreadCount->setValue(tipl::max_thread_count);
+    ui->ThreadCount->setValue(handle->voxel.thread_count);
 
-    ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
+    ui->odf_resolving->setChecked(settings.value("odf_resolving",handle->voxel.odf_resolving).toInt());
 
     ui->report->setText(check_citation(handle->voxel.report.c_str()));
-    ui->dti_ignore_high_b->setChecked(handle->is_human_data);
+    ui->dti_ignore_high_b->setChecked(handle->voxel.dti_ignore_high_b);
 
     ui->method_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
 
-    if(handle->is_human_data)
-    {
-        auto reso = std::max<float>(handle->voxel.vs[0],handle->voxel.vs[2]);
-        if(reso > 1.75f)
-            reso = 2.0f;
-        else
-        {
-            if(reso >= 1.5f)
-                reso = 1.5f;
-            else
-                reso = 1.0f;
-        }
-        ui->qsdr_reso->setValue(reso);
-    }
-    else
-        ui->qsdr_reso->setValue(handle->voxel.vs[2]);
+    ui->qsdr_reso->setValue(handle->voxel.qsdr_reso);
 
     if(handle->voxel.is_histology)
     {
