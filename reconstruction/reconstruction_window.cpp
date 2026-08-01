@@ -323,15 +323,21 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             if(v != 1 && v != 4 && v != 6 && v != 7)
                 return fail("method must be 1 (DTI), 4 (GQI), 6 (HARDI), or 7 (QSDR)");
             method_id = uint8_t(v);
+        }
+        if(method_id != handle->voxel.method_id)
+        {
             handle->voxel.method_id = method_id;
             handle->output_file_name = handle->file_name;
             handle->check_output_file_name();
+            if(filenames.size() == 1)
+                ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
         }
 
         if(method_id == 7 && qa_template_list.empty())
             return fail("cannot find template files");
 
         std::string ref_file_name = handle->file_name.u8string();
+        std::string ref_output_file_name = handle->output_file_name.u8string();
         std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         std::shared_ptr<src_data> ref_handle = handle;
         std::string ref_existing_steps = existing_steps;
@@ -357,6 +363,16 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
                     if(!prog.aborted())
                         report_file_error(index,handle->error_msg);
                     break;
+                }
+                if(!ref_output_file_name.empty())
+                {
+                    std::string derived_output;
+                    if(!tipl::match_files(ref_file_name,handle->file_name.u8string(),ref_output_file_name,derived_output))
+                    {
+                        report_file_error(index,"cannot derive output file name from "+ref_output_file_name);
+                        break;
+                    }
+                    handle->output_file_name = derived_output;
                 }
             }
 
