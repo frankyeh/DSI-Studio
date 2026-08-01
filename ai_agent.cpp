@@ -47,6 +47,7 @@
 #include "tracking/tracking_window.h"
 #include "opengl/glwidget.h"
 #include "view_image.h"
+#include "reconstruction/reconstruction_window.h"
 #include "console.h"
 
 std::unordered_map<QString,ai_info> ai_infos;
@@ -530,6 +531,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return command_window_id(window,"main");
         if(qobject_cast<tracking_window*>(window))
             return command_window_id(window,"tracking");
+        if(qobject_cast<reconstruction_window*>(window))
+            return command_window_id(window,"recon");
         return qobject_cast<view_image*>(window) ?
             command_window_id(window,"image") : QString();
     };
@@ -595,7 +598,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return fail("target window not found, terminated by user?");
 
         auto target_type = window == "main" ? QString("main") :
-                           window.startsWith("tracking") ? "tracking" : "image";
+                           window.startsWith("tracking") ? "tracking" :
+                           window.startsWith("recon") ? "recon" : "image";
         auto target_title = target_type == "main" ? QString() :
                             QFileInfo(target->windowTitle()).fileName();
         auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
@@ -632,6 +636,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                 if(auto* window = qobject_cast<MainWindow*>(target))
                     execute(window,window->command(cmd,command_source::AI));
                 else if(auto* window = qobject_cast<tracking_window*>(target))
+                    execute(window,window->command(cmd,command_source::AI));
+                else if(auto* window = qobject_cast<reconstruction_window*>(target))
                     execute(window,window->command(cmd,command_source::AI));
                 else if(auto* window = qobject_cast<view_image*>(target))
                     execute(window,window->command(cmd,command_source::AI));
