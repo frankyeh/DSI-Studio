@@ -21,7 +21,6 @@ int rec(tipl::program_option<tipl::out>& po)
     float max_reso = std::max({src.voxel.vs[0],src.voxel.vs[1],src.voxel.vs[2]});
     {
         tipl::progress prog("reconstruction parameters");
-        src.set_recon_default();
         src.voxel.method_id = uint8_t(po.get("method",int(src.voxel.method_id)));
         src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.voxel.dti_ignore_high_b);
         src.voxel.other_output = po.get("other_output",src.voxel.other_output);
