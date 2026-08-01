@@ -21,16 +21,15 @@ int rec(tipl::program_option<tipl::out>& po)
     float max_reso = std::max({src.voxel.vs[0],src.voxel.vs[1],src.voxel.vs[2]});
     {
         tipl::progress prog("reconstruction parameters");
-        src.voxel.method_id = uint8_t(po.get("method",4));
-        src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data);
-        src.voxel.other_output = po.get("other_output","fa,md,rd,rdi");
-        src.voxel.thread_count = tipl::max_thread_count;
+        src.set_recon_default();
+        src.voxel.method_id = uint8_t(po.get("method",int(src.voxel.method_id)));
+        src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.voxel.dti_ignore_high_b);
+        src.voxel.other_output = po.get("other_output",src.voxel.other_output);
         if(src.voxel.method_id == 4 or src.voxel.method_id == 7)
         {
-            src.voxel.param[0] = po.get("param",tipl::max_value(src.src_bvalues) < 5000.0f ?
-                                                     src.voxel.param[0] : src.get_optimal_L());
-            src.voxel.r2_weighted = po.get("r2_weighted",int(0));
-            src.voxel.odf_resolving = po.get("odf_resolving",int(0));
+            src.voxel.param[0] = po.get("param",src.voxel.param[0]);
+            src.voxel.r2_weighted = po.get("r2_weighted",src.voxel.r2_weighted);
+            src.voxel.odf_resolving = po.get("odf_resolving",src.voxel.odf_resolving);
             if(src.voxel.method_id == 7)
             {
                 src.voxel.reg_param.resolution = po.get("reg_resolution",src.voxel.reg_param.resolution);
@@ -41,7 +40,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.template_id =
             po.get("template",template_name_list,src.voxel.template_id);
         if(src.voxel.method_id == 7) // is qsdr
-            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data ? std::min<float>(2.0f,max_reso) : src.voxel.vs[2]);
+            src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.qsdr_reso);
 
     }
 
