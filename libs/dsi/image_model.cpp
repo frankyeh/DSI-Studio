@@ -729,6 +729,22 @@ void src_data::correction_axis(void)
     if(op_count & 1)
         command({"src_flip_x"});
 }
+void src_data::set_recon_default(void)
+{
+    voxel.method_id = 4;
+    voxel.dti_ignore_high_b = is_human_data;
+    voxel.other_output = "fa,md,rd,rdi";
+    voxel.param[0] = tipl::max_value(src_bvalues) < 5000.0f ? voxel.param[0] : get_optimal_L();
+    voxel.r2_weighted = false;
+    voxel.odf_resolving = false;
+    if(is_human_data)
+    {
+        float reso = std::max<float>(voxel.vs[0],voxel.vs[2]);
+        voxel.qsdr_reso = reso > 1.75f ? 2.0f : (reso >= 1.5f ? 1.5f : 1.0f);
+    }
+    else
+        voxel.qsdr_reso = voxel.vs[2];
+}
 const std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2a][Open]","src_mask_open"},
     {"[Step T2a][Erosion]","src_mask_erosion"},
