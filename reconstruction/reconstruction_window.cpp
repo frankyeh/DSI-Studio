@@ -287,7 +287,9 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
-    if(cmd == "src_recon")
+    if(cmd == "reconstruction")
+        return fail("use recon");
+    if(cmd == "recon")
     {
         if(source == command_source::User)
         {
@@ -303,20 +305,24 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             };
             if(!confirm(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data && !ui->QSDR->isChecked(), // non isotropic resolution
                 "The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?",
-                {"src_resample","2"}) ||
+                {"resample","2"}) ||
                !confirm(!tipl::contains(handle->voxel.report,"bias field"),
                 "Correct signal inhomogeneity using bias field correction?",
-                {"src_bias_field_correction"}) ||
+                {"bias_field_correction"}) ||
                !confirm(!handle->is_human_data && (handle->long_axis_direction() != 1),
                 "This seems to be an animal scan in non-axial orientation. Correct image orientation?",
-                {"src_orientation_correction"}))
+                {"orientation_correction"}))
                 return fail("canceled");
         }
 
         unsigned char method_id = source == command_source::User ?
             (ui->DTI->isChecked() ? 1 : ui->QSDR->isChecked() ? 7 : 4) : handle->voxel.method_id;
         if(!param.empty())
+        {
             method_id = uint8_t(std::stoi(param));
+            handle->output_file_name = handle->file_name;
+            handle->check_output_file_name();
+        }
 
         if(method_id == 7 && qa_template_list.empty())
             return fail("cannot find template files");
@@ -324,7 +330,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         std::string ref_file_name = handle->file_name.u8string();
         std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         std::shared_ptr<src_data> ref_handle = handle;
-        std::filesystem::path last_output;
+        std::vector<std::filesystem::path> output_files;
         bool ok = true;
         auto report_file_error = [&](int index,const std::string& msg)
         {
@@ -407,7 +413,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
                 report_file_error(index,handle->error_msg);
                 break;
             }
-            last_output = handle->output_file_name;
+            output_files.push_back(handle->output_file_name);
         }
         handle = ref_handle;
         update_dimension();
@@ -417,19 +423,24 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         if(!ok)
             return false;
 
+        for(const auto& output : output_files)
+        {
+            tipl::out() << "reconstruction output: " << output;
+            ((MainWindow*)parent())->addFib(tipl::qt::to_qstring(output));
+        }
+
         if(source == command_source::User)
         {
             QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
             raise();
-            ((MainWindow*)parent())->addFib(tipl::qt::to_qstring(last_output));
         }
         return true;
     }
-    if(cmd == "src_mask_from_template")
+    if(cmd == "mask_from_template")
         handle->voxel.template_id = param.empty() ?
             (source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id) :
             std::stoi(param);
-    if((cmd == "src_resample" || cmd == "src_align_acpc") && param.empty())
+    if((cmd == "resample" || cmd == "align_acpc") && param.empty())
     {
         bool ok;
         float nv = float(QInputDialog::getDouble(this,
@@ -438,8 +449,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = std::to_string(nv);
     }
-    if((cmd == "src_save_nifti" || cmd == "src_save_b0" ||
-        cmd == "src_save_dwi_sum") && param.empty())
+    if((cmd == "save_nifti" || cmd == "save_b0" ||
+        cmd == "save_dwi_sum") && param.empty())
     {
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -447,7 +458,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if((cmd == "src_probabilistic_masking" || cmd == "src_correct_by_t2w") && param.empty())
+    if((cmd == "probabilistic_masking" || cmd == "correct_by_t2w") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -455,7 +466,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if(cmd == "src_save_src" && param.empty())
+    if(cmd == "save_src" && param.empty())
     {
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
@@ -463,10 +474,12 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()) && param.empty())
+    if(source == command_source::User &&
+       tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()) && param.empty())
     {
-        param = tipl::remove_all_suffix(param) + ".rz";
-        if(!std::filesystem::exists(param))
+        auto candidate = tipl::remove_all_suffix(handle->file_name);
+        candidate += ".rz";
+        if(!std::filesystem::exists(candidate))
         {
             QMessageBox::information(this,QApplication::applicationName(),"Please specify another nii.gz or sz file with reversed phase encoding data");
             auto other_src = tipl::qt::open_image_file(
@@ -475,6 +488,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
                 return fail("canceled");
             param = other_src.toStdString();
         }
+        else
+            param = candidate.u8string();
     }
 
     if(tipl::contains_case_insensitive(cmd,"open") && param.empty())
@@ -498,7 +513,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
 
 
     if(filenames.size() > 1 &&
-       tipl::begins_with(cmd,"src_save_") &&
+       tipl::begins_with(cmd,"save_") &&
         QMessageBox::information(this,QApplication::applicationName(),"Apply to other SRC files?",
         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
@@ -751,7 +766,7 @@ void reconstruction_window::on_actionPartial_FOV_triggered()
                                            QString("-36 -30 -20 36 30 24"));
     if(values.isEmpty())
         return;
-    handle->command({"src_partial_fov",values.toStdString()});
+    handle->command({"partial_fov",values.toStdString()});
 }
 
 void reconstruction_window::on_actionManual_Rotation_triggered()
@@ -871,7 +886,7 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
                                                               .arg(double(handle->voxel.vs[2])),&ok);
     if(!ok)
         return;
-    command({"src_set_voxel_size",result.toStdString()},command_source::User);
+    command({"set_voxel_size",result.toStdString()},command_source::User);
     ui->report->setText((handle->voxel.report = handle->get_report()).c_str());
 }
 
