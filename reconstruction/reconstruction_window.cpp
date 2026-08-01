@@ -427,7 +427,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         param = filename.toStdString();
     }
 
-    bool result = handle->command(cmd,param);
+    bool result = handle->command({cmd,param});
     if(!result)
         fail();
     else
@@ -470,7 +470,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->command("src_resample","2");
+            handle->command({"src_resample","2"});
     }
     if(!tipl::contains(handle->voxel.report,"bias field"))
     {
@@ -480,7 +480,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->command("src_bias_field_correction");
+            handle->command({"src_bias_field_correction"});
     }
     if(!handle->is_human_data && (handle->long_axis_direction() != 1))
     {
@@ -490,7 +490,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->command("src_orientation_correction");
+            handle->command({"src_orientation_correction"});
     }
     std::string ref_file_name = handle->file_name.u8string();
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
@@ -759,7 +759,7 @@ void reconstruction_window::on_actionPartial_FOV_triggered()
                                            QString("-36 -30 -20 36 30 24"));
     if(values.isEmpty())
         return;
-    handle->command("src_partial_fov",values.toStdString());
+    handle->command({"src_partial_fov",values.toStdString()});
 }
 
 void reconstruction_window::on_actionManual_Rotation_triggered()

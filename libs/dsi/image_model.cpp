@@ -683,13 +683,13 @@ void src_data::correction_axis(void)
     size_t op_count = 0;
     if(long_axis_dir == 0)
     {
-        command("src_swap_xy");
+        command({"src_swap_xy"});
         ++op_count;
     }
     else
         if(long_axis_dir == 2)
         {
-            command("src_swap_yz");
+            command({"src_swap_yz"});
             ++op_count;
         }
 
@@ -697,13 +697,13 @@ void src_data::correction_axis(void)
     tipl::out() << "symmetric axis direction: " << int(sym_axis_dir);
     if(sym_axis_dir == 1)
     {
-        command("src_swap_xy");
+        command({"src_swap_xy"});
         ++op_count;
     }
     else
         if(sym_axis_dir == 2)
         {
-            command("src_swap_xz");
+            command({"src_swap_xz"});
             ++op_count;
         }
 
@@ -714,21 +714,22 @@ void src_data::correction_axis(void)
     tipl::out() << "bottom and top slices difference: " << bottom_top_dif;
     if(bottom_top_dif < 0)
     {
-        command("src_flip_z");
+        command({"src_flip_z"});
         ++op_count;
     }
     int64_t anterior_posterior_dif = anterior_posterior_difference();
     tipl::out() << "anterior and posterior mask difference: " << anterior_posterior_dif;
     if(anterior_posterior_dif < 0)
     {
-        command("src_flip_y");
+        command({"src_flip_y"});
         ++op_count;
     }
 
     if(op_count & 1)
-        command("src_flip_x");
+        command({"src_flip_x"});
 }
-bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
+bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps,
+                         const std::map<std::string,std::string>& legacy_cmd)
 {
     std::istringstream in(ref_steps);
     std::string step;
@@ -748,6 +749,8 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
+        if(auto legacy = legacy_cmd.find(cmd);legacy != legacy_cmd.end())
+            cmd = legacy->second;
         if((tipl::ends_with(param,{".sz",".gz"})) &&
            !tipl::match_files(reg_file_name,param,file_name.u8string(),param))
             return error_msg = step + " cannot find a matched file for " + file_name.u8string(),false;
@@ -759,13 +762,16 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
     {
         tipl::progress prog("apply operations");
         for(size_t index = 0;prog(index,cmds.size());++index)
-            if(!command(cmds[index],params[index]))
+            if(!command({cmds[index],params[index]}))
                 return error_msg +=  "at " + cmds[index],false;
     }
     return true;
 }
-bool src_data::command(std::string cmd,std::string param)
+bool src_data::command(std::vector<std::string> cmds)
 {
+    cmds.resize(2);
+    std::string cmd = cmds[0],param = cmds[1];
+
     if(cmd == "src_reconstruction")
         return true;
     tipl::progress prog(cmd,true);
