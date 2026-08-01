@@ -48,13 +48,11 @@ private:
     std::string existing_steps;
     bool load_src(int index);
     void update_dimension(void);
-    void Reconstruction(unsigned char method_id,bool prompt);
 private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);
     void on_DTI_toggled(bool checked);
     void on_save_mask_clicked();
-    void on_doDTI_clicked();
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
