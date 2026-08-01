@@ -246,78 +246,6 @@ reconstruction_window::~reconstruction_window()
     delete ui;
 }
 
-void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
-{
-    if(!handle.get())
-        return;
-
-    if (tipl::max_value(handle->voxel.mask) == 0)
-    {
-        QMessageBox::critical(this,"ERROR","Please select mask for reconstruction");
-        return;
-    }
-
-    settings.setValue("rec_method_id",method_id);
-    settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
-
-    handle->voxel.method_id = method_id;
-    handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
-    handle->voxel.dti_ignore_high_b = ui->dti_ignore_high_b->isChecked();
-    handle->voxel.thread_count = ui->ThreadCount->value();
-    handle->voxel.template_id = ui->primary_template->currentIndex();
-
-    handle->voxel.other_output.clear();
-    for(auto each : outputs)
-        if(each->isChecked())
-        {
-            if(!handle->voxel.other_output.empty())
-                handle->voxel.other_output += ",";
-            handle->voxel.other_output += each->statusTip().toStdString();
-        }
-
-    if(handle->voxel.is_histology)
-    {
-        handle->voxel.vs[0] = handle->voxel.vs[1] = handle->voxel.vs[2] = float(ui->hist_resolution->value());
-        handle->voxel.hist_downsampling = uint32_t(ui->hist_downsampling->value());
-        handle->voxel.hist_raw_smoothing = uint32_t(ui->hist_raw_smoothing->value());
-        handle->voxel.hist_tensor_smoothing = uint32_t(ui->hist_tensor_smoothing->value());
-    }
-
-    if(method_id == 7)
-    {
-        if(qa_template_list.empty())
-        {
-            QMessageBox::critical(this,"ERROR","Cannot find template files");
-            return;
-        }
-        handle->voxel.qsdr_reso = ui->qsdr_reso->value();
-    }
-
-
-    auto dim_backup = handle->voxel.dim; // for QSDR
-    auto vs = handle->voxel.vs; // for QSDR
-    auto trans = handle->voxel.trans_to_mni; // for QSDR
-    auto mask = handle->voxel.mask;
-    bool result = handle->reconstruction();
-    handle->voxel.mask = mask;
-    handle->voxel.dim = dim_backup;
-    handle->voxel.vs = vs;
-    handle->voxel.trans_to_mni = trans;
-
-    if(!result)
-    {
-        tipl::error() << handle->error_msg;
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-
-    if(!prompt)
-        return;
-    QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
-    raise(); // for Mac
-    ((MainWindow*)parent())->addFib(tipl::qt::to_qstring(handle->output_file_name));
-}
-
 
 void reconstruction_window::on_save_mask_clicked()
 {
@@ -359,6 +287,144 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
+    if(cmd == "src_recon")
+    {
+        if(source == command_source::User)
+        {
+            auto confirm = [&](bool condition,const QString& question,std::vector<std::string> correction_cmd)
+            {
+                if(!condition)
+                    return true;
+                auto result = QMessageBox::information(this,QApplication::applicationName(),question,
+                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+                if(result == QMessageBox::Yes)
+                    handle->command(correction_cmd);
+                return result != QMessageBox::Cancel;
+            };
+            if(!confirm(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data && !ui->QSDR->isChecked(), // non isotropic resolution
+                "The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?",
+                {"src_resample","2"}) ||
+               !confirm(!tipl::contains(handle->voxel.report,"bias field"),
+                "Correct signal inhomogeneity using bias field correction?",
+                {"src_bias_field_correction"}) ||
+               !confirm(!handle->is_human_data && (handle->long_axis_direction() != 1),
+                "This seems to be an animal scan in non-axial orientation. Correct image orientation?",
+                {"src_orientation_correction"}))
+                return fail("canceled");
+        }
+
+        unsigned char method_id = source == command_source::User ?
+            (ui->DTI->isChecked() ? 1 : ui->QSDR->isChecked() ? 7 : 4) : handle->voxel.method_id;
+        if(!param.empty())
+            method_id = uint8_t(std::stoi(param));
+
+        if(method_id == 7 && qa_template_list.empty())
+            return fail("cannot find template files");
+
+        std::string ref_file_name = handle->file_name.u8string();
+        std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
+        std::shared_ptr<src_data> ref_handle = handle;
+        std::filesystem::path last_output;
+        bool ok = true;
+        auto report_file_error = [&](int index,const std::string& msg)
+        {
+            ok = false;
+            error_msg = QFileInfo(filenames[index]).fileName().toStdString() + " : " + msg;
+            tipl::error() << error_msg;
+            if(source == command_source::User)
+                QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        };
+        tipl::progress prog("process SRC files",true);
+        for(int index = 0;prog(index,filenames.size());++index)
+        {
+            tipl::out() << "processing " << filenames[index].toStdString() << std::endl;
+            if(index)
+            {
+                if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
+                {
+                    ok = false;
+                    if(!prog.aborted())
+                        report_file_error(index,handle->error_msg);
+                    break;
+                }
+            }
+
+            if(tipl::max_value(handle->voxel.mask) == 0)
+            {
+                report_file_error(index,"please select mask for reconstruction");
+                break;
+            }
+
+            handle->voxel.method_id = method_id;
+            if(source == command_source::User)
+            {
+                settings.setValue("rec_method_id",method_id);
+                settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
+
+                handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
+                handle->voxel.dti_ignore_high_b = ui->dti_ignore_high_b->isChecked();
+                handle->voxel.thread_count = ui->ThreadCount->value();
+                handle->voxel.template_id = ui->primary_template->currentIndex();
+                if(method_id == 4 || method_id == 7)
+                {
+                    handle->voxel.param[0] = float(ui->diffusion_sampling->value());
+                    settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
+                }
+
+                handle->voxel.other_output.clear();
+                for(auto each : outputs)
+                    if(each->isChecked())
+                    {
+                        if(!handle->voxel.other_output.empty())
+                            handle->voxel.other_output += ",";
+                        handle->voxel.other_output += each->statusTip().toStdString();
+                    }
+
+                if(handle->voxel.is_histology)
+                {
+                    handle->voxel.vs[0] = handle->voxel.vs[1] = handle->voxel.vs[2] = float(ui->hist_resolution->value());
+                    handle->voxel.hist_downsampling = uint32_t(ui->hist_downsampling->value());
+                    handle->voxel.hist_raw_smoothing = uint32_t(ui->hist_raw_smoothing->value());
+                    handle->voxel.hist_tensor_smoothing = uint32_t(ui->hist_tensor_smoothing->value());
+                }
+
+                if(method_id == 7)
+                    handle->voxel.qsdr_reso = ui->qsdr_reso->value();
+            }
+
+            auto dim_backup = handle->voxel.dim;
+            auto vs = handle->voxel.vs;
+            auto trans = handle->voxel.trans_to_mni;
+            auto mask = handle->voxel.mask;
+            ok = handle->reconstruction();
+            handle->voxel.mask = mask;
+            handle->voxel.dim = dim_backup;
+            handle->voxel.vs = vs;
+            handle->voxel.trans_to_mni = trans;
+
+            if(!ok)
+            {
+                report_file_error(index,handle->error_msg);
+                break;
+            }
+            last_output = handle->output_file_name;
+        }
+        handle = ref_handle;
+        update_dimension();
+        load_b_table();
+        on_SlicePos_valueChanged(ui->SlicePos->value());
+
+        if(!ok)
+            return false;
+
+        if(source == command_source::User)
+        {
+            QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
+            raise();
+            ((MainWindow*)parent())->addFib(tipl::qt::to_qstring(last_output));
+        }
+        return true;
+    }
     if(cmd == "src_mask_from_template")
         handle->voxel.template_id = param.empty() ?
             (source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id) :
@@ -453,73 +519,6 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     }
     return result;
 }
-void reconstruction_window::on_doDTI_clicked()
-{
-    if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data && !ui->QSDR->isChecked()) // non isotropic resolution
-    {
-        auto result = QMessageBox::information(this,QApplication::applicationName(),
-            QString("The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?"),
-                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-            handle->command({"src_resample","2"});
-    }
-    if(!tipl::contains(handle->voxel.report,"bias field"))
-    {
-        auto result = QMessageBox::information(this,QApplication::applicationName(),
-                                               QString("Correct signal inhomogeneity using bias field correction?"),
-                                               QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-            handle->command({"src_bias_field_correction"});
-    }
-    if(!handle->is_human_data && (handle->long_axis_direction() != 1))
-    {
-        auto result = QMessageBox::information(this,QApplication::applicationName(),
-            QString("This seems to be an animal scan in non-axial orientation. Correct image orientation?"),
-                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-            handle->command({"src_orientation_correction"});
-    }
-    std::string ref_file_name = handle->file_name.u8string();
-    std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
-    std::shared_ptr<src_data> ref_handle = handle;
-    tipl::progress prog("process SRC files",true);
-    for(int index = 0;prog(index,filenames.size());++index)
-    {
-        tipl::out() << "processing " << filenames[index].toStdString() << std::endl;
-        if(index)
-        {
-            if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
-            {
-                if(!prog.aborted())
-                    QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
-                break;
-            }
-        }
-        if(ui->DTI->isChecked())
-            Reconstruction(1,index+1 == filenames.size());
-        else
-        if(ui->GQI->isChecked() || ui->QSDR->isChecked())
-        {
-            handle->voxel.param[0] = float(ui->diffusion_sampling->value());
-            settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
-            if(ui->QSDR->isChecked())
-                Reconstruction(7,index+1 == filenames.size());
-            else
-                Reconstruction(4,index+1 == filenames.size());
-        }
-    }
-    handle = ref_handle;
-    update_dimension();
-    load_b_table();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
     ui->qsdr_options->setVisible(!checked);
