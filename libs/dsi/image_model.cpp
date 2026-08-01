@@ -817,6 +817,7 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
     }
     return true;
 }
+extern std::vector<std::filesystem::path> qa_template_list;
 bool src_data::command(std::vector<std::string> cmds)
 {
     cmds.resize(2);
@@ -907,6 +908,16 @@ bool src_data::command(std::vector<std::string> cmds)
                 return error_msg = "invalid assignment: "+each,false;
             auto name = each.substr(0,pos);
             auto value = each.substr(pos+1);
+            if(name == "method")
+            {
+                int v = std::stoi(value);
+                if(v != 1 && v != 4 && v != 6 && v != 7)
+                    return error_msg = "method must be 1 (DTI), 4 (GQI), 6 (HARDI), or 7 (QSDR)",false;
+            }
+            if(name == "template" && size_t(std::stoll(value)) >= qa_template_list.size())
+                return error_msg = "invalid template index: "+value,false;
+            if(name == "thread_count" && (std::stoi(value) < 1 || std::stoi(value) > tipl::max_thread_count))
+                return error_msg = "thread_count must be between 1 and "+std::to_string(tipl::max_thread_count),false;
             bool found = false;
             for(const auto& [pname,get,set] : params)
                 if(pname == name)
