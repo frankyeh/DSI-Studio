@@ -163,14 +163,14 @@ int rec(tipl::program_option<tipl::out>& po)
         tipl::progress prog("pre-processing steps");
 
         if((po.get("check_btable",0) && !src.command(po.get("check_btable",0) == 1 ?
-                    "[Step T2][B-table][Check B-table]" : "[Step T2][B-table][Check B-table2]")))
+                    "src_check_btable" : "src_check_btable2")))
             return fail();
-        if((po.has("rev_pe") && !src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe"))))
+        if((po.has("rev_pe") && !src.command("src_topup_eddy",po.get("rev_pe"))))
             return fail();
 
 
-        if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
-           (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
+        if((po.get("volume_correction",0) && !src.command("src_orientation_correction")) ||
+           (po.get("motion_correction",0) && !src.command("src_motion_correction")))
             return fail();
 
         if(po.has("mask"))
@@ -186,13 +186,13 @@ int rec(tipl::program_option<tipl::out>& po)
             else
                 if(mask_file == "unet")
                 {
-                    if(!src.command("[Step T2a][Unet]"))
+                    if(!src.command("src_mask_unet"))
                         return fail();
                 }
                 else
                     if(mask_file == "template")
                     {
-                        if(!src.command("[Step T2a][Template]"))
+                        if(!src.command("src_mask_from_template"))
                             return fail();
                     }
                     else
@@ -214,7 +214,7 @@ int rec(tipl::program_option<tipl::out>& po)
         // handle resolution, make isotropic
         if(po.has("align_acpc"))
         {
-            if(!src.command("[Step T2][Edit][Align ACPC]",std::to_string(po.get("align_acpc",std::min<float>(2.0f,max_reso)))))
+            if(!src.command("src_align_acpc",std::to_string(po.get("align_acpc",std::min<float>(2.0f,max_reso)))))
                 return fail();
         }
         else
@@ -247,7 +247,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 if(po.has("save_src"))
                     default_iso = 0.0f;
                 if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
-                    !src.command("[Step T2][Edit][Resample]",std::to_string(default_iso)))
+                    !src.command("src_resample",std::to_string(default_iso)))
                     return fail();
             }
     }

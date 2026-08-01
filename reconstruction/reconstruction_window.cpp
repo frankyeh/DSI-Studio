@@ -326,7 +326,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 void reconstruction_window::on_from_template_clicked()
 {
     handle->voxel.template_id = ui->primary_template->currentIndex();
-    command("[Step T2a][Template]");
+    command("src_mask_from_template");
 }
 
 void reconstruction_window::on_save_mask_clicked()
@@ -344,7 +344,7 @@ void reconstruction_window::on_save_mask_clicked()
 
 bool reconstruction_window::command(std::string cmd,std::string param)
 {
-    if(cmd == "[Step T2][Edit][Resample]" || cmd == "[Step T2][Edit][Align ACPC]")
+    if(cmd == "src_resample" || cmd == "src_align_acpc")
     {
         bool ok;
         float nv = float(QInputDialog::getDouble(this,
@@ -353,8 +353,8 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             return false;
         param = std::to_string(nv);
     }
-    if(cmd == "[Step T2][File][Save 4D NIFTI]" || cmd == "[Step T2][File][Save B0]" ||
-       cmd == "[Step T2][File][Save DWI Sum]")
+    if(cmd == "src_save_nifti" || cmd == "src_save_b0" ||
+       cmd == "src_save_dwi_sum")
     {
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -362,7 +362,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             return false;
         param = filename.toStdString();
     }
-    if(cmd == "[Step T2][Edit][Probablistic Masking]" || cmd == "[Step T2][Corrections][By T2w]")
+    if(cmd == "src_probabilistic_masking" || cmd == "src_correct_by_t2w")
     {
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -370,7 +370,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             return false;
         param = filename.toStdString();
     }
-    if(cmd == "[Step T2][File][Save Src File]")
+    if(cmd == "src_save_src")
     {
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
@@ -451,7 +451,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->command("[Step T2][Edit][Resample]","2");
+            handle->command("src_resample","2");
     }
     if(!tipl::contains(handle->voxel.report,"bias field"))
     {
@@ -461,7 +461,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->command("[Step T2][Corrections][Bias Field]");
+            handle->command("src_bias_field_correction");
     }
     if(!handle->is_human_data && (handle->long_axis_direction() != 1))
     {
@@ -471,7 +471,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->command("[Step T2][Corrections][Volume Orientation Correction]");
+            handle->command("src_orientation_correction");
     }
     std::string ref_file_name = handle->file_name.u8string();
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
@@ -740,7 +740,7 @@ void reconstruction_window::on_actionPartial_FOV_triggered()
                                            QString("-36 -30 -20 36 30 24"));
     if(values.isEmpty())
         return;
-    handle->command("[Step T2b(2)][Partial FOV]",values.toStdString());
+    handle->command("src_partial_fov",values.toStdString());
 }
 
 void reconstruction_window::on_actionManual_Rotation_triggered()
@@ -860,7 +860,7 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
                                                               .arg(double(handle->voxel.vs[2])),&ok);
     if(!ok)
         return;
-    command("[Step T2][Edit][Overwrite Voxel Size]",result.toStdString());
+    command("src_set_voxel_size",result.toStdString());
     ui->report->setText((handle->voxel.report = handle->get_report()).c_str());
 }
 
