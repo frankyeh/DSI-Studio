@@ -164,10 +164,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     {
         foreach (QAction* action, findChildren<QAction*>())
             if(action->toolTip().startsWith("run "))
-                connect(action,&QAction::triggered,this,[this,action](){command(action->toolTip().mid(4).section('=',0,0).toStdString(),action->toolTip().mid(4).section('=',1).toStdString(),command_source::User);});
+                connect(action,&QAction::triggered,this,[this,action](){command({action->toolTip().mid(4).section('=',0,0).toStdString(),action->toolTip().mid(4).section('=',1).toStdString()},command_source::User);});
         foreach (QPushButton* pb, findChildren<QPushButton*>())
             if(pb->toolTip().startsWith("run "))
-                connect(pb,&QPushButton::clicked,this,[this,pb](){command(pb->toolTip().mid(4).section('=',0,0).toStdString(),pb->toolTip().mid(4).section('=',1).toStdString(),command_source::User);});
+                connect(pb,&QPushButton::clicked,this,[this,pb](){command({pb->toolTip().mid(4).section('=',0,0).toStdString(),pb->toolTip().mid(4).section('=',1).toStdString()},command_source::User);});
     }
 }
 void reconstruction_window::update_dimension(void)
@@ -345,15 +345,25 @@ void reconstruction_window::on_save_mask_clicked()
     region.save_region_to_file(filename.toStdString());
 }
 
-bool reconstruction_window::command(std::string cmd,std::string param,command_source source)
+bool reconstruction_window::command(std::vector<std::string> cmds,command_source source)
 {
+    if(cmds.empty())
+        return tipl::error() << (error_msg = "empty command"),false;
+    if(cmds.size() > 2)
+        return tipl::error() << (error_msg = "too many parameters"),false;
+    command_report report(this,"recon",cmds,source);
+    cmds.resize(2);
+    std::string cmd = cmds[0],param = cmds[1];
+
+    error_msg.clear();
     auto fail = [&](const std::string& msg = std::string())
     {
         if(!msg.empty())
             handle->error_msg = msg;
-        tipl::error() << handle->error_msg;
-        if(source == command_source::User && !handle->error_msg.empty())
-            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+        error_msg = handle->error_msg;
+        tipl::error() << error_msg;
+        if(source == command_source::User && !error_msg.empty())
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
     if(cmd == "src_mask_from_template")
@@ -444,7 +454,7 @@ bool reconstruction_window::command(std::string cmd,std::string param,command_so
                 if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
                                 QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
-                    return tipl::error() << (handle->error_msg = model.error_msg),false;
+                    return tipl::error() << (error_msg = handle->error_msg = model.error_msg),false;
             }
         }
     }
@@ -869,7 +879,7 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
                                                               .arg(double(handle->voxel.vs[2])),&ok);
     if(!ok)
         return;
-    command("src_set_voxel_size",result.toStdString(),command_source::User);
+    command({"src_set_voxel_size",result.toStdString()},command_source::User);
     ui->report->setText((handle->voxel.report = handle->get_report()).c_str());
 }
 

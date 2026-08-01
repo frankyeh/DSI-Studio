@@ -23,7 +23,8 @@ public:
     QStringList filenames;
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
-    bool command(std::string cmd,std::string param,command_source source);
+    bool command(std::vector<std::string> cmd,command_source source);
+    std::string error_msg;
 public:
     std::vector<QCheckBox*> outputs,adv_outputs;
 protected:
