@@ -1106,8 +1106,11 @@ bool src_data::command(std::vector<std::string> cmds)
     }
     if(cmd == "set_voxel_size")
     {
+        tipl::vector<3> vs;
         std::istringstream in(param);
-        in >> voxel.vs[0] >> voxel.vs[1] >> voxel.vs[2];
+        if(!(in >> vs[0] >> vs[1] >> vs[2]) || vs[0] <= 0.0f || vs[1] <= 0.0f || vs[2] <= 0.0f)
+            return error_msg = "set_voxel_size expects three positive numbers",false;
+        voxel.vs = vs;
         voxel.report = get_report();
         return log_step();
     }
@@ -1118,7 +1121,10 @@ bool src_data::command(std::vector<std::string> cmds)
     }
     if(cmd == "crop_background")
     {
-        trim(param.empty() ? 0 : std::stoi(param));
+        int border = param.empty() ? 0 : std::stoi(param);
+        if(border < 0)
+            return error_msg = "crop_background must be non-negative",false;
+        trim(size_t(border));
         return log_step();
     }
     if(cmd == "flip_x")
@@ -1153,12 +1159,18 @@ bool src_data::command(std::vector<std::string> cmds)
     }
     if(cmd == "resample")
     {
-        resample(std::stof(param));
+        float reso = std::stof(param);
+        if(reso <= 0.0f)
+            return error_msg = "resample resolution must be positive",false;
+        resample(reso);
         return log_step();
     }
     if(cmd == "align_acpc")
     {
-        if(!align_acpc(param.empty() ? voxel.vs[0] : std::stof(param)))
+        float reso = param.empty() ? voxel.vs[0] : std::stof(param);
+        if(reso <= 0.0f)
+            return error_msg = "align_acpc resolution must be positive",false;
+        if(!align_acpc(reso))
             return false;
         return log_step();
     }
@@ -1274,8 +1286,12 @@ bool src_data::command(std::vector<std::string> cmds)
     }
     if(cmd == "partial_fov")
     {
+        tipl::vector<3> pmin,pmax;
         std::istringstream in(param);
-        in >> voxel.partial_min >> voxel.partial_max;
+        if(!(in >> pmin >> pmax))
+            return error_msg = "partial_fov expects \"xmin ymin zmin xmax ymax zmax\"",false;
+        voxel.partial_min = pmin;
+        voxel.partial_max = pmax;
         return log_step();
     }
     error_msg = "unknown command: ";
