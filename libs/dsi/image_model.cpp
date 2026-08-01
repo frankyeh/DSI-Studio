@@ -822,7 +822,7 @@ bool src_data::command(std::string cmd,std::string param)
         }
         else
             tipl::morphology::erosion(voxel.mask);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Erosion]\n";
         return true;
     }
     if(cmd == "[Step T2a][Dilation]")
@@ -834,14 +834,14 @@ bool src_data::command(std::string cmd,std::string param)
         }
         else
             tipl::morphology::dilation(voxel.mask);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Dilation]\n";
         return true;
     }
     if(cmd == "[Step T2a][Unet]")
     {
         if(!mask_from_unet())
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Unet]\n";
         return true;
     }
     if(cmd == "[Step T2a][Defragment]")
@@ -850,13 +850,13 @@ bool src_data::command(std::string cmd,std::string param)
             tipl::morphology::defragment(voxel.mask.slice_at(0));
         else
             tipl::morphology::defragment(voxel.mask);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Defragment]\n";
         return true;
     }
     if(cmd == "[Step T2a][Slice Defragment]")
     {
         tipl::morphology::fill_holes_by_slice(voxel.mask);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Slice Defragment]\n";
         return true;
     }
     if(cmd == "[Step T2a][Smoothing]")
@@ -865,26 +865,26 @@ bool src_data::command(std::string cmd,std::string param)
             tipl::morphology::smoothing(voxel.mask.slice_at(0));
         else
             tipl::morphology::smoothing(voxel.mask);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Smoothing]\n";
         return true;
     }
     if(cmd == "[Step T2a][Fit]")
     {
         tipl::morphology::fit(voxel.mask,dwi);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Fit]\n";
         return true;
     }
     if(cmd == "[Step T2a][Negate]")
     {
         tipl::morphology::negate(voxel.mask);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Negate]\n";
         return true;
     }
     if(cmd == "[Step T2a][Template]")
     {
         if(!mask_from_template())
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Template]\n";
         return true;
     }
     if(cmd == "[Step T2a][Threshold]")
@@ -904,7 +904,7 @@ bool src_data::command(std::string cmd,std::string param)
         else
             threshold = std::stoi(param);
         voxel.mask = dwi > threshold;
-        voxel.steps += cmd + "=" + std::to_string(threshold) + "\n";
+        voxel.steps += "[Step T2a][Threshold]" + std::string("=") + std::to_string(threshold) + "\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Probablistic Masking]")
@@ -931,7 +931,7 @@ bool src_data::command(std::string cmd,std::string param)
         });
         voxel.mask = prob > 0.0f;
         update_dwi_sum();
-        voxel.steps += cmd+"="+param+"\n";
+        voxel.steps += "[Step T2][Edit][Probablistic Masking]="+param+"\n";
         return true;
     }
     if(cmd == "[Step T2a][Remove Background]")
@@ -947,7 +947,7 @@ bool src_data::command(std::string cmd,std::string param)
                     buf[i] = 0;
         }
         apply_mask = true;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2a][Remove Background]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Overwrite Voxel Size]")
@@ -955,13 +955,13 @@ bool src_data::command(std::string cmd,std::string param)
         std::istringstream in(param);
         in >> voxel.vs[0] >> voxel.vs[1] >> voxel.vs[2];
         voxel.report = get_report();
-        voxel.steps += cmd+"="+param+"\n";
+        voxel.steps += "[Step T2][Edit][Overwrite Voxel Size]="+param+"\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Smooth Signals]")
     {
         smoothing();
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Smooth Signals]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Crop Background]")
@@ -970,60 +970,60 @@ bool src_data::command(std::string cmd,std::string param)
         if(!param.empty())
         {
             border = std::stoi(param);
-            voxel.steps += cmd+"="+param+"\n";
+            voxel.steps += "[Step T2][Edit][Crop Background]="+param+"\n";
         }
         else
-            voxel.steps += cmd+"\n";
+            voxel.steps += "[Step T2][Edit][Crop Background]\n";
         trim(border);
         return true;
     }
     if(cmd == "[Step T2][Edit][Image flip x]")
     {
         flip_dwi(0);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Image flip x]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Image flip y]")
     {
         flip_dwi(1);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Image flip y]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Image flip z]")
     {
         flip_dwi(2);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Image flip z]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Image swap xy]")
     {
         flip_dwi(3);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Image swap xy]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Image swap yz]")
     {
         flip_dwi(4);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Image swap yz]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Image swap xz]")
     {
         flip_dwi(5);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Edit][Image swap xz]\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Resample]")
     {
         resample(std::stof(param));
-        voxel.steps += cmd+"="+param+"\n";
+        voxel.steps += "[Step T2][Edit][Resample]="+param+"\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Align ACPC]")
     {
         if(!align_acpc(param.empty() ? voxel.vs[0] : std::stof(param)))
             return false;
-        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
+        voxel.steps += param.empty() ? std::string("[Step T2][Edit][Align ACPC]\n") : ("[Step T2][Edit][Align ACPC]="+param+"\n");
         return true;
     }
     // correct for b-table orientation
@@ -1031,56 +1031,56 @@ bool src_data::command(std::string cmd,std::string param)
     {
         if(!check_b_table(true))
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][Check B-table]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][Check B-table2]")
     {
         if(!check_b_table(false))
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][Check B-table2]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][flip bx]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][0] = -src_bvectors[i][0];
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][flip bx]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][flip by]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][1] = -src_bvectors[i][1];
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][flip by]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][flip bz]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][2] = -src_bvectors[i][2];
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][flip bz]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][swap bxby]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][0],src_bvectors[i][1]);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][swap bxby]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][swap bybz]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][1],src_bvectors[i][2]);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][swap bybz]\n";
         return true;
     }
     if(cmd == "[Step T2][B-table][swap bxbz]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][0],src_bvectors[i][2]);
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][B-table][swap bxbz]\n";
         return true;
     }
     if(cmd == "[Step T2][Corrections][TOPUP]")
@@ -1090,7 +1090,7 @@ bool src_data::command(std::string cmd,std::string param)
             if(!get_rev_pe(param) || !run_topup() || !run_applytopup())
                 return false;
         }
-        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
+        voxel.steps += param.empty() ? std::string("[Step T2][Corrections][TOPUP]\n") : ("[Step T2][Corrections][TOPUP]="+param+"\n");
         return true;
     }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
@@ -1110,7 +1110,7 @@ bool src_data::command(std::string cmd,std::string param)
             if(!run_eddy())
                 return false;
         }
-        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
+        voxel.steps += param.empty() ? std::string("[Step T2][Corrections][TOPUP EDDY]\n") : ("[Step T2][Corrections][TOPUP EDDY]="+param+"\n");
         return true;
     }
     if(cmd == "[Step T2][Corrections][EDDY]")
@@ -1120,21 +1120,21 @@ bool src_data::command(std::string cmd,std::string param)
             if(!run_eddy())
                 return false;
         }
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Corrections][EDDY]\n";
         return true;
     }
     if(cmd == "[Step T2][Corrections][Motion Correction]")
     {
         if(!correct_motion())
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Corrections][Motion Correction]\n";
         return true;
     }
     if(cmd == "[Step T2][Corrections][Bias Field]")
     {
         if(!correct_bias_field())
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Corrections][Bias Field]\n";
         return true;
     }
 
@@ -1142,13 +1142,13 @@ bool src_data::command(std::string cmd,std::string param)
     {
         if(!correct_distortion_by_t2w(param))
             return false;
-        voxel.steps += cmd+"="+param+"\n";
+        voxel.steps += "[Step T2][Corrections][By T2w]="+param+"\n";
         return true;
     }
     if(cmd == "[Step T2][Corrections][Volume Orientation Correction]")
     {
         correction_axis();
-        voxel.steps += cmd+"\n";
+        voxel.steps += "[Step T2][Corrections][Volume Orientation Correction]\n";
         return true;
     }
     if(cmd == "[Step T2b(2)][Partial FOV]")
