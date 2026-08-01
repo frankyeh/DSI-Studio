@@ -729,22 +729,6 @@ void src_data::correction_axis(void)
     if(op_count & 1)
         command({"src_flip_x"});
 }
-void src_data::set_recon_default(void)
-{
-    voxel.method_id = 4;
-    voxel.dti_ignore_high_b = is_human_data;
-    voxel.other_output = "fa,md,rd,rdi";
-    voxel.param[0] = tipl::max_value(src_bvalues) < 5000.0f ? voxel.param[0] : get_optimal_L();
-    voxel.r2_weighted = false;
-    voxel.odf_resolving = false;
-    if(is_human_data)
-    {
-        float reso = std::max<float>(voxel.vs[0],voxel.vs[2]);
-        voxel.qsdr_reso = reso > 1.75f ? 2.0f : (reso >= 1.5f ? 1.5f : 1.0f);
-    }
-    else
-        voxel.qsdr_reso = voxel.vs[2];
-}
 const std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2a][Open]","src_mask_open"},
     {"[Step T2a][Erosion]","src_mask_erosion"},
@@ -3006,6 +2990,8 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 extern int src_ver;
 bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
 {
+    auto result = [&](void)->bool
+    {
     tipl::progress prog("open ",dwi_file_name.u8string());
     if(voxel.steps.empty())
         voxel.steps = "[Step T2][Reconstruction] open " + dwi_file_name.filename().u8string() + "\n";
@@ -3151,6 +3137,10 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
     voxel.template_id = match_volume(tipl::make_image(voxel.mask.data(),voxel.mask.shape()),voxel.vs);
     is_human_data = (voxel.template_id == 0);
     return true;
+    }();
+    if(result)
+        set_recon_default();
+    return result;
 }
 extern int fib_ver;
 bool src_data::save_fib(void)
