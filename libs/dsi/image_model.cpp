@@ -923,8 +923,6 @@ bool src_data::command(std::vector<std::string> cmds)
         return log_step();
     }
 
-    if(cmd == "reconstruction")
-        return true;
     tipl::progress prog(cmd,true);
     if(!param.empty())
         tipl::out() << "param: " << param;
