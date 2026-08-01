@@ -503,7 +503,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         {
             src_data model;
             if (!model.load_from_file(filenames[index].toStdString()) ||
-                !model.run_steps(handle->file_name.u8string(),previous_steps + cmd + "=" + param + "\n",legacy_cmd))
+                !model.run_steps(handle->file_name.u8string(),previous_steps + cmd + "=" + param + "\n"))
             {
                 if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
@@ -555,7 +555,7 @@ void reconstruction_window::on_doDTI_clicked()
         tipl::out() << "processing " << filenames[index].toStdString() << std::endl;
         if(index)
         {
-            if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps,legacy_cmd))
+            if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
             {
                 if(!prog.aborted())
                     QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
