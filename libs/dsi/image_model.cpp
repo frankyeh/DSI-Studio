@@ -728,8 +728,8 @@ void src_data::correction_axis(void)
     if(op_count & 1)
         command({"src_flip_x"});
 }
-bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps,
-                         const std::map<std::string,std::string>& legacy_cmd)
+extern const std::vector<std::pair<std::string,std::string> > legacy_cmd;
+bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
     std::string step;
@@ -749,8 +749,12 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
-        if(auto legacy = legacy_cmd.find(cmd);legacy != legacy_cmd.end())
-            cmd = legacy->second;
+        for(const auto& [old_cmd,new_cmd] : legacy_cmd)
+            if(cmd == old_cmd)
+            {
+                cmd = new_cmd;
+                break;
+            }
         if((tipl::ends_with(param,{".sz",".gz"})) &&
            !tipl::match_files(reg_file_name,param,file_name.u8string(),param))
             return error_msg = step + " cannot find a matched file for " + file_name.u8string(),false;
@@ -771,6 +775,18 @@ bool src_data::command(std::vector<std::string> cmds)
 {
     cmds.resize(2);
     std::string cmd = cmds[0],param = cmds[1];
+    std::string log_cmd = cmd;
+    for(const auto& [old_cmd,new_cmd] : legacy_cmd)
+        if(cmd == new_cmd)
+        {
+            log_cmd = old_cmd;
+            break;
+        }
+    auto log_step = [&](void)
+    {
+        voxel.steps += param.empty() ? (log_cmd+"\n") : (log_cmd+"="+param+"\n");
+        return true;
+    };
 
     if(cmd == "src_reconstruction")
         return true;
@@ -816,8 +832,7 @@ bool src_data::command(std::vector<std::string> cmds)
         ROIRegion region(voxel.dim,voxel.vs);
         region.load_region_from_file(param);
         region.to_mask(voxel.mask);
-        voxel.steps += std::string("[Step T2a][Open]=") + param + "\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_erosion")
     {
@@ -828,8 +843,7 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         else
             tipl::morphology::erosion(voxel.mask);
-        voxel.steps += "[Step T2a][Erosion]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_dilation")
     {
@@ -840,15 +854,13 @@ bool src_data::command(std::vector<std::string> cmds)
         }
         else
             tipl::morphology::dilation(voxel.mask);
-        voxel.steps += "[Step T2a][Dilation]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_unet")
     {
         if(!mask_from_unet())
             return false;
-        voxel.steps += "[Step T2a][Unet]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_defragment")
     {
@@ -856,14 +868,12 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::defragment(voxel.mask.slice_at(0));
         else
             tipl::morphology::defragment(voxel.mask);
-        voxel.steps += "[Step T2a][Defragment]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_slice_defragment")
     {
         tipl::morphology::fill_holes_by_slice(voxel.mask);
-        voxel.steps += "[Step T2a][Slice Defragment]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_smoothing")
     {
@@ -871,27 +881,23 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::smoothing(voxel.mask.slice_at(0));
         else
             tipl::morphology::smoothing(voxel.mask);
-        voxel.steps += "[Step T2a][Smoothing]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_fit")
     {
         tipl::morphology::fit(voxel.mask,dwi);
-        voxel.steps += "[Step T2a][Fit]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_negate")
     {
         tipl::morphology::negate(voxel.mask);
-        voxel.steps += "[Step T2a][Negate]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_from_template")
     {
         if(!mask_from_template())
             return false;
-        voxel.steps += "[Step T2a][Template]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_threshold")
     {
@@ -910,8 +916,8 @@ bool src_data::command(std::vector<std::string> cmds)
         else
             threshold = std::stoi(param);
         voxel.mask = dwi > threshold;
-        voxel.steps += "[Step T2a][Threshold]" + std::string("=") + std::to_string(threshold) + "\n";
-        return true;
+        param = std::to_string(threshold);
+        return log_step();
     }
     if(cmd == "src_probabilistic_masking")
     {
@@ -937,8 +943,7 @@ bool src_data::command(std::vector<std::string> cmds)
         });
         voxel.mask = prob > 0.0f;
         update_dwi_sum();
-        voxel.steps += "[Step T2][Edit][Probablistic Masking]="+param+"\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_mask_remove_background")
     {
@@ -953,141 +958,114 @@ bool src_data::command(std::vector<std::string> cmds)
                     buf[i] = 0;
         }
         apply_mask = true;
-        voxel.steps += "[Step T2a][Remove Background]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_set_voxel_size")
     {
         std::istringstream in(param);
         in >> voxel.vs[0] >> voxel.vs[1] >> voxel.vs[2];
         voxel.report = get_report();
-        voxel.steps += "[Step T2][Edit][Overwrite Voxel Size]="+param+"\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_smooth_signals")
     {
         smoothing();
-        voxel.steps += "[Step T2][Edit][Smooth Signals]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_crop_background")
     {
-        int border = 0;
-        if(!param.empty())
-        {
-            border = std::stoi(param);
-            voxel.steps += "[Step T2][Edit][Crop Background]="+param+"\n";
-        }
-        else
-            voxel.steps += "[Step T2][Edit][Crop Background]\n";
-        trim(border);
-        return true;
+        trim(param.empty() ? 0 : std::stoi(param));
+        return log_step();
     }
     if(cmd == "src_flip_x")
     {
         flip_dwi(0);
-        voxel.steps += "[Step T2][Edit][Image flip x]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_flip_y")
     {
         flip_dwi(1);
-        voxel.steps += "[Step T2][Edit][Image flip y]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_flip_z")
     {
         flip_dwi(2);
-        voxel.steps += "[Step T2][Edit][Image flip z]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_swap_xy")
     {
         flip_dwi(3);
-        voxel.steps += "[Step T2][Edit][Image swap xy]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_swap_yz")
     {
         flip_dwi(4);
-        voxel.steps += "[Step T2][Edit][Image swap yz]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_swap_xz")
     {
         flip_dwi(5);
-        voxel.steps += "[Step T2][Edit][Image swap xz]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_resample")
     {
         resample(std::stof(param));
-        voxel.steps += "[Step T2][Edit][Resample]="+param+"\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_align_acpc")
     {
         if(!align_acpc(param.empty() ? voxel.vs[0] : std::stof(param)))
             return false;
-        voxel.steps += param.empty() ? std::string("[Step T2][Edit][Align ACPC]\n") : ("[Step T2][Edit][Align ACPC]="+param+"\n");
-        return true;
+        return log_step();
     }
     // correct for b-table orientation
     if(cmd == "src_check_btable")
     {
         if(!check_b_table(true))
             return false;
-        voxel.steps += "[Step T2][B-table][Check B-table]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_check_btable2")
     {
         if(!check_b_table(false))
             return false;
-        voxel.steps += "[Step T2][B-table][Check B-table2]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_flip_bx")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][0] = -src_bvectors[i][0];
-        voxel.steps += "[Step T2][B-table][flip bx]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_flip_by")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][1] = -src_bvectors[i][1];
-        voxel.steps += "[Step T2][B-table][flip by]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_flip_bz")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][2] = -src_bvectors[i][2];
-        voxel.steps += "[Step T2][B-table][flip bz]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_swap_bxby")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][0],src_bvectors[i][1]);
-        voxel.steps += "[Step T2][B-table][swap bxby]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_swap_bybz")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][1],src_bvectors[i][2]);
-        voxel.steps += "[Step T2][B-table][swap bybz]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_swap_bxbz")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             std::swap(src_bvectors[i][0],src_bvectors[i][2]);
-        voxel.steps += "[Step T2][B-table][swap bxbz]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_topup")
     {
@@ -1096,8 +1074,7 @@ bool src_data::command(std::vector<std::string> cmds)
             if(!get_rev_pe(param) || !run_topup() || !run_applytopup())
                 return false;
         }
-        voxel.steps += param.empty() ? std::string("[Step T2][Corrections][TOPUP]\n") : ("[Step T2][Corrections][TOPUP]="+param+"\n");
-        return true;
+        return log_step();
     }
     if(cmd == "src_topup_eddy")
     {
@@ -1116,8 +1093,7 @@ bool src_data::command(std::vector<std::string> cmds)
             if(!run_eddy())
                 return false;
         }
-        voxel.steps += param.empty() ? std::string("[Step T2][Corrections][TOPUP EDDY]\n") : ("[Step T2][Corrections][TOPUP EDDY]="+param+"\n");
-        return true;
+        return log_step();
     }
     if(cmd == "src_eddy")
     {
@@ -1126,36 +1102,31 @@ bool src_data::command(std::vector<std::string> cmds)
             if(!run_eddy())
                 return false;
         }
-        voxel.steps += "[Step T2][Corrections][EDDY]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_motion_correction")
     {
         if(!correct_motion())
             return false;
-        voxel.steps += "[Step T2][Corrections][Motion Correction]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_bias_field_correction")
     {
         if(!correct_bias_field())
             return false;
-        voxel.steps += "[Step T2][Corrections][Bias Field]\n";
-        return true;
+        return log_step();
     }
 
     if(cmd == "src_correct_by_t2w")
     {
         if(!correct_distortion_by_t2w(param))
             return false;
-        voxel.steps += "[Step T2][Corrections][By T2w]="+param+"\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_orientation_correction")
     {
         correction_axis();
-        voxel.steps += "[Step T2][Corrections][Volume Orientation Correction]\n";
-        return true;
+        return log_step();
     }
     if(cmd == "src_partial_fov")
     {
