@@ -463,7 +463,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()))
+    if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()) && param.empty())
     {
         param = tipl::remove_all_suffix(param) + ".rz";
         if(!std::filesystem::exists(param))
@@ -477,7 +477,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         }
     }
 
-    if(tipl::contains_case_insensitive(cmd,"open"))
+    if(tipl::contains_case_insensitive(cmd,"open") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(
             this,absolute_path,"Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
