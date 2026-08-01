@@ -10,6 +10,7 @@
 #include "ui_reconstruction_window.h"
 
 #include "mainwindow.h"
+#include "tracking/tracking_window.h"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
 #include "manual_alignment.h"
@@ -161,23 +162,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->mask_edit->setVisible(false);
 
     {
-        auto run_tip = [this](const std::string& tip)
-        {
-            std::string cmd = tip.substr(4),param;
-            size_t pos = cmd.find('=');
-            if(pos != std::string::npos)
-            {
-                param = cmd.substr(pos+1);
-                cmd.resize(pos);
-            }
-            command(cmd,param);
-        };
         foreach (QAction* action, findChildren<QAction*>())
             if(action->toolTip().startsWith("run "))
-                connect(action,&QAction::triggered,this,[run_tip,action](){run_tip(action->toolTip().toStdString());});
+                connect(action,&QAction::triggered,this,[this,action](){command(action->toolTip().mid(4).section('=',0,0).toStdString(),action->toolTip().mid(4).section('=',1).toStdString(),command_source::User);});
         foreach (QPushButton* pb, findChildren<QPushButton*>())
             if(pb->toolTip().startsWith("run "))
-                connect(pb,&QPushButton::clicked,this,[run_tip,pb](){run_tip(pb->toolTip().toStdString());});
+                connect(pb,&QPushButton::clicked,this,[this,pb](){command(pb->toolTip().mid(4).section('=',0,0).toStdString(),pb->toolTip().mid(4).section('=',1).toStdString(),command_source::User);});
     }
 }
 void reconstruction_window::update_dimension(void)
@@ -342,12 +332,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 }
 
 
-void reconstruction_window::on_from_template_clicked()
-{
-    handle->voxel.template_id = ui->primary_template->currentIndex();
-    command("src_mask_from_template");
-}
-
 void reconstruction_window::on_save_mask_clicked()
 {
     QString filename = tipl::qt::save_image_file(this,absolute_path+"/mask.nii.gz",
@@ -361,15 +345,28 @@ void reconstruction_window::on_save_mask_clicked()
     region.save_region_to_file(filename.toStdString());
 }
 
-bool reconstruction_window::command(std::string cmd,std::string param)
+bool reconstruction_window::command(std::string cmd,std::string param,command_source source)
 {
+    auto fail = [&](const std::string& msg = std::string())
+    {
+        if(!msg.empty())
+            handle->error_msg = msg;
+        tipl::error() << handle->error_msg;
+        if(source == command_source::User && !handle->error_msg.empty())
+            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+        return false;
+    };
+    if(cmd == "src_mask_from_template")
+        handle->voxel.template_id = param.empty() ?
+            (source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id) :
+            std::stoi(param);
     if(cmd == "src_resample" || cmd == "src_align_acpc")
     {
         bool ok;
         float nv = float(QInputDialog::getDouble(this,
             QApplication::applicationName(),"Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
         if (!ok || nv == 0.0f)
-            return false;
+            return fail("canceled");
         param = std::to_string(nv);
     }
     if(cmd == "src_save_nifti" || cmd == "src_save_b0" ||
@@ -378,7 +375,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
-            return false;
+            return fail("canceled");
         param = filename.toStdString();
     }
     if(cmd == "src_probabilistic_masking" || cmd == "src_correct_by_t2w")
@@ -386,7 +383,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
-            return false;
+            return fail("canceled");
         param = filename.toStdString();
     }
     if(cmd == "src_save_src")
@@ -394,7 +391,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
         if(filename.isEmpty())
-            return false;
+            return fail("canceled");
         param = filename.toStdString();
     }
     if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()))
@@ -406,7 +403,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             auto other_src = tipl::qt::open_image_file(
                     this,absolute_path,"Images (*.sz *.rz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
             if(other_src.isEmpty())
-                return false;
+                return fail("canceled");
             param = other_src.toStdString();
         }
     }
@@ -416,30 +413,23 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         QString filename = tipl::qt::open_image_file(
             this,absolute_path,"Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
         if(filename.isEmpty())
-            return false;
+            return fail("canceled");
         param = filename.toStdString();
     }
 
     bool result = handle->command(cmd,param);
     if(!result)
-    {
-        if(!handle->error_msg.empty())
-            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-    }
+        fail();
     else
-    {
-        if(tipl::contains(cmd,"Corrections"))
-            QMessageBox::information(this,QApplication::applicationName(),"correction result loaded");
-        if(tipl::contains(cmd,"B-table"))
-            QMessageBox::information(this,QApplication::applicationName(),QString("b-table updated ") + handle->error_msg.c_str());
-    }
+        if(source == command_source::User)
+            QMessageBox::information(this,QApplication::applicationName(),"done");
     update_dimension();
     load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 
 
     if(filenames.size() > 1 &&
-       tipl::contains(cmd,"[Save ") &&
+       tipl::begins_with(cmd,"src_save_") &&
         QMessageBox::information(this,QApplication::applicationName(),"Apply to other SRC files?",
         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
@@ -454,7 +444,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
                 if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
                                 QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
-                    return false;
+                    return tipl::error() << (handle->error_msg = model.error_msg),false;
             }
         }
     }
@@ -879,7 +869,7 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
                                                               .arg(double(handle->voxel.vs[2])),&ok);
     if(!ok)
         return;
-    command("src_set_voxel_size",result.toStdString());
+    command("src_set_voxel_size",result.toStdString(),command_source::User);
     ui->report->setText((handle->voxel.report = handle->get_report()).c_str());
 }
 

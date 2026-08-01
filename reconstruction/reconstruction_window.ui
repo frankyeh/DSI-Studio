@@ -574,6 +574,9 @@
                </item>
                <item row="0" column="11">
                 <widget class="QPushButton" name="from_template">
+                 <property name="toolTip">
+                  <string>run src_mask_from_template</string>
+                 </property>
                  <property name="text">
                   <string>Template</string>
                  </property>

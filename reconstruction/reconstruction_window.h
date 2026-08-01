@@ -13,6 +13,7 @@ namespace Ui {
 }
 
 struct src_data;
+enum class command_source;
 class reconstruction_window : public QMainWindow
 {
     Q_OBJECT
@@ -22,7 +23,7 @@ public:
     QStringList filenames;
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
-    bool command(std::string cmd,std::string param = std::string());
+    bool command(std::string cmd,std::string param,command_source source);
 public:
     std::vector<QCheckBox*> outputs,adv_outputs;
 protected:
@@ -53,7 +54,6 @@ private slots:
     void on_DTI_toggled(bool checked);
     void on_save_mask_clicked();
     void on_doDTI_clicked();
-    void on_from_template_clicked();
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
