@@ -148,6 +148,15 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
     auto run = history.record(error_msg,cmd);
     cmd.resize(3);
+    if(cmd[0] == "close")
+    {
+        // AI cannot answer the "tractography not saved" prompt, so bypass it
+        bool prev = ignore_close_prompt;
+        ignore_close_prompt = (run->source != command_source::User);
+        close();
+        ignore_close_prompt = prev;
+        return run->succeed();
+    }
     if(cmd[0] == "open_fib")
     {
         std::shared_ptr<fib_data> new_handle(new fib_data);
