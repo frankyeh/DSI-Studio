@@ -765,17 +765,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 void tracking_window::closeEvent(QCloseEvent *event)
 {
-    for(size_t index = 0;index < tractWidget->tract_models.size();++index)
-        if(!tractWidget->tract_models[index]->saved)
-        {
-            if (QMessageBox::question( this, QApplication::applicationName(),
-                "Tractography not saved. Close?\n",QMessageBox::No | QMessageBox::Yes,QMessageBox::No) == QMessageBox::No)
+    if(!ignore_close_prompt)
+        for(size_t index = 0;index < tractWidget->tract_models.size();++index)
+            if(!tractWidget->tract_models[index]->saved)
             {
-                event->ignore();
-                return;
+                if (QMessageBox::question( this, QApplication::applicationName(),
+                    "Tractography not saved. Close?\n",QMessageBox::No | QMessageBox::Yes,QMessageBox::No) == QMessageBox::No)
+                {
+                    event->ignore();
+                    return;
+                }
+                break;
             }
-            break;
-        }
 
     QMainWindow::closeEvent(event);
     // clean up texture here when makeCurrent is still working
