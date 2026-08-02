@@ -148,6 +148,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
     auto run = history.record(error_msg,cmd);
     cmd.resize(3);
+    if(cmd[0] == "bring_to_front")
+    {
+        showNormal();
+        raise();
+        activateWindow();
+        return run->succeed();
+    }
     if(cmd[0] == "close")
     {
         // AI cannot answer the "tractography not saved" prompt, so bypass it

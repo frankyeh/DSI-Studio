@@ -90,6 +90,13 @@ bool view_image::command(std::vector<std::string> cmds,
     cmds.resize(2);
     std::string cmd = cmds[0];
     std::string param1 = cmds[1];
+    if(cmd == "bring_to_front")
+    {
+        showNormal();
+        raise();
+        activateWindow();
+        return true;
+    }
     if(cmd == "close")
     {
         close();

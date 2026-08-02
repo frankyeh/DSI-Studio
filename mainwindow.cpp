@@ -1100,6 +1100,14 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return fail("empty command");
     command_report report(this,"main",cmd,source);
 
+    if(cmd[0] == "bring_to_front")
+    {
+        showNormal();
+        raise();
+        activateWindow();
+        return true;
+    }
+
     if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
     {
         if(cmd[0] == "open_hub" && cmd.size() != 1)

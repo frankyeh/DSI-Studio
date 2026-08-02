@@ -287,6 +287,13 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
+    if(cmd == "bring_to_front")
+    {
+        showNormal();
+        raise();
+        activateWindow();
+        return true;
+    }
     if(cmd == "close")
     {
         close();
