@@ -6,6 +6,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -21,6 +22,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkProxy>
 #include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QPushButton>
@@ -50,6 +52,7 @@
 #include "reconstruction/reconstruction_window.h"
 #include "console.h"
 
+extern QString access_token;
 std::unordered_map<QString,ai_info> ai_infos;
 QString ai_project_dir;
 constexpr auto ai_debug_tag = "[DEUBG]";
