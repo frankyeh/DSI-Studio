@@ -5,15 +5,18 @@
 #include <QJsonObject>
 #include <QList>
 #include <QMainWindow>
+#include <QNetworkAccessManager>
 #include <QSettings>
 #include <QStringList>
+#include <QTimer>
+#include <QUrl>
 
 class MainWindow;
 class QListWidgetItem;
 class QMenu;
+class QNetworkRequest;
 class QProcess;
 class QShowEvent;
-class QTimer;
 
 namespace Ui {
 class AIAgent;
@@ -55,6 +58,18 @@ class AIAgent : public QMainWindow
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0;
 
+    // GitHub issue channel
+    QNetworkAccessManager github_manager;
+    QTimer github_timer;
+    QUrl github_issue_api;
+    QByteArray github_etag;
+    qint64 github_result_comment = 0;
+    qint64 github_last_id = 0;
+
+    QNetworkRequest github_request(const QUrl&) const;
+    void poll_github_issue();
+    void publish_github_result(QJsonObject);
+
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     void set_ai_status(QString = {},bool = false);
@@ -72,6 +87,8 @@ public:
     ~AIAgent();
     void refresh_ai_info(ai_info& info)
     {show_ai_project(info);set_ai_status("Agent request completed.",true);}
+    bool connect_github_issue(const QString&,QString& error);
+    void disconnect_github_issue();
 
 protected:
     void showEvent(QShowEvent*) override;
