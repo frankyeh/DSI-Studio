@@ -53,7 +53,6 @@
 #include "reconstruction/reconstruction_window.h"
 #include "console.h"
 
-extern QString access_token;
 std::unordered_map<QString,ai_info> ai_infos;
 QString ai_project_dir;
 constexpr auto ai_debug_tag = "[DEUBG]";
@@ -401,7 +400,9 @@ AIAgent::~AIAgent()
 QNetworkRequest AIAgent::github_request(const QUrl& url) const
 {
     QNetworkRequest request(url);
-    request.setRawHeader("Authorization",("Bearer "+access_token).toUtf8());
+    // independent of the DSI Studio login token: a dedicated GitHub PAT
+    // configured in AI Settings, scoped only to the issue channel
+    request.setRawHeader("Authorization",("Bearer "+settings.value("ai/github_token").toString()).toUtf8());
     request.setRawHeader("Accept","application/vnd.github+json");
     request.setRawHeader("X-GitHub-Api-Version","2022-11-28");
     request.setRawHeader("User-Agent","DSI-Studio");
@@ -433,8 +434,10 @@ static QByteArray github_blocking(QNetworkAccessManager& manager,
 
 bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 {
-    if(access_token.isEmpty())
-        return error = "not logged in yet; please wait for login to complete and retry",false;
+    if(settings.value("ai/github_token").toString().isEmpty())
+        return error = "no GitHub token configured; set one in AI Settings first "
+                        "(GitHub requires an authenticated request for every write, "
+                        "including editing a comment on a public issue)",false;
 
     QUrl url(url_text.trimmed());
     if(!url.isValid() || url.scheme().compare("https",Qt::CaseInsensitive) ||
@@ -1395,12 +1398,16 @@ void AIAgent::on_ai_quick_settings_clicked()
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox debug("Enable debug mode");
     debug.setChecked(settings.value("ai/debug").toBool());
+    QLineEdit github_pat(settings.value("ai/github_token").toString());
+    github_pat.setEchoMode(QLineEdit::Password);
+    github_pat.setPlaceholderText("required to connect a GitHub issue");
     layout.addRow("Ollama host/IP:",&host);
     layout.addRow("Ollama port:",&port);
     layout.addRow("Default agent:",&agent);
     layout.addRow("Default model:",&model);
     layout.addRow(&history);
     layout.addRow(&debug);
+    layout.addRow("GitHub token (issue channel):",&github_pat);
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
     layout.addRow(&buttons);
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -1417,6 +1424,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/ollama_port",port.value());
     settings.setValue("ai/keep_history",history.isChecked());
     settings.setValue("ai/debug",debug.isChecked());
+    settings.setValue("ai/github_token",github_pat.text().trimmed());
     ai_debug_enabled() = debug.isChecked();
     settings.setValue("ai/default_agent",agent.currentIndex());
     settings.setValue("ai/default_model",model.currentText());
