@@ -90,6 +90,11 @@ bool view_image::command(std::vector<std::string> cmds,
     cmds.resize(2);
     std::string cmd = cmds[0];
     std::string param1 = cmds[1];
+    if(cmd == "close")
+    {
+        close();
+        return true;
+    }
     if(cur_image->empty())
         return true;
     error_msg.clear();
