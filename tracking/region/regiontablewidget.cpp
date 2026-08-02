@@ -472,16 +472,24 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "check_region")
     {
-        // cmd[1] : region index (default current row)
+        // cmd[1] : region index (default current row), multiple indices separated by '&'
         // cmd[2] : checked state
-        int cur_row = currentRow();
-        if(!get_cur_row(cmd[1],cur_row))
-            return false;
-        auto check_item = item(cur_row,0);
+        if(regions.empty())
+            return run->failed("no available region");
         auto check_state = (cmd[2] == "1" ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-        check_item->setData(Qt::UserRole+1, check_state);
-        if (check_item->checkState() != check_state)
-            check_item->setCheckState(check_state);
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(currentRow());
+        for(auto each : QString::fromStdString(cmd[1]).split('&',Qt::SkipEmptyParts))
+        {
+            bool ok = false;
+            int cur_row = each.toInt(&ok);
+            if(!ok || cur_row < 0 || cur_row >= int(regions.size()))
+                return run->failed("invalid region index: " + each.toStdString());
+            auto check_item = item(cur_row,0);
+            check_item->setData(Qt::UserRole+1, check_state);
+            if (check_item->checkState() != check_state)
+                check_item->setCheckState(check_state);
+        }
         emit need_update();
         return run->succeed();
     }
