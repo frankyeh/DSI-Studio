@@ -968,8 +968,12 @@ bool src_data::command(std::vector<std::string> cmds)
             return false;
         }
         ROIRegion region(voxel.dim,voxel.vs);
-        region.load_region_from_file(param);
-        region.to_mask(voxel.mask);
+        if(!region.load_region_from_file(param))
+            return error_msg = "cannot load mask: " + param,false;
+        auto mask = region.to_mask();
+        if(mask.shape() != voxel.dim)
+            return error_msg = "mask dimension does not match source data",false;
+        mask.swap(voxel.mask);
         return log_step();
     }
     if(cmd == "mask_erosion")
