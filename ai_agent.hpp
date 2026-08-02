@@ -64,8 +64,12 @@ class AIAgent : public QMainWindow
     QTimer github_timer;
     QUrl github_issue_api,github_result_api;
     QByteArray github_etag;
+    QString github_token; // snapshot taken at connect time so a mid-session
+                          // Settings change cannot swap the identity underneath a poll
     qint64 github_last_id = 0;
     QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
+    quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks
+                                       // from a superseded connection even to the same URL
 
     QNetworkRequest github_request(const QUrl&) const;
     void poll_github_issue();
