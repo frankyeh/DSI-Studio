@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <QContextMenuEvent>
 #include <QDoubleSpinBox>
 #include <QInputDialog>
@@ -637,12 +638,27 @@ bool DeviceTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "delete_device")
     {
-        // cmd[1] : device index (default: current)
-        int cur_row = currentRow();
-        if(!get_cur_row(cmd[1],cur_row))
-            return false;
-        devices.erase(devices.begin()+cur_row);
-        removeRow(cur_row);
+        // cmd[1] : device index (default: current), multiple indices separated by '&'
+        if(devices.empty())
+            return run->failed("no available device");
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(currentRow());
+        std::vector<int> rows;
+        for(auto each : QString::fromStdString(cmd[1]).split('&',Qt::SkipEmptyParts))
+        {
+            bool ok = false;
+            int row = each.toInt(&ok);
+            if(!ok || row < 0 || row >= int(devices.size()))
+                return run->failed("invalid device index: " + each.toStdString());
+            if(std::find(rows.begin(),rows.end(),row) == rows.end())
+                rows.push_back(row);
+        }
+        std::sort(rows.begin(),rows.end());
+        for(int i = int(rows.size())-1;i >= 0;--i)
+        {
+            devices.erase(devices.begin()+rows[i]);
+            removeRow(rows[i]);
+        }
         emit need_update();
         return run->succeed();
     }
