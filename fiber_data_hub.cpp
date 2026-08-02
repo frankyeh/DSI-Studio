@@ -172,8 +172,10 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         return false;
 
     const std::string usage =
-        "hub_repo | hub_tags <repo> | hub_files <repo> <tag> [text] [offset] [limit] | "
-        "hub_open <repo> <tag> <file> | hub_download <repo> <tag> <file> <dir>";
+        "hub_repo | hub_tags <repo> | hub_files <repo> [tag] [text] [offset] [limit] | "
+        "hub_open <repo> <tag> <file> | hub_download <repo> [tag] <file> <dir> "
+        "([tag] and [text] empty means match all; both are treated as regular expressions, "
+        "except hub_open whose <tag> must be an exact, single tag)";
 
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     auto arg = [&](size_t i){return QString::fromStdString(cmd[i]);};
@@ -241,6 +243,39 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         return true;
     };
 
+    // an empty pattern is itself a valid regex that matches every string,
+    // so no separate "match all" case is needed
+    auto make_re = [&](const QString& pattern,const char* what,bool& ok)
+    {
+        QRegularExpression re(pattern,QRegularExpression::CaseInsensitiveOption);
+        if(!(ok = re.isValid()))
+            error_msg = std::string("invalid ")+what+" pattern: "+pattern.toStdString();
+        return re;
+    };
+
+    // select and visit every tag whose name matches tag_pattern (regex, empty = all);
+    // fun returns false to stop iterating early (not an error)
+    auto for_each_tag = [&](const QString& tag_pattern,auto&& fun)->bool
+    {
+        if(!tags->rowCount())
+            return fail("repository data is loading; retry");
+        bool ok = true;
+        auto tag_re = make_re(tag_pattern,"tag",ok);
+        if(!ok)
+            return false;
+        for(int trow = 0;trow < tags->rowCount();++trow)
+        {
+            QString tag_name = tags->item(trow,0)->text();
+            if(!tag_re.match(tag_name).hasMatch())
+                continue;
+            tags->setCurrentCell(trow,0);
+            on_github_tags_itemSelectionChanged();
+            if(!fun(tag_name))
+                break;
+        }
+        return true;
+    };
+
     if(cmd[0] == "hub_repo")
     {
         for(int row = 0;row < repos->count();++row)
@@ -261,38 +296,47 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "hub_files")
     {
-        if(!select_repo() || !select_tag())
+        if(!select_repo())
             return false;
 
         bool ok = true;
-        QString text = cmd.size() > 3 ? arg(3) : QString();
+        auto text_re = make_re(cmd.size() > 3 ? arg(3) : QString(),"text",ok);
+        if(!ok)
+            return false;
+
         int offset = cmd.size() > 4 ? arg(4).toInt(&ok) : 0;
         if(!ok || offset < 0)
             return fail("invalid offset");
 
-        int limit = cmd.size() > 5 ? arg(5).toInt(&ok) : files->rowCount();
+        bool has_limit = cmd.size() > 5;
+        int limit = has_limit ? arg(5).toInt(&ok) : 0;
         if(!ok || limit < 0)
             return fail("invalid limit");
 
-        QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/"+cur_tag+"/";
-        tipl::out() << "index\tfile\tsize\tdownloaded";
-
-        for(int row = 0;row < files->rowCount() && limit;++row)
+        tipl::out() << "index\ttag\tfile\tsize\tdownloaded";
+        return for_each_tag(cmd.size() > 2 ? arg(2) : QString(),[&](const QString& tag_name)
         {
-            QString name = files->item(row,0)->text();
-            if(!name.contains(text,Qt::CaseInsensitive))
-                continue;
-            if(offset)
+            QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/"+cur_tag+"/";
+            for(int row = 0;row < files->rowCount();++row)
             {
-                --offset;
-                continue;
+                QString name = files->item(row,0)->text();
+                if(!text_re.match(name).hasMatch())
+                    continue;
+                if(offset)
+                {
+                    --offset;
+                    continue;
+                }
+                if(has_limit && !limit)
+                    return false;
+                tipl::out() << row << "\t" << tag_name.toStdString() << "\t" << name.toStdString() << "\t"
+                            << files->item(row,1)->text().toStdString() << "\t"
+                            << QFile::exists(path+name);
+                if(has_limit)
+                    --limit;
             }
-            tipl::out() << row << "\t" << name.toStdString() << "\t"
-                        << files->item(row,1)->text().toStdString() << "\t"
-                        << QFile::exists(path+name);
-            --limit;
-        }
-        return true;
+            return true;
+        });
     }
 
     if(cmd[0] == "hub_open")
@@ -307,7 +351,7 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
     {
         if(cmd.size() != 5)
             return fail(usage);
-        if(!select_repo() || !select_tag() || !select_file())
+        if(!select_repo())
             return false;
 
         QDir dir(arg(4));
@@ -321,8 +365,21 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
 
         ui->download_dir->setText(dir.path());
         ui->download_overwrite->setChecked(false);
-        on_github_download_clicked();
-        return true;
+
+        bool any = false;
+        if(!for_each_tag(arg(2),[&](const QString& tag_name)
+        {
+            if(!select_file())
+                tipl::out() << "skip\t" << tag_name.toStdString() << "\t" << error_msg;
+            else
+            {
+                on_github_download_clicked();
+                any = true;
+            }
+            return true;
+        }))
+            return false;
+        return any || fail("no matching tag with the specified file found");
     }
 
     return fail(usage);
