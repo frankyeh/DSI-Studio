@@ -1624,5 +1624,34 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return fail("voice is available only on Windows");
 #endif
     }
+    if(cmd[0] == "run_cli")
+    {
+        if(cmd.size() != 2 || cmd[1].empty())
+            return fail("usage: run_cli <command>");
+
+        QString text = QString::fromUtf8(cmd[1].c_str());
+        QString program = text.section(' ',0,0);
+        if(program.compare("dir",Qt::CaseInsensitive) &&
+           program.compare("curl",Qt::CaseInsensitive))
+            return fail("run_cli only allows dir and curl commands");
+        for(auto c : QString("&|;<>^`\n\r"))
+            if(text.contains(c))
+                return fail("run_cli command contains disallowed characters");
+
+        QProcess process;
+#ifdef Q_OS_WIN
+        process.start("cmd.exe",QStringList() << "/c" << text);
+#else
+        process.start(text);
+#endif
+        if(!process.waitForStarted(3000))
+            return fail("cannot start command");
+        process.waitForFinished();
+        tipl::out() << process.readAllStandardOutput().toStdString();
+        auto err = process.readAllStandardError().toStdString();
+        if(!err.empty())
+            tipl::error() << err;
+        return true;
+    }
     return fail("unknown command: "+cmd[0]);
 }
