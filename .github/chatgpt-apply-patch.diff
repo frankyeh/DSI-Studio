@@ -1,9 +1,8 @@
 diff --git a/ai_agent.cpp b/ai_agent.cpp
 --- a/ai_agent.cpp
 +++ b/ai_agent.cpp
-@@ -536,11 +536,14 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
--        QWidget* target = nullptr;
-+        QWidget* target = nullptr;
+@@ -589,10 +589,13 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
+         QWidget* target = nullptr;
 +        MainWindow* main_target = nullptr;
          for(auto* each : QApplication::allWidgets())
          {
@@ -14,7 +13,8 @@ diff --git a/ai_agent.cpp b/ai_agent.cpp
              if(get_window_id(each) == window)
                  target = each;
          }
-@@ -579,7 +582,13 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
+         if(!target)
+@@ -636,8 +639,15 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 -                if(auto* window = qobject_cast<MainWindow*>(target))
 +                if(command_name == "voice")
 +                {
@@ -26,4 +26,8 @@ diff --git a/ai_agent.cpp b/ai_agent.cpp
 +                else if(auto* window = qobject_cast<MainWindow*>(target))
                      execute(window,window->command(cmd,command_source::AI));
                  else if(auto* window = qobject_cast<tracking_window*>(target))
+                     execute(window,window->command(cmd,command_source::AI));
+                 else if(auto* window = qobject_cast<reconstruction_window*>(target))
+                     execute(window,window->command(cmd,command_source::AI));
+                 else if(auto* window = qobject_cast<view_image*>(target))
                      execute(window,window->command(cmd,command_source::AI));
