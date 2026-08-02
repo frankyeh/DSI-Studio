@@ -1601,21 +1601,13 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             return fail("usage: voice <text>");
 
 #ifdef Q_OS_WIN
-        auto* process = new QProcess(this);
-
+        QProcess process;
         auto env = QProcessEnvironment::systemEnvironment();
         env.insert("DSI_VOICE_TEXT",
                    QString::fromUtf8(cmd[1].c_str()));
-        process->setProcessEnvironment(env);
-
-        connect(process,
-                QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-                process,
-                &QObject::deleteLater);
-
-        process->start(
-            "powershell.exe",
-            {
+        process.setProcessEnvironment(env);
+        process.setProgram("powershell.exe");
+        process.setArguments({
                 "-NoProfile",
                 "-NonInteractive",
                 "-Command",
@@ -1623,7 +1615,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                 "[void]$v.Speak($env:DSI_VOICE_TEXT)"
             });
 
-        return process->waitForStarted(3000) ||
+        // detach: DSI Studio returns immediately and does not wait for
+        // powershell to finish speaking
+        return process.startDetached() ||
                fail("cannot start Windows speech");
 #else
         return fail("voice is available only on Windows");
