@@ -1639,9 +1639,23 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 
         QString text = QString::fromUtf8(cmd[1].c_str());
         QString program = text.section(' ',0,0);
+
+        if(!program.compare("cd",Qt::CaseInsensitive))
+        {
+            // "cd" is a shell builtin, not a real process: change DSI Studio's
+            // own working directory directly so the effect persists across calls
+            QString path = text.mid(program.length()).trimmed();
+            if(path.size() >= 2 && path.startsWith('"') && path.endsWith('"'))
+                path = path.mid(1,path.size()-2);
+            if(!path.isEmpty() && !QDir::setCurrent(path))
+                return fail("cannot change directory to: "+path.toStdString());
+            tipl::out() << QDir::currentPath().toStdString();
+            return true;
+        }
+
         if(program.compare("dir",Qt::CaseInsensitive) &&
            program.compare("curl",Qt::CaseInsensitive))
-            return fail("run_cli only allows dir and curl commands");
+            return fail("run_cli only allows dir, curl, and cd commands");
         for(auto c : QString("&|;<>^`\n\r"))
             if(text.contains(c))
                 return fail("run_cli command contains disallowed characters");
