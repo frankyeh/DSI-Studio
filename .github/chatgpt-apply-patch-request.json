@@ -1,0 +1,1 @@
+{"base_sha":"8b246a78d4c4aa0819a8b9c8ab7a5f3f0e328681","patch_path":".github/chatgpt-apply-patch.diff","message":"Route voice commands through main window in CMD batches","allow_delete":false,"debug":true,"run":1}
