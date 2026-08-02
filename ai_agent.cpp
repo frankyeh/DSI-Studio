@@ -396,15 +396,8 @@ AIAgent::~AIAgent()
     delete ui;
 }
 
-// ---------------------------------------------------------------------
-// GitHub issue channel
-//
-// A GitHub issue is used as a remote command/result mailbox: the issue
-// body carries the next request (written by the remote agent), and a
-// single pinned comment (marked by "dsi_session_result":true in its
-// body) carries the most recent result (written by DSI Studio).
-// ---------------------------------------------------------------------
-
+// GitHub issue channel: the issue body carries the next request, and one
+// pinned comment (marked "dsi_session_result":true) carries the result
 QNetworkRequest AIAgent::github_request(const QUrl& url) const
 {
     QNetworkRequest request(url);
@@ -444,7 +437,8 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         return error = "not logged in yet; please wait for login to complete and retry",false;
 
     QUrl url(url_text.trimmed());
-    if(!url.isValid() || url.host().compare("github.com",Qt::CaseInsensitive))
+    if(!url.isValid() || url.scheme().compare("https",Qt::CaseInsensitive) ||
+       url.host().compare("github.com",Qt::CaseInsensitive))
         return error = "expected an https://github.com/... issue link",false;
 
     auto parts = url.path().split('/',Qt::SkipEmptyParts);
@@ -453,8 +447,9 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     if(parts.size() != 4 || parts[2] != "issues" || !number_ok || issue_number <= 0)
         return error = "expected the form https://github.com/<owner>/<repository>/issues/<number>",false;
 
-    QString api_base = "https://api.github.com/repos/"+parts[0]+"/"+parts[1];
-    QUrl issue_api(api_base+"/issues/"+QString::number(issue_number));
+    QString owner = parts[0];
+    QUrl issue_api("https://api.github.com/repos/"+owner+"/"+parts[1]+
+                   "/issues/"+QString::number(issue_number));
 
     bool ok = false;
     auto issue = QJsonDocument::fromJson(
@@ -466,7 +461,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         return error = "the link points to a pull request, not an issue",false;
     if(issue["state"].toString() != "open")
         return error = "issue is not open",false;
-    if(issue["user"].toObject()["login"].toString().compare(parts[0],Qt::CaseInsensitive))
+    if(issue["user"].toObject()["login"].toString().compare(owner,Qt::CaseInsensitive))
         return error = "issue creator must be the repository owner",false;
     if(!issue["title"].toString().startsWith("DSI Studio session"))
         return error = "issue title must start with \"DSI Studio session\"",false;
@@ -476,20 +471,27 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     if(!ok)
         return false;
 
-    qint64 comment_id = 0;
+    // find our own existing result comment (author must match the owner
+    // already verified above) and resume its last_id rather than
+    // re-executing whatever command the issue body currently holds
+    QUrl result_api;
+    qint64 last_id = 0;
     for(const auto& each : comments)
     {
         auto comment = each.toObject();
+        if(comment["user"].toObject()["login"].toString().compare(owner,Qt::CaseInsensitive))
+            continue;
         auto body = QJsonDocument::fromJson(comment["body"].toString().toUtf8());
         if(body.isObject() && body.object()["dsi_session_result"].toBool())
         {
-            comment_id = comment["id"].toInteger();
+            result_api = QUrl(comment["url"].toString());
+            last_id = body.object()["last_id"].toInteger();
             break;
         }
     }
-    if(!comment_id)
+    if(result_api.isEmpty())
     {
-        QJsonObject initial{{"state","idle"},{"dsi_session_result",true},{"issue",issue_number}};
+        QJsonObject initial{{"state","idle"},{"last_id",0},{"dsi_session_result",true},{"issue",issue_number}};
         QJsonObject post_body{{"body",QString::fromUtf8(QJsonDocument(initial).toJson(QJsonDocument::Compact))}};
         auto post_request = github_request(QUrl(issue_api.toString()+"/comments"));
         post_request.setRawHeader("Content-Type","application/json");
@@ -498,15 +500,16 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
                              QJsonDocument(post_body).toJson(QJsonDocument::Compact),ok,error)).object();
         if(!ok)
             return false;
-        comment_id = created["id"].toInteger();
-        if(!comment_id)
+        result_api = QUrl(created["url"].toString()); // GitHub's canonical .../issues/comments/<id> form
+        if(result_api.isEmpty())
             return error = "cannot create the result comment",false;
     }
 
     github_issue_api = issue_api;
-    github_result_comment = comment_id;
+    github_result_api = result_api;
     github_etag.clear();
-    github_last_id = 0;
+    github_last_id = last_id;
+    github_pending_result = QJsonObject();
     github_timer.start(500);
     ui->ai_connect_issue->setText("Disconnect Issue");
     return true;
@@ -516,9 +519,10 @@ void AIAgent::disconnect_github_issue()
 {
     github_timer.stop();
     github_issue_api.clear();
+    github_result_api.clear();
     github_etag.clear();
-    github_result_comment = 0;
     github_last_id = 0;
+    github_pending_result = QJsonObject();
     ui->ai_connect_issue->setText("Connect Issue");
 }
 
@@ -527,16 +531,23 @@ void AIAgent::poll_github_issue()
     if(github_issue_api.isEmpty())
         return;
 
-    // stop-before/restart-after keeps at most one poll in flight
-    github_timer.stop();
+    github_timer.stop(); // at most one poll or publish in flight at a time
+
+    if(!github_pending_result.isEmpty())
+        return send_pending_result(); // a previous PATCH failed; retry it, never re-execute
+
     auto request = github_request(github_issue_api);
     if(!github_etag.isEmpty())
         request.setRawHeader("If-None-Match",github_etag);
 
+    auto issue_api_snapshot = github_issue_api;
     auto* reply = github_manager.get(request);
-    connect(reply,&QNetworkReply::finished,this,[this,reply]()
+    connect(reply,&QNetworkReply::finished,this,[this,reply,issue_api_snapshot]()
     {
         reply->deleteLater();
+        if(github_issue_api != issue_api_snapshot)
+            return; // disconnected/reconnected while this GET was in flight
+
         auto restart = [this](){if(!github_issue_api.isEmpty()) github_timer.start(500);};
 
         auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -549,18 +560,48 @@ void AIAgent::poll_github_issue()
             github_etag = etag;
 
         auto issue = QJsonDocument::fromJson(reply->readAll()).object();
+        if(issue["state"].toString() != "open")
+            return disconnect_github_issue(); // closed directly on GitHub; stop without republishing
+
         auto envelope = QJsonDocument::fromJson(issue["body"].toString().toUtf8());
         if(!envelope.isObject())
-            return restart();
+            return restart(); // no command posted yet
 
         auto request_obj = envelope.object();
         auto id = request_obj["id"].toInteger();
         if(id <= github_last_id)
-            return restart(); // no new request
-        github_last_id = id;
+            return restart(); // already handled or not a new request
+
+        auto issue_number = issue["number"];
+        auto stamp = [&](QJsonObject result)
+        {
+            result["id"] = id;
+            result["last_id"] = id;
+            result["dsi_session_result"] = true;
+            result["issue"] = issue_number;
+            result["updated_at"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+            return result;
+        };
 
         if(request_obj["request"].toString() == "close")
+        {
+            // acknowledge once, best-effort; nothing meaningful to retry on a goodbye message
+            QJsonObject body{{"body",QString::fromUtf8(QJsonDocument(
+                stamp(QJsonObject{{"state","closed"}})).toJson(QJsonDocument::Compact))}};
+            auto patch_request = github_request(github_result_api);
+            patch_request.setRawHeader("Content-Type","application/json");
+            bool ok = false;
+            QString patch_error;
+            github_blocking(github_manager,patch_request,"PATCH",
+                            QJsonDocument(body).toJson(QJsonDocument::Compact),ok,patch_error);
             return disconnect_github_issue();
+        }
+
+        if(request_obj["request"].toString().isEmpty() || request_obj["session"].toString().isEmpty())
+            return publish_github_result(stamp(QJsonObject{
+                {"state","error"},
+                {"response",QJsonObject{{"status","error"},
+                    {"error","malformed request: missing request or session"}}}}));
 
         bool include_log = request_obj["include_log"].toBool();
         request_obj.remove("id");
@@ -581,40 +622,64 @@ void AIAgent::poll_github_issue()
             response["log"] = QJsonDocument::fromJson(log_reply_bytes).object();
         }
 
-        publish_github_result(QJsonObject{
-            {"state","done"},
-            {"id",id},
-            {"last_id",github_last_id},
-            {"duration_ms",QDateTime::currentMSecsSinceEpoch()-started},
-            {"response",response},
-            {"dsi_session_result",true},
-            {"issue",issue["number"]},
-            {"updated_at",QDateTime::currentDateTimeUtc().toString(Qt::ISODate)}});
+        auto succeeded = [](const QJsonObject& reply)
+        {
+            if(reply["status"].toString() == "error")
+                return false;
+            for(const auto& value : reply["result"].toArray())
+                if(value.toObject()["status"].toString() == "error")
+                    return false;
+            return true;
+        };
 
-        restart();
+        publish_github_result(stamp(QJsonObject{
+            {"state",succeeded(response) ? "done" : "error"},
+            {"duration_ms",QDateTime::currentMSecsSinceEpoch()-started},
+            {"response",response}}));
     });
 }
 
 void AIAgent::publish_github_result(QJsonObject result)
 {
-    if(github_issue_api.isEmpty() || !github_result_comment)
-        return;
-
     constexpr qsizetype size_limit = 60*1024;
     if(QJsonDocument(result).toJson(QJsonDocument::Compact).size() > size_limit)
         result["response"] = QJsonObject{{"error","response truncated: exceeds GitHub comment size limit"}};
 
-    QJsonObject body{{"body",QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact))}};
-    auto request = github_request(QUrl(github_issue_api.toString()+"/comments/"+QString::number(github_result_comment)));
+    github_pending_result = result; // staged until PATCH is confirmed; retried, never re-executed
+    send_pending_result();
+}
+
+void AIAgent::send_pending_result()
+{
+    if(github_result_api.isEmpty() || github_pending_result.isEmpty())
+        return;
+
+    auto issue_api_snapshot = github_issue_api;
+    auto pending_id = github_pending_result["id"].toInteger();
+
+    QJsonObject body{{"body",QString::fromUtf8(
+        QJsonDocument(github_pending_result).toJson(QJsonDocument::Compact))}};
+    auto request = github_request(github_result_api);
     request.setRawHeader("Content-Type","application/json");
 
     auto* reply = github_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply,&QNetworkReply::finished,reply,[reply]()
+    connect(reply,&QNetworkReply::finished,this,[this,reply,issue_api_snapshot,pending_id]()
     {
-        if(reply->error() != QNetworkReply::NoError)
+        reply->deleteLater();
+        if(github_issue_api != issue_api_snapshot)
+            return; // disconnected/reconnected while this PATCH was in flight
+
+        if(reply->error() == QNetworkReply::NoError)
+        {
+            github_last_id = pending_id;
+            github_pending_result = QJsonObject();
+        }
+        else
             tipl::warning() << "cannot publish result to GitHub issue comment: "
                             << reply->errorString().toStdString();
-        reply->deleteLater();
+
+        if(!github_issue_api.isEmpty())
+            github_timer.start(500); // if still pending, this cycle will just retry the same PATCH
     });
 }
 
