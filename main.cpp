@@ -14,8 +14,6 @@
 #include <QImageReader>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QUuid>
-#include "ai_agent.hpp"
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -586,34 +584,7 @@ int main(int ac, char *av[])
                     if(request.trimmed().startsWith('{'))
                     {
                         QByteArray reply;
-                        QJsonParseError error;
-                        auto doc = QJsonDocument::fromJson(request,&error);
-                        auto object = doc.object();
-                        auto session = object["session"].toString().trimmed();
-                        if(!doc.isObject())
-                            reply = status_reply("error","invalid JSON: "+error.errorString());
-                        else if(session.isEmpty())
-                            reply = status_reply("error","missing session: provide resumable provider thread ID");
-                        else if(QUuid(session).toString(QUuid::WithoutBraces).compare(
-                                    session,Qt::CaseInsensitive))
-                            reply = status_reply("error","invalid session: provide resumable provider thread ID");
-                        else
-                        {
-                            auto* info = ai_info::find(session);
-                            if(!info)
-                            {
-                                auto agent = object["agent"].toString().trimmed();
-                                if(agent.isEmpty())
-                                    reply = status_reply("error","missing agent for new session");
-                                else if(!(info = ai_info::create(session,agent)))
-                                    reply = status_reply("error","invalid agent: include Codex or Claude in the agent name");
-                                else if(auto model = object["model"].toString().trimmed();
-                                        !model.isEmpty())
-                                    info->model_settings["model"] = model;
-                            }
-                            if(info)
-                                w.ai_command(*info,request,reply);
-                        }
+                        w.ai_request(request,reply);
                         clientSocket->write(reply);
                     }
                     else

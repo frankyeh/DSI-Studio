@@ -46,6 +46,7 @@ public:
     bool command(const std::vector<std::string>&);
     bool command(const std::vector<std::string>&,command_source);
     void ai_command(ai_info&,const QByteArray&,QByteArray&);
+    void ai_request(const QByteArray& request,QByteArray& reply);
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);

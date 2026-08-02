@@ -1085,6 +1085,39 @@ void MainWindow::ai_command(ai_info& info,const QByteArray& request,QByteArray& 
     ::ai_command(info,request,reply);
     ai_agent->refresh_ai_info(info);
 }
+void MainWindow::ai_request(const QByteArray& request,QByteArray& reply)
+{
+    auto status_reply = [](QString status,QString error = {})
+    {
+        QJsonObject reply{{"status",status}};
+        if(!error.isEmpty())
+            reply["error"] = error;
+        return QJsonDocument(reply).toJson(QJsonDocument::Compact);
+    };
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson(request,&error);
+    auto object = doc.object();
+    auto session = object["session"].toString().trimmed();
+    if(!doc.isObject())
+        return void(reply = status_reply("error","invalid JSON: "+error.errorString()));
+    if(session.isEmpty())
+        return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
+    if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
+        return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
+
+    auto* info = ai_info::find(session);
+    if(!info)
+    {
+        auto agent = object["agent"].toString().trimmed();
+        if(agent.isEmpty())
+            return void(reply = status_reply("error","missing agent for new session"));
+        if(!(info = ai_info::create(session,agent)))
+            return void(reply = status_reply("error","invalid agent: include Codex or Claude in the agent name"));
+        if(auto model = object["model"].toString().trimmed();!model.isEmpty())
+            info->model_settings["model"] = model;
+    }
+    ai_command(*info,request,reply);
+}
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool MainWindow::command(const std::vector<std::string>& cmd)
