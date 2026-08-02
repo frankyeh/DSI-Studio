@@ -1,4 +1,5 @@
 #include <array>
+#include <algorithm>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QClipboard>
@@ -923,11 +924,24 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "delete_tract")
     {
-        int cur_row = currentRow();
-        if(!get_cur_row(cmd[1],cur_row))
-            return false;
-        delete_row(cur_row);
-        emit show_tracts();
+        // cmd[1] : tract index (default: current), multiple indices separated by '&'
+        if(tract_models.empty())
+            return run->failed("no available tract");
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(currentRow());
+        std::vector<int> rows;
+        for(auto each : QString::fromStdString(cmd[1]).split('&',Qt::SkipEmptyParts))
+        {
+            bool ok = false;
+            int row = each.toInt(&ok);
+            if(!ok || row < 0 || row >= int(tract_models.size()))
+                return run->failed("invalid tract index: " + each.toStdString());
+            if(std::find(rows.begin(),rows.end(),row) == rows.end())
+                rows.push_back(row);
+        }
+        std::sort(rows.begin(),rows.end());
+        for(int i = int(rows.size())-1;i >= 0;--i)
+            delete_row(rows[i]);
         return true;
     }
     if(cmd[0] == "delete_all_tracts")
