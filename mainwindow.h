@@ -50,7 +50,7 @@ public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);
     void loadNii(QStringList Filename);
-    void loadSrc(QStringList filenames);
+    bool loadSrc(QStringList filenames);
     bool open_template(QString name);
     void add_work_dir(QString dir);
     QString fiber_data_hub_url(void) const { return info.value(4); }

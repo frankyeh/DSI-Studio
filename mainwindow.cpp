@@ -663,12 +663,13 @@ void MainWindow::loadNii(QStringList file_names)
     dialog->show();
 }
 
-void MainWindow::loadSrc(QStringList filenames)
+bool MainWindow::loadSrc(QStringList filenames)
 {
     if(filenames.empty())
     {
-        QMessageBox::critical(this,"ERROR","Cannot find SRC.gz files in the directory. Please create SRC files first.");
-        return;
+        error_msg = "cannot find SRC.gz files in the directory. Please create SRC files first.";
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        return false;
     }
     try
     {
@@ -685,10 +686,12 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     catch(const std::runtime_error& error)
     {
+        error_msg = error.what();
         if(!tipl::prog_aborted)
-            QMessageBox::critical(this,"ERROR",error.what());
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        return false;
     }
-
+    return true;
 }
 
 void MainWindow::open_DWI(QStringList filenames)
@@ -1374,7 +1377,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         if(files.isEmpty())
             return true;
         add_work_dir(QFileInfo(files[0]).absolutePath());
-        loadSrc(files);
+        if(!loadSrc(files))
+            return fail(error_msg);
         return true;
     }
 
@@ -1401,7 +1405,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         if(dir.isEmpty())
             return true;
         add_work_dir(dir);
-        loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz"));
+        if(!loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz")))
+            return fail(error_msg);
         return true;
     }
 
