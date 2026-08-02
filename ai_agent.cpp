@@ -400,13 +400,20 @@ AIAgent::~AIAgent()
 QNetworkRequest AIAgent::github_request(const QUrl& url) const
 {
     QNetworkRequest request(url);
-    // independent of the DSI Studio login token: a dedicated GitHub PAT
-    // configured in AI Settings, scoped only to the issue channel
-    request.setRawHeader("Authorization",("Bearer "+settings.value("ai/github_token").toString()).toUtf8());
+    request.setRawHeader("Authorization",("Bearer "+github_token).toUtf8());
     request.setRawHeader("Accept","application/vnd.github+json");
     request.setRawHeader("X-GitHub-Api-Version","2022-11-28");
     request.setRawHeader("User-Agent","DSI-Studio");
+    request.setTransferTimeout(15000); // applies to every GET/POST/PATCH, blocking or async
     return request;
+}
+
+// 401/403/404/410/422: the token, its permissions, or the resource itself is
+// wrong; retrying on a timer cannot fix these, only spam GitHub indefinitely
+static bool github_permanent_failure(int status)
+{
+    return status == 401 || status == 403 || status == 404 ||
+           status == 410 || status == 422;
 }
 
 // blocking helper: connect_github_issue is a one-shot, user-initiated
@@ -434,7 +441,10 @@ static QByteArray github_blocking(QNetworkAccessManager& manager,
 
 bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 {
-    if(settings.value("ai/github_token").toString().isEmpty())
+    // snapshot now: github_request() uses this member for the whole session,
+    // so a later edit to AI Settings cannot swap the identity mid-poll
+    github_token = settings.value("ai/github_token").toString().trimmed();
+    if(github_token.isEmpty())
         return error = "no GitHub token configured; set one in AI Settings first "
                         "(GitHub requires an authenticated request for every write, "
                         "including editing a comment on a public issue)",false;
@@ -454,7 +464,16 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     QUrl issue_api("https://api.github.com/repos/"+owner+"/"+parts[1]+
                    "/issues/"+QString::number(issue_number));
 
+    // identify who the token itself belongs to: it need not be the repo
+    // owner (e.g. a bot/collaborator account), and result-comment ownership
+    // must be checked against that identity, not the issue's owner
     bool ok = false;
+    auto authenticated_user = QJsonDocument::fromJson(
+        github_blocking(github_manager,github_request(QUrl("https://api.github.com/user")),
+                         "GET",{},ok,error)).object()["login"].toString();
+    if(!ok)
+        return error = "cannot verify GitHub token: "+error,false;
+
     auto issue = QJsonDocument::fromJson(
         github_blocking(github_manager,github_request(issue_api),"GET",{},ok,error)).object();
     if(!ok)
@@ -470,30 +489,35 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         return error = "issue title must start with \"DSI Studio session\"",false;
 
     auto comments = QJsonDocument::fromJson(
-        github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments")),"GET",{},ok,error)).array();
+        github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
+                        "GET",{},ok,error)).array();
     if(!ok)
         return false;
 
-    // find our own existing result comment (author must match the owner
-    // already verified above) and resume its last_id rather than
-    // re-executing whatever command the issue body currently holds
+    // find our own existing result comment (author must match the token's
+    // own identity, not necessarily the issue/repository owner); if more
+    // than one matches (e.g. left over from an earlier bug or a race),
+    // keep the one with the highest last_id rather than just the first
     QUrl result_api;
-    qint64 last_id = 0;
+    qint64 last_id = -1;
     for(const auto& each : comments)
     {
         auto comment = each.toObject();
-        if(comment["user"].toObject()["login"].toString().compare(owner,Qt::CaseInsensitive))
+        if(comment["user"].toObject()["login"].toString().compare(authenticated_user,Qt::CaseInsensitive))
             continue;
         auto body = QJsonDocument::fromJson(comment["body"].toString().toUtf8());
-        if(body.isObject() && body.object()["dsi_session_result"].toBool())
+        if(!body.isObject() || !body.object()["dsi_session_result"].toBool())
+            continue;
+        auto candidate_id = body.object()["last_id"].toInteger();
+        if(candidate_id > last_id)
         {
+            last_id = candidate_id;
             result_api = QUrl(comment["url"].toString());
-            last_id = body.object()["last_id"].toInteger();
-            break;
         }
     }
     if(result_api.isEmpty())
     {
+        last_id = 0; // fresh session, no matching comment found
         QJsonObject initial{{"state","idle"},{"last_id",0},{"dsi_session_result",true},{"issue",issue_number}};
         QJsonObject post_body{{"body",QString::fromUtf8(QJsonDocument(initial).toJson(QJsonDocument::Compact))}};
         auto post_request = github_request(QUrl(issue_api.toString()+"/comments"));
@@ -508,6 +532,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
             return error = "cannot create the result comment",false;
     }
 
+    ++github_connection_id; // supersedes any callback still in flight from before
     github_issue_api = issue_api;
     github_result_api = result_api;
     github_etag.clear();
@@ -520,10 +545,12 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 
 void AIAgent::disconnect_github_issue()
 {
+    ++github_connection_id; // reject any callback still in flight from this connection
     github_timer.stop();
     github_issue_api.clear();
     github_result_api.clear();
     github_etag.clear();
+    github_token.clear();
     github_last_id = 0;
     github_pending_result = QJsonObject();
     ui->ai_connect_issue->setText("Connect Issue");
@@ -543,19 +570,31 @@ void AIAgent::poll_github_issue()
     if(!github_etag.isEmpty())
         request.setRawHeader("If-None-Match",github_etag);
 
-    auto issue_api_snapshot = github_issue_api;
+    auto connection_id = github_connection_id;
     auto* reply = github_manager.get(request);
-    connect(reply,&QNetworkReply::finished,this,[this,reply,issue_api_snapshot]()
+    connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id]()
     {
         reply->deleteLater();
-        if(github_issue_api != issue_api_snapshot)
-            return; // disconnected/reconnected while this GET was in flight
+        if(connection_id != github_connection_id)
+            return; // this connection was superseded (disconnect, or a fresh reconnect)
 
-        auto restart = [this](){if(!github_issue_api.isEmpty()) github_timer.start(500);};
+        auto restart = [this](int delay_ms = 500)
+        {if(!github_issue_api.isEmpty()) github_timer.start(delay_ms);};
 
         auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if(status == 429)
+        {
+            bool has_retry_after = false;
+            int retry_after = reply->rawHeader("Retry-After").toInt(&has_retry_after);
+            return restart(has_retry_after && retry_after > 0 ? retry_after*1000 : 60000);
+        }
+        if(github_permanent_failure(status))
+        {
+            set_ai_status("GitHub issue channel authorization failed.",true);
+            return disconnect_github_issue();
+        }
         if(reply->error() != QNetworkReply::NoError && status != 304)
-            return restart(); // transient network error: retry next cycle
+            return restart(5000); // transient network error: back off, retry later
         if(status == 304)
             return restart(); // not modified
 
@@ -587,18 +626,9 @@ void AIAgent::poll_github_issue()
         };
 
         if(request_obj["request"].toString() == "close")
-        {
-            // acknowledge once, best-effort; nothing meaningful to retry on a goodbye message
-            QJsonObject body{{"body",QString::fromUtf8(QJsonDocument(
-                stamp(QJsonObject{{"state","closed"}})).toJson(QJsonDocument::Compact))}};
-            auto patch_request = github_request(github_result_api);
-            patch_request.setRawHeader("Content-Type","application/json");
-            bool ok = false;
-            QString patch_error;
-            github_blocking(github_manager,patch_request,"PATCH",
-                            QJsonDocument(body).toJson(QJsonDocument::Compact),ok,patch_error);
-            return disconnect_github_issue();
-        }
+            // goes through the same retrying publish path as any other result;
+            // send_pending_result() disconnects once this is confirmed published
+            return publish_github_result(stamp(QJsonObject{{"state","closed"}}));
 
         if(request_obj["request"].toString().isEmpty() || request_obj["session"].toString().isEmpty())
             return publish_github_result(stamp(QJsonObject{
@@ -657,7 +687,7 @@ void AIAgent::send_pending_result()
     if(github_result_api.isEmpty() || github_pending_result.isEmpty())
         return;
 
-    auto issue_api_snapshot = github_issue_api;
+    auto connection_id = github_connection_id;
     auto pending_id = github_pending_result["id"].toInteger();
 
     QJsonObject body{{"body",QString::fromUtf8(
@@ -666,23 +696,43 @@ void AIAgent::send_pending_result()
     request.setRawHeader("Content-Type","application/json");
 
     auto* reply = github_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply,&QNetworkReply::finished,this,[this,reply,issue_api_snapshot,pending_id]()
+    connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id,pending_id]()
     {
         reply->deleteLater();
-        if(github_issue_api != issue_api_snapshot)
-            return; // disconnected/reconnected while this PATCH was in flight
+        if(connection_id != github_connection_id)
+            return; // this connection was superseded (disconnect, or a fresh reconnect)
 
-        if(reply->error() == QNetworkReply::NoError)
+        auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if(status == 429)
         {
-            github_last_id = pending_id;
-            github_pending_result = QJsonObject();
+            bool has_retry_after = false;
+            int retry_after = reply->rawHeader("Retry-After").toInt(&has_retry_after);
+            if(!github_issue_api.isEmpty())
+                github_timer.start(has_retry_after && retry_after > 0 ? retry_after*1000 : 60000);
+            return;
         }
-        else
+        if(github_permanent_failure(status))
+        {
+            set_ai_status("GitHub issue channel authorization failed.",true);
+            return disconnect_github_issue();
+        }
+
+        if(reply->error() != QNetworkReply::NoError)
+        {
             tipl::warning() << "cannot publish result to GitHub issue comment: "
                             << reply->errorString().toStdString();
+            if(!github_issue_api.isEmpty())
+                github_timer.start(5000); // back off; the pending result is retried, not lost
+            return;
+        }
 
+        bool closed = github_pending_result["state"].toString() == "closed";
+        github_last_id = pending_id;
+        github_pending_result = QJsonObject();
+        if(closed)
+            return disconnect_github_issue();
         if(!github_issue_api.isEmpty())
-            github_timer.start(500); // if still pending, this cycle will just retry the same PATCH
+            github_timer.start(500);
     });
 }
 
