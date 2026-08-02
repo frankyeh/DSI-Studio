@@ -243,6 +243,13 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="ai_connect_issue">
+            <property name="text">
+             <string>Connect Issue</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>

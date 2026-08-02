@@ -40,6 +40,7 @@
 #include <QUrl>
 
 #include <algorithm>
+#include <cstring>
 #include <mutex>
 #include <unordered_map>
 
@@ -195,6 +196,9 @@ AIAgent::AIAgent(MainWindow* parent):
         ui->ai_status->repaint();
     });
     set_ai_status();
+
+    github_timer.setSingleShot(true);
+    connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
 
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
@@ -390,6 +394,228 @@ AIAgent::AIAgent(MainWindow* parent):
 AIAgent::~AIAgent()
 {
     delete ui;
+}
+
+// ---------------------------------------------------------------------
+// GitHub issue channel
+//
+// A GitHub issue is used as a remote command/result mailbox: the issue
+// body carries the next request (written by the remote agent), and a
+// single pinned comment (marked by "dsi_session_result":true in its
+// body) carries the most recent result (written by DSI Studio).
+// ---------------------------------------------------------------------
+
+QNetworkRequest AIAgent::github_request(const QUrl& url) const
+{
+    QNetworkRequest request(url);
+    request.setRawHeader("Authorization",("Bearer "+access_token).toUtf8());
+    request.setRawHeader("Accept","application/vnd.github+json");
+    request.setRawHeader("X-GitHub-Api-Version","2022-11-28");
+    request.setRawHeader("User-Agent","DSI-Studio");
+    return request;
+}
+
+// blocking helper: connect_github_issue is a one-shot, user-initiated
+// action, so a short local event loop keeps its bool/error-message
+// interface synchronous without adding pending-connection state
+static QByteArray github_blocking(QNetworkAccessManager& manager,
+                                  const QNetworkRequest& request,
+                                  const char* verb,const QByteArray& body,
+                                  bool& ok,QString& error)
+{
+    QEventLoop loop;
+    QNetworkReply* reply =
+        !strcmp(verb,"POST") ? manager.post(request,body) :
+        !strcmp(verb,"PATCH") ? manager.sendCustomRequest(request,"PATCH",body) :
+        manager.get(request);
+    QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
+    loop.exec();
+    ok = reply->error() == QNetworkReply::NoError;
+    auto data = reply->readAll();
+    if(!ok)
+        error = reply->errorString();
+    reply->deleteLater();
+    return data;
+}
+
+bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
+{
+    if(access_token.isEmpty())
+        return error = "not logged in yet; please wait for login to complete and retry",false;
+
+    QUrl url(url_text.trimmed());
+    if(!url.isValid() || url.host().compare("github.com",Qt::CaseInsensitive))
+        return error = "expected an https://github.com/... issue link",false;
+
+    auto parts = url.path().split('/',Qt::SkipEmptyParts);
+    bool number_ok = false;
+    qint64 issue_number = parts.size() == 4 ? parts[3].toLongLong(&number_ok) : 0;
+    if(parts.size() != 4 || parts[2] != "issues" || !number_ok || issue_number <= 0)
+        return error = "expected the form https://github.com/<owner>/<repository>/issues/<number>",false;
+
+    QString api_base = "https://api.github.com/repos/"+parts[0]+"/"+parts[1];
+    QUrl issue_api(api_base+"/issues/"+QString::number(issue_number));
+
+    bool ok = false;
+    auto issue = QJsonDocument::fromJson(
+        github_blocking(github_manager,github_request(issue_api),"GET",{},ok,error)).object();
+    if(!ok)
+        return false;
+
+    if(issue.contains("pull_request"))
+        return error = "the link points to a pull request, not an issue",false;
+    if(issue["state"].toString() != "open")
+        return error = "issue is not open",false;
+    if(issue["user"].toObject()["login"].toString().compare(parts[0],Qt::CaseInsensitive))
+        return error = "issue creator must be the repository owner",false;
+    if(!issue["title"].toString().startsWith("DSI Studio session"))
+        return error = "issue title must start with \"DSI Studio session\"",false;
+
+    auto comments = QJsonDocument::fromJson(
+        github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments")),"GET",{},ok,error)).array();
+    if(!ok)
+        return false;
+
+    qint64 comment_id = 0;
+    for(const auto& each : comments)
+    {
+        auto comment = each.toObject();
+        auto body = QJsonDocument::fromJson(comment["body"].toString().toUtf8());
+        if(body.isObject() && body.object()["dsi_session_result"].toBool())
+        {
+            comment_id = comment["id"].toInteger();
+            break;
+        }
+    }
+    if(!comment_id)
+    {
+        QJsonObject initial{{"state","idle"},{"dsi_session_result",true},{"issue",issue_number}};
+        QJsonObject post_body{{"body",QString::fromUtf8(QJsonDocument(initial).toJson(QJsonDocument::Compact))}};
+        auto post_request = github_request(QUrl(issue_api.toString()+"/comments"));
+        post_request.setRawHeader("Content-Type","application/json");
+        auto created = QJsonDocument::fromJson(
+            github_blocking(github_manager,post_request,"POST",
+                             QJsonDocument(post_body).toJson(QJsonDocument::Compact),ok,error)).object();
+        if(!ok)
+            return false;
+        comment_id = created["id"].toInteger();
+        if(!comment_id)
+            return error = "cannot create the result comment",false;
+    }
+
+    github_issue_api = issue_api;
+    github_result_comment = comment_id;
+    github_etag.clear();
+    github_last_id = 0;
+    github_timer.start(500);
+    ui->ai_connect_issue->setText("Disconnect Issue");
+    return true;
+}
+
+void AIAgent::disconnect_github_issue()
+{
+    github_timer.stop();
+    github_issue_api.clear();
+    github_etag.clear();
+    github_result_comment = 0;
+    github_last_id = 0;
+    ui->ai_connect_issue->setText("Connect Issue");
+}
+
+void AIAgent::poll_github_issue()
+{
+    if(github_issue_api.isEmpty())
+        return;
+
+    // stop-before/restart-after keeps at most one poll in flight
+    github_timer.stop();
+    auto request = github_request(github_issue_api);
+    if(!github_etag.isEmpty())
+        request.setRawHeader("If-None-Match",github_etag);
+
+    auto* reply = github_manager.get(request);
+    connect(reply,&QNetworkReply::finished,this,[this,reply]()
+    {
+        reply->deleteLater();
+        auto restart = [this](){if(!github_issue_api.isEmpty()) github_timer.start(500);};
+
+        auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if(reply->error() != QNetworkReply::NoError && status != 304)
+            return restart(); // transient network error: retry next cycle
+        if(status == 304)
+            return restart(); // not modified
+
+        if(auto etag = reply->rawHeader("ETag");!etag.isEmpty())
+            github_etag = etag;
+
+        auto issue = QJsonDocument::fromJson(reply->readAll()).object();
+        auto envelope = QJsonDocument::fromJson(issue["body"].toString().toUtf8());
+        if(!envelope.isObject())
+            return restart();
+
+        auto request_obj = envelope.object();
+        auto id = request_obj["id"].toInteger();
+        if(id <= github_last_id)
+            return restart(); // no new request
+        github_last_id = id;
+
+        if(request_obj["request"].toString() == "close")
+            return disconnect_github_issue();
+
+        bool include_log = request_obj["include_log"].toBool();
+        request_obj.remove("id");
+        request_obj.remove("include_log");
+        request_obj["agent"] = "Codex/ChatGPT-GitHub";
+
+        auto started = QDateTime::currentMSecsSinceEpoch();
+        QByteArray reply_bytes;
+        main_window.ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
+        auto response = QJsonDocument::fromJson(reply_bytes).object();
+
+        if(include_log)
+        {
+            QByteArray log_reply_bytes;
+            main_window.ai_request(QJsonDocument(QJsonObject{
+                {"request","LOG"},{"session",request_obj["session"]}}).toJson(QJsonDocument::Compact),
+                log_reply_bytes);
+            response["log"] = QJsonDocument::fromJson(log_reply_bytes).object();
+        }
+
+        publish_github_result(QJsonObject{
+            {"state","done"},
+            {"id",id},
+            {"last_id",github_last_id},
+            {"duration_ms",QDateTime::currentMSecsSinceEpoch()-started},
+            {"response",response},
+            {"dsi_session_result",true},
+            {"issue",issue["number"]},
+            {"updated_at",QDateTime::currentDateTimeUtc().toString(Qt::ISODate)}});
+
+        restart();
+    });
+}
+
+void AIAgent::publish_github_result(QJsonObject result)
+{
+    if(github_issue_api.isEmpty() || !github_result_comment)
+        return;
+
+    constexpr qsizetype size_limit = 60*1024;
+    if(QJsonDocument(result).toJson(QJsonDocument::Compact).size() > size_limit)
+        result["response"] = QJsonObject{{"error","response truncated: exceeds GitHub comment size limit"}};
+
+    QJsonObject body{{"body",QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact))}};
+    auto request = github_request(QUrl(github_issue_api.toString()+"/comments/"+QString::number(github_result_comment)));
+    request.setRawHeader("Content-Type","application/json");
+
+    auto* reply = github_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply,&QNetworkReply::finished,reply,[reply]()
+    {
+        if(reply->error() != QNetworkReply::NoError)
+            tipl::warning() << "cannot publish result to GitHub issue comment: "
+                            << reply->errorString().toStdString();
+        reply->deleteLater();
+    });
 }
 
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
@@ -1060,6 +1286,29 @@ void AIAgent::on_ai_new_chat_clicked()
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     set_ai_status();
+}
+
+void AIAgent::on_ai_connect_issue_clicked()
+{
+    if(!github_issue_api.isEmpty())
+    {
+        disconnect_github_issue();
+        set_ai_status("Disconnected from GitHub issue.",true);
+        return;
+    }
+
+    auto url = QInputDialog::getText(this,QApplication::applicationName(),
+        "Paste the GitHub issue URL to connect (e.g. https://github.com/owner/repo/issues/1):");
+    if(url.isEmpty())
+        return;
+
+    QString error;
+    if(!connect_github_issue(url,error))
+    {
+        set_ai_status("GitHub issue connect failed: "+error,true);
+        return;
+    }
+    set_ai_status("Connected to GitHub issue.",true);
 }
 
 void AIAgent::on_ai_quick_settings_clicked()
