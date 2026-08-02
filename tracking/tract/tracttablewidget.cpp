@@ -1446,11 +1446,21 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "check_tract")
     {
-        int row = currentRow();
-        if(!get_cur_row(cmd[1],row))
-            return false;
-        item(row,0)->setCheckState(
-            cmd[2] == "1" ? Qt::Checked : Qt::Unchecked);
+        // cmd[1] : tract index (default current row), multiple indices separated by '&'
+        // cmd[2] : checked state
+        if(tract_models.empty())
+            return run->failed("no available tract");
+        auto check_state = (cmd[2] == "1" ? Qt::Checked : Qt::Unchecked);
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(currentRow());
+        for(auto each : QString::fromStdString(cmd[1]).split('&',Qt::SkipEmptyParts))
+        {
+            bool ok = false;
+            int row = each.toInt(&ok);
+            if(!ok || row < 0 || row >= int(tract_models.size()))
+                return run->failed("invalid tract index: " + each.toStdString());
+            item(row,0)->setCheckState(check_state);
+        }
         return true;
     }
     if(cmd[0] == "check_uncheck_all_tract")
