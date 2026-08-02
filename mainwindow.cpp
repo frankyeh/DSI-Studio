@@ -1665,10 +1665,10 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return fail("voice is available only on Windows");
 #endif
     }
-    if(cmd[0] == "run_cli")
+    if(cmd[0] == "run_shell")
     {
         if(cmd.size() != 2 || cmd[1].empty())
-            return fail("usage: run_cli <command>");
+            return fail("usage: run_shell <command>");
 
         QString text = QString::fromUtf8(cmd[1].c_str());
         QString program = text.section(' ',0,0);
@@ -1688,10 +1688,10 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 
         if(program.compare("dir",Qt::CaseInsensitive) &&
            program.compare("curl",Qt::CaseInsensitive))
-            return fail("run_cli only allows dir, curl, and cd commands");
+            return fail("run_shell only allows dir, curl, and cd commands");
         for(auto c : QString("&|;<>^`\n\r"))
             if(text.contains(c))
-                return fail("run_cli command contains disallowed characters");
+                return fail("run_shell command contains disallowed characters");
 
         QProcess process;
 #ifdef Q_OS_WIN
