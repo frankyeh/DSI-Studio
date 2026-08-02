@@ -409,11 +409,33 @@ QNetworkRequest AIAgent::github_request(const QUrl& url) const
 }
 
 // 401/403/404/410/422: the token, its permissions, or the resource itself is
-// wrong; retrying on a timer cannot fix these, only spam GitHub indefinitely
+// wrong; retrying on a timer cannot fix these, only spam GitHub indefinitely.
+// Checked only after github_retry_delay() below, since GitHub can also
+// return a 403 for rate limiting, which is not a permanent failure.
 static bool github_permanent_failure(int status)
 {
     return status == 401 || status == 403 || status == 404 ||
            status == 410 || status == 422;
+}
+
+// GitHub signals both primary and secondary rate limiting with 429 or 403;
+// returns the wait time in ms if so, or 0 if this is not a rate-limit response
+static int github_retry_delay(QNetworkReply* reply,const QByteArray& data)
+{
+    bool ok = false;
+    int seconds = reply->rawHeader("Retry-After").toInt(&ok);
+    if(ok && seconds > 0)
+        return seconds*1000;
+    if(reply->rawHeader("X-RateLimit-Remaining") == "0")
+    {
+        qint64 reset = reply->rawHeader("X-RateLimit-Reset").toLongLong(&ok);
+        if(ok)
+            return int(std::max<qint64>(1000,reset*1000-QDateTime::currentMSecsSinceEpoch()));
+    }
+    auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if(status == 429 || (status == 403 && data.contains("rate limit")))
+        return 60000;
+    return 0;
 }
 
 // blocking helper: connect_github_issue is a one-shot, user-initiated
@@ -473,6 +495,8 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
                          "GET",{},ok,error)).object()["login"].toString();
     if(!ok)
         return error = "cannot verify GitHub token: "+error,false;
+    if(authenticated_user.isEmpty())
+        return error = "cannot verify GitHub token: unexpected response from GitHub",false;
 
     auto issue = QJsonDocument::fromJson(
         github_blocking(github_manager,github_request(issue_api),"GET",{},ok,error)).object();
@@ -582,12 +606,9 @@ void AIAgent::poll_github_issue()
         {if(!github_issue_api.isEmpty()) github_timer.start(delay_ms);};
 
         auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if(status == 429)
-        {
-            bool has_retry_after = false;
-            int retry_after = reply->rawHeader("Retry-After").toInt(&has_retry_after);
-            return restart(has_retry_after && retry_after > 0 ? retry_after*1000 : 60000);
-        }
+        auto data = reply->readAll();
+        if(auto delay = github_retry_delay(reply,data))
+            return restart(delay); // rate limited (429, or 403 that means the same thing)
         if(github_permanent_failure(status))
         {
             set_ai_status("GitHub issue channel authorization failed.",true);
@@ -601,7 +622,7 @@ void AIAgent::poll_github_issue()
         if(auto etag = reply->rawHeader("ETag");!etag.isEmpty())
             github_etag = etag;
 
-        auto issue = QJsonDocument::fromJson(reply->readAll()).object();
+        auto issue = QJsonDocument::fromJson(data).object(); // body already read above
         if(issue["state"].toString() != "open")
             return disconnect_github_issue(); // closed directly on GitHub; stop without republishing
 
@@ -703,12 +724,10 @@ void AIAgent::send_pending_result()
             return; // this connection was superseded (disconnect, or a fresh reconnect)
 
         auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if(status == 429)
+        if(auto delay = github_retry_delay(reply,reply->readAll()))
         {
-            bool has_retry_after = false;
-            int retry_after = reply->rawHeader("Retry-After").toInt(&has_retry_after);
             if(!github_issue_api.isEmpty())
-                github_timer.start(has_retry_after && retry_after > 0 ? retry_after*1000 : 60000);
+                github_timer.start(delay); // rate limited (429, or 403 that means the same thing)
             return;
         }
         if(github_permanent_failure(status))
