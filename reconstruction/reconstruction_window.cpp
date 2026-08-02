@@ -537,7 +537,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     on_SlicePos_valueChanged(ui->SlicePos->value());
 
 
-    if(filenames.size() > 1 &&
+    if(result &&
+       filenames.size() > 1 &&
        tipl::begins_with(cmd,"save_") &&
         QMessageBox::information(this,QApplication::applicationName(),"Apply to other SRC files?",
         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
