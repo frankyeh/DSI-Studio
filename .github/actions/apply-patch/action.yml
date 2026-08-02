@@ -1,0 +1,195 @@
+name: AI-Skill apply patch
+description: Safely apply one verified text patch to the calling repository and create at most one commit
+
+inputs:
+  base_sha:
+    description: Expected HEAD, or trigger commit parent for request-file runs
+    required: true
+  patch_path:
+    description: Repository-relative unified diff path
+    required: true
+  message:
+    description: Commit message
+    required: false
+    default: Apply patch
+  allow_delete:
+    description: Allow whole-file deletion
+    required: false
+    default: 'false'
+  request_trigger:
+    description: Validate base_sha against HEAD parent and require a request-only trigger commit
+    required: false
+    default: 'false'
+  debug:
+    description: Enable command tracing
+    required: false
+    default: 'false'
+
+outputs:
+  count:
+    value: ${{ steps.apply.outputs.count }}
+  additions:
+    value: ${{ steps.apply.outputs.additions }}
+  deletions:
+    value: ${{ steps.apply.outputs.deletions }}
+  commit_sha:
+    value: ${{ steps.apply.outputs.commit_sha }}
+  changed:
+    value: ${{ steps.apply.outputs.changed }}
+
+runs:
+  using: composite
+  steps:
+    - id: apply
+      shell: bash
+      env:
+        BASE_SHA: ${{ inputs.base_sha }}
+        PATCH_PATH: ${{ inputs.patch_path }}
+        MESSAGE: ${{ inputs.message }}
+        ALLOW_DELETE: ${{ inputs.allow_delete }}
+        REQUEST_TRIGGER: ${{ inputs.request_trigger }}
+        DEBUG: ${{ inputs.debug }}
+      run: |
+        set -Eeuo pipefail
+        fail() { echo "::error::$*"; return 1; }
+
+        for value in "$ALLOW_DELETE" "$REQUEST_TRIGGER" "$DEBUG"; do
+          [[ "$value" == true || "$value" == false ]] || fail 'boolean inputs must be true or false'
+        done
+        [[ "$BASE_SHA" =~ ^[0-9A-Fa-f]{40}$ ]] || fail 'base_sha must be a full 40-character commit SHA'
+        [[ -n "$MESSAGE" ]] || fail 'message is required'
+        if [[ "$DEBUG" == true ]]; then
+          PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '
+          set -x
+          trap 'rc=$?; echo "::error::line=$LINENO exit=$rc command=$BASH_COMMAND"; exit "$rc"' ERR
+        fi
+
+        workspace=$GITHUB_WORKSPACE
+        git -C "$workspace" rev-parse --is-inside-work-tree >/dev/null || fail 'calling repository must be checked out'
+        head=$(git -C "$workspace" rev-parse HEAD)
+        if [[ "$REQUEST_TRIGGER" == true ]]; then
+          parent=$(git -C "$workspace" rev-parse HEAD^)
+          [[ "$parent" == "$BASE_SHA" ]] || fail "stale base_sha: expected parent $parent"
+          mapfile -t trigger_files < <(git -C "$workspace" diff-tree --no-commit-id --name-only -r HEAD)
+          [[ ${#trigger_files[@]} -eq 1 && "${trigger_files[0]}" == .github/chatgpt-apply-patch-request.json ]] ||
+            fail 'request trigger commit must change only .github/chatgpt-apply-patch-request.json'
+        else
+          [[ "$head" == "$BASE_SHA" ]] || fail "stale base_sha: current HEAD is $head"
+        fi
+
+        python3 - "$PATCH_PATH" <<'PY'
+        import sys
+        path = sys.argv[1]
+        parts = path.split('/')
+        if (not path or path.startswith('/') or '\\' in path or
+            any(part in ('', '.', '..') for part in parts) or
+            any(ord(char) < 32 for char in path) or
+            parts[0] == '.git'):
+            raise SystemExit(f'invalid patch_path: {path!r}')
+        PY
+
+        patch=$workspace/$PATCH_PATH
+        [[ -f "$patch" && ! -L "$patch" ]] || fail "patch not found: $PATCH_PATH"
+        stats=$RUNNER_TEMP/apply-patch-stats.txt
+        paths=$RUNNER_TEMP/apply-patch-paths.txt
+        python3 - "$patch" "$PATCH_PATH" "$ALLOW_DELETE" "$stats" "$paths" <<'PY'
+        import pathlib, re, subprocess, sys
+
+        patch, patch_path, allow_delete, stats_path, paths_path = sys.argv[1:]
+        raw = pathlib.Path(patch).read_bytes()
+        try:
+            text = raw.decode('utf-8')
+        except UnicodeDecodeError as error:
+            raise SystemExit(f'patch must be UTF-8 text: {error}')
+        if not text.strip():
+            raise SystemExit('patch is empty')
+        if '\x00' in text or 'GIT binary patch' in text or re.search(r'^Binary files .* differ$', text, re.M):
+            raise SystemExit('binary patches are not supported')
+        if re.search(r'^(rename (from|to)|copy (from|to)|old mode|new mode|new file mode (120000|160000)|deleted file mode (120000|160000))\b', text, re.M):
+            raise SystemExit('renames, copies, symlinks, submodules, and mode changes are not supported')
+        if not allow_delete == 'true' and (re.search(r'^deleted file mode ', text, re.M) or re.search(r'^\+\+\+ /dev/null$', text, re.M)):
+            raise SystemExit('whole-file deletion requires allow_delete=true')
+
+        result = subprocess.run(['git', 'apply', '--numstat', '-z', patch], capture_output=True)
+        if result.returncode:
+            raise SystemExit(result.stderr.decode('utf-8', 'replace').strip() or 'invalid patch')
+        records = [record for record in result.stdout.split(b'\0') if record]
+        if not records:
+            raise SystemExit('patch contains no file changes')
+
+        paths, additions, deletions = [], 0, 0
+        for record in records:
+            fields = record.split(b'\t', 2)
+            if len(fields) != 3:
+                raise SystemExit('unsupported patch format')
+            add, delete, encoded = fields
+            if add == b'-' or delete == b'-':
+                raise SystemExit('binary patches are not supported')
+            try:
+                path = encoded.decode('utf-8')
+            except UnicodeDecodeError as error:
+                raise SystemExit(f'path must be UTF-8: {error}')
+            parts = path.split('/')
+            if (not path or path.startswith('/') or '\\' in path or
+                any(part in ('', '.', '..') for part in parts) or
+                any(ord(char) < 32 for char in path) or
+                parts[0] == '.git'):
+                raise SystemExit(f'invalid patch path: {path!r}')
+            if path == patch_path or path == '.github/chatgpt-apply-patch-request.json':
+                raise SystemExit(f'patch cannot modify its control file: {path}')
+            if path == '.github/workflows' or path.startswith('.github/workflows/'):
+                raise SystemExit('GITHUB_TOKEN cannot modify .github/workflows files')
+            if path in paths:
+                raise SystemExit(f'duplicate patch path: {path}')
+            paths.append(path)
+            additions += int(add)
+            deletions += int(delete)
+
+        pathlib.Path(stats_path).write_text(f'{len(paths)}\n{additions}\n{deletions}\n', encoding='utf-8')
+        pathlib.Path(paths_path).write_text('\n'.join(paths) + '\n', encoding='utf-8')
+        PY
+
+        mapfile -t numbers < "$stats"
+        count=${numbers[0]}
+        additions=${numbers[1]}
+        deletions=${numbers[2]}
+        check_error=$RUNNER_TEMP/apply-patch-check.err
+
+        if git -C "$workspace" apply --check "$patch" 2> "$check_error"; then
+          git -C "$workspace" apply --check --whitespace=error-all "$patch"
+          git -C "$workspace" apply --index --whitespace=error-all "$patch"
+          git -C "$workspace" diff --cached --check
+          git -C "$workspace" -c core.quotePath=false diff --cached --name-only > "$RUNNER_TEMP/apply-patch-actual.txt"
+          python3 - "$paths" "$RUNNER_TEMP/apply-patch-actual.txt" <<'PY'
+        import pathlib, sys
+        expected = pathlib.Path(sys.argv[1]).read_text(encoding='utf-8').splitlines()
+        actual = pathlib.Path(sys.argv[2]).read_text(encoding='utf-8').splitlines()
+        if sorted(expected) != sorted(actual):
+            raise SystemExit(f'changed paths differ: expected={expected!r} actual={actual!r}')
+        PY
+          git -C "$workspace" config user.name github-actions[bot]
+          git -C "$workspace" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C "$workspace" commit -q -m "$MESSAGE"
+          git -C "$workspace" push -q
+          changed=true
+        elif git -C "$workspace" apply --reverse --check "$patch" >/dev/null 2>&1; then
+          changed=false
+        else
+          cat "$check_error" >&2
+          fail 'patch does not apply and is not already applied'
+        fi
+
+        commit_sha=$(git -C "$workspace" rev-parse HEAD)
+        echo "count=$count" >> "$GITHUB_OUTPUT"
+        echo "additions=$additions" >> "$GITHUB_OUTPUT"
+        echo "deletions=$deletions" >> "$GITHUB_OUTPUT"
+        echo "commit_sha=$commit_sha" >> "$GITHUB_OUTPUT"
+        echo "changed=$changed" >> "$GITHUB_OUTPUT"
+        echo "base_sha=$BASE_SHA"
+        echo "changed_file_count=$count"
+        echo "additions=$additions"
+        echo "deletions=$deletions"
+        echo "changed=$changed"
+        echo "commit_sha=$commit_sha"
+        echo '--- changed files ---'
+        cat "$paths"
