@@ -1,7 +1,7 @@
 diff --git a/ai_agent.cpp b/ai_agent.cpp
 --- a/ai_agent.cpp
 +++ b/ai_agent.cpp
-@@ -589,10 +589,13 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
+@@ -589,9 +589,12 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
          QWidget* target = nullptr;
 +        MainWindow* main_target = nullptr;
          for(auto* each : QApplication::allWidgets())
