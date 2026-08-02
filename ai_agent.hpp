@@ -58,17 +58,19 @@ class AIAgent : public QMainWindow
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0;
 
-    // GitHub issue channel
+    // GitHub issue channel: the issue body carries the next request, and
+    // one pinned comment (marked "dsi_session_result":true) carries the result
     QNetworkAccessManager github_manager;
     QTimer github_timer;
-    QUrl github_issue_api;
+    QUrl github_issue_api,github_result_api;
     QByteArray github_etag;
-    qint64 github_result_comment = 0;
     qint64 github_last_id = 0;
+    QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
 
     QNetworkRequest github_request(const QUrl&) const;
     void poll_github_issue();
     void publish_github_result(QJsonObject);
+    void send_pending_result();
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
