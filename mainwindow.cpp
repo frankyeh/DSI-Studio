@@ -16,6 +16,8 @@
 #include <QLineEdit>
 #include <QUuid>
 #include <QEvent>
+#include <QProcess>
+#include <QProcessEnvironment>
 
 #include <QJsonDocument>
 #include <QMap>
@@ -1587,6 +1589,40 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         ai_agent->raise();
         ai_agent->activateWindow();
         return true;
+    }
+    if(cmd[0] == "voice")
+    {
+        if(cmd.size() != 2 || cmd[1].empty())
+            return fail("usage: voice <text>");
+
+#ifdef Q_OS_WIN
+        auto* process = new QProcess(this);
+
+        auto env = QProcessEnvironment::systemEnvironment();
+        env.insert("DSI_VOICE_TEXT",
+                   QString::fromUtf8(cmd[1].c_str()));
+        process->setProcessEnvironment(env);
+
+        connect(process,
+                QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+                process,
+                &QObject::deleteLater);
+
+        process->start(
+            "powershell.exe",
+            {
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "$v=New-Object -ComObject SAPI.SpVoice;"
+                "[void]$v.Speak($env:DSI_VOICE_TEXT)"
+            });
+
+        return process->waitForStarted(3000) ||
+               fail("cannot start Windows speech");
+#else
+        return fail("voice is available only on Windows");
+#endif
     }
     return fail("unknown command: "+cmd[0]);
 }
