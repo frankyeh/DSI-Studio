@@ -287,6 +287,11 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
+    if(cmd == "close")
+    {
+        close();
+        return true;
+    }
     if(cmd == "reconstruction")
         return fail("use recon");
     if(cmd == "recon")
