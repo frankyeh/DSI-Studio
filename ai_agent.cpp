@@ -587,10 +587,13 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return fail("missing command field");
 
         QWidget* target = nullptr;
+        MainWindow* main_target = nullptr;
         for(auto* each : QApplication::allWidgets())
         {
             if(each->property("busy").toBool())
                 return fail("another CMD is running; check opened windows");
+            if(auto* main = qobject_cast<MainWindow*>(each))
+                main_target = main;
             if(get_window_id(each) == window)
                 target = each;
         }
@@ -633,7 +636,14 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                                 ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
                     }
                 };
-                if(auto* window = qobject_cast<MainWindow*>(target))
+                if(command_name == "voice")
+                {
+                    if(main_target)
+                        execute(main_target,main_target->command(cmd,command_source::AI));
+                    else
+                        error = "main window not found";
+                }
+                else if(auto* window = qobject_cast<MainWindow*>(target))
                     execute(window,window->command(cmd,command_source::AI));
                 else if(auto* window = qobject_cast<tracking_window*>(target))
                     execute(window,window->command(cmd,command_source::AI));
