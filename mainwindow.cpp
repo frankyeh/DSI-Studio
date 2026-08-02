@@ -1080,9 +1080,10 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 
 void MainWindow::ai_command(ai_info& info,const QByteArray& request,QByteArray& reply)
 {
+    if(!ai_agent)
+        ai_agent = new AIAgent(this);
     ::ai_command(info,request,reply);
-    if(ai_agent)
-        ai_agent->refresh_ai_info(info);
+    ai_agent->refresh_ai_info(info);
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
