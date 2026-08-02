@@ -1,0 +1,117 @@
+name: chatgpt-apply-patch
+run-name: chatgpt-apply-patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Exact current commit SHA
+        required: true
+      patch_path:
+        description: Repository-relative unified diff path
+        required: true
+        default: .github/chatgpt-apply-patch.diff
+      message:
+        description: Commit message
+        required: true
+        default: Apply patch
+      allow_delete:
+        description: Allow whole-file deletion
+        required: false
+        type: boolean
+        default: false
+      debug:
+        description: Enable command tracing
+        required: false
+        type: boolean
+        default: false
+  push:
+    paths: [.github/chatgpt-apply-patch-request.json]
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Publish run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state=pending -f context=chatgpt-apply-patch \
+            -f description='Patch application running' \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Resolve request
+        id: request
+        env:
+          INPUT_BASE_SHA: ${{ inputs.base_sha }}
+          INPUT_PATCH_PATH: ${{ inputs.patch_path }}
+          INPUT_MESSAGE: ${{ inputs.message }}
+          INPUT_ALLOW_DELETE: ${{ inputs.allow_delete }}
+          INPUT_DEBUG: ${{ inputs.debug }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            base_sha=$INPUT_BASE_SHA
+            patch_path=$INPUT_PATCH_PATH
+            message=$INPUT_MESSAGE
+            allow_delete=${INPUT_ALLOW_DELETE:-false}
+            request_trigger=false
+            debug=${INPUT_DEBUG:-false}
+          else
+            request=.github/chatgpt-apply-patch-request.json
+            base_sha=$(jq -r '.base_sha // ""' "$request")
+            patch_path=$(jq -r '.patch_path // ".github/chatgpt-apply-patch.diff"' "$request")
+            message=$(jq -r '.message // "Apply patch"' "$request")
+            allow_delete=$(jq -r '.allow_delete // false' "$request")
+            request_trigger=true
+            debug=$(jq -r '.debug // false' "$request")
+          fi
+          output() {
+            local key=$1 value=$2 delimiter="EOF_${RANDOM}_${RANDOM}"
+            printf '%s<<%s\n%s\n%s\n' "$key" "$delimiter" "$value" "$delimiter" >> "$GITHUB_OUTPUT"
+          }
+          output base_sha "$base_sha"
+          output patch_path "$patch_path"
+          output message "$message"
+          output allow_delete "$allow_delete"
+          output request_trigger "$request_trigger"
+          output debug "$debug"
+
+      - name: Apply patch
+        id: apply
+        uses: ./.github/actions/apply-patch
+        with:
+          base_sha: ${{ steps.request.outputs.base_sha }}
+          patch_path: ${{ steps.request.outputs.patch_path }}
+          message: ${{ steps.request.outputs.message }}
+          allow_delete: ${{ steps.request.outputs.allow_delete }}
+          request_trigger: ${{ steps.request.outputs.request_trigger }}
+          debug: ${{ steps.request.outputs.debug }}
+
+      - name: Publish result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.apply.outcome }}
+          COUNT: ${{ steps.apply.outputs.count }}
+        run: |
+          case "$RESULT" in
+            success) state=success; description="Patch complete: ${COUNT:-0} files" ;;
+            cancelled) state=error; description='Patch application cancelled' ;;
+            *) state=failure; description='Patch application failed' ;;
+          esac
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" -f context=chatgpt-apply-patch \
+            -f description="$description" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
