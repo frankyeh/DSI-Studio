@@ -153,12 +153,7 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
     }
     model.setCurrentIndex(std::max(0,selected_index));
 }
-// headless equivalent of set_model_selector's selection logic (no list to
-// build/show): resolves which model name+info should now be current, given
-// the available profiles and a preferred selected/fallback name; mirrors
-// set_model_selector's findText()-then-fallback-then-default decision tree,
-// including that "default" is always resolvable even though it is not a
-// profiles key (it is the sentinel entry set_model_selector always adds first)
+// headless equivalent of set_model_selector's findText-then-fallback-then-default logic, without building a list
 QPair<QString,QJsonObject> resolve_model(const QJsonObject& profiles,
                                          const QString& selected,const QString& fallback,
                                          const QJsonObject& selected_info)
@@ -321,8 +316,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
         if(auto* process = ai_infos[session].processes)
         {
-            process->disconnect(); process->kill(); process->deleteLater(); // kill(), not
-                // terminate(): a windowless console child never sees terminate()'s WM_CLOSE on Windows
+            process->disconnect(); process->kill(); process->deleteLater(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
             active_ai_processes = std::max(0,active_ai_processes-1);
             set_ai_status();
         }
@@ -397,8 +391,7 @@ AIAgent::~AIAgent()
     delete ui;
 }
 
-// GitHub issue channel: the issue body carries the next request, and one
-// pinned comment (marked "dsi_session_result":true) carries the result
+// GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
 QNetworkRequest AIAgent::github_request(const QUrl& url) const
 {
     QNetworkRequest request(url);
@@ -410,18 +403,14 @@ QNetworkRequest AIAgent::github_request(const QUrl& url) const
     return request;
 }
 
-// 401/403/404/410/422: the token, its permissions, or the resource itself is
-// wrong; retrying on a timer cannot fix these, only spam GitHub indefinitely.
-// Checked only after github_retry_delay() below, since GitHub can also
-// return a 403 for rate limiting, which is not a permanent failure.
+// 401/403/404/410/422 mean the token/permissions/resource is wrong (retrying can't fix it); checked after github_retry_delay() since 403 can also mean rate limiting
 static bool github_permanent_failure(int status)
 {
     return status == 401 || status == 403 || status == 404 ||
            status == 410 || status == 422;
 }
 
-// GitHub signals both primary and secondary rate limiting with 429 or 403;
-// returns the wait time in ms if so, or 0 if this is not a rate-limit response
+// returns the wait time in ms if GitHub signals rate limiting (429, or 403 meaning the same), else 0
 static int github_retry_delay(QNetworkReply* reply,const QByteArray& data)
 {
     bool ok = false;
@@ -440,9 +429,7 @@ static int github_retry_delay(QNetworkReply* reply,const QByteArray& data)
     return 0;
 }
 
-// blocking helper: connect_github_issue is a one-shot, user-initiated
-// action, so a short local event loop keeps its bool/error-message
-// interface synchronous without adding pending-connection state
+// blocking helper: connect_github_issue is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
 static QByteArray github_blocking(QNetworkAccessManager& manager,
                                   const QNetworkRequest& request,
                                   const char* verb,const QByteArray& body,
@@ -465,8 +452,7 @@ static QByteArray github_blocking(QNetworkAccessManager& manager,
 
 bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 {
-    // snapshot now: github_request() uses this member for the whole session,
-    // so a later edit to AI Settings cannot swap the identity mid-poll
+    // snapshot now, so a later AI Settings edit can't swap the identity mid-poll (github_request() uses this member for the whole session)
     github_token = settings.value("ai/github_token").toString().trimmed();
     if(github_token.isEmpty())
         return error = "no GitHub token configured; set one in AI Settings first "
@@ -488,9 +474,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     QUrl issue_api("https://api.github.com/repos/"+owner+"/"+parts[1]+
                    "/issues/"+QString::number(issue_number));
 
-    // identify who the token itself belongs to: it need not be the repo
-    // owner (e.g. a bot/collaborator account), and result-comment ownership
-    // must be checked against that identity, not the issue's owner
+    // identify who the token belongs to (need not be the repo owner); result-comment ownership is checked against this identity, not the issue's owner
     bool ok = false;
     auto authenticated_user = QJsonDocument::fromJson(
         github_blocking(github_manager,github_request(QUrl("https://api.github.com/user")),
@@ -520,10 +504,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     if(!ok)
         return false;
 
-    // find our own existing result comment (author must match the token's
-    // own identity, not necessarily the issue/repository owner); if more
-    // than one matches (e.g. left over from an earlier bug or a race),
-    // keep the one with the highest last_id rather than just the first
+    // find our own result comment (author must match the token's identity); if more than one matches, keep the highest last_id rather than just the first
     QUrl result_api;
     qint64 last_id = -1;
     for(const auto& each : comments)
@@ -613,9 +594,7 @@ void AIAgent::poll_github_issue()
             return restart(delay); // rate limited (429, or 403 that means the same thing)
         if(github_permanent_failure(status))
         {
-            disconnect_github_issue(); // clear connection state first: set_ai_status()'s
-                                        // "ongoing" check must see the disconnected state
-                                        // so this message decays instead of animating forever
+            disconnect_github_issue(); // clear state first, so set_ai_status()'s "ongoing" check sees it disconnected and this message decays instead of animating forever
             return set_ai_status("GitHub issue channel authorization failed.",true);
         }
         if(reply->error() != QNetworkReply::NoError && status != 304)
@@ -651,8 +630,7 @@ void AIAgent::poll_github_issue()
         };
 
         if(request_obj["request"].toString() == "close")
-            // goes through the same retrying publish path as any other result;
-            // send_pending_result() disconnects once this is confirmed published
+            // goes through the same retrying publish path as any result; send_pending_result() disconnects once this is confirmed published
             return publish_github_result(stamp(QJsonObject{{"state","closed"}}));
 
         if(request_obj["request"].toString().isEmpty() || request_obj["session"].toString().isEmpty())
@@ -665,13 +643,22 @@ void AIAgent::poll_github_issue()
         request_obj.remove("id");
         request_obj.remove("include_log");
         request_obj["agent"] = "Codex/ChatGPT-GitHub";
-        request_obj["title"] = issue["title"].toString(); // defaults the chat's title;
-            // ai_command() applies this on any request, and is a no-op once it matches
+
+        auto session_id = request_obj["session"].toString();
+        bool new_session = !ai_info::find(session_id);
 
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
         main_window.ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
         auto response = QJsonDocument::fromJson(reply_bytes).object();
+
+        if(new_session) // title it now that it exists; omits "agent" so TITLE itself can never create a session
+        {
+            QByteArray discard;
+            main_window.ai_request(QJsonDocument(QJsonObject{
+                {"request","TITLE"},{"session",session_id},
+                {"title",issue["title"].toString()}}).toJson(QJsonDocument::Compact),discard);
+        }
 
         if(include_log)
         {
@@ -738,9 +725,7 @@ void AIAgent::send_pending_result()
         }
         if(github_permanent_failure(status))
         {
-            disconnect_github_issue(); // clear connection state first: set_ai_status()'s
-                                        // "ongoing" check must see the disconnected state
-                                        // so this message decays instead of animating forever
+            disconnect_github_issue(); // clear state first, so set_ai_status()'s "ongoing" check sees it disconnected and this message decays instead of animating forever
             return set_ai_status("GitHub issue channel authorization failed.",true);
         }
 
@@ -854,9 +839,7 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     ai_status_timer->stop();
     if(!status.isEmpty())
         ai_status_activity = status;
-    // a connected web-agent session has no QProcess to track, but is just as
-    // "ongoing" as a local agent process: keep the status animating instead
-    // of letting it decay to "Current task complete." while still connected
+    // a connected web-agent session has no QProcess but is just as "ongoing" as a local one: keep the status animating instead of decaying while still connected
     bool ongoing = active_ai_processes ||
                    (web_agent_active_session && !github_issue_api.isEmpty());
     if(ongoing && (status.isEmpty() || temporary))
@@ -945,9 +928,6 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return reply_error("cannot save title");
         return reply_object(QJsonObject{{"status","success"}});
     }
-    if(auto title = request["title"].toString().simplified();!title.isEmpty())
-        ai_info::save_title(info,title); // may ride along on any request, not just TITLE
-
     if(type == "CMD")
     {
         auto fail = [&](const QString& error)
@@ -1266,13 +1246,14 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                toString("MM/dd HH:mm:ss");
     };
 
+    const bool show_reasoning = ui->ai_show_reasoning->isChecked(); // read once: append() runs per history entry
     auto append = [&](const QJsonObject& entry,const QString& activity,
                       const QString& end_time = {})
     {
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
         auto content = entry["text"].toString();
-        auto reasoning = ui->ai_show_reasoning->isChecked() ?
+        auto reasoning = show_reasoning ?
                          entry["reasoning"].toString().trimmed() : QString();
         if(content.trimmed().isEmpty() && reasoning.isEmpty())
             return;
@@ -1323,13 +1304,12 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();++index)
         {
-            auto entry = history[index];
+            const auto& entry = history[index];
             auto type = entry["type"].toString();
             if(type == "request")
             {
                 if(!standalone_request(index))
                     continue;
-                auto combined = entry;
                 QStringList activities{
                     entry["text"].toString().section(" \u2192 ",0,0)};
                 auto window = entry["window"].toVariant().toString();
@@ -1339,14 +1319,15 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                       history[end+1]["window"].toVariant().toString() == window)
                     activities << history[++end]["text"].toString().
                                   section(" \u2192 ",0,0);
-                if(end != index)
+                if(end == index) // common case: nothing to merge, no copy needed
+                    append(entry,{});
+                else
                 {
-                    auto target =
-                        entry["text"].toString().section(" \u2192 ",1);
+                    auto combined = entry; // only the merged entry needs a mutable copy
+                    auto target = entry["text"].toString().section(" \u2192 ",1);
                     combined["text"] = activities.join(", ")+" \u2192 "+target;
+                    append(combined,{},history[end]["time"].toString());
                 }
-                append(combined,{},end == index ? QString() :
-                       history[end]["time"].toString());
                 index = end;
                 continue;
             }
@@ -1477,8 +1458,7 @@ void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* 
 
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
-    ui->ai_project_list->setCurrentItem(nullptr); // no-op (no signal) if already unselected,
-                                                   // so the history clear below can't be skipped
+    ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
     ui->ai_chat_history->clear();
     set_ai_status("Connecting to "+url+"...");
     tipl::out() << "connecting to GitHub issue: " << url.toStdString();
@@ -1508,8 +1488,7 @@ void AIAgent::update_agent_status_label()
     ui->ai_agent_status->setText(text);
 }
 
-// mirrors non-editable QComboBox::setCurrentText: silently does nothing if
-// name isn't "default" and isn't a known profile for the current agent
+// mirrors non-editable QComboBox::setCurrentText: no-op if name isn't "default" or a known profile for the current agent
 void AIAgent::try_set_current_model(const QString& name)
 {
     if(name == "default")
@@ -1539,9 +1518,7 @@ void AIAgent::update_send_button()
     ui->ai_send_message->setText(running ? "Stop" : "Send");
 }
 
-// resume: reopens the same dialog for an existing web-agent session — locked
-// to "Web agent" (radios disabled) and the local agent/model panel disabled,
-// only the issue URL (defaulted to the last one) can still be changed
+// resume: reopens the dialog locked to "Web agent" (radios and local panel disabled); only the issue URL (defaulted to the last one) can still be changed
 bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                                    bool& web,int& agent_index,QString& model_name,QString& issue_url)
 {
@@ -1639,8 +1616,7 @@ void AIAgent::new_chat_dialog(bool resume)
     current_agent_index = agent_index;
     try_set_current_model(model_name);
     update_agent_status_label();
-    ui->ai_project_list->setCurrentItem(nullptr); // no-op (no signal) if already unselected,
-                                                   // so the history clear below can't be skipped
+    ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
     ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
@@ -1927,7 +1903,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 }
 
 QStringList AIAgent::configure_claude(
-    ai_launch launch,QString session,const QString& text,bool new_session)
+    const ai_launch& launch,QString session,const QString& text,bool new_session)
 {
     auto* process = launch.process;
     if(!launch.model_url.isEmpty())
@@ -2000,7 +1976,7 @@ QStringList AIAgent::configure_claude(
     return args;
 }
 QStringList AIAgent::configure_codex(
-    ai_launch launch,QString session,const QString& text)
+    const ai_launch& launch,QString session,const QString& text)
 {
     auto* process = launch.process;
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
@@ -2127,8 +2103,7 @@ void AIAgent::on_ai_send_message_clicked()
         {
             info.prompts.clear(); // stop means stop: no auto-continue into a queued message
             info.processes->setProperty("user_stopped",true);
-            info.processes->kill(); // terminate() posts WM_CLOSE on Windows, which a
-                                     // windowless console child (codex/claude) never sees
+            info.processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
             return;
         }
     }

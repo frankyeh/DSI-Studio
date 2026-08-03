@@ -38,9 +38,7 @@ struct ai_info{
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
     quint64 log_position = quint64(-1);
-    bool has_error = false; // true once a run ends in failure; cleared when a new run starts.
-                            // shown as the sidebar status dot: green (processes running),
-                            // red (has_error), gray (otherwise)
+    bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
@@ -53,8 +51,7 @@ struct ai_info{
 };
 void ai_command(ai_info&,const QByteArray&,QByteArray&);
 
-// one entry per ai_provider (Codex/Claude): resolved executable path (empty
-// if not found) and the discovered model profiles (name -> info) for it
+// one entry per ai_provider (Codex/Claude): resolved executable path (empty if not found) and the discovered model profiles (name -> info)
 struct ai_agent_entry
 {
     QString executable;
@@ -73,28 +70,23 @@ class AIAgent : public QMainWindow
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0;
 
-    // current agent/model selection, shown via update_agent_status_label()
-    // instead of the visible combo boxes this used to be
+    // current agent/model selection, shown via update_agent_status_label() instead of the visible combo boxes this used to be
     std::array<ai_agent_entry,2> agent_entries; // indexed by ai_provider
     int current_agent_index = 0;
     QString current_model_name = "default";
     QJsonObject current_model_info;
     void update_agent_status_label();
-    void try_set_current_model(const QString& name); // no-op if name is unknown,
-                                                      // matching non-editable QComboBox::setCurrentText
+    void try_set_current_model(const QString& name); // no-op if name is unknown, matching non-editable QComboBox::setCurrentText
 
-    // GitHub issue channel: the issue body carries the next request, and
-    // one pinned comment (marked "dsi_session_result":true) carries the result
+    // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
     QNetworkAccessManager github_manager;
     QTimer github_timer;
     QUrl github_issue_api,github_result_api;
     QByteArray github_etag;
-    QString github_token; // snapshot taken at connect time so a mid-session
-                          // Settings change cannot swap the identity underneath a poll
+    QString github_token; // snapshot taken at connect time so a mid-session Settings change cannot swap the identity underneath a poll
     qint64 github_last_id = 0;
     QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
-    quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks
-                                       // from a superseded connection even to the same URL
+    quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
     bool web_agent_active_session = false; // true from New Chat (web agent) until New Chat starts a local one
     QString github_last_issue_url; // remembered so Resume can default to it
 
@@ -105,14 +97,11 @@ class AIAgent : public QMainWindow
     void publish_github_result(QJsonObject);
     void send_pending_result();
     void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
-    bool try_connect_github_issue(const QString& url); // connect_github_issue()
-                                                        // plus the shared success/failure UI feedback
-    void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume
-                                        // locks the mode and disables the local agent/model panel
+    bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback
+    void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               bool& web,int& agent_index,QString& model_name,QString& issue_url);
-        // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked();
-        // returns false if the dialog was cancelled
+        // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
@@ -123,8 +112,8 @@ class AIAgent : public QMainWindow
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
     void start_ai(QString,const QString&,ai_input);
-    QStringList configure_codex(ai_launch,QString,const QString&);
-    QStringList configure_claude(ai_launch,QString,const QString&,bool);
+    QStringList configure_codex(const ai_launch&,QString,const QString&);
+    QStringList configure_claude(const ai_launch&,QString,const QString&,bool);
     ai_launch prepare_ai(ai_provider,QString&,const QString&,ai_input);
 
 public:
