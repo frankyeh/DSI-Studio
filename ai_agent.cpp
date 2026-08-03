@@ -192,11 +192,6 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!path.isEmpty())
             ui->ai_work_dir->setText(QDir::toNativeSeparators(path));
     });
-    connect(ui->ai_show_reasoning,&QCheckBox::toggled,this,[this]
-    {
-        if(auto* item = ui->ai_project_list->currentItem())
-            show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
-    });
     ai_status_timer = new QTimer(this);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
     {
@@ -1246,7 +1241,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                toString("MM/dd HH:mm:ss");
     };
 
-    const bool show_reasoning = ui->ai_show_reasoning->isChecked(); // read once: append() runs per history entry
+    const bool show_reasoning = settings.value("ai/show_reasoning",false).toBool(); // read once: append() runs per history entry
     auto append = [&](const QJsonObject& entry,const QString& activity,
                       const QString& end_time = {})
     {
@@ -1507,7 +1502,6 @@ void AIAgent::try_set_current_model(const QString& name)
 
 void AIAgent::update_send_button()
 {
-    ui->ai_show_reasoning->setVisible(!web_agent_active_session);
     if(web_agent_active_session)
     {
         ui->ai_send_message->setText(github_issue_api.isEmpty() ? "Resume" : "Stop");
@@ -1660,6 +1654,9 @@ void AIAgent::on_ai_quick_settings_clicked()
     init_agent_model_combo(agent,model,&dialog);
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
+    QCheckBox show_reasoning("Show reasoning");
+    show_reasoning.setToolTip("Show AI reasoning messages in chat history");
+    show_reasoning.setChecked(settings.value("ai/show_reasoning",false).toBool());
     QCheckBox debug("Enable debug mode");
     debug.setChecked(settings.value("ai/debug").toBool());
     QLineEdit github_pat(settings.value("ai/github_token").toString());
@@ -1670,6 +1667,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     layout.addRow("Default agent:",&agent);
     layout.addRow("Default model:",&model);
     layout.addRow(&history);
+    layout.addRow(&show_reasoning);
     layout.addRow(&debug);
     layout.addRow("GitHub token (issue channel):",&github_pat);
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
@@ -1682,12 +1680,19 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/ollama_host",host.text().trimmed());
     settings.setValue("ai/ollama_port",port.value());
     settings.setValue("ai/keep_history",history.isChecked());
+    bool reasoning_changed = show_reasoning.isChecked() != settings.value("ai/show_reasoning",false).toBool();
+    settings.setValue("ai/show_reasoning",show_reasoning.isChecked());
     settings.setValue("ai/debug",debug.isChecked());
     settings.setValue("ai/github_token",github_pat.text().trimmed());
     ai_debug_enabled() = debug.isChecked();
     settings.setValue("ai/default_agent",agent.currentIndex());
     settings.setValue("ai/default_model",model.currentText());
-    if(!ui->ai_project_list->currentItem())
+    if(auto* item = ui->ai_project_list->currentItem())
+    {
+        if(reasoning_changed)
+            show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
+    }
+    else
     {
         current_agent_index = agent.currentIndex();
         try_set_current_model(model.currentText());

@@ -92,21 +92,6 @@ QPushButton#ai_new_chat:pressed,
 QPushButton#ai_quick_settings:pressed {
     background-color: #dadce0;
 }
-QCheckBox#ai_show_reasoning {
-    color: #3c4043;
-    spacing: 6px;
-}
-QCheckBox#ai_show_reasoning::indicator {
-    width: 14px;
-    height: 14px;
-    border-radius: 7px;
-    border: 1px solid #dadce0;
-    background: #ffffff;
-}
-QCheckBox#ai_show_reasoning::indicator:checked {
-    background: #1a73e8;
-    border-color: #1a73e8;
-}
 QWidget#tab_8 QComboBox {
     color: #202124;
     background-color: #f7f7f8;
@@ -503,19 +488,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
               </size>
              </property>
             </spacer>
-           </item>
-           <item row="1" column="4">
-            <widget class="QCheckBox" name="ai_show_reasoning">
-             <property name="toolTip">
-              <string>Show AI reasoning messages in chat history</string>
-             </property>
-             <property name="text">
-              <string>Show reasoning</string>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-            </widget>
            </item>
           </layout>
          </widget>
