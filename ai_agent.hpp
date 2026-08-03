@@ -105,6 +105,10 @@ class AIAgent : public QMainWindow
                                                         // plus the shared success/failure UI feedback
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume
                                         // locks the mode and disables the local agent/model panel
+    bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
+                              bool& web,int& agent_index,QString& model_name,QString& issue_url);
+        // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked();
+        // returns false if the dialog was cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
