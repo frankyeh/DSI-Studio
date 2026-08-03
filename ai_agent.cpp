@@ -664,13 +664,21 @@ void AIAgent::poll_github_issue()
         request_obj.remove("id");
         request_obj.remove("include_log");
         request_obj["agent"] = "Codex/ChatGPT-GitHub";
-        request_obj["title"] = issue["title"].toString(); // only applied by
-            // MainWindow::ai_request() when this session is being created
 
+        auto session_id = request_obj["session"].toString();
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
         main_window.ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
         auto response = QJsonDocument::fromJson(reply_bytes).object();
+
+        // first command of a brand-new session: default its title to the issue's
+        // title. This can't ride along inside request_obj above: the DSI command
+        // parser rejects any non-TITLE request that contains a "title" field.
+        if(auto* info = ai_info::find(session_id);info && info->project_titles.isEmpty())
+        {
+            ai_info::save_title(*info,issue["title"].toString());
+            show_ai_project(*info);
+        }
 
         if(include_log)
         {
@@ -828,6 +836,24 @@ void AIAgent::showEvent(QShowEvent* event)
     QMainWindow::showEvent(event);
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
+}
+
+void AIAgent::closeEvent(QCloseEvent* event)
+{
+    for(auto& [session,info] : ai_infos)
+        if(auto* process = info.processes)
+        {
+            info.processes = nullptr;
+            process->disconnect();
+            process->kill();
+            process->deleteLater();
+        }
+    active_ai_processes = 0;
+    if(!github_issue_api.isEmpty())
+        disconnect_github_issue();
+    web_agent_active_session = false;
+    update_send_button();
+    QMainWindow::closeEvent(event);
 }
 
 void AIAgent::set_ai_status(QString status,bool temporary)
