@@ -230,7 +230,6 @@ public:
     void set_roi_zoom(float zoom);
 public:
     std::string error_msg;
-    bool ignore_close_prompt = false;
     bool command(std::vector<std::string> cmd);
     bool command(std::vector<std::string> cmd,command_source);
     QString get_action_data(void) const
