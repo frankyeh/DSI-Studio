@@ -352,7 +352,8 @@ AIAgent::AIAgent(MainWindow* parent):
         QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
-        delete ui->ai_project_list->takeItem(row); // detach then delete: keeps count()/rows consistent
+        ui->ai_project_list->takeItem(row)->deleteLater(); // detach now (keeps count()/rows consistent); defer the actual delete since
+                                                            // this item's row widget owns the "..." button whose menu action is still executing
 
         // keep a chat selected whenever one exists; only New Chat clears the selection
         if(ui->ai_project_list->count())
@@ -363,11 +364,11 @@ AIAgent::AIAgent(MainWindow* parent):
             [this](QListWidgetItem* item,QListWidgetItem* previous)
     {
         for(auto* i : {previous,item})
-            if(i)
-                ui->ai_project_list->itemWidget(i)->
-                    findChild<QPushButton*>()->
-                    setStyleSheet(i == item ?
-                        "color:#202124;background:#dce9f9;" : "");
+            if(i) // itemWidget() is null for an item already detached from the list (e.g. mid-removal), so guard both calls
+                if(auto* widget = ui->ai_project_list->itemWidget(i))
+                    if(auto* button = widget->findChild<QPushButton*>())
+                        button->setStyleSheet(i == item ?
+                            "color:#202124;background:#dce9f9;" : "");
         if(!item)
         {
             ui->ai_chat_history->clear();
@@ -1280,14 +1281,14 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     status_dot->setToolTip(status_text);
 
     auto* current = ui->ai_project_list->currentItem();
-    if(!current)
+    const auto added_type = added_entry["type"].toString();
+    if(!current && added_type == "user") // the user just started this chat themselves (nothing else was selected): bring it up
     {
         ui->ai_project_list->setCurrentItem(item);
-        return;
+        current = item;
     }
 
     bool visible = current == item && isVisible();
-    const auto added_type = added_entry["type"].toString();
 
     if(!added_type.isEmpty() && added_type != "user" && !visible)
     {
