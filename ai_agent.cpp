@@ -1185,6 +1185,10 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         info.project_items = item;
 
         auto* row = new QWidget;
+        auto* status_dot = new QLabel(row);
+        status_dot->setObjectName("ai_project_status_dot");
+        status_dot->setFixedSize(10,10);
+
         auto* title = new QPushButton(row);
         title->setFlat(true);
         title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
@@ -1199,7 +1203,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
         auto* layout = new QHBoxLayout(row);
         layout->setContentsMargins(6,2,2,2);
-        layout->setSpacing(2);
+        layout->setSpacing(6);
+        layout->addWidget(status_dot);
         layout->addWidget(title,1);
         layout->addWidget(button);
         ui->ai_project_list->setItemWidget(item,row);
@@ -1224,6 +1229,13 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     title->setText(info.title());
     title->setToolTip(title->text());
     item->setSizeHint(QSize(0,row->sizeHint().height()));
+
+    auto* status_dot = row->findChild<QLabel*>("ai_project_status_dot");
+    auto [status_color,status_text] = info.processes ?
+        std::make_pair("#34a853","Active") : info.has_error ?
+        std::make_pair("#ea4335","Error") : std::make_pair("#9aa0a6","Inactive");
+    status_dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(status_color));
+    status_dot->setToolTip(status_text);
 
     auto* current = ui->ai_project_list->currentItem();
     if(!current)
@@ -1733,6 +1745,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
     auto* info = session.isEmpty() ? nullptr : &ai_infos[session];
+    if(info)
+        info->has_error = false; // a new attempt clears the sidebar's error dot
 
     // Resolve model
     QJsonObject selected{
@@ -1854,6 +1868,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         {
             auto& info = ai_infos[session];
             info.processes = nullptr;
+            info.has_error = true;
             info.prompts.append(text);
             add_ai_history(info,"activity",message);
         }
@@ -1889,6 +1904,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         {
             auto& info = ai_infos[session];
             info.processes = nullptr;
+            info.has_error = failed;
 
             auto pending = info.prompts.join("\n\n");
             info.prompts.clear();
