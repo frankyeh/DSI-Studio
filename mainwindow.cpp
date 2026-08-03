@@ -1118,7 +1118,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     auto command_json = request["command"];
     if(command_json.isUndefined() || command_json.isNull())
         return fail("missing command field");
+
     std::vector<std::vector<std::string>> cmds;
+    // prepare cmds
     for(const auto& value :
         (command_json.isArray() ? command_json.toArray() : QJsonArray{command_json}))
     {
@@ -1139,7 +1141,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return fail("missing command field");
 
     QJsonArray results;
-    QString ai_current_window = "main"; // local to this one dispatch call: "set_window" only retargets later commands in this same batch, nothing persists between calls
 
     QWidget* locked_target = nullptr; // releases the locked window (setUpdatesEnabled/busy) on target switch or batch end
     bool locked_updates_enabled = true;
@@ -1165,13 +1166,13 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     {
         if(locked_target)
             return true;
-        QWidget* target = ai_current_window == "main" ? static_cast<QWidget*>(this) : nullptr;
+        QWidget* target = info.current_window == "main" ? static_cast<QWidget*>(this) : nullptr;
         bool busy_elsewhere = false;
         for(auto* each : QApplication::allWidgets())
         {
             if(each->property("busy").toBool())
                 busy_elsewhere = true;
-            if(!target && ai_window_id(each) == ai_current_window)
+            if(!target && ai_window_id(each) == info.current_window)
                 target = each;
         }
         if(busy_elsewhere || !target)
@@ -1236,8 +1237,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             continue;
         }
 
-        // set_title/log/set_window: need this call's ai_info/ai_current_window directly, which are local to
-        // dispatch_cmd() -- meaningless outside an AI request, so handled here rather than in command()
+        // set_title/log/set_window: need this call's ai_info directly, which is meaningless outside an
+        // AI request, so handled here rather than in command()
         if(command_name == "set_title" || command_name == "log" || command_name == "set_window")
         {
             QString output,error;
@@ -1315,9 +1316,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 if(error.isEmpty())
                 {
-                    if(new_window != ai_current_window)
+                    if(new_window != info.current_window)
                         unlock_target(); // retargeting: release whatever was locked for the previous window
-                    ai_current_window = new_window;
+                    info.current_window = new_window;
                     output = "current window: "+new_window;
                 }
             }
@@ -1392,15 +1393,15 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             {
                 if(resolve_target(error))
                 {
-                    auto target_type = ai_current_window == "main" ? QString("main") :
-                                       ai_current_window.startsWith("tracking") ? "tracking" :
-                                       ai_current_window.startsWith("recon") ? "recon" : "image";
+                    auto target_type = info.current_window == "main" ? QString("main") :
+                                       info.current_window.startsWith("tracking") ? "tracking" :
+                                       info.current_window.startsWith("recon") ? "recon" : "image";
                     auto target_title = target_type == "main" ? QString() :
                                         QFileInfo(locked_target->windowTitle()).fileName();
                     info.record_history(QJsonObject{
                         {"type","request"},
                         {"text",command_name+" → "+target_type+" window "+target_title},
-                        {"window",ai_current_window}});
+                        {"window",info.current_window}});
 
                     auto execute = [&](auto* window,bool success)
                     {
