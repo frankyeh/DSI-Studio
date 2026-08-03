@@ -242,10 +242,16 @@ AIAgent::AIAgent(MainWindow* parent):
         QString agent = agent_names[index];
         agent_entries[index].executable = path;
         ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
-        if(!path.isEmpty())
-            ai_log(agent+" models: none detected");
     }
     refresh_codex_models(codex_path);
+
+    if(!claude_path.isEmpty())
+    {
+        // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
+        static const QStringList claude_models{"fable","opus","sonnet","haiku"};
+        update_agent_models(int(ai_provider::Claude),claude_models,false);
+        ai_log("Claude models: "+claude_models.join(", "));
+    }
 
     if(codex_path.isEmpty() && !claude_path.isEmpty())
         current_agent_index = int(ai_provider::Claude);
