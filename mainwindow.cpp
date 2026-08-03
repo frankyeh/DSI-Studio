@@ -1115,8 +1115,6 @@ void MainWindow::ai_request(const QByteArray& request,QByteArray& reply)
             return void(reply = status_reply("error","invalid agent: include Codex or Claude in the agent name"));
         if(auto model = object["model"].toString().trimmed();!model.isEmpty())
             info->model_settings["model"] = model;
-        if(auto title = object["title"].toString().trimmed();!title.isEmpty())
-            ai_info::save_title(*info,title); // e.g. the GitHub issue title, for a web-agent session
     }
     ai_command(*info,request,reply);
 }
