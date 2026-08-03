@@ -28,12 +28,13 @@
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QPushButton>
-#include <QRadioButton>
 #include <QRegularExpression>
 #include <QScrollBar>
 #include <QShortcut>
 #include <QShowEvent>
 #include <QSpinBox>
+#include <QStackedLayout>
+#include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTextFrame>
 #include <QTimer>
@@ -95,7 +96,9 @@ static void stop_blink(QWidget* row)
 
 ai_provider ai_info::identify_provider(const QString& name)
 {
-    return name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
+    // "chatgpt" checked first: the web agent's name is "Codex/ChatGPT-GitHub", which also contains "codex"
+    return name.contains("chatgpt",Qt::CaseInsensitive) ? ai_provider::ChatGPT :
+           name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
            name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
            ai_provider::Unknown;
 }
@@ -369,13 +372,16 @@ AIAgent::AIAgent(MainWindow* parent):
 
         stop_blink(ui->ai_project_list->itemWidget(item));
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
-        current_agent_index = int(info.provider);
-        auto resolved = resolve_model(
-            agent_entries[current_agent_index].profiles,
-            info.model_settings["model"].toString(),{},
-            info.model_settings["info"].toObject());
-        current_model_name = resolved.first;
-        current_model_info = resolved.second;
+        if(info.provider != ai_provider::ChatGPT) // a web chat has no agent/model of its own to adopt as "current"
+        {
+            current_agent_index = int(info.provider);
+            auto resolved = resolve_model(
+                agent_entries[current_agent_index].profiles,
+                info.model_settings["model"].toString(),{},
+                info.model_settings["info"].toObject());
+            current_model_name = resolved.first;
+            current_model_info = resolved.second;
+        }
         update_agent_status_label();
         show_ai_project(info);
         update_send_button();
@@ -602,6 +608,8 @@ void AIAgent::disconnect_github_issue()
     github_last_id = 0;
     github_pending_result = QJsonObject();
     update_send_button(); // flips to "Resume" if still in a web-agent session
+    if(auto* info = ai_info::find(web_agent_session_id)) // dot reverts from Active immediately, not just on the next poll
+        show_ai_project(*info);
 }
 
 void AIAgent::poll_github_issue()
@@ -1252,12 +1260,15 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto* row = ui->ai_project_list->itemWidget(item);
     auto* title = row->findChild<QPushButton*>();
     item->setText({});
-    title->setText((info.agent_name.contains("ChatGPT") ? QString("🌐 ") : QString())+info.title());
+    title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+info.title());
     title->setToolTip(title->text());
     item->setSizeHint(QSize(0,row->sizeHint().height()));
 
     auto* status_dot = row->findChild<QLabel*>("ai_project_status_dot");
-    auto [status_color,status_text] = info.processes ?
+    bool active = info.provider == ai_provider::ChatGPT ?
+        (web_agent_active_session && !github_issue_api.isEmpty() && info.sessions == web_agent_session_id) :
+        bool(info.processes);
+    auto [status_color,status_text] = active ?
         std::make_pair("#34a853","Active") : info.has_error ?
         std::make_pair("#ea4335","Error") : std::make_pair("#9aa0a6","Inactive");
     status_dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(status_color));
@@ -1622,13 +1633,16 @@ bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
     update_agent_status_label();
     set_ai_status("Connected to "+url,true);
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
+    if(resume) // dot shows Active immediately, not just once the next poll cycle refreshes it
+        if(auto* info = ai_info::find(web_agent_session_id))
+            show_ai_project(*info);
     return true;
 }
 
 void AIAgent::update_agent_status_label()
 {
     auto* item = ui->ai_project_list->currentItem();
-    bool web = item ? ai_infos[item->data(Qt::UserRole).toString()].agent_name.contains("ChatGPT")
+    bool web = item ? ai_infos[item->data(Qt::UserRole).toString()].provider == ai_provider::ChatGPT
                      : web_agent_active_session;
     if(web)
         return void(ui->ai_agent_status->setText("ChatGPT(Web)"));
@@ -1641,9 +1655,12 @@ void AIAgent::update_agent_status_label()
     ui->ai_agent_status->setText(text);
 }
 
-// mirrors non-editable QComboBox::setCurrentText: no-op if name isn't "default" or a known profile for the current agent
+// accepts any non-empty name, not just a known profile: the New Chat model field is
+// editable so users can type a specific model DSI Studio hasn't discovered/listed
 void AIAgent::try_set_current_model(const QString& name)
 {
+    if(name.isEmpty())
+        return;
     if(name == "default")
     {
         current_model_name = "default";
@@ -1651,11 +1668,8 @@ void AIAgent::try_set_current_model(const QString& name)
         return;
     }
     const auto& profiles = agent_entries[current_agent_index].profiles;
-    if(profiles.contains(name))
-    {
-        current_model_name = name;
-        current_model_info = profiles[name].toObject();
-    }
+    current_model_name = name;
+    current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
 }
 
 void AIAgent::update_send_button()
@@ -1670,77 +1684,70 @@ void AIAgent::update_send_button()
     ui->ai_send_message->setText(running ? "Stop" : "Send");
 }
 
-// resume: reopens the dialog locked to "Web agent" (radios and local panel disabled); only the issue URL (defaulted to the last one) can still be changed
+// resume only ever applies to the web agent: the Agent combo is locked to ChatGPT and disabled, only the issue URL (defaulted to the last one) can still be changed
 bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                                    bool& web,int& agent_index,QString& model_name,QString& issue_url)
 {
     QDialog dialog(this);
     dialog.setWindowTitle(title);
-    QVBoxLayout layout(&dialog);
+    QFormLayout layout(&dialog);
 
-    QRadioButton local_radio("Local agent");
-    QRadioButton web_radio("Web agent (ChatGPT via GitHub issue)");
-
-    QWidget local_panel;
-    QFormLayout local_layout(&local_panel);
-    QComboBox agent,model;
-    init_agent_model_combo(agent,model,&dialog);
-    local_layout.addRow("Agent:",&agent);
-    local_layout.addRow("Model:",&model);
-
+    QComboBox agent;
+    agent.addItem("Codex");
+    agent.addItem("Claude");
+    agent.addItem("ChatGPT (Web)");
     bool has_token = !settings.value("ai/github_token").toString().isEmpty();
-    QWidget web_panel;
-    QFormLayout web_layout(&web_panel);
-    QLabel web_agent_label("ChatGPT");
+    if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
+    {
+        auto disable = [&](int index,bool available,const QString& reason)
+        {
+            if(available)
+                return;
+            item_model->item(index)->setEnabled(false);
+            item_model->item(index)->setToolTip(reason);
+        };
+        disable(int(ai_provider::Codex),!agent_entries[int(ai_provider::Codex)].executable.isEmpty(),"Codex was not found");
+        disable(int(ai_provider::Claude),!agent_entries[int(ai_provider::Claude)].executable.isEmpty(),"Claude was not found");
+        disable(int(ai_provider::ChatGPT),has_token,"Set up a GitHub token in AI Settings first");
+    }
+    agent.setCurrentIndex(resume ? int(ai_provider::ChatGPT) : current_agent_index);
+    agent.setEnabled(!resume);
+    layout.addRow("Agent:",&agent);
+
+    QWidget field_container; // declared before its would-be children below, so it is destroyed after them (reverse-declaration-order unwind), not before
+    auto* field_stack = new QStackedLayout(&field_container);
+    QComboBox model;
+    model.setEditable(true); // lets the user type a specific model name (e.g. a dated Claude model), not just pick a known alias
     QLineEdit issue_url_edit(resume ? github_last_issue_url : QString());
     issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
-    web_layout.addRow("Agent:",&web_agent_label);
-    web_layout.addRow("Issue URL:",&issue_url_edit);
-    QLabel hint(has_token ? QString() :
-        "Set up a GitHub token in AI Settings first.");
-    hint.setStyleSheet("color:#b00020;");
-    hint.setVisible(!has_token);
+    QLabel field_label;
+    field_stack->addWidget(&model);
+    field_stack->addWidget(&issue_url_edit);
+    layout.addRow(&field_label,&field_container);
 
-    if(resume)
+    auto update_field = [&]()
     {
-        web_radio.setChecked(true);
-        local_radio.setEnabled(false);
-        web_radio.setEnabled(false);
-        local_panel.setEnabled(false);
-    }
-    else
-    {
-        local_radio.setChecked(true);
-        web_radio.setEnabled(has_token);
-    }
-
-    layout.addWidget(&local_radio);
-    layout.addWidget(&local_panel);
-    layout.addWidget(&web_radio);
-    layout.addWidget(&web_panel);
-    layout.addWidget(&hint);
-
-    auto update_panels = [&]()
-    {
-        local_panel.setVisible(local_radio.isChecked());
-        web_panel.setVisible(web_radio.isChecked());
+        bool chatgpt = agent.currentIndex() == int(ai_provider::ChatGPT);
+        field_label.setText(chatgpt ? "Issue URL:" : "Model:");
+        field_stack->setCurrentWidget(chatgpt ? static_cast<QWidget*>(&issue_url_edit) : static_cast<QWidget*>(&model));
+        if(!chatgpt)
+            set_model_selector(model,agent_entries[agent.currentIndex()].profiles,current_model_name);
     };
-    update_panels();
-    connect(&local_radio,&QRadioButton::toggled,&dialog,[&](bool){update_panels();});
-    connect(&web_radio,&QRadioButton::toggled,&dialog,[&](bool){update_panels();});
+    update_field();
+    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
 
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
-    layout.addWidget(&buttons);
+    layout.addRow(&buttons);
     connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
 
     if(dialog.exec() != QDialog::Accepted)
         return false;
 
-    web = web_radio.isChecked();
+    web = agent.currentIndex() == int(ai_provider::ChatGPT);
     agent_index = agent.currentIndex();
-    model_name = model_combo_key(model);
+    model_name = web ? QString() : model_combo_key(model);
     issue_url = issue_url_edit.text().trimmed();
     return true;
 }
@@ -1787,6 +1794,11 @@ void AIAgent::on_ai_agent_status_clicked()
     if(auto* item = ui->ai_project_list->currentItem())
     {
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        if(info.provider == ai_provider::ChatGPT) // no agent/model to change here; the only meaningful action is reconnecting
+        {
+            new_chat_dialog(true);
+            return;
+        }
         QDialog dialog(this);
         dialog.setWindowTitle("Change Model");
         QFormLayout layout(&dialog);
@@ -2287,7 +2299,7 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
 
     auto provider = info ? info->provider :
         ai_provider(current_agent_index);
-    Q_ASSERT(provider != ai_provider::Unknown);
+    Q_ASSERT(provider == ai_provider::Codex || provider == ai_provider::Claude); // never ChatGPT: callers must intercept a web chat before reaching here
 
     bool new_session = session.isEmpty();
     auto launch = prepare_ai(provider,session,text,input);
@@ -2320,6 +2332,11 @@ void AIAgent::on_ai_send_message_clicked()
     if(item)
     {
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        if(info.provider == ai_provider::ChatGPT) // never a local launch target; reconnect instead of misresuming its session id as a local agent
+        {
+            new_chat_dialog(true);
+            return;
+        }
         if(info.processes)
         {
             info.prompts.clear(); // stop means stop: no auto-continue into a queued message
