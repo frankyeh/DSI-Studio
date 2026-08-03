@@ -58,10 +58,12 @@
 std::unordered_map<QString,ai_info> ai_infos;
 QString ai_project_dir;
 constexpr auto ai_debug_tag = "[DEUBG]";
-bool& ai_debug_enabled()
+constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
+// "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete)
+int& ai_debug_level()
 {
-    static bool enabled = QSettings().value("ai/debug").toBool();
-    return enabled;
+    static int level = QSettings().value("ai/debug",0).toInt();
+    return level;
 }
 QString ai_info::history_file(const QString& session)
 {
@@ -118,12 +120,13 @@ QString ai_info::details() const
 }
 void ai_log(QString text)
 {
-    if(ai_debug_enabled())
-    {
-        auto prefix = QString(ai_debug_tag)+" ";
-        tipl::out() << (prefix+text.remove('\r').
-                        replace('\n',"\n"+prefix)).toStdString();
-    }
+    if(ai_debug_level() <= 0)
+        return;
+    if(ai_debug_level() == 1 && text.size() > ai_debug_truncate_length)
+        text = text.left(ai_debug_truncate_length)+"...";
+    auto prefix = QString(ai_debug_tag)+" ";
+    tipl::out() << (prefix+text.remove('\r').
+                    replace('\n',"\n"+prefix)).toStdString();
 }
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
 {
@@ -1663,8 +1666,11 @@ void AIAgent::on_ai_quick_settings_clicked()
     QCheckBox show_reasoning("Show reasoning");
     show_reasoning.setToolTip("Show AI reasoning messages in chat history");
     show_reasoning.setChecked(settings.value("ai/show_reasoning",false).toBool());
-    QCheckBox debug("Enable debug mode");
-    debug.setChecked(settings.value("ai/debug").toBool());
+    QComboBox debug;
+    debug.addItem("Disabled");
+    debug.addItem("Enabled (truncated)");
+    debug.addItem("Enabled (complete)");
+    debug.setCurrentIndex(settings.value("ai/debug",0).toInt());
     QLineEdit github_pat(settings.value("ai/github_token").toString());
     github_pat.setEchoMode(QLineEdit::Password);
     github_pat.setPlaceholderText("required to connect a GitHub issue");
@@ -1674,7 +1680,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     layout.addRow("Default model:",&model);
     layout.addRow(&history);
     layout.addRow(&show_reasoning);
-    layout.addRow(&debug);
+    layout.addRow("Debug mode:",&debug);
     layout.addRow("GitHub token (issue channel):",&github_pat);
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
     layout.addRow(&buttons);
@@ -1688,9 +1694,9 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/keep_history",history.isChecked());
     bool reasoning_changed = show_reasoning.isChecked() != settings.value("ai/show_reasoning",false).toBool();
     settings.setValue("ai/show_reasoning",show_reasoning.isChecked());
-    settings.setValue("ai/debug",debug.isChecked());
+    settings.setValue("ai/debug",debug.currentIndex());
     settings.setValue("ai/github_token",github_pat.text().trimmed());
-    ai_debug_enabled() = debug.isChecked();
+    ai_debug_level() = debug.currentIndex();
     settings.setValue("ai/default_agent",agent.currentIndex());
     settings.setValue("ai/default_model",model.currentText());
     if(auto* item = ui->ai_project_list->currentItem())
@@ -1899,9 +1905,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
                 start_ai(session,pending,ai_input::Pending);
             else if(failed || user_stopped)
                 add_ai_history(info,"activity",error_message);
-            else if(auto history_size = process->property("history_size");
-                    history_size.isValid() &&
-                    info.projects.size() == history_size.toInt())
+            else if(!process->property("had_reply").toBool())
                 add_ai_history(info,"activity","No reply from AI agent.");
             else
                 show_ai_project(info);
@@ -1934,8 +1938,6 @@ QStringList AIAgent::configure_claude(
         process->setProcessEnvironment(env);
     }
 
-    process->setProperty("history_size",ai_infos[session].projects.size());
-
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
                 while(process->canReadLine())
@@ -1948,6 +1950,23 @@ QStringList AIAgent::configure_claude(
                        event["subtype"] == "thinking_tokens" &&
                        ai_status_activity != "Thinking")
                         set_ai_status("Thinking");
+
+                    if(event_type == "result")
+                    {
+                        auto usage = event["usage"].toObject();
+                        auto summary = QString("%1 in / %2 out tokens")
+                            .arg(usage["input_tokens"].toInteger())
+                            .arg(usage["output_tokens"].toInteger());
+                        if(auto cache_read = usage["cache_read_input_tokens"].toInteger())
+                            summary += QString(" (+%1 cache read)").arg(cache_read);
+                        summary += QString(" · %1s")
+                            .arg(event["duration_ms"].toInteger()/1000.0,0,'f',1);
+                        if(auto cost = event["total_cost_usd"].toDouble())
+                            summary += QString(" · $%1").arg(cost,0,'f',4);
+                        if(auto* info = ai_info::find(process->objectName()))
+                            add_ai_history(*info,"activity",summary);
+                        continue;
+                    }
                     if(event_type != "assistant")
                         continue;
 
@@ -1965,9 +1984,12 @@ QStringList AIAgent::configure_claude(
                             reasonings << (text.isEmpty() ? content["text"].toString() : text);
                         }
                     }
+                    auto chat_text = chats.join('\n').trimmed();
+                    auto reasoning_text = reasonings.join('\n').trimmed();
+                    if(!chat_text.isEmpty() || !reasoning_text.isEmpty())
+                        process->setProperty("had_reply",true);
                     if(auto* info = ai_info::find(process->objectName()))
-                        add_ai_reply(*info,chats.join('\n').trimmed(),
-                                     reasonings.join('\n').trimmed());
+                        add_ai_reply(*info,chat_text,reasoning_text);
                 }
             });
     // Prepend a system prompt to the initial text here if needed.
@@ -2015,6 +2037,25 @@ QStringList AIAgent::configure_codex(
                 continue;
             }
 
+            if(event["type"] == "turn.completed") // verified against a real codex exec --json session
+            {
+                if(auto usage = event["usage"].toObject();!usage.isEmpty())
+                {
+                    auto summary = QString("%1 in / %2 out tokens")
+                        .arg(usage["input_tokens"].toInteger())
+                        .arg(usage["output_tokens"].toInteger());
+                    if(auto cached = usage["cached_input_tokens"].toInteger())
+                        summary += QString(" (+%1 cached)").arg(cached);
+                    if(auto cache_write = usage["cache_write_input_tokens"].toInteger())
+                        summary += QString(" (+%1 cache write)").arg(cache_write);
+                    if(auto reasoning_tokens = usage["reasoning_output_tokens"].toInteger())
+                        summary += QString(" (+%1 reasoning)").arg(reasoning_tokens);
+                    if(auto* info = ai_info::find(process->objectName()))
+                        add_ai_history(*info,"activity",summary);
+                }
+                continue;
+            }
+
             auto item = event["item"].toObject();
             auto type = item["type"].toString();
             bool reasoning = type == "reasoning";
@@ -2024,6 +2065,7 @@ QStringList AIAgent::configure_codex(
             auto text = item["text"].toString().trimmed();
             if(text.isEmpty())
                 continue;
+            process->setProperty("had_reply",true);
             if(auto* info = ai_info::find(process->objectName()))
                 add_ai_reply(*info,reasoning ? QString() : text,
                              reasoning ? text : QString());
