@@ -496,6 +496,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     QString owner = parts[0];
     QUrl issue_api("https://api.github.com/repos/"+owner+"/"+parts[1]+
                    "/issues/"+QString::number(issue_number));
+    ai_log("github connect: verifying token");
 
     // identify who the token belongs to (need not be the repo owner); result-comment ownership is checked against this identity, not the issue's owner
     bool ok = false;
@@ -506,11 +507,18 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         return error = "cannot verify GitHub token: "+error,false;
     if(authenticated_user.isEmpty())
         return error = "cannot verify GitHub token: unexpected response from GitHub",false;
+    ai_log("github connect: token belongs to "+authenticated_user+"; fetching issue "+issue_api.toString());
 
     auto issue = QJsonDocument::fromJson(
         github_blocking(github_manager,github_request(issue_api),"GET",{},ok,error)).object();
     if(!ok)
+    {
+        ai_log("github connect: fetching issue failed: "+error);
+        error += " (check that this token has access to this specific repository, e.g. a fine-grained PAT scoped to a different repo)";
         return false;
+    }
+    ai_log("github connect: issue fetched, state="+issue["state"].toString()+
+           " owner="+issue["user"].toObject()["login"].toString());
 
     if(issue.contains("pull_request"))
         return error = "the link points to a pull request, not an issue",false;
@@ -521,11 +529,17 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     if(!issue["title"].toString().startsWith("DSI Studio session"))
         return error = "issue title must start with \"DSI Studio session\"",false;
 
+    ai_log("github connect: fetching comments");
     auto comments = QJsonDocument::fromJson(
         github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
                         "GET",{},ok,error)).array();
     if(!ok)
+    {
+        ai_log("github connect: fetching comments failed: "+error);
+        error += " (check that this token has access to this specific repository)";
         return false;
+    }
+    ai_log("github connect: "+QString::number(comments.size())+" comment(s) fetched");
 
     // find our own result comment (author must match the token's identity); if more than one matches, keep the highest last_id rather than just the first
     QUrl result_api;
@@ -1576,8 +1590,13 @@ bool AIAgent::run_agent_login(ai_provider provider)
 
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
+    auto* previous_item = ui->ai_project_list->currentItem(); // captured before deselecting, so a failed attempt can still mark it red
     ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
     ui->ai_chat_history->clear();
+    web_agent_active_session = true; // reflects the chosen mode even if the connection below fails, so the label/Resume button stay accurate
+    github_last_issue_url = url;
+    update_send_button();
+    update_agent_status_label();
     set_ai_status("Connecting to "+url+"...");
     tipl::out() << "connecting to GitHub issue: " << url.toStdString();
 
@@ -1586,11 +1605,16 @@ bool AIAgent::try_connect_github_issue(const QString& url)
     {
         set_ai_status("GitHub issue connect failed: "+error,true);
         tipl::out() << "GitHub issue connect failed: " << error.toStdString();
+        if(previous_item)
+        {
+            auto& info = ai_infos[previous_item->data(Qt::UserRole).toString()];
+            info.has_error = true;
+            show_ai_project(info);
+        }
         return false;
     }
-    web_agent_active_session = true;
-    github_last_issue_url = url;
     update_send_button();
+    update_agent_status_label();
     set_ai_status("Connected to "+url,true);
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
     return true;
@@ -1598,6 +1622,12 @@ bool AIAgent::try_connect_github_issue(const QString& url)
 
 void AIAgent::update_agent_status_label()
 {
+    auto* item = ui->ai_project_list->currentItem();
+    bool web = item ? ai_infos[item->data(Qt::UserRole).toString()].agent_name.contains("ChatGPT")
+                     : web_agent_active_session;
+    if(web)
+        return void(ui->ai_agent_status->setText("ChatGPT(Web)"));
+
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
     QString text = (current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude") +
                    dot + current_model_name;
