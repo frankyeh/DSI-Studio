@@ -38,6 +38,9 @@ struct ai_info{
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
     quint64 log_position = quint64(-1);
+    bool has_error = false; // true once a run ends in failure; cleared when a new run starts.
+                            // shown as the sidebar status dot: green (processes running),
+                            // red (has_error), gray (otherwise)
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
