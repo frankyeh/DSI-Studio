@@ -1128,6 +1128,11 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             application_busy |= busy;
         }
 
+        auto shell_windows = shell_task_windows(); // background run_shell (curl) tasks still running
+        for(auto it = shell_windows.constBegin();it != shell_windows.constEnd();++it)
+            windows[it.key()] = it.value();
+        application_busy |= !shell_windows.isEmpty();
+
         return reply_object(QJsonObject{
             {"status","success"},
             {"application",QJsonObject{
