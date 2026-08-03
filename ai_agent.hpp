@@ -42,13 +42,12 @@ struct ai_info{
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
     static QString history_file(const QString&);
-    static bool save_title(ai_info&,QString);
-    static void record_history(ai_info&,QJsonObject);
-    static QJsonObject record_reply(ai_info&,const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
+    bool save_title(QString);
+    void record_history(QJsonObject);
+    QJsonObject record_reply(const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };
-void ai_command(ai_info&,const QByteArray&,QByteArray&);
 
 // one entry per ai_provider (Codex/Claude): resolved executable path (empty if not found) and the discovered model profiles (name -> info)
 struct ai_agent_entry
@@ -121,6 +120,7 @@ class AIAgent : public QMainWindow
 public:
     explicit AIAgent(MainWindow*);
     ~AIAgent();
+    void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
     void refresh_ai_info(ai_info& info)
     {show_ai_project(info);set_ai_status("Agent request completed.",true);}
 
