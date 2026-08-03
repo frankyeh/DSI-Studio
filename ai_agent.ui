@@ -71,8 +71,7 @@ QLabel#ai_status,
 QLabel#ai_work_dir_label,
 QPushButton#ai_agent_status,
 QPushButton#ai_send_message,
-QPushButton#ai_new_chat,
-QPushButton#ai_quick_settings {
+QPushButton#ai_new_chat {
     color: #3c4043;
     font-weight: 600;
     background-color: #f1f3f4;
@@ -82,13 +81,25 @@ QPushButton#ai_quick_settings {
 }
 QPushButton#ai_agent_status:hover,
 QPushButton#ai_send_message:hover,
-QPushButton#ai_new_chat:hover,
-QPushButton#ai_quick_settings:hover {
+QPushButton#ai_new_chat:hover {
     background-color: #e8eaed;
 }
 QPushButton#ai_agent_status:pressed,
 QPushButton#ai_send_message:pressed,
-QPushButton#ai_new_chat:pressed,
+QPushButton#ai_new_chat:pressed {
+    background-color: #dadce0;
+}
+QPushButton#ai_quick_settings {
+    color: #3c4043;
+    font-weight: 600;
+    background-color: #f1f3f4;
+    border: none;
+    border-radius: 8px;
+    padding: 0px;
+}
+QPushButton#ai_quick_settings:hover {
+    background-color: #e8eaed;
+}
 QPushButton#ai_quick_settings:pressed {
     background-color: #dadce0;
 }
@@ -232,13 +243,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPushButton" name="ai_quick_settings">
-            <property name="text">
-             <string>Settings</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </item>
         <item>
@@ -335,6 +339,28 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
            <widget class="QPushButton" name="ai_browse_work_dir">
             <property name="text">
              <string>Browse...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="ai_quick_settings">
+            <property name="minimumSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>AI Settings</string>
+            </property>
+            <property name="text">
+             <string>⋯</string>
             </property>
            </widget>
           </item>
