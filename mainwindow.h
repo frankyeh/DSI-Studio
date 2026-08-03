@@ -47,7 +47,7 @@ public:
     bool command(const std::vector<std::string>&);
     bool command(const std::vector<std::string>&,command_source);
     QJsonObject dispatch_cmd(ai_info&,const QJsonObject& request); // the AI agent's single command center: every request (set_title/log/set_window/list_window/voice/run_shell/GUI commands) runs through this command array, dispatched against a target window (main/tracking/recon/image) when one applies
-    void ai_request(const QByteArray& request,QByteArray& reply);
+    AIAgent* ai_agent; // created in the constructor; callers (e.g. the local-socket server in main.cpp) use ai_agent->ai_request(...) directly
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);
@@ -59,7 +59,6 @@ public:
     QString work_dir(void) const;
 private:
     QStringList info;
-    AIAgent* ai_agent = nullptr;
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
 private slots:
