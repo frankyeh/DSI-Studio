@@ -138,20 +138,36 @@ QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
     url.setPort(settings.value("ai/ollama_port",11434).toInt());
     return {url,configured};
 }
+// an Ollama-sourced model's display text is "<name> (Ollama@<host>)"; model_combo_key()
+// strips that back off wherever the plain profile name is needed
+QString model_combo_key(const QComboBox& model)
+{
+    return model.currentText().section(" (Ollama@",0,0);
+}
 void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QString selected = {},QString fallback = {},
                         QJsonObject selected_info = {})
 {
     auto names = profiles.keys();
     names.sort(Qt::CaseInsensitive);
+    auto ollama_host = ai_ollama_url(QSettings()).first.host();
+    auto display_text = [&](const QString& name,const QJsonObject& info)
+    {
+        return info.contains("provider") ? name+" (Ollama@"+ollama_host+")" : name;
+    };
     model.clear();
     model.addItem("default");
     for(const auto& name : names)
-        model.addItem(name,profiles[name].toObject());
-    auto selected_index = model.findText(selected.isEmpty() ? fallback : selected);
+        model.addItem(display_text(name,profiles[name].toObject()),profiles[name].toObject());
+
+    auto target = selected.isEmpty() ? fallback : selected;
+    int selected_index = -1;
+    for(int i = 0;i < model.count() && selected_index < 0;++i)
+        if(model.itemText(i) == target || model.itemText(i).startsWith(target+" ("))
+            selected_index = i;
     if(selected_index < 0 && !selected.isEmpty())
     {
-        model.addItem(selected,selected_info);
+        model.addItem(display_text(selected,selected_info),selected_info);
         selected_index = model.count()-1;
     }
     model.setCurrentIndex(std::max(0,selected_index));
@@ -1465,8 +1481,7 @@ void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* 
     agent.addItem("Codex");
     agent.addItem("Claude");
     agent.setCurrentIndex(current_agent_index);
-    set_model_selector(model,agent_entries[agent.currentIndex()].profiles);
-    model.setCurrentText(current_model_name);
+    set_model_selector(model,agent_entries[agent.currentIndex()].profiles,current_model_name);
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
             context,[this,&model](int index){set_model_selector(model,agent_entries[index].profiles);});
 }
@@ -1602,7 +1617,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
 
     web = web_radio.isChecked();
     agent_index = agent.currentIndex();
-    model_name = model.currentText();
+    model_name = model_combo_key(model);
     issue_url = issue_url_edit.text().trimmed();
     return true;
 }
@@ -1663,7 +1678,7 @@ void AIAgent::on_ai_agent_status_clicked()
             return;
 
         current_agent_index = int(info.provider);
-        try_set_current_model(model.currentText());
+        try_set_current_model(model_combo_key(model));
         update_agent_status_label();
         return;
     }
@@ -1733,7 +1748,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/github_token",github_pat.text().trimmed());
     ai_debug_level() = debug.currentIndex();
     settings.setValue("ai/default_agent",agent.currentIndex());
-    settings.setValue("ai/default_model",model.currentText());
+    settings.setValue("ai/default_model",model_combo_key(model));
     if(auto* item = ui->ai_project_list->currentItem())
     {
         if(reasoning_changed)
@@ -1742,7 +1757,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     else
     {
         current_agent_index = agent.currentIndex();
-        try_set_current_model(model.currentText());
+        try_set_current_model(model_combo_key(model));
         update_agent_status_label();
     }
 
