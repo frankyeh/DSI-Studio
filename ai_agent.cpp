@@ -363,7 +363,8 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!item)
         {
             ui->ai_chat_history->clear();
-            return update_send_button();
+            update_send_button();
+            return set_ai_status();
         }
 
         stop_blink(ui->ai_project_list->itemWidget(item));
@@ -378,6 +379,7 @@ AIAgent::AIAgent(MainWindow* parent):
         update_agent_status_label();
         show_ai_project(info);
         update_send_button();
+        set_ai_status();
     });
 
     for(const auto& info : dir.entryInfoList(
@@ -860,9 +862,14 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     ai_status_timer->stop();
     if(!status.isEmpty())
         ai_status_activity = status;
-    // a connected web-agent session has no QProcess but is just as "ongoing" as a local one: keep the status animating instead of decaying while still connected
-    bool ongoing = active_ai_processes ||
-                   (web_agent_active_session && !github_issue_api.isEmpty());
+    // reflects only the currently selected chat (or, if none, a brand-new chat's own launch), not any other chat's activity
+    bool ongoing = (web_agent_active_session && !github_issue_api.isEmpty()) ||
+                   [this]
+                   {
+                       auto* item = ui->ai_project_list->currentItem();
+                       return item ? bool(ai_infos[item->data(Qt::UserRole).toString()].processes)
+                                   : active_ai_processes > 0;
+                   }();
     if(ongoing && (status.isEmpty() || temporary))
     {
         status = ai_status_activity;
@@ -872,9 +879,8 @@ void AIAgent::set_ai_status(QString status,bool temporary)
         ai_status_timer->setSingleShot(false);
         ai_status_timer->start(500);
     }
-    else if(status.isEmpty())
-        status = "Current task complete.";
 
+    ui->ai_status->setVisible(!status.isEmpty());
     ui->ai_status->setText(status);
     ui->ai_status->repaint();
 
