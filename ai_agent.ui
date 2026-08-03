@@ -91,7 +91,7 @@ QPushButton#ai_new_chat:pressed {
 }
 QPushButton#ai_quick_settings {
     color: #3c4043;
-    font-weight: 600;
+    font-size: 16px;
     background-color: #f1f3f4;
     border: none;
     border-radius: 8px;
@@ -360,7 +360,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
              <string>AI Settings</string>
             </property>
             <property name="text">
-             <string>⋯</string>
+             <string>⚙</string>
             </property>
            </widget>
           </item>

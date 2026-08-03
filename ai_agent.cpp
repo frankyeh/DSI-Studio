@@ -1507,16 +1507,6 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,entry);
 }
 
-void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* context)
-{
-    agent.addItem("Codex");
-    agent.addItem("Claude");
-    agent.setCurrentIndex(current_agent_index);
-    set_model_selector(model,agent_entries[agent.currentIndex()].profiles,current_model_name);
-    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
-            context,[this,&model](int index){set_model_selector(model,agent_entries[index].profiles);});
-}
-
 bool AIAgent::agent_logged_in(ai_provider provider)
 {
     const auto& executable = agent_entries[int(provider)].executable;
@@ -1851,8 +1841,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
-    QComboBox agent,model;
-    init_agent_model_combo(agent,model,&dialog);
     QWidget login_row;
     QHBoxLayout login_layout(&login_row);
     login_layout.setContentsMargins(0,0,0,0);
@@ -1878,8 +1866,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     github_pat.setPlaceholderText("required to connect a GitHub issue");
     layout.addRow("Ollama host/IP:",&host);
     layout.addRow("Ollama port:",&port);
-    layout.addRow("Default agent:",&agent);
-    layout.addRow("Default model:",&model);
     layout.addRow(&login_row);
     layout.addRow(&history);
     layout.addRow(&show_reasoning);
@@ -1900,19 +1886,9 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/debug",debug.currentIndex());
     settings.setValue("ai/github_token",github_pat.text().trimmed());
     ai_debug_level() = debug.currentIndex();
-    settings.setValue("ai/default_agent",agent.currentIndex());
-    settings.setValue("ai/default_model",model_combo_key(model));
-    if(auto* item = ui->ai_project_list->currentItem())
-    {
-        if(reasoning_changed)
+    if(reasoning_changed)
+        if(auto* item = ui->ai_project_list->currentItem())
             show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
-    }
-    else
-    {
-        current_agent_index = agent.currentIndex();
-        try_set_current_model(model_combo_key(model));
-        update_agent_status_label();
-    }
 
     refresh_ollama_models();
 }

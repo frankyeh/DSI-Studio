@@ -14,7 +14,6 @@
 #include <array>
 
 class MainWindow;
-class QComboBox;
 class QListWidgetItem;
 class QMenu;
 class QNetworkRequest;
@@ -106,7 +105,6 @@ class AIAgent : public QMainWindow
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
-    void init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* context);
     bool run_agent_login(ai_provider provider);
     bool agent_logged_in(ai_provider provider);
     void set_ai_status(QString = {},bool = false);
