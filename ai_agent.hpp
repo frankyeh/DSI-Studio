@@ -111,7 +111,7 @@ class AIAgent : public QMainWindow
     void show_ai_project(ai_info&,QJsonObject = {});
     void update_agent_models(int,const QStringList&,bool);
     void refresh_ollama_models();
-    void refresh_codex_models(const QString&);
+    void refresh_codex_models();
     void start_ai(QString,const QString&,ai_input);
     QStringList configure_codex(const ai_launch&,QString,const QString&);
     QStringList configure_claude(const ai_launch&,QString,const QString&,bool);
