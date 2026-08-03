@@ -320,7 +320,8 @@ AIAgent::AIAgent(MainWindow* parent):
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
         if(auto* process = ai_infos[session].processes)
         {
-            process->disconnect(); process->terminate(); process->deleteLater();
+            process->disconnect(); process->kill(); process->deleteLater(); // kill(), not
+                // terminate(): a windowless console child never sees terminate()'s WM_CLOSE on Windows
             active_ai_processes = std::max(0,active_ai_processes-1);
             set_ai_status();
         }
@@ -2083,7 +2084,8 @@ void AIAgent::on_ai_send_message_clicked()
         {
             info.prompts.clear(); // stop means stop: no auto-continue into a queued message
             info.processes->setProperty("user_stopped",true);
-            info.processes->terminate();
+            info.processes->kill(); // terminate() posts WM_CLOSE on Windows, which a
+                                     // windowless console child (codex/claude) never sees
             return;
         }
     }
