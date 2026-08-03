@@ -314,8 +314,10 @@ AIAgent::AIAgent(MainWindow* parent):
     ai_project_menu->addSeparator();
     connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
     {
-        auto* item = ui->ai_project_list->currentItem();
-        auto session = item->data(Qt::UserRole).toString();
+        auto row = ui->ai_project_list->currentRow();
+        if(row < 0)
+            return;
+        auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
         if(auto* process = ai_infos[session].processes)
         {
             process->disconnect(); process->terminate(); process->deleteLater();
@@ -325,11 +327,11 @@ AIAgent::AIAgent(MainWindow* parent):
         QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
-        ui->ai_project_list->setCurrentItem(nullptr);
-        delete item;
+        delete ui->ai_project_list->takeItem(row); // detach then delete: keeps count()/rows consistent
 
+        // keep a chat selected whenever one exists; only New Chat clears the selection
         if(ui->ai_project_list->count())
-            ui->ai_project_list->setCurrentRow(0);
+            ui->ai_project_list->setCurrentRow(std::min(row,ui->ai_project_list->count()-1));
     });
 
     connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
