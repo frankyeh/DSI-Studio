@@ -1644,6 +1644,30 @@ void AIAgent::on_ai_new_chat_clicked()
 
 void AIAgent::on_ai_agent_status_clicked()
 {
+    if(auto* item = ui->ai_project_list->currentItem())
+    {
+        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        QDialog dialog(this);
+        dialog.setWindowTitle("Change Model");
+        QFormLayout layout(&dialog);
+        QLabel agent_label(info.provider == ai_provider::Codex ? "Codex" : "Claude");
+        QComboBox model;
+        set_model_selector(model,agent_entries[int(info.provider)].profiles,current_model_name);
+        layout.addRow("Agent:",&agent_label);
+        layout.addRow("Model:",&model);
+        QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
+        layout.addRow(&buttons);
+        connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
+        connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+        if(dialog.exec() != QDialog::Accepted)
+            return;
+
+        current_agent_index = int(info.provider);
+        try_set_current_model(model.currentText());
+        update_agent_status_label();
+        return;
+    }
+
     bool web = false;
     int agent_index = 0;
     QString model_name,issue_url;
