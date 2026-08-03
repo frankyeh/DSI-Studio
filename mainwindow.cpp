@@ -1701,7 +1701,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 #endif
         if(!process.waitForStarted(3000))
             return fail("cannot start command");
-        process.waitForFinished();
+        if(!process.waitForFinished(-1)) // -1: no timeout, block until the command actually completes
+            return fail("command did not finish: "+process.errorString().toStdString());
         tipl::out() << process.readAllStandardOutput().toStdString();
         auto err = process.readAllStandardError().toStdString();
         if(!err.empty())
