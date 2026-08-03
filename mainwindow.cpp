@@ -15,14 +15,16 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QUuid>
-#include <QEvent>
 #include <QProcess>
 #include <QProcessEnvironment>
 
 #include <QJsonDocument>
 #include <QMap>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QRegularExpression>
 
+#include <algorithm>
 #include <filesystem>
 #include <atomic>
 #include <mutex>
@@ -52,7 +54,7 @@
 
 QString access_token;
 extern MainWindow* main_window;
-void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
+void checkForVersionSpecificBugs(const QString& bugListText)
 {
     QDate compDate = QDate::fromString(__DATE__, "MMM dd yyyy");
     if (!compDate.isValid())
@@ -259,7 +261,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 NewsBrowser->setReadOnly(true);
                 NewsBrowser->setOpenExternalLinks(true);
                 left_layout->addWidget(NewsBrowser);
-                checkForVersionSpecificBugs_Minimal(news);
+                checkForVersionSpecificBugs(news);
             }
 
             main_layout->addLayout(left_layout, 1);
@@ -286,6 +288,8 @@ MainWindow::MainWindow(QWidget *parent) :
             });
         }
     }
+
+    ai_agent = new AIAgent(this);
 }
 
 extern const char* version_string;
@@ -1083,59 +1087,463 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
                                          });
 }
 
-void MainWindow::ai_command(ai_info& info,const QByteArray& request,QByteArray& reply)
-{
-    if(!ai_agent)
-        ai_agent = new AIAgent(this);
-    ::ai_command(info,request,reply);
-    ai_agent->refresh_ai_info(info);
-}
-void MainWindow::ai_request(const QByteArray& request,QByteArray& reply)
-{
-    auto status_reply = [](QString status,QString error = {})
-    {
-        QJsonObject reply{{"status",status}};
-        if(!error.isEmpty())
-            reply["error"] = error;
-        return QJsonDocument(reply).toJson(QJsonDocument::Compact);
-    };
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson(request,&error);
-    auto object = doc.object();
-    auto session = object["session"].toString().trimmed();
-    if(!doc.isObject())
-        return void(reply = status_reply("error","invalid JSON: "+error.errorString()));
-    if(session.isEmpty())
-        return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
-    if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
-        return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
-
-    auto* info = ai_info::find(session);
-    if(!info)
-    {
-        auto agent = object["agent"].toString().trimmed();
-        if(agent.isEmpty())
-            return void(reply = status_reply("error","missing agent for new session"));
-        if(!(info = ai_info::create(session,agent)))
-            return void(reply = status_reply("error","invalid agent: include Codex or Claude in the agent name"));
-        if(auto model = object["model"].toString().trimmed();!model.isEmpty())
-            info->model_settings["model"] = model;
-    }
-    ai_command(*info,request,reply);
-}
-
-// background run_shell (curl) tasks still in flight: id -> original command
-// text; an entry exists only while the task is running, so LIST reporting
-// it (via shell_task_windows()) is itself the "still running" signal
-static std::mutex shell_tasks_mutex;
+static std::mutex shell_tasks_mutex; // run_shell (curl) tasks still in flight: id -> original command text
 static QMap<QString,QString> shell_tasks;
-QJsonObject shell_task_windows()
+
+QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 {
-    std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-    QJsonObject windows;
-    for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
-        windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
-    return windows;
+    auto fail = [](const QString& error)
+    {
+        return QJsonObject{{"status","error"},{"result",QJsonArray{
+            QJsonObject{{"status","error"},{"error",error}}}}};
+    };
+    auto ai_window_id = [](QWidget* window) // "main"/"trackingXXXX"/"reconXXXX"/"imageXXXX", or empty if not an AI-addressable window
+    {
+        if(qobject_cast<MainWindow*>(window))
+            return command_window_id(window,"main");
+        if(qobject_cast<tracking_window*>(window))
+            return command_window_id(window,"tracking");
+        if(qobject_cast<reconstruction_window*>(window))
+            return command_window_id(window,"recon");
+        return qobject_cast<view_image*>(window) ?
+            command_window_id(window,"image") : QString();
+    };
+    auto strip_ansi = [](QString text) // removes ANSI escape/color codes from captured command output before it's reported to the AI agent
+    {
+        static const QRegularExpression ansi_escape(
+            QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+        return text.remove(ansi_escape);
+    };
+
+    auto command_json = request["command"];
+    if(command_json.isUndefined() || command_json.isNull())
+        return fail("missing command field");
+    std::vector<std::vector<std::string>> cmds;
+    for(const auto& value :
+        (command_json.isArray() ? command_json.toArray() : QJsonArray{command_json}))
+    {
+        auto object = value.toObject();
+        auto& cmd = cmds.emplace_back();
+        auto add = [&](const QJsonValue& value){cmd.push_back(value.toVariant().toString().toUtf8().toStdString());};
+        add(object["cmd"]);
+        if(cmd[0].empty())
+            return fail("invalid cmd text");
+        auto param = object["param"];
+        if(param.isArray())
+            for(const auto& value : param.toArray())
+                add(value);
+        else if(!param.isUndefined() && !param.isNull())
+            add(param);
+    }
+    if(cmds.empty())
+        return fail("missing command field");
+
+    QJsonArray results;
+    QString ai_current_window = "main"; // local to this one dispatch call: "set_window" only retargets later commands in this same batch, nothing persists between calls
+
+    QWidget* locked_target = nullptr; // releases the locked window (setUpdatesEnabled/busy) on target switch or batch end
+    bool locked_updates_enabled = true;
+    auto unlock_target = [&]
+    {
+        if(!locked_target)
+            return;
+        locked_target->setProperty("busy",false);
+        locked_target->setUpdatesEnabled(locked_updates_enabled);
+        if(auto* window = qobject_cast<tracking_window*>(locked_target))
+        {
+            window->slice_need_update = true;
+            window->glWidget->update_slice();
+        }
+        else
+            locked_target->update();
+        locked_target = nullptr;
+    };
+
+    for(const auto& cmd : cmds)
+    {
+        auto command_name = QString::fromUtf8(cmd[0]);
+        auto command_result = [&](bool ok,const QString& output = {},const QString& error = {}) // avoids repeating {"cmd",command_name} everywhere
+        {
+            QJsonObject result{{"cmd",command_name},{"status",ok ? "success" : "error"}};
+            if(!output.isEmpty())
+                result["output"] = output;
+            if(!error.isEmpty())
+                result["error"] = error;
+            return result;
+        };
+        auto fail_batch = [&](const QJsonObject& result) // caller must still write "break;" after -- a lambda can't break its caller's loop
+        {
+            unlock_target();
+            results.append(result);
+        };
+
+        if(command_name == "list_window") // reports every open window plus overall application status; never touches a target; cannot fail
+        {
+            auto* modal = QApplication::activeModalWidget();
+            bool application_busy = tipl::status_list.size() > 1;
+            QJsonObject windows;
+
+            for(auto* each : QApplication::allWidgets())
+            {
+                auto id = ai_window_id(each);
+                if(id.isEmpty())
+                    continue;
+
+                bool busy = each->property("busy").toBool();
+                if(auto* tracking = qobject_cast<tracking_window*>(each))
+                    busy |= tracking->history.running_commands ||
+                            (tracking->tractWidget &&
+                             std::any_of(
+                                 tracking->tractWidget->thread_data.begin(),
+                                 tracking->tractWidget->thread_data.end(),
+                                 [](const auto& thread){return bool(thread);})) ||
+                            std::any_of(
+                                tracking->slices.begin(),tracking->slices.end(),
+                                [](const auto& slice)
+                                {
+                                    auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
+                                    return custom && custom->running;
+                                });
+
+                bool waiting = modal && (modal == each || each->isAncestorOf(modal));
+                windows[id] = QJsonObject{
+                    {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
+                    {"title",QDir::fromNativeSeparators(each->windowTitle())}
+                };
+                application_busy |= busy;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+                for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
+                    windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
+                application_busy |= !shell_tasks.isEmpty();
+            }
+
+            auto result = command_result(true);
+            result["application"] = QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}};
+            result["windows"] = windows;
+            results.append(result);
+            continue;
+        }
+
+        if(command_name == "set_title") // sets info's sidebar title; never touches a target
+        {
+            auto title = cmd.size() > 1 ? QString::fromStdString(cmd[1]).simplified() : QString();
+            QString error = title.isEmpty() ? "set_title: missing title" :
+                             !info.save_title(title) ? "set_title: cannot save title" : QString();
+            if(!error.isEmpty())
+            {
+                fail_batch(command_result(false,{},error));
+                break;
+            }
+            results.append(command_result(true));
+            continue;
+        }
+
+        if(command_name == "log") // reports console output since info's last log read; never touches a target; cannot fail
+        {
+            QByteArray output;
+            {
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                if(info.log_position == quint64(-1))
+                    info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
+                auto end = console.total_size;
+                auto first = end-quint64(console.history.size());
+                auto begin = std::max(info.log_position,first);
+                bool capped = end-begin > 16*1024;
+                if(capped)
+                    begin = end-16*1024;
+                auto text = console.history.mid(qsizetype(begin-first));
+                if(capped)
+                    text.remove(0,text.indexOf('\n')+1);
+                text = strip_ansi(text);
+                QStringList lines;
+                for(const auto& line : text.split('\n'))
+                    if(!line.contains("[DEBUG]"))
+                        lines << line;
+                output = lines.join('\n').right(4*1024).toUtf8();
+                info.log_position = end;
+            }
+            results.append(command_result(true,QString::fromUtf8(output)));
+            continue;
+        }
+
+        if(command_name == "voice") // Windows TTS: the AI agent's only way to "speak"; never touches a target
+        {
+            QString error;
+            if(cmd.size() != 2 || cmd[1].empty())
+                error = "usage: voice <text>";
+#ifdef Q_OS_WIN
+            else
+            {
+                QProcess process;
+                auto env = QProcessEnvironment::systemEnvironment();
+                env.insert("DSI_VOICE_TEXT",QString::fromUtf8(cmd[1].c_str()));
+                process.setProcessEnvironment(env);
+                process.setProgram("powershell.exe");
+                process.setArguments({
+                        "-NoProfile",
+                        "-NonInteractive",
+                        "-Command",
+                        "$v=New-Object -ComObject SAPI.SpVoice;"
+                        "[void]$v.Speak($env:DSI_VOICE_TEXT)"
+                    });
+                // detach: DSI Studio returns immediately and does not wait for powershell to finish speaking
+                if(!process.startDetached())
+                    error = "cannot start Windows speech";
+            }
+#else
+            else
+                error = "voice is available only on Windows";
+#endif
+            if(!error.isEmpty())
+            {
+                fail_batch(command_result(false,{},error+". Read ai/DSI_STUDIO_AI_MANUAL.md and retry."));
+                break;
+            }
+            results.append(command_result(true));
+            continue;
+        }
+
+        if(command_name == "run_shell") // dir/curl/cd: the AI agent's shell tool; never touches a target
+        {
+            QString error,output;
+            {
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                console.capture = &output;
+            }
+            if(cmd.size() != 2 || cmd[1].empty())
+                error = "usage: run_shell <command>";
+            else
+            {
+                QString text = QString::fromUtf8(cmd[1].c_str());
+                QString program = text.section(' ',0,0);
+
+                if(!program.compare("cd",Qt::CaseInsensitive))
+                {
+                    // "cd" is a shell builtin: change DSI Studio's own working directory so it persists across calls
+                    QString path = text.mid(program.length()).trimmed();
+                    if(path.size() >= 2 && path.startsWith('"') && path.endsWith('"'))
+                        path = path.mid(1,path.size()-2);
+                    if(!path.isEmpty() && !QDir::setCurrent(path))
+                        error = "cannot change directory to: "+path;
+                    else
+                        tipl::out() << QDir::currentPath().toStdString();
+                }
+                else if(program.compare("dir",Qt::CaseInsensitive) &&
+                        program.compare("curl",Qt::CaseInsensitive))
+                    error = "run_shell only allows dir, curl, and cd commands";
+                else if(std::any_of(text.begin(),text.end(),
+                        [](QChar c){return QString("&|;<>^`\n\r").contains(c);}))
+                    error = "run_shell command contains disallowed characters";
+                else if(program.compare("curl",Qt::CaseInsensitive)) // dir: local and fast, just wait for it
+                {
+                    QProcess process;
+#ifdef Q_OS_WIN
+                    process.start("cmd.exe",QStringList() << "/c" << text);
+#else
+                    process.start(text);
+#endif
+                    if(!process.waitForStarted(3000))
+                        error = "cannot start command";
+                    else if(!process.waitForFinished(-1)) // no timeout: wait until it actually completes
+                        error = "command did not finish";
+                    else
+                    {
+                        tipl::out() << process.readAllStandardOutput().toStdString();
+                        auto err = process.readAllStandardError().toStdString();
+                        if(!err.empty())
+                            tipl::error() << err;
+                    }
+                }
+                else
+                {
+                    // curl can hang, so run it detached; "list_window" shows the id as busy until it finishes
+                    static std::atomic<int> next_curl_id{0};
+                    QString id = "curl"+QString::number(++next_curl_id);
+                    {
+                        std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+                        shell_tasks[id] = text;
+                    }
+                    std::thread([text,id]
+                    {
+                        QProcess process;
+#ifdef Q_OS_WIN
+                        process.start("cmd.exe",QStringList() << "/c" << text);
+#else
+                        process.start(text);
+#endif
+                        bool started = process.waitForStarted(3000);
+                        bool finished = started && process.waitForFinished(-1);
+                        if(finished)
+                            tipl::out() << process.readAllStandardOutput().toStdString();
+                        if(!started)
+                            tipl::error() << (id+" cannot start: "+text).toStdString();
+                        else if(!finished)
+                            tipl::error() << (id+" did not finish: "+text).toStdString();
+                        auto err = process.readAllStandardError().toStdString();
+                        if(!err.empty())
+                            tipl::error() << err;
+                        std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+                        shell_tasks.remove(id);
+                    }).detach();
+
+                    tipl::out() << ("started "+id+": "+text).toStdString();
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                console.capture = nullptr;
+            }
+            output = strip_ansi(output);
+            if(!error.isEmpty())
+            {
+                fail_batch(command_result(false,output,error+". Read ai/DSI_STUDIO_AI_MANUAL.md and retry."));
+                break;
+            }
+            results.append(command_result(true,output));
+            continue;
+        }
+
+        if(command_name == "set_window") // retargets every command after it in this batch; never touches a target itself
+        {
+            auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
+            QString new_window = "main",error;
+            if(!param.isEmpty())
+            {
+                bool bare_type = (param == "tracking" || param == "recon" || param == "image");
+                if(bare_type)
+                {
+                    auto file_name = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString();
+                    if(file_name.isEmpty())
+                        error = "set_window: a "+param+" window needs a file name (2nd param) to tell it apart from other open "+param+" windows";
+                    else
+                    {
+                        QWidget* found = nullptr;
+                        for(auto* each : QApplication::allWidgets())
+                        {
+                            auto id = ai_window_id(each);
+                            if(id.startsWith(param) && id != param &&
+                               QFileInfo(each->windowTitle()).fileName().contains(file_name,Qt::CaseInsensitive))
+                            {
+                                found = each;
+                                break;
+                            }
+                        }
+                        if(!found)
+                            error = "set_window: no "+param+" window matching \""+file_name+"\" is open";
+                        else
+                            new_window = ai_window_id(found);
+                    }
+                }
+                else
+                {
+                    bool exists = param == "main";
+                    for(auto* each : QApplication::allWidgets())
+                        if(!exists && ai_window_id(each) == param)
+                            exists = true;
+                    if(!exists)
+                        error = "set_window: window \""+param+"\" not found, terminated by user?";
+                    else
+                        new_window = param;
+                }
+            }
+
+            if(!error.isEmpty())
+            {
+                fail_batch(command_result(false,{},error));
+                break;
+            }
+            if(new_window != ai_current_window)
+                unlock_target(); // switching targets: release the old one before an ordinary command resolves/locks the new one
+            ai_current_window = new_window;
+            results.append(command_result(true,"current window: "+ai_current_window));
+            continue;
+        }
+
+        // an ordinary command: resolve+lock the current target (unless already locked from a previous command in this same segment)
+        if(!locked_target)
+        {
+            QWidget* target = ai_current_window == "main" ? static_cast<QWidget*>(this) : nullptr;
+            bool busy_elsewhere = false;
+            for(auto* each : QApplication::allWidgets())
+            {
+                if(each->property("busy").toBool())
+                    busy_elsewhere = true;
+                if(!target && ai_window_id(each) == ai_current_window)
+                    target = each;
+            }
+            if(busy_elsewhere || !target)
+            {
+                results.append(command_result(false,{},
+                    busy_elsewhere ? "another CMD is running; check opened windows" :
+                                     "target window not found, terminated by user? Use set_window to select a window first."));
+                break;
+            }
+            locked_updates_enabled = target->updatesEnabled();
+            target->setUpdatesEnabled(false);
+            target->setProperty("busy",true);
+            locked_target = target;
+        }
+
+        auto target_type = ai_current_window == "main" ? QString("main") :
+                           ai_current_window.startsWith("tracking") ? "tracking" :
+                           ai_current_window.startsWith("recon") ? "recon" : "image";
+        auto target_title = target_type == "main" ? QString() :
+                            QFileInfo(locked_target->windowTitle()).fileName();
+        info.record_history(QJsonObject{
+            {"type","request"},
+            {"text",command_name+" → "+target_type+" window "+target_title},
+            {"window",ai_current_window}});
+
+        QString output,error;
+        {
+            std::lock_guard<std::mutex> lock(console.edit_buf);
+            console.capture = &output;
+        }
+        try
+        {
+            auto execute = [&](auto* window,bool success)
+            {
+                if(!success)
+                {
+                    error = QString::fromUtf8(window->error_msg);
+                    error = (error.isEmpty() ? "command failed" : error)+
+                            ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
+                }
+            };
+            if(auto* window = qobject_cast<MainWindow*>(locked_target))
+                execute(window,window->command(cmd,command_source::AI));
+            else if(auto* window = qobject_cast<tracking_window*>(locked_target))
+                execute(window,window->command(cmd,command_source::AI));
+            else if(auto* window = qobject_cast<reconstruction_window*>(locked_target))
+                execute(window,window->command(cmd,command_source::AI));
+            else if(auto* window = qobject_cast<view_image*>(locked_target))
+                execute(window,window->command(cmd,command_source::AI));
+        }
+        catch(const std::exception& e){error = e.what();}
+        catch(...){error = "unknown error";}
+
+        {
+            std::lock_guard<std::mutex> lock(console.edit_buf);
+            console.capture = nullptr;
+        }
+
+        output = strip_ansi(output);
+        error = strip_ansi(error);
+
+        results.append(command_result(error.isEmpty(),output,error));
+        if(!error.isEmpty())
+        {
+            unlock_target();
+            break;
+        }
+    }
+    unlock_target(); // release whatever is still locked when the batch finishes normally
+
+    return QJsonObject{
+        {"status",results.last().toObject()["status"]},{"result",results}};
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
@@ -1649,121 +2057,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     {
         if(cmd.size() != 1)
             return fail("open_ai takes no arguments");
-        if(!ai_agent)
-            ai_agent = new AIAgent(this);
         ai_agent->showNormal();
         ai_agent->raise();
         ai_agent->activateWindow();
-        return true;
-    }
-    if(cmd[0] == "voice")
-    {
-        if(cmd.size() != 2 || cmd[1].empty())
-            return fail("usage: voice <text>");
-
-#ifdef Q_OS_WIN
-        QProcess process;
-        auto env = QProcessEnvironment::systemEnvironment();
-        env.insert("DSI_VOICE_TEXT",
-                   QString::fromUtf8(cmd[1].c_str()));
-        process.setProcessEnvironment(env);
-        process.setProgram("powershell.exe");
-        process.setArguments({
-                "-NoProfile",
-                "-NonInteractive",
-                "-Command",
-                "$v=New-Object -ComObject SAPI.SpVoice;"
-                "[void]$v.Speak($env:DSI_VOICE_TEXT)"
-            });
-
-        // detach: DSI Studio returns immediately and does not wait for
-        // powershell to finish speaking
-        return process.startDetached() ||
-               fail("cannot start Windows speech");
-#else
-        return fail("voice is available only on Windows");
-#endif
-    }
-    if(cmd[0] == "run_shell")
-    {
-        if(cmd.size() != 2 || cmd[1].empty())
-            return fail("usage: run_shell <command>");
-
-        QString text = QString::fromUtf8(cmd[1].c_str());
-        QString program = text.section(' ',0,0);
-
-        if(!program.compare("cd",Qt::CaseInsensitive))
-        {
-            // "cd" is a shell builtin, not a real process: change DSI Studio's
-            // own working directory directly so the effect persists across calls
-            QString path = text.mid(program.length()).trimmed();
-            if(path.size() >= 2 && path.startsWith('"') && path.endsWith('"'))
-                path = path.mid(1,path.size()-2);
-            if(!path.isEmpty() && !QDir::setCurrent(path))
-                return fail("cannot change directory to: "+path.toStdString());
-            tipl::out() << QDir::currentPath().toStdString();
-            return true;
-        }
-
-        if(program.compare("dir",Qt::CaseInsensitive) &&
-           program.compare("curl",Qt::CaseInsensitive))
-            return fail("run_shell only allows dir, curl, and cd commands");
-        for(auto c : QString("&|;<>^`\n\r"))
-            if(text.contains(c))
-                return fail("run_shell command contains disallowed characters");
-
-        if(program.compare("curl",Qt::CaseInsensitive)) // dir: local and fast, just wait for it
-        {
-            QProcess process;
-#ifdef Q_OS_WIN
-            process.start("cmd.exe",QStringList() << "/c" << text);
-#else
-            process.start(text);
-#endif
-            if(!process.waitForStarted(3000))
-                return fail("cannot start command");
-            if(!process.waitForFinished(-1)) // no timeout: wait until it actually completes
-                return fail("command did not finish");
-            tipl::out() << process.readAllStandardOutput().toStdString();
-            auto err = process.readAllStandardError().toStdString();
-            if(!err.empty())
-                tipl::error() << err;
-            return true;
-        }
-
-        // curl: can hang or take a long time (network), so run it detached instead
-        // of waiting. LIST reports the assigned id as a busy window while it is
-        // still running, and it disappears once done; check LOG for its output
-        static std::atomic<int> next_curl_id{0};
-        QString id = "curl"+QString::number(++next_curl_id);
-        {
-            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-            shell_tasks[id] = text;
-        }
-        std::thread([text,id]
-        {
-            QProcess process;
-#ifdef Q_OS_WIN
-            process.start("cmd.exe",QStringList() << "/c" << text);
-#else
-            process.start(text);
-#endif
-            bool started = process.waitForStarted(3000);
-            bool finished = started && process.waitForFinished(-1);
-            if(finished)
-                tipl::out() << process.readAllStandardOutput().toStdString();
-            if(!started)
-                tipl::error() << (id+" cannot start: "+text).toStdString();
-            else if(!finished)
-                tipl::error() << (id+" did not finish: "+text).toStdString();
-            auto err = process.readAllStandardError().toStdString();
-            if(!err.empty())
-                tipl::error() << err;
-            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-            shell_tasks.remove(id);
-        }).detach();
-
-        tipl::out() << ("started "+id+": "+text).toStdString();
         return true;
     }
     return fail("unknown command: "+cmd[0]);
