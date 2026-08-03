@@ -570,7 +570,11 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
             github_blocking(github_manager,post_request,"POST",
                              QJsonDocument(post_body).toJson(QJsonDocument::Compact),ok,error)).object();
         if(!ok)
+        {
+            ai_log("github connect: creating result comment failed: "+error);
+            error += " (check that this token has write access to this specific repository)";
             return false;
+        }
         result_api = QUrl(created["url"].toString()); // GitHub's canonical .../issues/comments/<id> form
         if(result_api.isEmpty())
             return error = "cannot create the result comment",false;
