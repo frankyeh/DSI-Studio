@@ -344,7 +344,10 @@ AIAgent::AIAgent(MainWindow* parent):
                     setStyleSheet(i == item ?
                         "color:#202124;background:#dce9f9;" : "");
         if(!item)
-            return ui->ai_chat_history->clear();
+        {
+            ui->ai_chat_history->clear();
+            return update_send_button();
+        }
 
         stop_blink(ui->ai_project_list->itemWidget(item));
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
@@ -357,6 +360,7 @@ AIAgent::AIAgent(MainWindow* parent):
         current_model_info = resolved.second;
         update_agent_status_label();
         show_ai_project(info);
+        update_send_button();
     });
 
     for(const auto& info : dir.entryInfoList(
@@ -1485,12 +1489,14 @@ void AIAgent::try_set_current_model(const QString& name)
 void AIAgent::update_send_button()
 {
     ui->ai_show_reasoning->setVisible(!web_agent_active_session);
-    if(!web_agent_active_session)
+    if(web_agent_active_session)
     {
-        ui->ai_send_message->setText("Send");
+        ui->ai_send_message->setText(github_issue_api.isEmpty() ? "Resume" : "Stop");
         return;
     }
-    ui->ai_send_message->setText(github_issue_api.isEmpty() ? "Resume" : "Stop");
+    auto* item = ui->ai_project_list->currentItem();
+    bool running = item && ai_infos[item->data(Qt::UserRole).toString()].processes;
+    ui->ai_send_message->setText(running ? "Stop" : "Send");
 }
 
 // resume: reopens the same dialog for an existing web-agent session — locked
@@ -1798,6 +1804,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         set_ai_status();
         if(auto* info = ai_info::find(session))
             show_ai_project(*info);
+        update_send_button();
     });
 
     connect(process,&QProcess::errorOccurred,this,
@@ -1820,6 +1827,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             info.prompts.append(text);
             add_ai_history(info,"activity",message);
         }
+        update_send_button();
         process->deleteLater();
     });
 
@@ -1828,13 +1836,15 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
         active_ai_processes = std::max(0,active_ai_processes-1);
-        set_ai_status(launch.name+" finished.",true);
+        bool user_stopped = process->property("user_stopped").toBool();
+        set_ai_status((user_stopped ? launch.name+" stopped." : launch.name+" finished."),true);
         auto session = process->objectName();
         ai_log(launch.name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
-        bool failed = exit_code || exit_status == QProcess::CrashExit;
-        auto error_message = ("error code:"+QString::number(exit_code)+" "+
+        bool failed = !user_stopped && (exit_code || exit_status == QProcess::CrashExit);
+        auto error_message = user_stopped ? QString("Stopped by user.") :
+                              ("error code:"+QString::number(exit_code)+" "+
                               QString::fromUtf8(error)).trimmed();
         if(failed)
             ai_log(error_message);
@@ -1854,7 +1864,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             info.prompts.clear();
             if(!pending.isEmpty())
                 start_ai(session,pending,ai_input::Pending);
-            else if(failed)
+            else if(failed || user_stopped)
                 add_ai_history(info,"activity",error_message);
             else if(auto history_size = process->property("history_size");
                     history_size.isValid() &&
@@ -1863,6 +1873,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             else
                 show_ai_project(info);
         }
+        update_send_button();
         process->deleteLater();
     });
 
@@ -2062,11 +2073,24 @@ void AIAgent::on_ai_send_message_clicked()
         return;
     }
 
+    auto* item = ui->ai_project_list->currentItem();
+    if(item)
+    {
+        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        if(info.processes)
+        {
+            info.prompts.clear(); // stop means stop: no auto-continue into a queued message
+            info.processes->setProperty("user_stopped",true);
+            info.processes->terminate();
+            return;
+        }
+    }
+
     auto text = ui->ai_chat_input->toPlainText().trimmed();
     if(text.isEmpty())
         return;
 
-    auto* item = ui->ai_project_list->currentItem();
     start_ai(item ? item->data(Qt::UserRole).toString() : QString(),
              text,ai_input::User);
+    update_send_button();
 }
