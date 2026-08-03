@@ -1297,8 +1297,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto time = display_time(entry["time"]);
         if(!end_time.isEmpty())
             time += "\u2013"+display_time(end_time);
-        if(auto usage = entry["usage"].toString();!usage.isEmpty())
-            time += "  \u00b7  "+to_html(usage);
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
@@ -1368,15 +1366,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto* bar = ui->ai_chat_history->verticalScrollBar();
     QTimer::singleShot(
         0,bar,[bar]{bar->setValue(bar->maximum());});
-}
-
-void AIAgent::attach_usage_to_last_reply(ai_info& info,const QString& summary)
-{
-    if(info.projects.isEmpty() || info.projects.last()["type"] != "assistant")
-        return;
-    info.projects.last()["usage"] = summary;
-    write_history(info,QIODevice::Truncate,info.projects);
-    show_ai_project(info);
 }
 
 void AIAgent::update_agent_models(
@@ -1574,8 +1563,8 @@ bool AIAgent::run_agent_login(ai_provider provider)
     }
     process->deleteLater();
 
-    QMessageBox::information(this,"AI Agent",
-        succeeded ? (is_codex ? "Codex" : "Claude")+QString(" sign-in complete.") : "Sign-in was not completed.");
+    if(!succeeded)
+        QMessageBox::warning(this,"AI Agent",(is_codex ? "Codex" : "Claude")+QString(" sign-in was not completed."));
     return succeeded;
 }
 
@@ -1918,12 +1907,16 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             return launch;
         }
     }
-    else if(!agent_logged_in(provider) && !run_agent_login(provider))
+    else if(!agent_logged_in(provider))
     {
-        if(input == ai_input::Pending && !session.isEmpty())
-            ai_infos[session].prompts.append(text);
-        set_ai_status(launch.name+" is not signed in.",true);
-        return launch;
+        set_ai_status(launch.name+" needs sign-in: check your browser.",true);
+        if(!run_agent_login(provider))
+        {
+            if(input == ai_input::Pending && !session.isEmpty())
+                ai_infos[session].prompts.append(text);
+            set_ai_status(launch.name+" is not signed in.",true);
+            return launch;
+        }
     }
     if(launch.model.startsWith("default",Qt::CaseInsensitive))
         launch.model.clear();
@@ -2118,22 +2111,6 @@ QStringList AIAgent::configure_claude(
                        ai_status_activity != "Thinking")
                         set_ai_status("Thinking");
 
-                    if(event_type == "result")
-                    {
-                        auto usage = event["usage"].toObject();
-                        auto summary = QString("%1 in / %2 out tokens")
-                            .arg(usage["input_tokens"].toInteger())
-                            .arg(usage["output_tokens"].toInteger());
-                        if(auto cache_read = usage["cache_read_input_tokens"].toInteger())
-                            summary += QString(" (+%1 cache read)").arg(cache_read);
-                        summary += QString(" · %1s")
-                            .arg(event["duration_ms"].toInteger()/1000.0,0,'f',1);
-                        if(auto cost = event["total_cost_usd"].toDouble())
-                            summary += QString(" · $%1").arg(cost,0,'f',4);
-                        if(auto* info = ai_info::find(process->objectName()))
-                            attach_usage_to_last_reply(*info,summary);
-                        continue;
-                    }
                     if(event_type != "assistant")
                         continue;
 
@@ -2200,25 +2177,6 @@ QStringList AIAgent::configure_codex(
                     set_ai_status("Agent session ready.",true);
                     for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                         button->setEnabled(true);
-                }
-                continue;
-            }
-
-            if(event["type"] == "turn.completed") // verified against a real codex exec --json session
-            {
-                if(auto usage = event["usage"].toObject();!usage.isEmpty())
-                {
-                    auto summary = QString("%1 in / %2 out tokens")
-                        .arg(usage["input_tokens"].toInteger())
-                        .arg(usage["output_tokens"].toInteger());
-                    if(auto cached = usage["cached_input_tokens"].toInteger())
-                        summary += QString(" (+%1 cached)").arg(cached);
-                    if(auto cache_write = usage["cache_write_input_tokens"].toInteger())
-                        summary += QString(" (+%1 cache write)").arg(cache_write);
-                    if(auto reasoning_tokens = usage["reasoning_output_tokens"].toInteger())
-                        summary += QString(" (+%1 reasoning)").arg(reasoning_tokens);
-                    if(auto* info = ai_info::find(process->objectName()))
-                        attach_usage_to_last_reply(*info,summary);
                 }
                 continue;
             }
