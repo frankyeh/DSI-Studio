@@ -1472,17 +1472,20 @@ bool AIAgent::try_connect_github_issue(const QString& url)
                                                    // so the history clear below can't be skipped
     ui->ai_chat_history->clear();
     set_ai_status("Connecting to "+url+"...");
+    tipl::out() << "connecting to GitHub issue: " << url.toStdString();
 
     QString error;
     if(!connect_github_issue(url,error))
     {
         set_ai_status("GitHub issue connect failed: "+error,true);
+        tipl::out() << "GitHub issue connect failed: " << error.toStdString();
         return false;
     }
     web_agent_active_session = true;
     github_last_issue_url = url;
     update_send_button();
     set_ai_status("Connected to "+url,true);
+    tipl::out() << "connected to GitHub issue: " << url.toStdString();
     return true;
 }
 
