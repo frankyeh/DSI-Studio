@@ -1466,6 +1466,7 @@ void AIAgent::try_set_current_model(const QString& name)
 
 void AIAgent::update_send_button()
 {
+    ui->ai_show_reasoning->setVisible(!web_agent_active_session);
     if(!web_agent_active_session)
     {
         ui->ai_send_message->setText("Send");
@@ -1566,6 +1567,32 @@ void AIAgent::new_chat_dialog(bool resume)
 void AIAgent::on_ai_new_chat_clicked()
 {
     new_chat_dialog(false);
+}
+
+void AIAgent::on_ai_agent_status_clicked()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("Change Agent/Model");
+    QFormLayout layout(&dialog);
+    QComboBox agent,model;
+    init_agent_model_combo(agent,model,&dialog);
+    layout.addRow("Agent:",&agent);
+    layout.addRow("Model:",&model);
+    QLabel note("Applies the next time you start a chat; does not affect one already running.");
+    note.setWordWrap(true);
+    note.setStyleSheet("color:#5f6368;font-size:11px;");
+    layout.addRow(&note);
+    QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
+    layout.addRow(&buttons);
+    connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
+    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+
+    if(dialog.exec() != QDialog::Accepted)
+        return;
+
+    current_agent_index = agent.currentIndex();
+    try_set_current_model(model.currentText());
+    update_agent_status_label();
 }
 
 void AIAgent::on_ai_quick_settings_clicked()

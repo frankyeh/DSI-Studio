@@ -39,12 +39,6 @@ QWidget#tab_8 QPushButton:pressed,
 QWidget#tab_8 QToolButton:pressed {
     background-color: #dddddf;
 }
-QPushButton#ai_new_chat {
-    background-color: #ffffff;
-    font-size: 9pt;
-    font-weight: bold;
-    padding: 8px;
-}
 QListWidget#ai_project_list QPushButton {
     color: #202124;
     background: transparent;
@@ -73,17 +67,56 @@ QToolButton#ai_project_menu_button:hover {
 QToolButton#ai_project_menu_button::menu-indicator {
     image: none;
 }
-QPushButton#ai_send_message {
-    color: #ffffff;
-    background-color: #2f2f2f;
-    border-color: #2f2f2f;
+QLabel#ai_status,
+QLabel#ai_work_dir_label,
+QPushButton#ai_agent_status,
+QPushButton#ai_send_message,
+QPushButton#ai_new_chat,
+QPushButton#ai_quick_settings {
+    color: #3c4043;
+    font-weight: 600;
+    background-color: #f1f3f4;
+    border: none;
+    border-radius: 14px;
+    padding: 4px 12px;
 }
-QPushButton#ai_send_message:hover {
-    background-color: #171717;
-    border-color: #171717;
+QPushButton#ai_agent_status:hover,
+QPushButton#ai_send_message:hover,
+QPushButton#ai_new_chat:hover,
+QPushButton#ai_quick_settings:hover {
+    background-color: #e8eaed;
 }
-QPushButton#ai_send_message:pressed {
-    background-color: #000000;
+QPushButton#ai_agent_status:pressed,
+QPushButton#ai_send_message:pressed,
+QPushButton#ai_new_chat:pressed,
+QPushButton#ai_quick_settings:pressed {
+    background-color: #dadce0;
+}
+QLineEdit#ai_work_dir {
+    color: #3c4043;
+    background-color: #f1f3f4;
+    border: none;
+    border-radius: 14px;
+    padding: 4px 12px;
+}
+QLineEdit#ai_work_dir:focus {
+    background-color: #ffffff;
+    border: 1px solid #1a73e8;
+}
+QCheckBox#ai_show_reasoning {
+    color: #3c4043;
+    spacing: 6px;
+}
+QCheckBox#ai_show_reasoning::indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    border: 1px solid #dadce0;
+    background: #ffffff;
+}
+QCheckBox#ai_show_reasoning::indicator:checked {
+    background: #1a73e8;
+    border-color: #1a73e8;
 }
 QWidget#tab_8 QComboBox {
     color: #202124;
@@ -223,20 +256,12 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             <property name="text">
              <string>New Chat</string>
             </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
-            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="ai_quick_settings">
             <property name="text">
              <string>Settings</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
             </property>
            </widget>
           </item>
@@ -351,6 +376,50 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
            <property name="spacing">
             <number>8</number>
            </property>
+           <item row="1" column="0">
+            <widget class="QLabel" name="ai_status">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Current task complete.</string>
+             </property>
+             <property name="textInteractionFlags">
+              <set>Qt::TextSelectableByMouse</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="5">
+            <widget class="QPushButton" name="ai_agent_status">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Change the agent/model used for the next chat you start</string>
+             </property>
+             <property name="text">
+              <string>Codex · default</string>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="0" colspan="7">
             <widget class="QPlainTextEdit" name="ai_chat_input">
              <property name="minimumSize">
@@ -370,31 +439,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
              </property>
              <property name="placeholderText">
               <string>Message the AI agent…  Ctrl+Enter to send</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="4" colspan="2">
-            <widget class="QLabel" name="ai_agent_status">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>32</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QLabel { color:#3c4043; font-weight:600; padding:4px 12px; background:#f1f3f4; border-radius:14px; }</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-             <property name="text">
-              <string>Codex · default</string>
              </property>
             </widget>
            </item>
@@ -426,35 +470,25 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
              <property name="text">
               <string>Send</string>
              </property>
-             <property name="icon">
-              <iconset resource="icons.qrc">
-               <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-             </property>
              <property name="default">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="1" column="0" colspan="3">
-            <widget class="QLabel" name="ai_status">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: #5f6368;</string>
-             </property>
-             <property name="text">
-              <string>Current task complete.</string>
-             </property>
-             <property name="textInteractionFlags">
-              <set>Qt::TextSelectableByMouse</set>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="3">
+            <spacer name="ai_status_spacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="4">
             <widget class="QCheckBox" name="ai_show_reasoning">
              <property name="toolTip">
               <string>Show AI reasoning messages in chat history</string>

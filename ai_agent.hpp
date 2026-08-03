@@ -132,6 +132,7 @@ private slots:
     void on_ai_quick_settings_clicked();
     void on_ai_new_chat_clicked();
     void on_ai_send_message_clicked();
+    void on_ai_agent_status_clicked();
 };
 
 #endif
