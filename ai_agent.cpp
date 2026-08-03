@@ -1351,6 +1351,15 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         0,bar,[bar]{bar->setValue(bar->maximum());});
 }
 
+void AIAgent::attach_usage_to_last_reply(ai_info& info,const QString& summary)
+{
+    if(info.projects.isEmpty() || info.projects.last()["type"] != "assistant")
+        return; // no reply from this turn to attach it to
+    info.projects.last()["usage"] = summary;
+    write_history(info,QIODevice::Truncate,info.projects);
+    show_ai_project(info);
+}
+
 void AIAgent::update_agent_models(
     int index,const QStringList& names,bool ollama)
 {
