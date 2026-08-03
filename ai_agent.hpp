@@ -20,6 +20,7 @@ class QMenu;
 class QNetworkRequest;
 class QProcess;
 class QShowEvent;
+class QCloseEvent;
 
 namespace Ui {
 class AIAgent;
@@ -131,6 +132,7 @@ public:
 
 protected:
     void showEvent(QShowEvent*) override;
+    void closeEvent(QCloseEvent*) override;
 
 private slots:
     void on_ai_quick_settings_clicked();
