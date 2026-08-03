@@ -607,8 +607,10 @@ void AIAgent::poll_github_issue()
             return restart(delay); // rate limited (429, or 403 that means the same thing)
         if(github_permanent_failure(status))
         {
-            set_ai_status("GitHub issue channel authorization failed.",true);
-            return disconnect_github_issue();
+            disconnect_github_issue(); // clear connection state first: set_ai_status()'s
+                                        // "ongoing" check must see the disconnected state
+                                        // so this message decays instead of animating forever
+            return set_ai_status("GitHub issue channel authorization failed.",true);
         }
         if(reply->error() != QNetworkReply::NoError && status != 304)
             return restart(5000); // transient network error: back off, retry later
@@ -657,6 +659,8 @@ void AIAgent::poll_github_issue()
         request_obj.remove("id");
         request_obj.remove("include_log");
         request_obj["agent"] = "Codex/ChatGPT-GitHub";
+        request_obj["title"] = issue["title"].toString(); // only applied by
+            // MainWindow::ai_request() when this session is being created
 
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
@@ -728,8 +732,10 @@ void AIAgent::send_pending_result()
         }
         if(github_permanent_failure(status))
         {
-            set_ai_status("GitHub issue channel authorization failed.",true);
-            return disconnect_github_issue();
+            disconnect_github_issue(); // clear connection state first: set_ai_status()'s
+                                        // "ongoing" check must see the disconnected state
+                                        // so this message decays instead of animating forever
+            return set_ai_status("GitHub issue channel authorization failed.",true);
         }
 
         if(reply->error() != QNetworkReply::NoError)
@@ -824,7 +830,12 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     ai_status_timer->stop();
     if(!status.isEmpty())
         ai_status_activity = status;
-    if(active_ai_processes && (status.isEmpty() || temporary))
+    // a connected web-agent session has no QProcess to track, but is just as
+    // "ongoing" as a local agent process: keep the status animating instead
+    // of letting it decay to "Current task complete." while still connected
+    bool ongoing = active_ai_processes ||
+                   (web_agent_active_session && !github_issue_api.isEmpty());
+    if(ongoing && (status.isEmpty() || temporary))
     {
         status = ai_status_activity;
         if(status.endsWith('.'))
@@ -839,7 +850,7 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     ui->ai_status->setText(status);
     ui->ai_status->repaint();
 
-    if(temporary && !active_ai_processes)
+    if(temporary && !ongoing)
     {
         ai_status_timer->setSingleShot(true);
         ai_status_timer->start(2000);
@@ -1425,15 +1436,20 @@ void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* 
 
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
+    ui->ai_project_list->setCurrentItem(nullptr);
+    ui->ai_chat_history->setPlainText("Connecting to "+url+"...");
+
     QString error;
     if(!connect_github_issue(url,error))
     {
+        ui->ai_chat_history->append("Connect failed: "+error);
         set_ai_status("GitHub issue connect failed: "+error,true);
         return false;
     }
     web_agent_active_session = true;
     github_last_issue_url = url;
     update_send_button();
+    ui->ai_chat_history->setPlainText("Connected to "+url);
     set_ai_status("Connected to GitHub issue.",true);
     return true;
 }
@@ -1480,10 +1496,11 @@ void AIAgent::update_send_button()
 // resume: reopens the same dialog for an existing web-agent session — locked
 // to "Web agent" (radios disabled) and the local agent/model panel disabled,
 // only the issue URL (defaulted to the last one) can still be changed
-void AIAgent::new_chat_dialog(bool resume)
+bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
+                                   bool& web,int& agent_index,QString& model_name,QString& issue_url)
 {
     QDialog dialog(this);
-    dialog.setWindowTitle(resume ? "Resume Chat" : "New Chat");
+    dialog.setWindowTitle(title);
     QVBoxLayout layout(&dialog);
 
     QRadioButton local_radio("Local agent");
@@ -1500,10 +1517,10 @@ void AIAgent::new_chat_dialog(bool resume)
     QWidget web_panel;
     QFormLayout web_layout(&web_panel);
     QLabel web_agent_label("ChatGPT");
-    QLineEdit issue_url(resume ? github_last_issue_url : QString());
-    issue_url.setPlaceholderText("https://github.com/owner/repo/issues/1");
+    QLineEdit issue_url_edit(resume ? github_last_issue_url : QString());
+    issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
     web_layout.addRow("Agent:",&web_agent_label);
-    web_layout.addRow("Issue URL:",&issue_url);
+    web_layout.addRow("Issue URL:",&issue_url_edit);
     QLabel hint(has_token ? QString() :
         "Set up a GitHub token in AI Settings first.");
     hint.setStyleSheet("color:#b00020;");
@@ -1538,17 +1555,33 @@ void AIAgent::new_chat_dialog(bool resume)
     connect(&web_radio,&QRadioButton::toggled,&dialog,[&](bool){update_panels();});
 
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
-    buttons.addButton(resume ? "Resume" : "Start",QDialogButtonBox::AcceptRole);
+    buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     layout.addWidget(&buttons);
     connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
 
     if(dialog.exec() != QDialog::Accepted)
+        return false;
+
+    web = web_radio.isChecked();
+    agent_index = agent.currentIndex();
+    model_name = model.currentText();
+    issue_url = issue_url_edit.text().trimmed();
+    return true;
+}
+
+void AIAgent::new_chat_dialog(bool resume)
+{
+    bool web = false;
+    int agent_index = 0;
+    QString model_name,issue_url;
+    if(!run_new_chat_dialog(resume,resume ? "Resume Chat" : "New Chat",resume ? "Resume" : "Start",
+                             web,agent_index,model_name,issue_url))
         return;
 
-    if(web_radio.isChecked())
+    if(web)
     {
-        try_connect_github_issue(issue_url.text().trimmed());
+        try_connect_github_issue(issue_url);
         return;
     }
 
@@ -1557,8 +1590,8 @@ void AIAgent::new_chat_dialog(bool resume)
     web_agent_active_session = false;
     update_send_button();
 
-    current_agent_index = agent.currentIndex();
-    try_set_current_model(model.currentText());
+    current_agent_index = agent_index;
+    try_set_current_model(model_name);
     update_agent_status_label();
     ui->ai_project_list->setCurrentItem(nullptr);
     ui->ai_chat_input->clear();
@@ -1573,27 +1606,20 @@ void AIAgent::on_ai_new_chat_clicked()
 
 void AIAgent::on_ai_agent_status_clicked()
 {
-    QDialog dialog(this);
-    dialog.setWindowTitle("Change Agent/Model");
-    QFormLayout layout(&dialog);
-    QComboBox agent,model;
-    init_agent_model_combo(agent,model,&dialog);
-    layout.addRow("Agent:",&agent);
-    layout.addRow("Model:",&model);
-    QLabel note("Applies the next time you start a chat; does not affect one already running.");
-    note.setWordWrap(true);
-    note.setStyleSheet("color:#5f6368;font-size:11px;");
-    layout.addRow(&note);
-    QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
-    layout.addRow(&buttons);
-    connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
-    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
-
-    if(dialog.exec() != QDialog::Accepted)
+    bool web = false;
+    int agent_index = 0;
+    QString model_name,issue_url;
+    if(!run_new_chat_dialog(false,"Change Agent/Model","Save",web,agent_index,model_name,issue_url))
         return;
 
-    current_agent_index = agent.currentIndex();
-    try_set_current_model(model.currentText());
+    if(web)
+    {
+        try_connect_github_issue(issue_url);
+        return;
+    }
+
+    current_agent_index = agent_index;
+    try_set_current_model(model_name);
     update_agent_status_label();
 }
 
