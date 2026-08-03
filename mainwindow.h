@@ -21,11 +21,6 @@ class QJsonObject;
 class FiberDataHub;
 enum class command_source;
 
-// synthetic LIST entries for background run_shell (curl) tasks still in
-// flight: id -> {"status":"busy","title":<command text>}; an id's absence
-// means that task has already finished (check LOG for its output)
-QJsonObject shell_task_windows();
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -51,7 +46,7 @@ public:
     std::string error_msg;
     bool command(const std::vector<std::string>&);
     bool command(const std::vector<std::string>&,command_source);
-    void ai_command(ai_info&,const QByteArray&,QByteArray&);
+    QJsonObject dispatch_cmd(ai_info&,const QJsonObject& request); // the AI agent's single command center: every request (set_title/log/set_window/list_window/voice/run_shell/GUI commands) runs through this command array, dispatched against a target window (main/tracking/recon/image) when one applies
     void ai_request(const QByteArray& request,QByteArray& reply);
 public:
     void open_DWI(QStringList files);
