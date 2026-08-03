@@ -352,8 +352,10 @@ AIAgent::AIAgent(MainWindow* parent):
         QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
-        ui->ai_project_list->takeItem(row)->deleteLater(); // detach now (keeps count()/rows consistent); defer the actual delete since
-                                                            // this item's row widget owns the "..." button whose menu action is still executing
+        // detach now (keeps count()/rows consistent); defer the actual delete since this item's row widget
+        // owns the "..." button whose menu action is still executing (QListWidgetItem isn't a QObject, so no deleteLater())
+        auto* taken_item = ui->ai_project_list->takeItem(row);
+        QTimer::singleShot(0,this,[taken_item]{delete taken_item;});
 
         // keep a chat selected whenever one exists; only New Chat clears the selection
         if(ui->ai_project_list->count())
