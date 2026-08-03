@@ -136,7 +136,8 @@ std::string command_record(QWidget* window,const char* type,
         return json.mid(1,json.size()-2);
     };
     return sources[int(source)]+std::string(" operation: ")+
-        ("{\"request\":\"CMD\",\"window\":"+quote(window_id)+
+        // no "request" field: a CMD-shaped dispatch (the default) never needs one
+        ("{\"window\":"+quote(window_id)+
          ",\"command\":"+QJsonDocument(command).
          toJson(QJsonDocument::Compact)+"}").toStdString();
 }
