@@ -152,8 +152,13 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QString selected = {},QString fallback = {},
                         QJsonObject selected_info = {})
 {
-    auto names = profiles.keys();
-    names.sort(Qt::CaseInsensitive);
+    // grouped, not one alphabetical sort: native models first, then Ollama models together as their own block
+    QStringList native_names,ollama_names;
+    for(const auto& name : profiles.keys())
+        (profiles[name].toObject().contains("provider") ? ollama_names : native_names) << name;
+    native_names.sort(Qt::CaseInsensitive);
+    ollama_names.sort(Qt::CaseInsensitive);
+
     auto ollama_host = ai_ollama_url(QSettings()).first.host();
     auto display_text = [&](const QString& name,const QJsonObject& info)
     {
@@ -161,7 +166,7 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
     };
     model.clear();
     model.addItem("default");
-    for(const auto& name : names)
+    for(const auto& name : native_names+ollama_names)
         model.addItem(display_text(name,profiles[name].toObject()),profiles[name].toObject());
 
     auto target = selected.isEmpty() ? fallback : selected;
