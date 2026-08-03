@@ -1,6 +1,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDialog>
@@ -840,10 +841,10 @@ void AIAgent::showEvent(QShowEvent* event)
 
 void AIAgent::closeEvent(QCloseEvent* event)
 {
-    for(auto& [session,info] : ai_infos)
-        if(auto* process = info.processes)
+    for(auto& entry : ai_infos)
+        if(auto* process = entry.second.processes)
         {
-            info.processes = nullptr;
+            entry.second.processes = nullptr;
             process->disconnect();
             process->kill();
             process->deleteLater();
