@@ -1280,6 +1280,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto time = display_time(entry["time"]);
         if(!end_time.isEmpty())
             time += "\u2013"+display_time(end_time);
+        if(auto usage = entry["usage"].toString();!usage.isEmpty())
+            time += "  \u00b7  "+to_html(usage);
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
@@ -1354,7 +1356,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 void AIAgent::attach_usage_to_last_reply(ai_info& info,const QString& summary)
 {
     if(info.projects.isEmpty() || info.projects.last()["type"] != "assistant")
-        return; // no reply from this turn to attach it to
+        return;
     info.projects.last()["usage"] = summary;
     write_history(info,QIODevice::Truncate,info.projects);
     show_ai_project(info);
@@ -1973,7 +1975,7 @@ QStringList AIAgent::configure_claude(
                         if(auto cost = event["total_cost_usd"].toDouble())
                             summary += QString(" · $%1").arg(cost,0,'f',4);
                         if(auto* info = ai_info::find(process->objectName()))
-                            add_ai_history(*info,"activity",summary);
+                            attach_usage_to_last_reply(*info,summary);
                         continue;
                     }
                     if(event_type != "assistant")
@@ -2060,7 +2062,7 @@ QStringList AIAgent::configure_codex(
                     if(auto reasoning_tokens = usage["reasoning_output_tokens"].toInteger())
                         summary += QString(" (+%1 reasoning)").arg(reasoning_tokens);
                     if(auto* info = ai_info::find(process->objectName()))
-                        add_ai_history(*info,"activity",summary);
+                        attach_usage_to_last_reply(*info,summary);
                 }
                 continue;
             }
