@@ -665,21 +665,13 @@ void AIAgent::poll_github_issue()
         request_obj.remove("id");
         request_obj.remove("include_log");
         request_obj["agent"] = "Codex/ChatGPT-GitHub";
+        request_obj["title"] = issue["title"].toString(); // defaults the chat's title;
+            // ai_command() applies this on any request, and is a no-op once it matches
 
-        auto session_id = request_obj["session"].toString();
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
         main_window.ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
         auto response = QJsonDocument::fromJson(reply_bytes).object();
-
-        // first command of a brand-new session: default its title to the issue's
-        // title. This can't ride along inside request_obj above: the DSI command
-        // parser rejects any non-TITLE request that contains a "title" field.
-        if(auto* info = ai_info::find(session_id);info && info->project_titles.isEmpty())
-        {
-            ai_info::save_title(*info,issue["title"].toString());
-            show_ai_project(*info);
-        }
 
         if(include_log)
         {
@@ -953,8 +945,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return reply_error("cannot save title");
         return reply_object(QJsonObject{{"status","success"}});
     }
-    if(request.contains("title"))
-        return reply_error("title is valid only for TITLE");
+    if(auto title = request["title"].toString().simplified();!title.isEmpty())
+        ai_info::save_title(info,title); // may ride along on any request, not just TITLE
 
     if(type == "CMD")
     {
