@@ -110,7 +110,6 @@ class AIAgent : public QMainWindow
     bool agent_logged_in(ai_provider provider);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(ai_info&,QJsonObject = {});
-    void attach_usage_to_last_reply(ai_info&,const QString& summary);
     void update_agent_models(int,const QStringList&,bool);
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
