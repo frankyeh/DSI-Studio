@@ -1971,22 +1971,28 @@ QStringList AIAgent::configure_claude(
     const ai_launch& launch,QString session,const QString& text,bool new_session)
 {
     auto* process = launch.process;
+    static const char* ollama_model_vars[] = {
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"};
+    auto env = process->processEnvironment();
     if(!launch.model_url.isEmpty())
     {
-        auto env = process->processEnvironment();
         env.insert("ANTHROPIC_BASE_URL",launch.model_url.toString());
         env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
         env.insert("ANTHROPIC_API_KEY","");
         env.insert("CLAUDE_CODE_USE_POWERSHELL_TOOL","1");
         if(!launch.model.isEmpty())
-            for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
-                              "ANTHROPIC_DEFAULT_SONNET_MODEL",
-                              "ANTHROPIC_DEFAULT_OPUS_MODEL",
-                              "CLAUDE_CODE_SUBAGENT_MODEL"})
+            for(auto name : ollama_model_vars)
                 env.insert(name,launch.model);
-
-        process->setProcessEnvironment(env);
     }
+    else // real Anthropic model: strip any Ollama redirect inherited from the system environment
+    {
+        for(auto name : {"ANTHROPIC_BASE_URL","ANTHROPIC_AUTH_TOKEN","CLAUDE_CODE_USE_POWERSHELL_TOOL"})
+            env.remove(name);
+        for(auto name : ollama_model_vars)
+            env.remove(name);
+    }
+    process->setProcessEnvironment(env);
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
