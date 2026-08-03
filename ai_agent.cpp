@@ -687,6 +687,7 @@ void AIAgent::poll_github_issue()
 
         auto session_id = request_obj["session"].toString();
         bool new_session = !ai_info::find(session_id);
+        web_agent_session_id = session_id;
 
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
@@ -1251,7 +1252,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto* row = ui->ai_project_list->itemWidget(item);
     auto* title = row->findChild<QPushButton*>();
     item->setText({});
-    title->setText(info.title());
+    title->setText((info.agent_name.contains("ChatGPT") ? QString("🌐 ") : QString())+info.title());
     title->setToolTip(title->text());
     item->setSizeHint(QSize(0,row->sizeHint().height()));
 
@@ -1592,9 +1593,8 @@ bool AIAgent::run_agent_login(ai_provider provider)
     return succeeded;
 }
 
-bool AIAgent::try_connect_github_issue(const QString& url)
+bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
 {
-    auto* previous_item = ui->ai_project_list->currentItem(); // captured before deselecting, so a failed attempt can still mark it red
     ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
     ui->ai_chat_history->clear();
     web_agent_active_session = true; // reflects the chosen mode even if the connection below fails, so the label/Resume button stay accurate
@@ -1609,12 +1609,13 @@ bool AIAgent::try_connect_github_issue(const QString& url)
     {
         set_ai_status("GitHub issue connect failed: "+error,true);
         tipl::out() << "GitHub issue connect failed: " << error.toStdString();
-        if(previous_item)
-        {
-            auto& info = ai_infos[previous_item->data(Qt::UserRole).toString()];
-            info.has_error = true;
-            show_ai_project(info);
-        }
+        // only a resume targets an already-known chat; web_agent_session_id (not sidebar selection) is the reliable way to find it
+        if(resume)
+            if(auto* info = ai_info::find(web_agent_session_id))
+            {
+                info->has_error = true;
+                show_ai_project(*info);
+            }
         return false;
     }
     update_send_button();
@@ -1752,10 +1753,12 @@ void AIAgent::new_chat_dialog(bool resume)
     if(!run_new_chat_dialog(resume,resume ? "Resume Chat" : "New Chat",resume ? "Resume" : "Start",
                              web,agent_index,model_name,issue_url))
         return;
+    if(!resume)
+        web_agent_session_id.clear(); // starting fresh: no longer tied to whatever chat the old web session was
 
     if(web)
     {
-        try_connect_github_issue(issue_url);
+        try_connect_github_issue(issue_url,resume);
         return;
     }
 
@@ -1813,7 +1816,7 @@ void AIAgent::on_ai_agent_status_clicked()
 
     if(web)
     {
-        try_connect_github_issue(issue_url);
+        try_connect_github_issue(issue_url,false);
         return;
     }
 
