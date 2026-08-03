@@ -527,6 +527,8 @@ void MainWindow::closeEvent(QCloseEvent* event)
             event->ignore();
             return;
         }
+    if(ai_agent) // its own closeEvent stops every running agent process; ~AIAgent() alone would not
+        ai_agent->close();
     QMainWindow::closeEvent(event);
 }
 
