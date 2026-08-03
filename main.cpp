@@ -584,7 +584,7 @@ int main(int ac, char *av[])
                     if(request.trimmed().startsWith('{'))
                     {
                         QByteArray reply;
-                        w.ai_request(request,reply);
+                        w.ai_agent->ai_request(request,reply);
                         clientSocket->write(reply);
                     }
                     else
