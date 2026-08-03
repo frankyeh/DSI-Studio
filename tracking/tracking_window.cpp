@@ -766,7 +766,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 void tracking_window::closeEvent(QCloseEvent *event)
 {
-    if(!ignore_close_prompt)
+    if(event->spontaneous()) // programmatic close() (e.g. from the AI dispatcher) skips this prompt
         for(size_t index = 0;index < tractWidget->tract_models.size();++index)
             if(!tractWidget->tract_models[index]->saved)
             {
