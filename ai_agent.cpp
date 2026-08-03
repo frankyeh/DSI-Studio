@@ -45,21 +45,15 @@
 
 #include <algorithm>
 #include <cstring>
-#include <mutex>
 #include <unordered_map>
 
 #include "ai_agent.hpp"
 #include "ui_ai_agent.h"
 #include "mainwindow.h"
-#include "tracking/tracking_window.h"
-#include "opengl/glwidget.h"
-#include "view_image.h"
-#include "reconstruction/reconstruction_window.h"
-#include "console.h"
+#include "TIPL/tipl.hpp"
 
 std::unordered_map<QString,ai_info> ai_infos;
 QString ai_project_dir;
-constexpr auto ai_debug_tag = "[DEUBG]";
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
 // "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete)
 int& ai_debug_level()
@@ -128,7 +122,7 @@ void ai_log(QString text)
         return;
     if(ai_debug_level() == 1 && text.size() > ai_debug_truncate_length)
         text = text.left(ai_debug_truncate_length)+"...";
-    auto prefix = QString(ai_debug_tag)+" ";
+    auto prefix = QString("[DEBUG] ");
     tipl::out() << (prefix+text.remove('\r').
                     replace('\n',"\n"+prefix)).toStdString();
 }
@@ -142,9 +136,7 @@ QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
     url.setPort(settings.value("ai/ollama_port",11434).toInt());
     return {url,configured};
 }
-// an Ollama-sourced model's display text is "<name> (Ollama@<host>)"; model_combo_key()
-// strips that back off wherever the plain profile name is needed
-QString model_combo_key(const QComboBox& model)
+QString model_combo_key(const QComboBox& model) // strips the " (Ollama@host)" suffix off an Ollama model's display text
 {
     return model.currentText().section(" (Ollama@",0,0);
 }
@@ -193,19 +185,19 @@ QPair<QString,QJsonObject> resolve_model(const QJsonObject& profiles,
         return {selected,selected_info};
     return {"default",QJsonObject()};
 }
-bool ai_info::save_title(ai_info& info,QString title)
+bool ai_info::save_title(QString title)
 {
     title = title.simplified();
     if(title.isEmpty())
         return false;
-    if(title == info.project_titles)
+    if(title == project_titles)
         return true;
     QSettings settings;
-    settings.setValue("ai/title/"+info.sessions,title);
+    settings.setValue("ai/title/"+sessions,title);
     settings.sync();
     if(settings.status() != QSettings::NoError)
         return false;
-    info.project_titles = title;
+    project_titles = title;
     return true;
 }
 AIAgent::AIAgent(MainWindow* parent):
@@ -271,7 +263,6 @@ AIAgent::AIAgent(MainWindow* parent):
         agent_entries[index].executable = path;
         ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
     }
-    refresh_codex_models(codex_path);
 
     if(!claude_path.isEmpty())
     {
@@ -318,7 +309,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto title = QInputDialog::getText(
             this,"Rename Chat","Chat name:",QLineEdit::Normal,
             info.title(),&okay);
-        if(okay && ai_info::save_title(info,title))
+        if(okay && info.save_title(title))
             show_ai_project(info);
         else if(okay)
             QMessageBox::warning(
@@ -352,9 +343,7 @@ AIAgent::AIAgent(MainWindow* parent):
         QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
-        // detach now (keeps count()/rows consistent); defer the actual delete since this item's row widget
-        // owns the "..." button whose menu action is still executing (QListWidgetItem isn't a QObject, so no deleteLater())
-        auto* taken_item = ui->ai_project_list->takeItem(row);
+        auto* taken_item = ui->ai_project_list->takeItem(row); // defer delete: its row widget owns the "..." button whose menu action is still running
         QTimer::singleShot(0,this,[taken_item]{delete taken_item;});
 
         // keep a chat selected whenever one exists; only New Chat clears the selection
@@ -707,25 +696,25 @@ void AIAgent::poll_github_issue()
 
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
-        main_window.ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
+        ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
         auto response = QJsonDocument::fromJson(reply_bytes).object();
 
-        if(new_session) // title it now that it exists; omits "agent" so TITLE itself can never create a session
+        auto run_ai_command = [&](const QString& session,const QString& cmd_name,const QJsonValue& param = {})
         {
-            QByteArray discard;
-            main_window.ai_request(QJsonDocument(QJsonObject{
-                {"request","TITLE"},{"session",session_id},
-                {"title",issue["title"].toString()}}).toJson(QJsonDocument::Compact),discard);
-        }
+            QJsonObject command{{"cmd",cmd_name}};
+            if(!param.isUndefined())
+                command["param"] = param;
+            QByteArray bytes;
+            ai_request(QJsonDocument(QJsonObject{
+                {"session",session},{"command",command}}).toJson(QJsonDocument::Compact),bytes);
+            return QJsonDocument::fromJson(bytes).object();
+        };
+
+        if(new_session) // omits "agent" so set_title itself can never create a session
+            run_ai_command(session_id,"set_title",issue["title"].toString());
 
         if(include_log)
-        {
-            QByteArray log_reply_bytes;
-            main_window.ai_request(QJsonDocument(QJsonObject{
-                {"request","LOG"},{"session",request_obj["session"]}}).toJson(QJsonDocument::Compact),
-                log_reply_bytes);
-            response["log"] = QJsonDocument::fromJson(log_reply_bytes).object();
-        }
+            response["log"] = run_ai_command(request_obj["session"].toString(),"log");
 
         auto succeeded = [](const QJsonObject& reply)
         {
@@ -808,7 +797,7 @@ void AIAgent::send_pending_result()
 
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
 {
-    auto entry = ai_info::record_reply(info,chat,reasoning);
+    auto entry = info.record_reply(chat,reasoning);
     show_ai_project(info,entry); // pass the entry (not refresh_ai_info(), which drops it) so show_ai_project can see it's a new non-user reply and blink
     set_ai_status("Agent request completed.",true);
 }
@@ -847,31 +836,31 @@ void write_history(const ai_info& info,QIODevice::OpenMode mode,
         tipl::warning() << "cannot write ai history : "
                         << file.errorString().toStdString();
 }
-void ai_info::record_history(ai_info& info,QJsonObject entry)
+void ai_info::record_history(QJsonObject entry)
 {
-    if(info.projects.isEmpty())
+    if(projects.isEmpty())
     {
-        entry["agent"] = info.agent_name;
-        entry["model_settings"] = info.model_settings;
+        entry["agent"] = agent_name;
+        entry["model_settings"] = model_settings;
     }
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    info.projects.append(entry);
-    write_history(info,QIODevice::Append,QList<QJsonObject>{entry});
+    projects.append(entry);
+    write_history(*this,QIODevice::Append,QList<QJsonObject>{entry});
 }
-QJsonObject ai_info::record_reply(
-    ai_info& info,const QString& chat,const QString& reasoning)
+QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
 {
     if(chat.isEmpty() && reasoning.isEmpty())
         return {};
     QJsonObject entry{{"type","assistant"},{"text",chat}};
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
-    record_history(info,entry);
+    record_history(entry);
     return entry;
 }
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
+    refresh_codex_models();
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
@@ -928,17 +917,46 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     }
 }
 
-void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
+void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
 {
-    const auto& session = info.sessions;
+    auto status_reply = [](QString status,QString error = {})
+    {
+        QJsonObject reply{{"status",status}};
+        if(!error.isEmpty())
+            reply["error"] = error;
+        return QJsonDocument(reply).toJson(QJsonDocument::Compact);
+    };
+    QJsonParseError parse_error;
+    auto doc = QJsonDocument::fromJson(data,&parse_error);
+    auto request = doc.object();
+    auto session = request["session"].toString().trimmed();
+    if(!doc.isObject())
+        return void(reply = status_reply("error","invalid JSON: "+parse_error.errorString()));
+    if(session.isEmpty())
+        return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
+    if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
+        return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
+
+    auto* found = ai_info::find(session);
+    if(!found)
+    {
+        auto agent = request["agent"].toString().trimmed();
+        if(agent.isEmpty())
+            return void(reply = status_reply("error","missing agent for new session"));
+        if(!(found = ai_info::create(session,agent)))
+            return void(reply = status_reply("error","invalid agent: include Codex or Claude in the agent name"));
+        if(auto model = request["model"].toString().trimmed();!model.isEmpty())
+            found->model_settings["model"] = model;
+    }
+    ai_info& info = *found;
+
     reply.clear();
     ai_log("received: "+QString::fromUtf8(data));
-    static const QRegularExpression ansi_escape(
-        QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
-    QString chat,reasoning;
+    auto chat = request["chat"].toString().trimmed();
+    auto reasoning = request["reasoning"].toString().trimmed();
     auto reply_object = [&](QJsonObject result)
     {
-        ai_info::record_reply(info,chat,reasoning);
+        info.record_reply(chat,reasoning);
         if(!info.prompts.isEmpty())
             result["prompt"] = QJsonArray::fromStringList(info.prompts);
         reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
@@ -947,271 +965,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                         QString::fromUtf8(reply).left(32)));
         info.prompts.clear();
     };
-    auto reply_error = [&](const QString& error)
-    {
-        reply_object(QJsonObject{{"status","error"},{"error",error}});
-    };
-    // Parse request
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson(data,&error);
-    if(!doc.isObject())
-        return reply_error("invalid JSON: "+error.errorString());
-
-    auto request = doc.object();
-    auto type = request["request"].toString().toUpper();
-
-    // Initialize log position
-    {
-        if(info.log_position == quint64(-1))
-        {
-            std::lock_guard<std::mutex> lock(console.edit_buf);
-            info.log_position = console.total_size;
-        }
-    }
-
-    auto get_window_id = [](QWidget* window)
-    {
-        if(qobject_cast<MainWindow*>(window))
-            return command_window_id(window,"main");
-        if(qobject_cast<tracking_window*>(window))
-            return command_window_id(window,"tracking");
-        if(qobject_cast<reconstruction_window*>(window))
-            return command_window_id(window,"recon");
-        return qobject_cast<view_image*>(window) ?
-            command_window_id(window,"image") : QString();
-    };
-
-    chat = request["chat"].toString().trimmed();
-    reasoning = request["reasoning"].toString().trimmed();
-    if(type == "TITLE")
-    {
-        auto title = request["title"].toString().simplified();
-        if(title.isEmpty())
-            return reply_error("missing title");
-        if(!ai_info::save_title(info,title))
-            return reply_error("cannot save title");
-        return reply_object(QJsonObject{{"status","success"}});
-    }
-    if(type == "CMD")
-    {
-        auto fail = [&](const QString& error)
-        {
-            reply_object(QJsonObject{{"status","error"},{"result",QJsonArray{
-                QJsonObject{{"status","error"},{"error",error}}}}});
-        };
-        auto window = request["window"].toString();
-        if(window.isEmpty())
-            window = "main"; // no window specified: MainWindow is the dispatcher of last resort, not any particular tracking/recon/image window
-        auto command = request["command"];
-        if(command.isUndefined() || command.isNull())
-            return fail("missing command field");
-        std::vector<std::vector<std::string>> cmds;
-        std::vector<std::string> cmd0_list;
-        for(const auto& value :
-            (command.isArray() ? command.toArray() : QJsonArray{command}))
-        {
-            auto object = value.toObject();
-            auto& cmd = cmds.emplace_back();
-            auto add = [&](const QJsonValue& value){cmd.push_back(value.toVariant().toString().toUtf8().toStdString());};
-            add(object["cmd"]);
-            if(cmd[0].empty())
-                return fail("invalid cmd text");
-            cmd0_list.push_back(cmd[0]);
-            auto param = object["param"];
-            if(param.isArray())
-                for(const auto& value : param.toArray())
-                    add(value);
-            else if(!param.isUndefined() && !param.isNull())
-                add(param);
-        }
-        if(cmds.empty())
-            return fail("missing command field");
-
-        QWidget* target = nullptr;
-        MainWindow* main_target = nullptr;
-        for(auto* each : QApplication::allWidgets())
-        {
-            if(each->property("busy").toBool())
-                return fail("another CMD is running; check opened windows");
-            if(auto* main = qobject_cast<MainWindow*>(each))
-                main_target = main;
-            if(get_window_id(each) == window)
-                target = each;
-        }
-        if(!target)
-            return fail("target window not found, terminated by user?");
-
-        auto target_type = window == "main" ? QString("main") :
-                           window.startsWith("tracking") ? "tracking" :
-                           window.startsWith("recon") ? "recon" : "image";
-        auto target_title = target_type == "main" ? QString() :
-                            QFileInfo(target->windowTitle()).fileName();
-        auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
-        ai_info::record_history(info,QJsonObject{
-            {"type","request"},
-            {"text",compact+" \u2192 "+target_type+" window "+target_title},
-            {"window",window}});
-
-
-        bool updates_enabled = target->updatesEnabled();
-        target->setUpdatesEnabled(false);
-        target->setProperty("busy",true);
-
-        QJsonArray results;
-        for(const auto& cmd : cmds)
-        {
-            QString output,error,command_name = QString::fromUtf8(cmd[0]);
-            QJsonObject result{{"cmd",command_name}};
-            {
-                std::lock_guard<std::mutex> lock(console.edit_buf);
-                console.capture = &output;
-            }
-            try
-            {
-                auto execute = [&](auto* window,bool success)
-                {
-                    if(!success)
-                    {
-                        error = QString::fromUtf8(window->error_msg);
-                        error = (error.isEmpty() ? "command failed" : error)+
-                                ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
-                    }
-                };
-                if(command_name == "voice")
-                {
-                    if(main_target)
-                        execute(main_target,main_target->command(cmd,command_source::AI));
-                    else
-                        error = "main window not found";
-                }
-                else if(auto* window = qobject_cast<MainWindow*>(target))
-                    execute(window,window->command(cmd,command_source::AI));
-                else if(auto* window = qobject_cast<tracking_window*>(target))
-                    execute(window,window->command(cmd,command_source::AI));
-                else if(auto* window = qobject_cast<reconstruction_window*>(target))
-                    execute(window,window->command(cmd,command_source::AI));
-                else if(auto* window = qobject_cast<view_image*>(target))
-                    execute(window,window->command(cmd,command_source::AI));
-            }
-            catch(const std::exception& e){error = e.what();}
-            catch(...){error = "unknown error";}
-
-            {
-                std::lock_guard<std::mutex> lock(console.edit_buf);
-                console.capture = nullptr;
-            }
-
-            output.remove(ansi_escape);
-            error.remove(ansi_escape);
-
-            if(!output.isEmpty())
-                result["output"] = output;
-            if(!error.isEmpty())
-                result["error"] = error;
-            result["status"] = error.isEmpty() ? "success" : "error";
-
-            results.append(result);
-            if(!error.isEmpty())
-                break;
-        }
-
-        target->setProperty("busy",false);
-        target->setUpdatesEnabled(updates_enabled);
-        if(auto* window = qobject_cast<tracking_window*>(target))
-        {
-            window->slice_need_update = true;
-            window->glWidget->update_slice();
-        }
-        else
-            target->update();
-
-        return reply_object(QJsonObject{
-            {"status",results.last().toObject()["status"]},{"result",results}});
-    }
-
-    if(type == "CHAT")
-    {
-        if(chat.isEmpty() && reasoning.isEmpty())
-            return reply_error("missing chat or reasoning");
-        return reply_object(QJsonObject{{"status","success"}});
-    }
-
-    if(type == "LIST")
-    {
-        auto* modal = QApplication::activeModalWidget();
-        bool application_busy = tipl::status_list.size() > 1;
-        QJsonObject windows;
-
-        for(auto* window : QApplication::allWidgets())
-        {
-            auto id = get_window_id(window);
-            if(id.isEmpty())
-                continue;
-
-            bool busy = window->property("busy").toBool();
-            if(auto* tracking = qobject_cast<tracking_window*>(window))
-                busy |= tracking->history.running_commands ||
-                        (tracking->tractWidget &&
-                         std::any_of(
-                             tracking->tractWidget->thread_data.begin(),
-                             tracking->tractWidget->thread_data.end(),
-                             [](const auto& thread){return bool(thread);})) ||
-                        std::any_of(
-                            tracking->slices.begin(),tracking->slices.end(),
-                            [](const auto& slice)
-                            {
-                                auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
-                                return custom && custom->running;
-                            });
-
-            bool waiting = modal && (modal == window || window->isAncestorOf(modal));
-            windows[id] = QJsonObject{
-                {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
-                {"title",QDir::fromNativeSeparators(window->windowTitle())}
-            };
-            application_busy |= busy;
-        }
-
-        auto shell_windows = shell_task_windows(); // background run_shell (curl) tasks still running
-        for(auto it = shell_windows.constBegin();it != shell_windows.constEnd();++it)
-            windows[it.key()] = it.value();
-        application_busy |= !shell_windows.isEmpty();
-
-        return reply_object(QJsonObject{
-            {"status","success"},
-            {"application",QJsonObject{
-                {"status",modal ? "waiting" :
-                          application_busy ? "busy" : "idle"}}},
-            {"windows",windows}});
-    }
-
-    if(type == "LOG")
-    {
-        QByteArray output;
-        {
-            std::lock_guard<std::mutex> lock(console.edit_buf);
-            auto end = console.total_size;
-            auto first = end-quint64(console.history.size());
-            auto begin = std::max(info.log_position,first);
-            bool capped = end-begin > 16*1024;
-            if(capped)
-                begin = end-16*1024;
-            auto text = console.history.mid(qsizetype(begin-first));
-            if(capped)
-                text.remove(0,text.indexOf('\n')+1);
-            text.remove(ansi_escape);
-            QStringList lines;
-            for(const auto& line : text.split('\n'))
-                if(!line.contains(ai_debug_tag))
-                    lines << line;
-            output = lines.join('\n').right(4*1024).toUtf8();
-            info.log_position = end;
-        }
-        return reply_object(QJsonObject{
-            {"status","success"},{"output",QString::fromUtf8(output)}});
-    }
-
-    reply_error("unknown request");
+    reply_object(main_window.dispatch_cmd(info,request)); // MainWindow's command center handles everything
+    refresh_ai_info(info);
 }
 
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
@@ -1437,8 +1192,9 @@ void AIAgent::update_agent_models(
         update_agent_status_label();
     }
 }
-void AIAgent::refresh_codex_models(const QString& path)
+void AIAgent::refresh_codex_models()
 {
+    auto path = agent_entries[int(ai_provider::Codex)].executable;
     if(path.isEmpty())
         return refresh_ollama_models();
 
@@ -1508,7 +1264,7 @@ void AIAgent::refresh_ollama_models()
 void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& text)
 {
     QJsonObject entry{{"type",type},{"text",text}};
-    ai_info::record_history(info,entry);
+    info.record_history(entry);
     show_ai_project(info,entry);
 }
 
@@ -1655,9 +1411,7 @@ void AIAgent::update_agent_status_label()
     ui->ai_agent_status->setText(text);
 }
 
-// accepts any non-empty name, not just a known profile: the New Chat model field is
-// editable so users can type a specific model DSI Studio hasn't discovered/listed
-void AIAgent::try_set_current_model(const QString& name)
+void AIAgent::try_set_current_model(const QString& name) // accepts any non-empty name since the New Chat model field is editable
 {
     if(name.isEmpty())
         return;
@@ -1986,16 +1740,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         }
     }
 
-    auto restore_new_chat = [=](const QString& message,bool show_history)
-    {
-        QMessageBox::warning(this,"AI Agent",message);
-        if(!ui->ai_project_list->currentItem()) // still in the blank New Chat state this launch belongs to; otherwise the user has moved on, so leave their current input/view alone
-        {
-            ui->ai_chat_input->setPlainText(text);
-            if(show_history)
-                ui->ai_chat_history->setPlainText(message);
-        }
-    };
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
@@ -2015,9 +1759,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
     process->setProcessEnvironment(env);
 
     if(info)
-        info->processes = process;
-    // a fresh Codex session has no info/session id yet (assigned once it reports "thread.started"),
-    // but New Chat/Send must stay usable for every other chat in the meantime -- so nothing is disabled here
+        info->processes = process; // a fresh Codex session has no info yet (assigned on "thread.started"); nothing gets disabled meanwhile
 
     if(input == ai_input::User)
     {
@@ -2025,6 +1767,17 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             add_ai_history(*info,"user",text);
         ui->ai_chat_input->clear();
     }
+
+    auto restore_new_chat = [=](const QString& message,bool show_history)
+    {
+        QMessageBox::warning(this,"AI Agent",message);
+        if(!ui->ai_project_list->currentItem()) // still in the blank New Chat state this launch belongs to; otherwise the user has moved on, so leave their current input/view alone
+        {
+            ui->ai_chat_input->setPlainText(text);
+            if(show_history)
+                ui->ai_chat_history->setPlainText(message);
+        }
+    };
 
     connect(process,&QProcess::readyReadStandardError,this,[=]
     {
@@ -2119,7 +1872,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         update_send_button();
         process->deleteLater();
     });
-
     return launch;
 }
 
