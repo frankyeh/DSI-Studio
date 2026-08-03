@@ -17,8 +17,14 @@ class group_connectometry_analysis;
 class AIAgent;
 struct ai_info;
 class QByteArray;
+class QJsonObject;
 class FiberDataHub;
 enum class command_source;
+
+// synthetic LIST entries for background run_shell (curl) tasks still in
+// flight: id -> {"status":"busy","title":<command text>}; an id's absence
+// means that task has already finished (check LOG for its output)
+QJsonObject shell_task_windows();
 
 class MainWindow : public QMainWindow
 {
