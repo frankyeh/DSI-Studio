@@ -17,7 +17,7 @@
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
-
+#include "ai_agent.hpp"
 #ifndef QT6_PATCH
 #include <QTextCodec>
 #else
