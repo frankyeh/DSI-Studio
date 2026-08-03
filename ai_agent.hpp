@@ -26,7 +26,7 @@ namespace Ui {
 class AIAgent;
 }
 
-enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1};
+enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,ChatGPT = 2}; // ChatGPT: web agent via GitHub issue, not a local CLI; never indexes AIAgent::agent_entries (sized for Codex/Claude only)
 enum class ai_input {User,Pending};
 
 struct ai_info{
