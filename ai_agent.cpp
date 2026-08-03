@@ -1441,21 +1441,21 @@ void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* 
 
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
-    ui->ai_project_list->setCurrentItem(nullptr);
-    ui->ai_chat_history->setPlainText("Connecting to "+url+"...");
+    ui->ai_project_list->setCurrentItem(nullptr); // no-op (no signal) if already unselected,
+                                                   // so the history clear below can't be skipped
+    ui->ai_chat_history->clear();
+    set_ai_status("Connecting to "+url+"...");
 
     QString error;
     if(!connect_github_issue(url,error))
     {
-        ui->ai_chat_history->append("Connect failed: "+error);
         set_ai_status("GitHub issue connect failed: "+error,true);
         return false;
     }
     web_agent_active_session = true;
     github_last_issue_url = url;
     update_send_button();
-    ui->ai_chat_history->setPlainText("Connected to "+url);
-    set_ai_status("Connected to GitHub issue.",true);
+    set_ai_status("Connected to "+url,true);
     return true;
 }
 
