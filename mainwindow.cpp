@@ -24,6 +24,9 @@
 #include <QJsonObject>
 
 #include <filesystem>
+#include <atomic>
+#include <mutex>
+#include <thread>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "ai_agent.hpp"
@@ -1119,6 +1122,20 @@ void MainWindow::ai_request(const QByteArray& request,QByteArray& reply)
     ai_command(*info,request,reply);
 }
 
+// background run_shell (curl) tasks still in flight: id -> original command
+// text; an entry exists only while the task is running, so LIST reporting
+// it (via shell_task_windows()) is itself the "still running" signal
+static std::mutex shell_tasks_mutex;
+static QMap<QString,QString> shell_tasks;
+QJsonObject shell_task_windows()
+{
+    std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+    QJsonObject windows;
+    for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
+        windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
+    return windows;
+}
+
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool MainWindow::command(const std::vector<std::string>& cmd)
 {
@@ -1693,20 +1710,58 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             if(text.contains(c))
                 return fail("run_shell command contains disallowed characters");
 
-        QProcess process;
+        if(program.compare("curl",Qt::CaseInsensitive)) // dir: local and fast, just wait for it
+        {
+            QProcess process;
 #ifdef Q_OS_WIN
-        process.start("cmd.exe",QStringList() << "/c" << text);
+            process.start("cmd.exe",QStringList() << "/c" << text);
 #else
-        process.start(text);
+            process.start(text);
 #endif
-        if(!process.waitForStarted(3000))
-            return fail("cannot start command");
-        if(!process.waitForFinished(-1)) // -1: no timeout, block until the command actually completes
-            return fail("command did not finish: "+process.errorString().toStdString());
-        tipl::out() << process.readAllStandardOutput().toStdString();
-        auto err = process.readAllStandardError().toStdString();
-        if(!err.empty())
-            tipl::error() << err;
+            if(!process.waitForStarted(3000))
+                return fail("cannot start command");
+            if(!process.waitForFinished(-1)) // no timeout: wait until it actually completes
+                return fail("command did not finish");
+            tipl::out() << process.readAllStandardOutput().toStdString();
+            auto err = process.readAllStandardError().toStdString();
+            if(!err.empty())
+                tipl::error() << err;
+            return true;
+        }
+
+        // curl: can hang or take a long time (network), so run it detached instead
+        // of waiting. LIST reports the assigned id as a busy window while it is
+        // still running, and it disappears once done; check LOG for its output
+        static std::atomic<int> next_curl_id{0};
+        QString id = "curl"+QString::number(++next_curl_id);
+        {
+            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+            shell_tasks[id] = text;
+        }
+        std::thread([text,id]
+        {
+            QProcess process;
+#ifdef Q_OS_WIN
+            process.start("cmd.exe",QStringList() << "/c" << text);
+#else
+            process.start(text);
+#endif
+            bool started = process.waitForStarted(3000);
+            bool finished = started && process.waitForFinished(-1);
+            if(finished)
+                tipl::out() << process.readAllStandardOutput().toStdString();
+            if(!started)
+                tipl::error() << (id+" cannot start: "+text).toStdString();
+            else if(!finished)
+                tipl::error() << (id+" did not finish: "+text).toStdString();
+            auto err = process.readAllStandardError().toStdString();
+            if(!err.empty())
+                tipl::error() << err;
+            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+            shell_tasks.remove(id);
+        }).detach();
+
+        tipl::out() << ("started "+id+": "+text).toStdString();
         return true;
     }
     return fail("unknown command: "+cmd[0]);
