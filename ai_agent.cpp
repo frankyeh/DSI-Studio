@@ -1599,7 +1599,9 @@ void AIAgent::new_chat_dialog(bool resume)
     current_agent_index = agent_index;
     try_set_current_model(model_name);
     update_agent_status_label();
-    ui->ai_project_list->setCurrentItem(nullptr);
+    ui->ai_project_list->setCurrentItem(nullptr); // no-op (no signal) if already unselected,
+                                                   // so the history clear below can't be skipped
+    ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     set_ai_status();
