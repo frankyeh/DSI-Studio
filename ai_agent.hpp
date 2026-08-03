@@ -44,7 +44,7 @@ struct ai_info{
     static QString history_file(const QString&);
     static bool save_title(ai_info&,QString);
     static void record_history(ai_info&,QJsonObject);
-    static void record_reply(ai_info&,const QString&,const QString&);
+    static QJsonObject record_reply(ai_info&,const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };
@@ -97,6 +97,7 @@ class AIAgent : public QMainWindow
     void publish_github_result(QJsonObject);
     void send_pending_result();
     void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
+    bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
     bool try_connect_github_issue(const QString& url,bool resume); // connect_github_issue() plus the shared success/failure UI feedback
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,

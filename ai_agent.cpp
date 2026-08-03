@@ -808,8 +808,9 @@ void AIAgent::send_pending_result()
 
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
 {
-    ai_info::record_reply(info,chat,reasoning);
-    refresh_ai_info(info);
+    auto entry = ai_info::record_reply(info,chat,reasoning);
+    show_ai_project(info,entry); // pass the entry (not refresh_ai_info(), which drops it) so show_ai_project can see it's a new non-user reply and blink
+    set_ai_status("Agent request completed.",true);
 }
 
 ai_info* ai_info::find(const QString& session)
@@ -857,15 +858,16 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     info.projects.append(entry);
     write_history(info,QIODevice::Append,QList<QJsonObject>{entry});
 }
-void ai_info::record_reply(
+QJsonObject ai_info::record_reply(
     ai_info& info,const QString& chat,const QString& reasoning)
 {
     if(chat.isEmpty() && reasoning.isEmpty())
-        return;
+        return {};
     QJsonObject entry{{"type","assistant"},{"text",chat}};
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
     record_history(info,entry);
+    return entry;
 }
 void AIAgent::showEvent(QShowEvent* event)
 {
@@ -998,11 +1000,11 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                 QJsonObject{{"status","error"},{"error",error}}}}});
         };
         auto window = request["window"].toString();
+        if(window.isEmpty())
+            window = "main"; // no window specified: MainWindow is the dispatcher of last resort, not any particular tracking/recon/image window
         auto command = request["command"];
         if(command.isUndefined() || command.isNull())
             return fail("missing command field");
-        if(window.isEmpty())
-            return fail("missing target window field");
         std::vector<std::vector<std::string>> cmds;
         std::vector<std::string> cmd0_list;
         for(const auto& value :
@@ -1682,6 +1684,13 @@ void AIAgent::update_send_button()
     ui->ai_send_message->setText(running ? "Stop" : "Send");
 }
 
+bool AIAgent::is_status_target(const QString& session) const
+{
+    if(auto* item = ui->ai_project_list->currentItem())
+        return item->data(Qt::UserRole).toString() == session;
+    return session.isEmpty(); // nothing selected: only the still-anonymous chat currently being set up counts
+}
+
 // resume only ever applies to the web agent: the Agent combo is locked to ChatGPT and disabled, only the issue URL (defaulted to the last one) can still be changed
 bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                                    bool& web,int& agent_index,QString& model_name,QString& issue_url)
@@ -1729,7 +1738,9 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         field_label.setText(chatgpt ? "Issue URL:" : "Model:");
         field_stack->setCurrentWidget(chatgpt ? static_cast<QWidget*>(&issue_url_edit) : static_cast<QWidget*>(&model));
         if(!chatgpt)
-            set_model_selector(model,agent_entries[agent.currentIndex()].profiles,current_model_name);
+            set_model_selector(model,agent_entries[agent.currentIndex()].profiles,
+                // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
+                agent.currentIndex() == current_agent_index ? current_model_name : QString());
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
@@ -1977,12 +1988,13 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 
     auto restore_new_chat = [=](const QString& message,bool show_history)
     {
-        for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-            button->setEnabled(true);
-        ui->ai_chat_input->setPlainText(text);
-        if(show_history)
-            ui->ai_chat_history->setPlainText(message);
         QMessageBox::warning(this,"AI Agent",message);
+        if(!ui->ai_project_list->currentItem()) // still in the blank New Chat state this launch belongs to; otherwise the user has moved on, so leave their current input/view alone
+        {
+            ui->ai_chat_input->setPlainText(text);
+            if(show_history)
+                ui->ai_chat_history->setPlainText(message);
+        }
     };
     auto* process = new QProcess(this);
     launch.process = process;
@@ -2004,9 +2016,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 
     if(info)
         info->processes = process;
-    else
-        for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-            button->setEnabled(false);
+    // a fresh Codex session has no info/session id yet (assigned once it reports "thread.started"),
+    // but New Chat/Send must stay usable for every other chat in the meantime -- so nothing is disabled here
 
     if(input == ai_input::User)
     {
@@ -2046,7 +2057,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         auto session = process->objectName();
         auto message = "Cannot start "+launch.name+": "+process->errorString();
         ai_log(message);
-        set_ai_status(message,true);
+        if(is_status_target(session))
+            set_ai_status(message,true);
 
         if(session.isEmpty())
             restore_new_chat(message,true);
@@ -2068,8 +2080,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
     {
         active_ai_processes = std::max(0,active_ai_processes-1);
         bool user_stopped = process->property("user_stopped").toBool();
-        set_ai_status((user_stopped ? launch.name+" stopped." : launch.name+" finished."),true);
         auto session = process->objectName();
+        if(is_status_target(session))
+            set_ai_status((user_stopped ? launch.name+" stopped." : launch.name+" finished."),true);
         ai_log(launch.name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
@@ -2147,7 +2160,8 @@ QStringList AIAgent::configure_claude(
                     auto event_type = event["type"].toString();
                     if(event_type == "system" &&
                        event["subtype"] == "thinking_tokens" &&
-                       ai_status_activity != "Thinking")
+                       ai_status_activity != "Thinking" &&
+                       is_status_target(process->objectName()))
                         set_ai_status("Thinking");
 
                     if(event_type != "assistant")
@@ -2210,12 +2224,12 @@ QStringList AIAgent::configure_codex(
                     info->model_settings = launch.model_setting;
                 if(info && process->objectName().isEmpty())
                 {
+                    bool was_current_setup = !ui->ai_project_list->currentItem(); // this chat had no sidebar item yet, so "nothing selected" meant it was the one being set up
                     process->setObjectName(info->sessions);
                     info->processes = process;
                     add_ai_history(*info,"user",text);
-                    set_ai_status("Agent session ready.",true);
-                    for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-                        button->setEnabled(true);
+                    if(was_current_setup)
+                        set_ai_status("Agent session ready.",true);
                 }
                 continue;
             }
