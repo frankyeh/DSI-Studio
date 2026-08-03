@@ -4,6 +4,7 @@
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
@@ -1486,6 +1487,98 @@ void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* 
             context,[this,&model](int index){set_model_selector(model,agent_entries[index].profiles);});
 }
 
+bool AIAgent::agent_logged_in(ai_provider provider)
+{
+    const auto& executable = agent_entries[int(provider)].executable;
+    if(executable.isEmpty())
+        return false;
+    bool is_codex = provider == ai_provider::Codex;
+    QProcess process;
+    process.start(executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
+    if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
+        return false;
+    if(is_codex)
+        return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
+    return QJsonDocument::fromJson(process.readAllStandardOutput()).object()["loggedIn"].toBool();
+}
+
+bool AIAgent::run_agent_login(ai_provider provider)
+{
+    const auto& executable = agent_entries[int(provider)].executable;
+    if(executable.isEmpty())
+        return false;
+
+    bool is_codex = provider == ai_provider::Codex;
+    auto* process = new QProcess(this);
+    process->setProcessChannelMode(QProcess::MergedChannels);
+    process->start(executable,is_codex ? QStringList{"login"} : QStringList{"auth","login"});
+
+    QDialog dialog(this);
+    dialog.setWindowTitle((is_codex ? QString("Codex") : QString("Claude"))+" Login");
+    QVBoxLayout layout(&dialog);
+    QLabel status("Starting sign-in...");
+    status.setWordWrap(true);
+    status.setFixedWidth(420);
+    layout.addWidget(&status);
+
+    QLineEdit code;
+    code.setPlaceholderText("Paste the code here after signing in");
+    QPushButton submit("Submit Code");
+    code.setVisible(false);
+    submit.setVisible(false);
+    if(!is_codex)
+    {
+        layout.addWidget(&code);
+        layout.addWidget(&submit);
+    }
+    QPushButton cancel("Cancel");
+    layout.addWidget(&cancel);
+
+    bool opened_url = false,succeeded = false;
+    connect(process,&QProcess::readyReadStandardOutput,&dialog,[&]
+    {
+        auto text = QString::fromUtf8(process->readAllStandardOutput());
+        status.setText(status.text()+text);
+        static const QRegularExpression url_pattern("https?://\\S+");
+        if(auto match = url_pattern.match(text);!opened_url && match.hasMatch())
+        {
+            QDesktopServices::openUrl(QUrl(match.captured()));
+            opened_url = true;
+            code.setVisible(!is_codex);
+            submit.setVisible(!is_codex);
+        }
+    });
+    connect(&submit,&QPushButton::clicked,&dialog,[&]
+    {
+        process->write(code.text().trimmed().toUtf8()+"\n");
+        code.setEnabled(false);
+        submit.setEnabled(false);
+    });
+    connect(&cancel,&QPushButton::clicked,&dialog,[&]
+    {
+        process->kill();
+        dialog.reject();
+    });
+    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),&dialog,
+        [&](int exit_code,QProcess::ExitStatus exit_status)
+    {
+        succeeded = exit_code == 0 && exit_status == QProcess::NormalExit;
+        dialog.accept();
+    });
+
+    dialog.exec();
+    if(process->state() != QProcess::NotRunning)
+    {
+        process->kill();
+        process->waitForFinished(3000);
+    }
+    process->deleteLater();
+
+    QMessageBox::information(this,"AI Agent",
+        succeeded ? (is_codex ? "Codex" : "Claude")+QString(" sign-in complete.") : "Sign-in was not completed.");
+    return succeeded;
+}
+
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
     ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
@@ -1711,6 +1804,16 @@ void AIAgent::on_ai_quick_settings_clicked()
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
     QComboBox agent,model;
     init_agent_model_combo(agent,model,&dialog);
+    QWidget login_row;
+    QHBoxLayout login_layout(&login_row);
+    login_layout.setContentsMargins(0,0,0,0);
+    QPushButton codex_login("Sign in to Codex..."),claude_login("Sign in to Claude...");
+    codex_login.setEnabled(!agent_entries[int(ai_provider::Codex)].executable.isEmpty());
+    claude_login.setEnabled(!agent_entries[int(ai_provider::Claude)].executable.isEmpty());
+    login_layout.addWidget(&codex_login);
+    login_layout.addWidget(&claude_login);
+    connect(&codex_login,&QPushButton::clicked,&dialog,[this]{run_agent_login(ai_provider::Codex);});
+    connect(&claude_login,&QPushButton::clicked,&dialog,[this]{run_agent_login(ai_provider::Claude);});
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox show_reasoning("Show reasoning");
@@ -1728,6 +1831,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     layout.addRow("Ollama port:",&port);
     layout.addRow("Default agent:",&agent);
     layout.addRow("Default model:",&model);
+    layout.addRow(&login_row);
     layout.addRow(&history);
     layout.addRow(&show_reasoning);
     layout.addRow("Debug mode:",&debug);
@@ -1813,6 +1917,13 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
                 this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
             return launch;
         }
+    }
+    else if(!agent_logged_in(provider) && !run_agent_login(provider))
+    {
+        if(input == ai_input::Pending && !session.isEmpty())
+            ai_infos[session].prompts.append(text);
+        set_ai_status(launch.name+" is not signed in.",true);
+        return launch;
     }
     if(launch.model.startsWith("default",Qt::CaseInsensitive))
         launch.model.clear();
