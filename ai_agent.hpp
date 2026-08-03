@@ -37,6 +37,7 @@ struct ai_info{
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
     quint64 log_position = quint64(-1);
+    QString current_window = "main"; // persists across requests until changed by "set_window"
     bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
