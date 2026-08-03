@@ -89,6 +89,7 @@ class AIAgent : public QMainWindow
     quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
     bool web_agent_active_session = false; // true from New Chat (web agent) until New Chat starts a local one
     QString github_last_issue_url; // remembered so Resume can default to it
+    QString web_agent_session_id; // the actual chat this GitHub connection belongs to, independent of sidebar selection; survives Stop/Resume, cleared only on a fresh (non-resume) start
 
     QNetworkRequest github_request(const QUrl&) const;
     bool connect_github_issue(const QString&,QString& error);
@@ -97,7 +98,7 @@ class AIAgent : public QMainWindow
     void publish_github_result(QJsonObject);
     void send_pending_result();
     void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
-    bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback
+    bool try_connect_github_issue(const QString& url,bool resume); // connect_github_issue() plus the shared success/failure UI feedback
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               bool& web,int& agent_index,QString& model_name,QString& issue_url);
