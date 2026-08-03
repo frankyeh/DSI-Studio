@@ -117,9 +117,6 @@ QWidget#tab_8 QComboBox QAbstractItemView::item {
     min-height: 24px;
     padding: 3px 8px;
 }
-QComboBox#ai_agent_selector QAbstractItemView::item:disabled {
-    color: #9aa0a6;
-}
 QWidget#tab_8 QComboBox QScrollBar:vertical {
     background: transparent;
     border: 0;
@@ -240,13 +237,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             <property name="icon">
              <iconset resource="icons.qrc">
               <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="ai_connect_issue">
-            <property name="text">
-             <string>Connect Issue</string>
             </property>
            </widget>
           </item>
@@ -383,60 +373,29 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
              </property>
             </widget>
            </item>
-           <item row="1" column="4">
-            <widget class="QComboBox" name="ai_agent_selector">
+           <item row="1" column="4" colspan="2">
+            <widget class="QLabel" name="ai_agent_status">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
-               <width>220</width>
+               <width>0</width>
                <height>32</height>
               </size>
              </property>
-             <property name="maximumSize">
-              <size>
-               <width>360</width>
-               <height>16777215</height>
-              </size>
+             <property name="styleSheet">
+              <string notr="true">QLabel { color:#3c4043; font-weight:600; padding:4px 12px; background:#f1f3f4; border-radius:14px; }</string>
              </property>
-             <property name="sizeAdjustPolicy">
-              <enum>QComboBox::AdjustToContents</enum>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
-             <item>
-              <property name="text">
-               <string>Codex</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Claude</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="1" column="5">
-            <widget class="QComboBox" name="ai_model_selector">
-             <property name="minimumSize">
-              <size>
-               <width>180</width>
-               <height>32</height>
-              </size>
+             <property name="text">
+              <string>Codex · default</string>
              </property>
-             <property name="maximumSize">
-              <size>
-               <width>280</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="sizeAdjustPolicy">
-              <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
-             </property>
-             <property name="minimumContentsLength">
-              <number>18</number>
-             </property>
-             <item>
-              <property name="text">
-               <string>default</string>
-              </property>
-             </item>
             </widget>
            </item>
            <item row="1" column="6">
