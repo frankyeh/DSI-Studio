@@ -11,7 +11,10 @@
 #include <QTimer>
 #include <QUrl>
 
+#include <array>
+
 class MainWindow;
+class QComboBox;
 class QListWidgetItem;
 class QMenu;
 class QNetworkRequest;
@@ -46,6 +49,14 @@ struct ai_info{
 };
 void ai_command(ai_info&,const QByteArray&,QByteArray&);
 
+// one entry per ai_provider (Codex/Claude): resolved executable path (empty
+// if not found) and the discovered model profiles (name -> info) for it
+struct ai_agent_entry
+{
+    QString executable;
+    QJsonObject profiles;
+};
+
 struct ai_launch;
 class AIAgent : public QMainWindow
 {
@@ -57,6 +68,16 @@ class AIAgent : public QMainWindow
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0;
+
+    // current agent/model selection, shown via update_agent_status_label()
+    // instead of the visible combo boxes this used to be
+    std::array<ai_agent_entry,2> agent_entries; // indexed by ai_provider
+    int current_agent_index = 0;
+    QString current_model_name = "default";
+    QJsonObject current_model_info;
+    void update_agent_status_label();
+    void try_set_current_model(const QString& name); // no-op if name is unknown,
+                                                      // matching non-editable QComboBox::setCurrentText
 
     // GitHub issue channel: the issue body carries the next request, and
     // one pinned comment (marked "dsi_session_result":true) carries the result
@@ -70,14 +91,24 @@ class AIAgent : public QMainWindow
     QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
     quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks
                                        // from a superseded connection even to the same URL
+    bool web_agent_active_session = false; // true from New Chat (web agent) until New Chat starts a local one
+    QString github_last_issue_url; // remembered so Resume can default to it
 
     QNetworkRequest github_request(const QUrl&) const;
+    bool connect_github_issue(const QString&,QString& error);
+    void disconnect_github_issue();
     void poll_github_issue();
     void publish_github_result(QJsonObject);
     void send_pending_result();
+    void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
+    bool try_connect_github_issue(const QString& url); // connect_github_issue()
+                                                        // plus the shared success/failure UI feedback
+    void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume
+                                        // locks the mode and disables the local agent/model panel
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
+    void init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* context);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(ai_info&,QJsonObject = {});
     void update_agent_models(int,const QStringList&,bool);
@@ -93,8 +124,6 @@ public:
     ~AIAgent();
     void refresh_ai_info(ai_info& info)
     {show_ai_project(info);set_ai_status("Agent request completed.",true);}
-    bool connect_github_issue(const QString&,QString& error);
-    void disconnect_github_issue();
 
 protected:
     void showEvent(QShowEvent*) override;
@@ -103,7 +132,6 @@ private slots:
     void on_ai_quick_settings_clicked();
     void on_ai_new_chat_clicked();
     void on_ai_send_message_clicked();
-    void on_ai_connect_issue_clicked();
 };
 
 #endif

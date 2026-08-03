@@ -26,18 +26,19 @@
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QRegularExpression>
 #include <QScrollBar>
 #include <QShortcut>
 #include <QShowEvent>
 #include <QSpinBox>
-#include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTextFrame>
 #include <QTimer>
 #include <QToolButton>
 #include <QUuid>
 #include <QUrl>
+#include <QVBoxLayout>
 
 #include <algorithm>
 #include <cstring>
@@ -133,11 +134,10 @@ QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
     url.setPort(settings.value("ai/ollama_port",11434).toInt());
     return {url,configured};
 }
-void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
+void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QString selected = {},QString fallback = {},
                         QJsonObject selected_info = {})
 {
-    auto profiles = agents.itemData(index,Qt::UserRole+2).toJsonObject();
     auto names = profiles.keys();
     names.sort(Qt::CaseInsensitive);
     model.clear();
@@ -151,6 +151,23 @@ void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
         selected_index = model.count()-1;
     }
     model.setCurrentIndex(std::max(0,selected_index));
+}
+// headless equivalent of set_model_selector's selection logic (no list to
+// build/show): resolves which model name+info should now be current, given
+// the available profiles and a preferred selected/fallback name; mirrors
+// set_model_selector's findText()-then-fallback-then-default decision tree,
+// including that "default" is always resolvable even though it is not a
+// profiles key (it is the sentinel entry set_model_selector always adds first)
+QPair<QString,QJsonObject> resolve_model(const QJsonObject& profiles,
+                                         const QString& selected,const QString& fallback,
+                                         const QJsonObject& selected_info)
+{
+    auto search = selected.isEmpty() ? fallback : selected;
+    if(search == "default" || (!search.isEmpty() && profiles.contains(search)))
+        return {search,search == "default" ? QJsonObject() : profiles[search].toObject()};
+    if(!selected.isEmpty())
+        return {selected,selected_info};
+    return {"default",QJsonObject()};
 }
 bool ai_info::save_title(ai_info& info,QString title)
 {
@@ -199,8 +216,6 @@ AIAgent::AIAgent(MainWindow* parent):
     github_timer.setSingleShot(true);
     connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
 
-    auto* agents = qobject_cast<QStandardItemModel*>(
-                       ui->ai_agent_selector->model());
     QString codex_path,claude_path;
     {
         // Find Codex executable
@@ -227,16 +242,14 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
     }
+    static const char* agent_names[] = {"Codex","Claude"};
     for(auto provider : {ai_provider::Codex,ai_provider::Claude})
     {
         auto index = int(provider);
         const auto& path =
             provider == ai_provider::Codex ? codex_path : claude_path;
-        auto agent = ui->ai_agent_selector->itemText(index);
-        auto* item = agents->item(index);
-        item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
-        item->setEnabled(!path.isEmpty());
-        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
+        QString agent = agent_names[index];
+        agent_entries[index].executable = path;
         ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
         if(!path.isEmpty())
             ai_log(agent+" models: none detected");
@@ -244,36 +257,15 @@ AIAgent::AIAgent(MainWindow* parent):
     refresh_codex_models(codex_path);
 
     if(codex_path.isEmpty() && !claude_path.isEmpty())
-        ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
-    ui->ai_agent_selector->setEnabled(
-        !codex_path.isEmpty() || !claude_path.isEmpty());
-    connect(ui->ai_model_selector,&QComboBox::currentTextChanged,
-            this,[this]
-    {
-        auto index = ui->ai_agent_selector->currentIndex();
-        QString name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
-        if(ui->ai_model_selector->currentData().
-                toJsonObject().contains("provider"))
-            name += "/Ollama("+ai_ollama_url(settings).first.host()+")";
-        ui->ai_agent_selector->setItemText(index,name);
-    });
-    connect(ui->ai_agent_selector,
-            QOverload<int>::of(&QComboBox::currentIndexChanged),this,
-            [this](int index)
-    {
-        set_model_selector(
-            *ui->ai_model_selector,*ui->ai_agent_selector,index);
-    });
-    set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,
-                       ui->ai_agent_selector->currentIndex());
+        current_agent_index = int(ai_provider::Claude);
 
     auto default_index = settings.value(
-        "ai/default_agent",ui->ai_agent_selector->currentIndex()).toInt();
-    if(default_index >= 0 && default_index < ui->ai_agent_selector->count())
-        ui->ai_agent_selector->setCurrentIndex(default_index);
-    ui->ai_model_selector->setCurrentText(
-        settings.value("ai/default_model",
-                       ui->ai_model_selector->currentText()).toString());
+        "ai/default_agent",current_agent_index).toInt();
+    if(default_index >= 0 && default_index < int(agent_entries.size()))
+        current_agent_index = default_index;
+    try_set_current_model(settings.value(
+        "ai/default_model",current_model_name).toString());
+    update_agent_status_label();
 
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
@@ -349,17 +341,19 @@ AIAgent::AIAgent(MainWindow* parent):
                     findChild<QPushButton*>()->
                     setStyleSheet(i == item ?
                         "color:#202124;background:#dce9f9;" : "");
-        ui->ai_agent_selector->setEnabled(!item);
         if(!item)
             return ui->ai_chat_history->clear();
 
         stop_blink(ui->ai_project_list->itemWidget(item));
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
-        ui->ai_agent_selector->setCurrentIndex(int(info.provider));
-        set_model_selector(
-            *ui->ai_model_selector,*ui->ai_agent_selector,int(info.provider),
+        current_agent_index = int(info.provider);
+        auto resolved = resolve_model(
+            agent_entries[current_agent_index].profiles,
             info.model_settings["model"].toString(),{},
             info.model_settings["info"].toObject());
+        current_model_name = resolved.first;
+        current_model_info = resolved.second;
+        update_agent_status_label();
         show_ai_project(info);
     });
 
@@ -563,7 +557,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     github_last_id = last_id;
     github_pending_result = QJsonObject();
     github_timer.start(500);
-    ui->ai_connect_issue->setText("Disconnect Issue");
+    update_send_button();
     return true;
 }
 
@@ -577,7 +571,7 @@ void AIAgent::disconnect_github_issue()
     github_token.clear();
     github_last_id = 0;
     github_pending_result = QJsonObject();
-    ui->ai_connect_issue->setText("Connect Issue");
+    update_send_button(); // flips to "Resume" if still in a web-agent session
 }
 
 void AIAgent::poll_github_issue()
@@ -1321,8 +1315,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 void AIAgent::update_agent_models(
     int index,const QStringList& names,bool ollama)
 {
-    auto profiles = ui->ai_agent_selector->itemData(
-        index,Qt::UserRole+2).toJsonObject();
+    auto& profiles = agent_entries[index].profiles;
     auto previous = profiles;
     for(auto i = profiles.begin();i != profiles.end();)
         if(i.value().toObject().contains("provider") == ollama)
@@ -1332,14 +1325,15 @@ void AIAgent::update_agent_models(
     for(const auto& name : names)
         profiles[name] = ollama ?
             QJsonObject{{"provider",true}} : previous[name].toObject();
-    ui->ai_agent_selector->setItemData(
-        index,QVariant::fromValue(profiles),Qt::UserRole+2);
 
-    if(ui->ai_agent_selector->currentIndex() == index)
-        set_model_selector(
-            *ui->ai_model_selector,*ui->ai_agent_selector,index,
-            ui->ai_model_selector->currentText(),
-            settings.value("ai/default_model").toString());
+    if(current_agent_index == index)
+    {
+        auto resolved = resolve_model(profiles,current_model_name,
+            settings.value("ai/default_model").toString(),current_model_info);
+        current_model_name = resolved.first;
+        current_model_info = resolved.second;
+        update_agent_status_label();
+    }
 }
 void AIAgent::refresh_codex_models(const QString& path)
 {
@@ -1376,8 +1370,7 @@ void AIAgent::refresh_ollama_models()
     auto set_models = [this](const QStringList& models)
     {
         for(auto index : {int(ai_provider::Codex),int(ai_provider::Claude)})
-            if(!ui->ai_agent_selector->itemData(
-                    index,Qt::UserRole+1).toString().isEmpty())
+            if(!agent_entries[index].executable.isEmpty())
                 update_agent_models(index,models,true);
     };
 
@@ -1417,35 +1410,162 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,entry);
 }
 
-void AIAgent::on_ai_new_chat_clicked()
+void AIAgent::init_agent_model_combo(QComboBox& agent,QComboBox& model,QObject* context)
 {
+    agent.addItem("Codex");
+    agent.addItem("Claude");
+    agent.setCurrentIndex(current_agent_index);
+    set_model_selector(model,agent_entries[agent.currentIndex()].profiles);
+    model.setCurrentText(current_model_name);
+    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
+            context,[this,&model](int index){set_model_selector(model,agent_entries[index].profiles);});
+}
+
+bool AIAgent::try_connect_github_issue(const QString& url)
+{
+    QString error;
+    if(!connect_github_issue(url,error))
+    {
+        set_ai_status("GitHub issue connect failed: "+error,true);
+        return false;
+    }
+    web_agent_active_session = true;
+    github_last_issue_url = url;
+    update_send_button();
+    set_ai_status("Connected to GitHub issue.",true);
+    return true;
+}
+
+void AIAgent::update_agent_status_label()
+{
+    static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
+    QString text = (current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude") +
+                   dot + current_model_name;
+    if(current_model_info.contains("provider"))
+        text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
+    ui->ai_agent_status->setText(text);
+}
+
+// mirrors non-editable QComboBox::setCurrentText: silently does nothing if
+// name isn't "default" and isn't a known profile for the current agent
+void AIAgent::try_set_current_model(const QString& name)
+{
+    if(name == "default")
+    {
+        current_model_name = "default";
+        current_model_info = QJsonObject();
+        return;
+    }
+    const auto& profiles = agent_entries[current_agent_index].profiles;
+    if(profiles.contains(name))
+    {
+        current_model_name = name;
+        current_model_info = profiles[name].toObject();
+    }
+}
+
+void AIAgent::update_send_button()
+{
+    if(!web_agent_active_session)
+    {
+        ui->ai_send_message->setText("Send");
+        return;
+    }
+    ui->ai_send_message->setText(github_issue_api.isEmpty() ? "Resume" : "Stop");
+}
+
+// resume: reopens the same dialog for an existing web-agent session — locked
+// to "Web agent" (radios disabled) and the local agent/model panel disabled,
+// only the issue URL (defaulted to the last one) can still be changed
+void AIAgent::new_chat_dialog(bool resume)
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle(resume ? "Resume Chat" : "New Chat");
+    QVBoxLayout layout(&dialog);
+
+    QRadioButton local_radio("Local agent");
+    QRadioButton web_radio("Web agent (ChatGPT via GitHub issue)");
+
+    QWidget local_panel;
+    QFormLayout local_layout(&local_panel);
+    QComboBox agent,model;
+    init_agent_model_combo(agent,model,&dialog);
+    local_layout.addRow("Agent:",&agent);
+    local_layout.addRow("Model:",&model);
+
+    bool has_token = !settings.value("ai/github_token").toString().isEmpty();
+    QWidget web_panel;
+    QFormLayout web_layout(&web_panel);
+    QLabel web_agent_label("ChatGPT");
+    QLineEdit issue_url(resume ? github_last_issue_url : QString());
+    issue_url.setPlaceholderText("https://github.com/owner/repo/issues/1");
+    web_layout.addRow("Agent:",&web_agent_label);
+    web_layout.addRow("Issue URL:",&issue_url);
+    QLabel hint(has_token ? QString() :
+        "Set up a GitHub token in AI Settings first.");
+    hint.setStyleSheet("color:#b00020;");
+    hint.setVisible(!has_token);
+
+    if(resume)
+    {
+        web_radio.setChecked(true);
+        local_radio.setEnabled(false);
+        web_radio.setEnabled(false);
+        local_panel.setEnabled(false);
+    }
+    else
+    {
+        local_radio.setChecked(true);
+        web_radio.setEnabled(has_token);
+    }
+
+    layout.addWidget(&local_radio);
+    layout.addWidget(&local_panel);
+    layout.addWidget(&web_radio);
+    layout.addWidget(&web_panel);
+    layout.addWidget(&hint);
+
+    auto update_panels = [&]()
+    {
+        local_panel.setVisible(local_radio.isChecked());
+        web_panel.setVisible(web_radio.isChecked());
+    };
+    update_panels();
+    connect(&local_radio,&QRadioButton::toggled,&dialog,[&](bool){update_panels();});
+    connect(&web_radio,&QRadioButton::toggled,&dialog,[&](bool){update_panels();});
+
+    QDialogButtonBox buttons(QDialogButtonBox::Cancel);
+    buttons.addButton(resume ? "Resume" : "Start",QDialogButtonBox::AcceptRole);
+    layout.addWidget(&buttons);
+    connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
+    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+
+    if(dialog.exec() != QDialog::Accepted)
+        return;
+
+    if(web_radio.isChecked())
+    {
+        try_connect_github_issue(issue_url.text().trimmed());
+        return;
+    }
+
+    if(!github_issue_api.isEmpty())
+        disconnect_github_issue(); // leaving web-agent mode for a local chat
+    web_agent_active_session = false;
+    update_send_button();
+
+    current_agent_index = agent.currentIndex();
+    try_set_current_model(model.currentText());
+    update_agent_status_label();
     ui->ai_project_list->setCurrentItem(nullptr);
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     set_ai_status();
 }
 
-void AIAgent::on_ai_connect_issue_clicked()
+void AIAgent::on_ai_new_chat_clicked()
 {
-    if(!github_issue_api.isEmpty())
-    {
-        disconnect_github_issue();
-        set_ai_status("Disconnected from GitHub issue.",true);
-        return;
-    }
-
-    auto url = QInputDialog::getText(this,QApplication::applicationName(),
-        "Paste the GitHub issue URL to connect (e.g. https://github.com/owner/repo/issues/1):");
-    if(url.isEmpty())
-        return;
-
-    QString error;
-    if(!connect_github_issue(url,error))
-    {
-        set_ai_status("GitHub issue connect failed: "+error,true);
-        return;
-    }
-    set_ai_status("Connected to GitHub issue.",true);
+    new_chat_dialog(false);
 }
 
 void AIAgent::on_ai_quick_settings_clicked()
@@ -1458,11 +1578,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
     QComboBox agent,model;
-    for(int index = 0;index < ui->ai_agent_selector->count();++index)
-        agent.addItem(ui->ai_agent_selector->itemText(index));
-    agent.setCurrentIndex(ui->ai_agent_selector->currentIndex());
-    set_model_selector(model,*ui->ai_agent_selector,agent.currentIndex());
-    model.setCurrentText(ui->ai_model_selector->currentText());
+    init_agent_model_combo(agent,model,&dialog);
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox debug("Enable debug mode");
@@ -1479,11 +1595,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     layout.addRow("GitHub token (issue channel):",&github_pat);
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
     layout.addRow(&buttons);
-    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
-            &dialog,[&](int index)
-    {
-        set_model_selector(model,*ui->ai_agent_selector,index);
-    });
     connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
     if(dialog.exec() != QDialog::Accepted)
@@ -1499,8 +1610,9 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/default_model",model.currentText());
     if(!ui->ai_project_list->currentItem())
     {
-        ui->ai_agent_selector->setCurrentIndex(agent.currentIndex());
-        ui->ai_model_selector->setCurrentText(model.currentText());
+        current_agent_index = agent.currentIndex();
+        try_set_current_model(model.currentText());
+        update_agent_status_label();
     }
 
     refresh_ollama_models();
@@ -1513,8 +1625,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 
     // Resolve agent
     launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
-    launch.executable = ui->ai_agent_selector->itemData(
-                            int(provider),Qt::UserRole+1).toString();
+    launch.executable = agent_entries[int(provider)].executable;
     if(launch.executable.isEmpty())
     {
         if(input == ai_input::Pending && !session.isEmpty())
@@ -1534,8 +1645,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 
     // Resolve model
     QJsonObject selected{
-        {"model",ui->ai_model_selector->currentText()},
-        {"info",ui->ai_model_selector->currentData().toJsonObject()}};
+        {"model",current_model_name},
+        {"info",current_model_info}};
     launch.model_setting =
         info && selected["model"].toString() ==
                 info->model_settings["model"].toString() ?
@@ -1866,7 +1977,7 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
     }
 
     auto provider = info ? info->provider :
-        ai_provider(ui->ai_agent_selector->currentIndex());
+        ai_provider(current_agent_index);
     Q_ASSERT(provider != ai_provider::Unknown);
 
     bool new_session = session.isEmpty();
@@ -1884,6 +1995,18 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
 
 void AIAgent::on_ai_send_message_clicked()
 {
+    if(web_agent_active_session)
+    {
+        if(!github_issue_api.isEmpty())
+        {
+            disconnect_github_issue();
+            set_ai_status("GitHub issue channel stopped.",true);
+            return;
+        }
+        new_chat_dialog(true);
+        return;
+    }
+
     auto text = ui->ai_chat_input->toPlainText().trimmed();
     if(text.isEmpty())
         return;
