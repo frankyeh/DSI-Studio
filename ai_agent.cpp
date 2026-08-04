@@ -836,7 +836,7 @@ void write_history(const ai_info& info,QIODevice::OpenMode mode,
         tipl::warning() << "cannot write ai history : "
                         << file.errorString().toStdString();
 }
-void ai_info::record_history(QJsonObject entry)
+QJsonObject ai_info::record_history(QJsonObject entry)
 {
     if(projects.isEmpty())
     {
@@ -846,6 +846,7 @@ void ai_info::record_history(QJsonObject entry)
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     projects.append(entry);
     write_history(*this,QIODevice::Append,QList<QJsonObject>{entry});
+    return entry;
 }
 QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
 {
@@ -854,8 +855,7 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
     QJsonObject entry{{"type","assistant"},{"text",chat}};
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
-    record_history(entry);
-    return entry;
+    return record_history(entry);
 }
 void AIAgent::showEvent(QShowEvent* event)
 {
@@ -1263,9 +1263,7 @@ void AIAgent::refresh_ollama_models()
 }
 void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& text)
 {
-    QJsonObject entry{{"type",type},{"text",text}};
-    info.record_history(entry);
-    show_ai_project(info,entry);
+    show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
 }
 
 bool AIAgent::agent_logged_in(ai_provider provider)
