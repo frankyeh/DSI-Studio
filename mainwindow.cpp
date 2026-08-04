@@ -2030,6 +2030,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             auto err = process.readAllStandardError().toStdString();
             if(!err.empty())
                 tipl::error() << err;
+            if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+                return fail("command exited with code "+std::to_string(process.exitCode()));
             return true;
         }
         // curl can hang, so run it detached; "list_window" shows the id as busy until it finishes
