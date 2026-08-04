@@ -66,6 +66,27 @@ QString ai_info::history_file(const QString& session)
     return ai_project_dir+"/"+QString::fromLatin1(
                QUrl::toPercentEncoding(session))+".jsonl";
 }
+static bool is_new_chat(const QString& session)
+{
+    return session.startsWith("new:");
+}
+static ai_info* assign_ai_session(const QString& from,const QString& to)
+{
+    if(from == to)
+        return ai_info::find(to);
+    auto node = ai_infos.extract(from);
+    if(node.empty())
+        return ai_info::find(to);
+    Q_ASSERT(!ai_info::find(to));
+    node.key() = to;
+    node.mapped().sessions = to;
+    if(node.mapped().project_items)
+        node.mapped().project_items->setData(Qt::UserRole,to);
+    auto inserted = ai_infos.insert(std::move(node));
+    if(!inserted.position->second.project_titles.isEmpty())
+        QSettings().setValue("ai/title/"+to,inserted.position->second.project_titles);
+    return &inserted.position->second;
+}
 struct ai_launch{
     QString name,executable,model;
     QUrl model_url;
@@ -109,12 +130,14 @@ QString ai_info::details() const
     auto time = [](const QJsonValue& value) {
         return QDateTime::fromString(value.toString(),Qt::ISODate).toString(
                    "yyyy-MM-dd HH:mm:ss");};
+    auto created = projects.isEmpty() ? QString() : time(projects.first()["time"]);
+    auto updated = projects.isEmpty() ? QString() : time(projects.last()["time"]);
     return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
         "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
         "Created: %9<br>Updated: %10")
         .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),processes ? "Working" : "Idle")
         .arg(user+assistant).arg(user).arg(assistant).arg(activity)
-        .arg(time(projects.first()["time"]),time(projects.last()["time"]));
+        .arg(created,updated);
 }
 void ai_log(QString text)
 {
@@ -192,6 +215,11 @@ bool ai_info::save_title(QString title)
         return false;
     if(title == project_titles)
         return true;
+    if(is_new_chat(sessions))
+    {
+        project_titles = title;
+        return true;
+    }
     QSettings settings;
     settings.setValue("ai/title/"+sessions,title);
     settings.sync();
@@ -343,7 +371,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto* taken_item = ui->ai_project_list->takeItem(row); // defer delete: its row widget owns the "..." button whose menu action is still running
         QTimer::singleShot(0,this,[taken_item]{delete taken_item;});
 
-        // keep a chat selected whenever one exists; only New Chat clears the selection
+        // keep a chat selected whenever one exists
         if(ui->ai_project_list->count())
             ui->ai_project_list->setCurrentRow(std::min(row,ui->ai_project_list->count()-1));
     });
@@ -698,6 +726,8 @@ void AIAgent::poll_github_issue()
 
         auto session_id = request_obj["session"].toString();
         bool new_session = !ai_info::find(session_id);
+        if(is_new_chat(web_agent_session_id))
+            assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
 
         auto started = QDateTime::currentMSecsSinceEpoch();
@@ -838,7 +868,8 @@ ai_info* ai_info::create(QString session,QString agent)
 void write_history(const ai_info& info,QIODevice::OpenMode mode,
                    const QList<QJsonObject>& entries)
 {
-    if(!QSettings().value("ai/keep_history",true).toBool())
+    if(is_new_chat(info.sessions) ||
+       !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(ai_info::history_file(info.sessions));
     bool okay = file.open(QIODevice::WriteOnly|mode);
@@ -987,9 +1018,6 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 {
     const auto& history = info.projects;
-    if(history.isEmpty())
-        return;
-
     auto* item = info.project_items;
     if(!item)
     {
@@ -1040,7 +1068,9 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto* row = ui->ai_project_list->itemWidget(item);
     auto* title = row->findChild<QPushButton*>();
     item->setText({});
-    title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+info.title());
+    auto chat_title = is_new_chat(info.sessions) && info.project_titles.isEmpty() ?
+        "New "+info.agent_name+" Chat" : info.title();
+    title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+chat_title);
     title->setToolTip(title->text());
     item->setSizeHint(QSize(0,row->sizeHint().height()));
 
@@ -1401,8 +1431,6 @@ bool AIAgent::run_agent_login(ai_provider provider)
 
 bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
 {
-    ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
-    ui->ai_chat_history->clear();
     web_agent_active_session = true; // reflects the chosen mode even if the connection below fails, so the label/Resume button stay accurate
     github_last_issue_url = url;
     update_send_button();
@@ -1572,11 +1600,25 @@ void AIAgent::new_chat_dialog(bool resume)
     if(!resume)
         web_agent_session_id.clear(); // starting fresh: no longer tied to whatever chat the old web session was
 
+    auto create_chat = [&](const QString& agent)
+    {
+        auto* info = ai_info::create(
+            "new:"+QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
+        if(info->provider == ai_provider::ChatGPT)
+            web_agent_session_id = info->sessions;
+        else
+            info->model_settings = QJsonObject{
+                {"model",current_model_name},{"info",current_model_info}};
+        show_ai_project(*info);
+        ui->ai_project_list->setCurrentItem(info->project_items);
+    };
+
     if(web)
     {
         if(!github_issue_api.isEmpty())
             disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
-        try_connect_github_issue(issue_url,resume);
+        if(try_connect_github_issue(issue_url,resume) && !resume)
+            create_chat("ChatGPT(Web)");
         return;
     }
 
@@ -1588,8 +1630,7 @@ void AIAgent::new_chat_dialog(bool resume)
     current_agent_index = agent_index;
     try_set_current_model(model_name);
     update_agent_status_label();
-    ui->ai_project_list->setCurrentItem(nullptr); // no-op if already unselected, so the history clear below always runs
-    ui->ai_chat_history->clear();
+    create_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     set_ai_status();
@@ -1775,10 +1816,14 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
     if(launch.model.startsWith("default",Qt::CaseInsensitive))
         launch.model.clear();
 
-    if(session.isEmpty() && provider == ai_provider::Claude)
+    if((session.isEmpty() || is_new_chat(session)) &&
+       provider == ai_provider::Claude)
     {
-        session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        info = ai_info::create(session,launch.name);
+        auto assigned = session.isEmpty() ?
+            QUuid::createUuid().toString(QUuid::WithoutBraces) : session.mid(4);
+        info = session.isEmpty() ? ai_info::create(assigned,launch.name) :
+                                  assign_ai_session(session,assigned);
+        session = assigned;
     }
     if(info && info->model_settings != launch.model_setting)
     {
@@ -1821,7 +1866,13 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
     auto restore_new_chat = [=](const QString& message,bool show_history)
     {
         QMessageBox::warning(this,"AI Agent",message);
-        if(!ui->ai_project_list->currentItem()) // still in the blank New Chat state this launch belongs to; otherwise the user has moved on, so leave their current input/view alone
+        if(auto* info = ai_info::find(process->objectName()))
+        {
+            info->processes = nullptr;
+            info->has_error = true;
+            show_ai_project(*info);
+        }
+        if(is_status_target(process->objectName()))
         {
             ui->ai_chat_input->setPlainText(text);
             if(show_history)
@@ -1863,7 +1914,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         if(is_status_target(session))
             set_ai_status(message,true);
 
-        if(session.isEmpty())
+        if(session.isEmpty() || is_new_chat(session))
             restore_new_chat(message,true);
         else
         {
@@ -1901,7 +1952,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         if(failed)
             ai_log(error_message);
 
-        if(session.isEmpty())
+        if(session.isEmpty() || is_new_chat(session))
         {
             auto message = failed ? error_message :
                            "AI agent ended before creating a new chat.";
@@ -2025,17 +2076,19 @@ QStringList AIAgent::configure_codex(
             auto event = QJsonDocument::fromJson(line).object();
             if(event["type"] == "thread.started")
             {
-                auto* info = ai_info::create(
-                    event["thread_id"].toString(),launch.name);
+                auto old_session = process->objectName();
+                auto session = event["thread_id"].toString();
+                auto* info = is_new_chat(old_session) ?
+                    assign_ai_session(old_session,session) :
+                    ai_info::create(session,launch.name);
                 if(info)
                     info->model_settings = launch.model_setting;
-                if(info && process->objectName().isEmpty())
+                if(info && old_session != session)
                 {
-                    bool was_current_setup = !ui->ai_project_list->currentItem(); // this chat had no sidebar item yet, so "nothing selected" meant it was the one being set up
-                    process->setObjectName(info->sessions);
+                    process->setObjectName(session);
                     info->processes = process;
                     add_ai_history(*info,"user",text);
-                    if(was_current_setup)
+                    if(is_status_target(session))
                         set_ai_status("Agent session ready.",true);
                 }
                 continue;
@@ -2106,13 +2159,27 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
         ai_provider(current_agent_index);
     Q_ASSERT(provider == ai_provider::Codex || provider == ai_provider::Claude); // never ChatGPT: callers must intercept a web chat before reaching here
 
-    bool new_session = session.isEmpty();
-    auto launch = prepare_ai(provider,session,text,input);
+    bool new_session = session.isEmpty() || is_new_chat(session);
+    auto launch_session = new_session && provider == ai_provider::Codex ?
+        QString() : session;
+    auto launch = prepare_ai(provider,launch_session,text,input);
     if(!launch.process)
+    {
+        if(info)
+        {
+            info->has_error = true;
+            show_ai_project(*info);
+        }
         return;
+    }
+    if(is_new_chat(session) && provider == ai_provider::Codex)
+    {
+        launch.process->setObjectName(session);
+        info->processes = launch.process;
+    }
     auto args = provider == ai_provider::Codex ?
-        configure_codex(launch,session,text) :
-        configure_claude(launch,session,text,new_session);
+        configure_codex(launch,launch_session,text) :
+        configure_claude(launch,launch_session,text,new_session);
     ai_log("start " + launch.executable +
            " args: " + args.join(" ").remove("\n"));
     set_ai_status("Starting "+launch.name+"...");
