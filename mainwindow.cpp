@@ -2052,7 +2052,12 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             bool started = process.waitForStarted(3000);
             bool finished = started && process.waitForFinished(-1);
             if(finished)
+            {
                 tipl::out() << process.readAllStandardOutput().toStdString();
+                if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+                    tipl::error() << (id+" exited with code "+
+                        QString::number(process.exitCode())+": "+text).toStdString();
+            }
             if(!started)
                 tipl::error() << (id+" cannot start: "+text).toStdString();
             else if(!finished)
