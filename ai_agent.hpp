@@ -44,7 +44,7 @@ struct ai_info{
     static ai_info* create(QString,QString);
     static QString history_file(const QString&);
     bool save_title(QString);
-    void record_history(QJsonObject);
+    QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" and, for the first entry, "agent"/"model_settings" filled in), not the caller's pre-call copy
     QJsonObject record_reply(const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
