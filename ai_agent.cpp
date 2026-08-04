@@ -1084,15 +1084,12 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     };
 
     const bool show_reasoning = settings.value("ai/show_reasoning",false).toBool(); // read once: append() runs per history entry
-    auto append = [&](const QJsonObject& entry,const QString& activity,
-                      const QString& end_time = {})
+    auto append = [&](const QJsonObject& entry,const QStringList& activities = {})
     {
-        auto type = entry["type"].toString();
-        bool user = type == "user",request = type == "request";
+        bool user = entry["type"] == "user";
         auto content = entry["text"].toString();
-        auto reasoning = show_reasoning ?
-                         entry["reasoning"].toString().trimmed() : QString();
-        if(content.trimmed().isEmpty() && reasoning.isEmpty())
+        auto reasoning = show_reasoning ? entry["reasoning"].toString().trimmed() : QString();
+        if(content.trimmed().isEmpty() && reasoning.isEmpty() && activities.isEmpty())
             return;
 
         content = to_html(content);
@@ -1100,19 +1097,14 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
             content = "<span style=\"color:#5f6368;\">"+to_html(reasoning)+"</span>"+
                       (content.isEmpty() ? "" : "<br>"+content);
 
-        if(!activity.isEmpty())
-            content +=
-                "<br><span style=\"color:#5f6368;font-size:9pt;\">" +
-                to_html(activity) +
+        if(!activities.isEmpty())
+            content += (content.isEmpty() ? "" : "<br>")+
+                QString("<span style=\"color:#5f6368;font-size:9pt;\">") +
+                activities.join("<br>") +
                 "</span>";
 
-        if(request)
-            content = "<span style=\"color:#5f6368;\">"+content+"</span>";
-
-        auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
+        auto color = user ? "#e8f0fe" : "#e8f5e9";
         auto time = display_time(entry["time"]);
-        if(!end_time.isEmpty())
-            time += "\u2013"+display_time(end_time);
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
@@ -1127,56 +1119,82 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                          cell+"<td width=\"20%\"></td>"));
     };
 
-    const bool paired = added_type == "assistant" && history.size() > 1 &&
-            history[history.size()-2]["type"] == "request";
-    const bool rebuild = added_type.isEmpty() || added_type == "request" || paired;
-
-    if(rebuild)
+    if(added_type.isEmpty() || added_type == "request" ||
+       (added_type == "assistant" && history.size() > 1 &&
+        history[history.size()-2]["type"] == "request"))
     {
-        auto standalone_request = [&](int index)
-        {
-            return history[index]["type"] == "request" &&
-                   (index+1 == history.size() || history[index+1]["type"] != "assistant");
-        };
         ui->ai_chat_history->clear();
+        auto is_leader = [&](const QJsonObject& entry)
+        {
+            auto type = entry["type"].toString();
+            return type != "request" &&
+                   (type != "assistant" ||
+                    !entry["text"].toString().trimmed().isEmpty() ||
+                    (show_reasoning &&
+                     !entry["reasoning"].toString().trimmed().isEmpty()));
+        };
         for(int index = 0;index < history.size();++index)
         {
             const auto& entry = history[index];
-            auto type = entry["type"].toString();
-            if(type == "request")
-            {
-                if(!standalone_request(index))
-                    continue;
-                QStringList activities{
-                    entry["text"].toString().section(" \u2192 ",0,0)};
-                auto window = entry["window"].toVariant().toString();
-                auto end = index;
-                while(!window.isEmpty() && end+1 < history.size() &&
-                      standalone_request(end+1) &&
-                      history[end+1]["window"].toVariant().toString() == window)
-                    activities << history[++end]["text"].toString().
-                                  section(" \u2192 ",0,0);
-                if(end == index) // common case: nothing to merge, no copy needed
-                    append(entry,{});
-                else
-                {
-                    auto combined = entry; // only the merged entry needs a mutable copy
-                    auto target = entry["text"].toString().section(" \u2192 ",1);
-                    combined["text"] = activities.join(", ")+" \u2192 "+target;
-                    append(combined,{},history[end]["time"].toString());
-                }
-                index = end;
+            if(!is_leader(entry))
                 continue;
+
+            QStringList activities,commands;
+            QString target;
+            auto add_activity = [&]
+            {
+                if(commands.isEmpty())
+                    return;
+                activities << "<b>"+to_html(target)+"</b>: "+
+                              commands.join(" &rarr; ");
+                commands.clear();
+            };
+            for(auto end = index+1;end < history.size();++end)
+            {
+                const auto& request = history[end];
+                if(is_leader(request))
+                    break;
+                if(request["type"] != "request")
+                    continue;
+
+                auto request_target = request["title"].toString();
+                request_target += (request_target.isEmpty() ? "" : " · ")+
+                                  request["window"].toString();
+                if(!commands.isEmpty() && target != request_target)
+                    add_activity();
+                target = request_target;
+
+                auto command = "<code>"+to_html(request["text"].toString())+"</code>";
+                if(end+1 < history.size())
+                {
+                    if(auto duration = QDateTime::fromString(
+                            request["time"].toString(),Qt::ISODate).msecsTo(
+                            QDateTime::fromString(history[end+1]["time"].toString(),
+                                                  Qt::ISODate));duration >= 0)
+                    {
+                        auto seconds = QString::number(duration/1000.0,'f',1);
+                        if(seconds.endsWith(".0"))
+                            seconds.chop(2);
+                        command += " ("+seconds+"s)";
+                    }
+                }
+                commands << command;
             }
-            auto activity = type == "assistant" && index &&
-                            history[index-1]["type"] == "request" ?
-                            history[index-1]["text"].toString() :
-                            QString();
-            append(entry,activity);
+            add_activity();
+
+            if(entry["type"] == "user")
+            {
+                append(entry);
+                if(!activities.isEmpty())
+                    append(QJsonObject{{"type","assistant"},{"time",entry["time"]}},
+                           activities);
+            }
+            else
+                append(entry,activities);
         }
     }
     else
-        append(added_entry,{});
+        append(added_entry);
 
     ui->ai_chat_history->ensureCursorVisible();
     auto* bar = ui->ai_chat_history->verticalScrollBar();
