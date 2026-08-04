@@ -1115,9 +1115,15 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
         return text.remove(ansi_escape);
     };
+    // a chat/reasoning-only request (no command) is valid: the chat text is already
+    // recorded by the caller (AIAgent::ai_request) before this returns, so report success
+    // instead of an error
+    bool has_chat = !request["chat"].toString().trimmed().isEmpty() ||
+                    !request["reasoning"].toString().trimmed().isEmpty();
+    auto no_command = [&]{return QJsonObject{{"status","success"},{"result",QJsonArray()}};};
     auto command_json = request["command"];
     if(command_json.isUndefined() || command_json.isNull())
-        return fail("missing command field");
+        return has_chat ? no_command() : fail("missing command field");
 
     std::vector<std::vector<std::string>> cmds;
     // prepare cmds
@@ -1138,7 +1144,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             add(param);
     }
     if(cmds.empty())
-        return fail("missing command field");
+        return has_chat ? no_command() : fail("missing command field");
 
     QJsonArray results;
 
