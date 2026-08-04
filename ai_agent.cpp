@@ -1059,7 +1059,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     if(!current && added_type == "user") // the user just started this chat themselves (nothing else was selected): bring it up
     {
         ui->ai_project_list->setCurrentItem(item);
-        current = item;
+        return; // currentItemChanged already rebuilt this chat's complete history
     }
 
     bool visible = current == item && isVisible();
