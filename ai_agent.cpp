@@ -679,11 +679,11 @@ void AIAgent::poll_github_issue()
             // goes through the same retrying publish path as any result; send_pending_result() disconnects once this is confirmed published
             return publish_github_result(stamp(QJsonObject{{"state","closed"}}));
 
-        if(request_obj["request"].toString().isEmpty() || request_obj["session"].toString().isEmpty())
+        if(request_obj["session"].toString().isEmpty())
             return publish_github_result(stamp(QJsonObject{
                 {"state","error"},
                 {"response",QJsonObject{{"status","error"},
-                    {"error","malformed request: missing request or session"}}}}));
+                    {"error","malformed request: missing session"}}}}));
 
         bool include_log = request_obj["include_log"].toBool();
         request_obj.remove("id");
