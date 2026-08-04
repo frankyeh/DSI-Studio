@@ -1107,6 +1107,23 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     {
         return text.toHtmlEscaped().replace('\n',"<br>");
     };
+    // renders chat/reasoning text as Markdown (bold, lists, code, links, ...) instead of plain escaped text;
+    // falls back to plain escaping if the body can't be extracted from QTextDocument's generated HTML
+    auto markdown_to_html = [&](const QString& text)
+    {
+        QTextDocument doc;
+        doc.setMarkdown(text);
+        auto html = doc.toHtml();
+        auto begin = html.indexOf("<body");
+        begin = begin < 0 ? -1 : html.indexOf('>',begin);
+        auto end = html.lastIndexOf("</body>");
+        if(begin < 0 || end < 0 || end <= begin)
+            return to_html(text);
+        static const QRegularExpression loose_margins(
+            "margin-top:\\d+px; margin-bottom:\\d+px;");
+        return html.mid(begin+1,end-begin-1).trimmed().replace(
+            loose_margins,"margin-top:0px; margin-bottom:6px;");
+    };
     auto display_time = [](const QJsonValue& value)
     {
         return QDateTime::fromString(value.toString(),Qt::ISODate).
@@ -1122,9 +1139,9 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         if(content.trimmed().isEmpty() && reasoning.isEmpty() && activities.isEmpty())
             return;
 
-        content = to_html(content);
+        content = content.trimmed().isEmpty() ? QString() : markdown_to_html(content);
         if(!reasoning.isEmpty())
-            content = "<span style=\"color:#5f6368;\">"+to_html(reasoning)+"</span>"+
+            content = "<span style=\"color:#5f6368;\">"+markdown_to_html(reasoning)+"</span>"+
                       (content.isEmpty() ? "" : "<br>"+content);
 
         if(!activities.isEmpty())
