@@ -2139,7 +2139,7 @@ QStringList AIAgent::configure_codex(
         }
     });
 
-    QStringList args{"exec","--add-dir",ui->ai_work_dir->text()};
+    QStringList args{"exec","--search","--add-dir",ui->ai_work_dir->text()};
     if(!launch.model_url.isEmpty())
     {
         auto url = launch.model_url;
