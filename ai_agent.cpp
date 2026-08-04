@@ -274,13 +274,6 @@ AIAgent::AIAgent(MainWindow* parent):
 
     if(codex_path.isEmpty() && !claude_path.isEmpty())
         current_agent_index = int(ai_provider::Claude);
-
-    auto default_index = settings.value(
-        "ai/default_agent",current_agent_index).toInt();
-    if(default_index >= 0 && default_index < int(agent_entries.size()))
-        current_agent_index = default_index;
-    try_set_current_model(settings.value(
-        "ai/default_model",current_model_name).toString());
     update_agent_status_label();
 
     auto* send = new QShortcut(
@@ -1190,8 +1183,7 @@ void AIAgent::update_agent_models(
 
     if(current_agent_index == index)
     {
-        auto resolved = resolve_model(profiles,current_model_name,
-            settings.value("ai/default_model").toString(),current_model_info);
+        auto resolved = resolve_model(profiles,current_model_name,{},current_model_info);
         current_model_name = resolved.first;
         current_model_info = resolved.second;
         update_agent_status_label();
