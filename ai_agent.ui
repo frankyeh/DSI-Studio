@@ -89,7 +89,7 @@ QPushButton#ai_send_message:pressed,
 QPushButton#ai_new_chat:pressed {
     background-color: #dadce0;
 }
-QPushButton#ai_quick_settings {
+QWidget#tab_8 QPushButton#ai_quick_settings {
     color: #3c4043;
     font-size: 16px;
     background-color: #f1f3f4;
@@ -97,10 +97,10 @@ QPushButton#ai_quick_settings {
     border-radius: 8px;
     padding: 0px;
 }
-QPushButton#ai_quick_settings:hover {
+QWidget#tab_8 QPushButton#ai_quick_settings:hover {
     background-color: #e8eaed;
 }
-QPushButton#ai_quick_settings:pressed {
+QWidget#tab_8 QPushButton#ai_quick_settings:pressed {
     background-color: #dadce0;
 }
 QWidget#tab_8 QComboBox {
