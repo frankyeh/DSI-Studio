@@ -340,6 +340,8 @@ AIAgent::AIAgent(MainWindow* parent):
             active_ai_processes = std::max(0,active_ai_processes-1);
             set_ai_status();
         }
+        if(session == web_agent_session_id && !github_issue_api.isEmpty())
+            disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
         QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
@@ -798,8 +800,9 @@ void AIAgent::send_pending_result()
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
 {
     auto entry = info.record_reply(chat,reasoning);
-    show_ai_project(info,entry); // pass the entry (not refresh_ai_info(), which drops it) so show_ai_project can see it's a new non-user reply and blink
-    set_ai_status("Agent request completed.",true);
+    show_ai_project(info,entry); // pass the entry so show_ai_project can see it's a new non-user reply and blink
+    if(is_status_target(info.sessions)) // a background chat's reply must not steal the status bar from whatever is currently selected
+        set_ai_status("Agent request completed.",true);
 }
 
 ai_info* ai_info::find(const QString& session)
@@ -944,7 +947,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         if(agent.isEmpty())
             return void(reply = status_reply("error","missing agent for new session"));
         if(!(found = ai_info::create(session,agent)))
-            return void(reply = status_reply("error","invalid agent: include Codex or Claude in the agent name"));
+            return void(reply = status_reply("error","invalid agent: include Codex, Claude, or ChatGPT in the agent name"));
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
     }
@@ -956,7 +959,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     auto reasoning = request["reasoning"].toString().trimmed();
     auto reply_object = [&](QJsonObject result)
     {
-        info.record_reply(chat,reasoning);
+        auto entry = info.record_reply(chat,reasoning);
         if(!info.prompts.isEmpty())
             result["prompt"] = QJsonArray::fromStringList(info.prompts);
         reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
@@ -964,9 +967,11 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
                    .arg(info.agent_name,session,
                         QString::fromUtf8(reply).left(32)));
         info.prompts.clear();
+        show_ai_project(info,entry);
+        if(is_status_target(session)) // a background chat's reply must not steal the status bar from whatever is currently selected
+            set_ai_status("Agent request completed.",true);
     };
     reply_object(main_window.dispatch_cmd(info,request)); // MainWindow's command center handles everything
-    refresh_ai_info(info);
 }
 
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
@@ -1290,7 +1295,6 @@ bool AIAgent::run_agent_login(ai_provider provider)
     bool is_codex = provider == ai_provider::Codex;
     auto* process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
-    process->start(executable,is_codex ? QStringList{"login"} : QStringList{"auth","login"});
 
     QDialog dialog(this);
     dialog.setWindowTitle((is_codex ? QString("Codex") : QString("Claude"))+" Login");
@@ -1344,6 +1348,16 @@ bool AIAgent::run_agent_login(ai_provider provider)
         succeeded = exit_code == 0 && exit_status == QProcess::NormalExit;
         dialog.accept();
     });
+    connect(process,&QProcess::errorOccurred,&dialog,[&](QProcess::ProcessError error)
+    {
+        if(error != QProcess::FailedToStart)
+            return;
+        status.setText("Cannot start "+executable+": "+process->errorString());
+        succeeded = false;
+        dialog.reject();
+    });
+
+    process->start(executable,is_codex ? QStringList{"login"} : QStringList{"auth","login"});
 
     dialog.exec();
     if(process->state() != QProcess::NotRunning)
@@ -1526,6 +1540,8 @@ void AIAgent::new_chat_dialog(bool resume)
 
     if(web)
     {
+        if(!github_issue_api.isEmpty())
+            disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         try_connect_github_issue(issue_url,resume);
         return;
     }
@@ -1703,6 +1719,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         launch.name += "/Ollama("+launch.model_url.host()+")";
         if(!configured)
         {
+            if(input == ai_input::Pending && !session.isEmpty())
+                ai_infos[session].prompts.append(text);
             set_ai_status("Ollama is not configured.",true);
             QMessageBox::warning(
                 this,"AI Agent","Set the Ollama host/IP in AI Settings first.");

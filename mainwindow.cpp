@@ -1427,7 +1427,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         error = manual_hint(QString::fromStdString(error_msg)); // target is main itself; nothing else to try
                 }
             }
-            else if(!handled_by_main)
+            else if(handled_by_main) // succeeded via MainWindow directly: give it the same history entry a forwarded command gets
+                info.record_history(QJsonObject{
+                    {"type","request"},
+                    {"text",command_name+" → main"},
+                    {"window","main"}});
+            else
                 error = manual_hint(QString::fromStdString(error_msg));
         }
         catch(const std::exception& e){error = e.what();}

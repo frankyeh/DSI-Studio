@@ -122,8 +122,6 @@ public:
     explicit AIAgent(MainWindow*);
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
-    void refresh_ai_info(ai_info& info)
-    {show_ai_project(info);set_ai_status("Agent request completed.",true);}
 
 protected:
     void showEvent(QShowEvent*) override;
