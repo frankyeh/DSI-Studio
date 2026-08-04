@@ -1145,10 +1145,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                       (content.isEmpty() ? "" : "<br>"+content);
 
         if(!activities.isEmpty())
-            content += (content.isEmpty() ? "" : "<br>")+
-                QString("<span style=\"color:#5f6368;font-size:9pt;\">") +
-                activities.join("<br>") +
-                "</span>";
+            content += QString("<div style=\"margin:0;color:#5f6368;font-size:9pt;\">") +
+                       activities.join("<br>") + "</div>";
 
         auto color = user ? "#e8f0fe" : "#e8f5e9";
         auto time = display_time(entry["time"]);
