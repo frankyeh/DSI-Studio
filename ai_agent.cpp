@@ -1122,7 +1122,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         static const QRegularExpression loose_margins(
             "margin-top:\\d+px; margin-bottom:\\d+px;");
         return html.mid(begin+1,end-begin-1).trimmed().replace(
-            loose_margins,"margin-top:0px; margin-bottom:0px;");
+            loose_margins,"margin-top:0px; margin-bottom:6px;");
     };
     auto display_time = [](const QJsonValue& value)
     {
