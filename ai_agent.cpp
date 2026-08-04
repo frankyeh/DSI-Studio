@@ -1602,6 +1602,20 @@ void AIAgent::new_chat_dialog(bool resume)
 
     auto create_chat = [&](const QString& agent)
     {
+        // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
+        for(auto it = ai_infos.begin();it != ai_infos.end();)
+            if(is_new_chat(it->first) && it->second.projects.isEmpty() && !it->second.processes)
+            {
+                if(auto* item = it->second.project_items)
+                {
+                    auto* taken_item = ui->ai_project_list->takeItem(ui->ai_project_list->row(item));
+                    QTimer::singleShot(0,this,[taken_item]{delete taken_item;});
+                }
+                it = ai_infos.erase(it);
+            }
+            else
+                ++it;
+
         auto* info = ai_info::create(
             "new:"+QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
         if(info->provider == ai_provider::ChatGPT)
