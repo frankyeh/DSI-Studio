@@ -1924,11 +1924,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 
     if(cmd[0] == "run_cli")
     {
-        if(cmd.size() != 2)
+        if(cmd.size() != 2 || cmd[1].empty())
             return fail("usage: run_cli <command line>");
+        auto command_line = cmd[1];
+        if(tipl::begins_with(command_line,"dsi_studio "))
+            command_line.erase(0,11);
         tipl::program_option<tipl::out> po;
-        if(!po.parse(cmd[1]) || !po.check("action"))
+        if(!po.parse(command_line))
             return fail(po.error_msg);
+        if(!po.has("action"))
+            po.set("action","vis");
         if(run_action_with_wildcard(po))
             return fail("command line failed");
         po.check_end_param<tipl::warning>();
