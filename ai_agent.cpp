@@ -281,6 +281,8 @@ AIAgent::AIAgent(MainWindow* parent):
     send->setContext(Qt::WidgetShortcut);
     connect(send,&QShortcut::activated,
             ui->ai_send_message,&QPushButton::click);
+    connect(ui->ai_chat_input,&QTextEdit::textChanged,
+            this,&AIAgent::update_send_button);
 
     ai_project_dir = QStandardPaths::writableLocation(
                          QStandardPaths::AppLocalDataLocation)+"/ai_projects";
@@ -528,14 +530,23 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         return error = "issue title must start with \"DSI Studio session\"",false;
 
     ai_log("github connect: fetching comments");
-    auto comments = QJsonDocument::fromJson(
-        github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
-                        "GET",{},ok,error)).array();
-    if(!ok)
+    QJsonArray comments;
+    for(int page = 1;;++page)
     {
-        ai_log("github connect: fetching comments failed: "+error);
-        error += " (check that this token has access to this specific repository)";
-        return false;
+        auto batch = QJsonDocument::fromJson(
+            github_blocking(github_manager,github_request(QUrl(
+                issue_api.toString()+"/comments?per_page=100&page="+QString::number(page))),
+                "GET",{},ok,error)).array();
+        if(!ok)
+        {
+            ai_log("github connect: fetching comments failed: "+error);
+            error += " (check that this token has access to this specific repository)";
+            return false;
+        }
+        for(const auto& comment : batch)
+            comments.append(comment);
+        if(batch.size() < 100)
+            break;
     }
     ai_log("github connect: "+QString::number(comments.size())+" comment(s) fetched");
 
@@ -731,8 +742,14 @@ void AIAgent::poll_github_issue()
 void AIAgent::publish_github_result(QJsonObject result)
 {
     constexpr qsizetype size_limit = 60*1024;
-    if(QJsonDocument(result).toJson(QJsonDocument::Compact).size() > size_limit)
-        result["response"] = QJsonObject{{"error","response truncated: exceeds GitHub comment size limit"}};
+    auto original_size = QJsonDocument(result).toJson(QJsonDocument::Compact).size();
+    if(original_size > size_limit)
+    {
+        result["state"] = "error";
+        result["response"] = QJsonObject{
+            {"error","response truncated: exceeds GitHub comment size limit"},
+            {"original_bytes",original_size}};
+    }
 
     github_pending_result = result; // staged until PATCH is confirmed; retried, never re-executed
     send_pending_result();
@@ -1438,8 +1455,15 @@ void AIAgent::update_send_button()
         return;
     }
     auto* item = ui->ai_project_list->currentItem();
-    bool running = item && ai_infos[item->data(Qt::UserRole).toString()].processes;
-    ui->ai_send_message->setText(running ? "Stop" : "Send");
+    auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    if(info && info->provider == ai_provider::ChatGPT)
+    {
+        ui->ai_send_message->setText("Resume");
+        return;
+    }
+    bool running = info && info->processes;
+    bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
+    ui->ai_send_message->setText(running && !has_input ? "Stop" : "Send");
 }
 
 bool AIAgent::is_status_target(const QString& session) const
@@ -1828,7 +1852,12 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             auto& info = ai_infos[session];
             info.processes = nullptr;
             info.has_error = true;
-            info.prompts.append(text);
+            if(input == ai_input::Pending)
+                info.prompts.append(text);
+            else if(auto* item = ui->ai_project_list->currentItem();
+                    item && item->data(Qt::UserRole).toString() == session &&
+                    ui->ai_chat_input->toPlainText().trimmed().isEmpty())
+                ui->ai_chat_input->setPlainText(text);
             add_ai_history(info,"activity",message);
         }
         update_send_button();
@@ -2087,6 +2116,7 @@ void AIAgent::on_ai_send_message_clicked()
     }
 
     auto* item = ui->ai_project_list->currentItem();
+    auto text = ui->ai_chat_input->toPlainText().trimmed();
     if(item)
     {
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
@@ -2097,6 +2127,12 @@ void AIAgent::on_ai_send_message_clicked()
         }
         if(info.processes)
         {
+            if(!text.isEmpty())
+            {
+                start_ai(info.sessions,text,ai_input::User);
+                update_send_button();
+                return;
+            }
             info.prompts.clear(); // stop means stop: no auto-continue into a queued message
             info.processes->setProperty("user_stopped",true);
             info.processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
@@ -2104,7 +2140,6 @@ void AIAgent::on_ai_send_message_clicked()
         }
     }
 
-    auto text = ui->ai_chat_input->toPlainText().trimmed();
     if(text.isEmpty())
         return;
 
