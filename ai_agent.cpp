@@ -281,7 +281,7 @@ AIAgent::AIAgent(MainWindow* parent):
     send->setContext(Qt::WidgetShortcut);
     connect(send,&QShortcut::activated,
             ui->ai_send_message,&QPushButton::click);
-    connect(ui->ai_chat_input,&QTextEdit::textChanged,
+    connect(ui->ai_chat_input,&QPlainTextEdit::textChanged,
             this,&AIAgent::update_send_button);
 
     ai_project_dir = QStandardPaths::writableLocation(
