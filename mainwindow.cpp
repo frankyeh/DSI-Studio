@@ -1404,11 +1404,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                                        info.current_window.startsWith("recon") ? "recon" : "image";
                     auto target_title = target_type == "main" ? QString() :
                                         QFileInfo(locked_target->windowTitle()).fileName();
-                    info.record_history(QJsonObject{
-                        {"type","request"},
-                        {"text",command_name+" → "+target_type+" window "+target_title},
-                        {"window",info.current_window}});
-
+                    info.record_history(QJsonObject{{"type","request"},{"text",command_name},{"title",target_title},{"window",target_type}});
                     auto execute = [&](auto* window,bool success)
                     {
                         if(!success)
@@ -1430,7 +1426,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             else if(handled_by_main) // succeeded via MainWindow directly: give it the same history entry a forwarded command gets
                 info.record_history(QJsonObject{
                     {"type","request"},
-                    {"text",command_name+" → main"},
+                    {"text",command_name},
                     {"window","main"}});
             else
                 error = manual_hint(QString::fromStdString(error_msg));
