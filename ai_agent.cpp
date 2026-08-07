@@ -1457,6 +1457,7 @@ bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
 {
     web_agent_active_session = true; // reflects the chosen mode even if the connection below fails, so the label/Resume button stay accurate
     github_last_issue_url = url;
+    settings.setValue("ai/github_last_issue_url",url);
     update_send_button();
     update_agent_status_label();
     set_ai_status("Connecting to "+url+"...");
