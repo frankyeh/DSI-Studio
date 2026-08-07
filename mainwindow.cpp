@@ -1218,6 +1218,11 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 results.append(command_result(false,{},error));
                 break;
             }
+            tipl::progress prog(command_record(locked_target,
+                info.current_window == "main" ? "main" :
+                info.current_window.startsWith("tracking") ? "tracking" :
+                info.current_window.startsWith("recon") ? "recon" : "image",
+                cmd,command_source::AI));
             if(command_name == "close" && locked_target == this)
             {
                 results.append(command_result(false,{},"the main window cannot be closed by AI"));
@@ -1247,6 +1252,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         // AI request, so handled here rather than in command()
         if(command_name == "set_title" || command_name == "log" || command_name == "set_window")
         {
+            tipl::progress prog(command_record(this,"main",cmd,command_source::AI));
             QString output,error;
             if(command_name == "set_title")
             {
