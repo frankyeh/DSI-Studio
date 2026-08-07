@@ -1226,6 +1226,16 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         };
         auto fail = [&](const QString& error,const QString& output = {}){uncapture_and_unlock();results.append(command_result(false,output,manual_hint(error)));}; // caller still writes break -- can't break an outer loop from inside a lambda
         auto succeed = [&](const QString& output = {}){uncapture_and_unlock();results.append(command_result(true,output));}; // caller still writes continue
+        auto finish = [&](const QString& output = {}) // reports error/output, whichever applies; caller still writes "if(!finish(...)) break; continue;"
+        {
+            if(!error.isEmpty())
+            {
+                fail(error,output);
+                return false;
+            }
+            succeed(output);
+            return true;
+        };
         tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
 
         try
@@ -1259,7 +1269,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     locked_target = nullptr; // let the target manage its own lifetime again once this returns
                     target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
                 }
-                succeed();
+                if(!finish())
+                    break;
                 continue;
             }
 
@@ -1269,12 +1280,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "usage: set_title <title>";
                 else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
                     error = "cannot save title";
-                if(!error.isEmpty())
-                {
-                    fail(error);
+                if(!finish())
                     break;
-                }
-                succeed();
                 continue;
             }
 
@@ -1301,7 +1308,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     output = lines.join('\n').right(4*1024);
                     info.log_position = end;
                 }
-                succeed(output);
+                if(!finish(output))
+                    break;
                 continue;
             }
 
@@ -1350,15 +1358,11 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 if(error.isEmpty())
                 {
-                    info.current_window = new_window; // succeed()'s generic window_before check below releases the previous target's lock
+                    info.current_window = new_window; // finish()'s generic window_before check below releases the previous target's lock
                     output = "current window: "+new_window;
                 }
-                if(!error.isEmpty())
-                {
-                    fail(error);
+                if(!finish(output))
                     break;
-                }
-                succeed(output);
                 continue;
             }
 
@@ -1400,10 +1404,11 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
                     application_busy |= !shell_tasks.isEmpty();
                 }
-                succeed(QString::fromUtf8(QJsonDocument(QJsonObject{
+                if(!finish(QString::fromUtf8(QJsonDocument(QJsonObject{
                     {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
                     {"current_window",info.current_window},
-                    {"windows",windows}}).toJson(QJsonDocument::Compact)));
+                    {"windows",windows}}).toJson(QJsonDocument::Compact))))
+                    break;
                 continue;
             }
 
@@ -1444,12 +1449,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         output = strip_ansi(output);
         error = strip_ansi(error);
 
-        if(!error.isEmpty())
-        {
-            fail(error,output);
+        if(!finish(output))
             break;
-        }
-        succeed(output);
         continue;
     }
     unlock_target(); // release whatever is still locked when the batch finishes normally
