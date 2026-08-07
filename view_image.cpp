@@ -86,7 +86,6 @@ bool view_image::command(std::vector<std::string> cmds,
         return error_msg = "empty command",false;
     if(cmds.size() > 2)
         return error_msg = "too many parameters",false;
-    command_report report(this,"image",cmds,source);
     cmds.resize(2);
     std::string cmd = cmds[0];
     std::string param1 = cmds[1];
