@@ -1250,7 +1250,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         // AI request, so handled here rather than in command()
         if(command_name == "set_title" || command_name == "log" || command_name == "set_window")
         {
-            tipl::progress prog(command_record(this,"main",cmd,command_source::AI));
+            tipl::progress prog(command_record("main",cmd,command_source::AI));
             QString output,error;
             if(command_name == "set_title")
             {
@@ -1400,6 +1400,13 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         }
         try
         {
+            // single report for the whole probe-then-forward sequence below, labeled with the AI's actual
+            // current target -- so a command MainWindow doesn't recognize never gets its own misleading
+            // "window":"main" entry; nested commands this triggers (e.g. open_fib's post-processing, or the
+            // forwarded target's own command_history report) run at depth>0 and are demoted to "internal operation"
+            tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
+            struct depth_guard{depth_guard(){++command_depth;} ~depth_guard(){--command_depth;}} depth;
+
             bool handled_by_main = command(cmd,command_source::AI);
             if(!handled_by_main && error_msg == "unknown command: "+cmd[0])
             {
