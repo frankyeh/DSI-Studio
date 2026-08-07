@@ -88,6 +88,9 @@ void command_history::add_record(const std::string& output)
 void command_history::report(
     const std::vector<std::string>& cmd,command_source source)
 {
+    // this exact command is the one dispatch_cmd's outer bracket already reports; printing it again here would just duplicate it
+    if(source == command_source::AI && !ai_forwarding_cmd.empty() && !cmd.empty() && cmd[0] == ai_forwarding_cmd)
+        return;
     auto report = command_record(command_window_id(window,"tracking"),cmd,source);
     if(source != command_source::User || !replacing)
     {
