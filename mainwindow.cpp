@@ -1208,7 +1208,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 result["error"] = error;
             return result;
         };
-        auto fail = [&](const QString& error){results.append(command_result(false,{},error));}; // caller still writes break -- can't break an outer loop from inside a lambda
+        auto fail = [&](const QString& error,const QString& output = {}){results.append(command_result(false,output,error));}; // caller still writes break -- can't break an outer loop from inside a lambda
         auto succeed = [&](const QString& output = {}){results.append(command_result(true,output));}; // caller still writes continue
         tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
 
@@ -1396,7 +1396,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         }
 
         QString output,error;
-        auto manual_hint = [](QString msg){return msg+". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";};
+        auto manual_hint = [](QString msg){return msg+". Read DSI Studio Manuals and retry.";};
         auto window_before = info.current_window;
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -1449,12 +1449,14 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         if(info.current_window != window_before)
             unlock_target(); // open_fib/open_src/open_image retargeted: release whatever was locked for the previous window
 
-        results.append(command_result(error.isEmpty(),output,error));
         if(!error.isEmpty())
         {
+            fail(error,output);
             unlock_target();
             break;
         }
+        succeed(output);
+        continue;
     }
     unlock_target(); // release whatever is still locked when the batch finishes normally
 
