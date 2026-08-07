@@ -1489,7 +1489,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     };
     auto select_dir = [&](const QString& title,QString initial = {})
     {
-        if(cmd.size() == 2)
+        if(cmd.size() >= 2) // >= rather than == so commands taking a second, separate parameter after the directory (e.g. bids_to_src's output folder) still work
             return QString::fromUtf8(cmd[1]);
         return QFileDialog::getExistingDirectory(
             this,title,initial.isEmpty() ? work_dir() : initial);
@@ -1589,9 +1589,10 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         auto dir = select_dir("Open BIDS Folder");
         if(dir.isEmpty())
             return true;
-        auto output_dir = QFileDialog::getExistingDirectory(
-                              this,"Please Specify the Output Folder",
-                              QDir(dir).path()+"/derivatives");
+        auto output_dir = cmd.size() >= 3 ? QString::fromUtf8(cmd[2]) :
+                              QFileDialog::getExistingDirectory(
+                                  this,"Please Specify the Output Folder",
+                                  QDir(dir).path()+"/derivatives");
         if(output_dir.isEmpty())
             return true;
         add_work_dir(dir);
