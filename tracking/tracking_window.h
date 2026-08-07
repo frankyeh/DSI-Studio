@@ -23,19 +23,10 @@ std::string show_info_dialog(const std::string& title,const std::string& result,
 enum class command_source{User,AI,Internal};
 QString command_window_id(QWidget*,const char*);
 void report_window_created(QWidget*,const char*);
-std::string command_record(QWidget*,const char*,
+std::string command_record(const QString& window_id,
                            const std::vector<std::string>&,command_source);
 command_source command_origin(command_source);
-struct command_report{
-    QWidget* window;
-    const char* type;
-    const std::vector<std::string>& cmd;
-    command_source source;
-    tipl::progress prog;
-    command_report(QWidget*,const char*,const std::vector<std::string>&,
-                   command_source);
-    ~command_report();
-};
+extern thread_local int command_depth; // nesting depth; command_origin() demotes to Internal while >0. Callers that dispatch a command able to trigger nested commands (currently only dispatch_cmd()) bump this for the call's duration
 struct command_history{
 private:
     static bool is_loading(const std::string& cmd);
