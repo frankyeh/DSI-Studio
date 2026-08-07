@@ -266,7 +266,6 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         return tipl::error() << (error_msg = "empty command"),false;
     if(cmds.size() > 2)
         return tipl::error() << (error_msg = "too many parameters"),false;
-    command_report report(this,"recon",cmds,source);
     cmds.resize(2);
     std::string cmd = cmds[0],param = cmds[1];
     for(const auto& [old_cmd,new_cmd] : legacy_cmd)
