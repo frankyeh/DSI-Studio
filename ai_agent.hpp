@@ -46,6 +46,7 @@ struct ai_info{
     bool save_title(QString);
     QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" and, for the first entry, "agent"/"model_settings" filled in), not the caller's pre-call copy
     QJsonObject record_reply(const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
+    QJsonObject record_request(const QString& command_name,QWidget* target = nullptr); // "window" is derived from current_window; "title" (from target's window title) is included only when target is given and current_window isn't main
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };
