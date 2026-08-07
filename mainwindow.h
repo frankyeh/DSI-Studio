@@ -48,6 +48,7 @@ public:
     bool command(const std::vector<std::string>&,command_source);
     QJsonObject dispatch_cmd(ai_info&,const QJsonObject& request); // the AI agent's single command center: every request (set_title/log/set_window/list_window/voice/run_shell/GUI commands) runs through this command array, dispatched against a target window (main/tracking/recon/image) when one applies
     AIAgent* ai_agent; // created in the constructor; callers (e.g. the local-socket server in main.cpp) use ai_agent->ai_request(...) directly
+    void report_and_target_window(QWidget*,const char*); // logs "<type> window created, id: ..." and makes it the AI session's new target; call whenever a window is created
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);
