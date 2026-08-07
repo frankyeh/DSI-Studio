@@ -33,6 +33,7 @@ public:
     command_history(QWidget* window):window(window){}
     QWidget* window;
     command_source source = command_source::User;
+    std::string ai_forwarding_cmd; // non-empty for the duration of command(cmd,source): cmd[0] of the AI-dispatched command being forwarded here, so surrogate/report() can tell "I am that command" from "I am a side effect of it"
     int current_recording_instance = 0;
     bool has_other_thread = false,running_commands = false,replacing = false;
     std::string default_parent_path,default_stem,default_stem2,current_cmd,
@@ -49,7 +50,10 @@ public:
                   std::vector<std::string>& cmd_,
                   std::string& error_msg_) :
             owner(owner),cmd(cmd_),error_msg(error_msg_),
-            source(owner.current_recording_instance || owner.running_commands || console.capture ?
+            // console.capture means some outer AI dispatch is in progress; demote to Internal unless this
+            // command IS that dispatch's own forwarded command (owner.ai_forwarding_cmd), not just a side effect of it
+            source(owner.current_recording_instance || owner.running_commands ||
+                   (console.capture && (owner.ai_forwarding_cmd.empty() || cmd.empty() || cmd[0] != owner.ai_forwarding_cmd)) ?
                    command_source::Internal : owner.source)
         {
             ++owner.current_recording_instance;
