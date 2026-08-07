@@ -1228,187 +1228,188 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         auto succeed = [&](const QString& output = {}){uncapture_and_unlock();results.append(command_result(true,output));}; // caller still writes continue
         tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
 
-        if(command_name == "bring_to_front" || command_name == "close" ||
-           command_name == "minimize" || command_name == "maximize")
-        {
-            if(!resolve_target(error))
-            {
-                fail(error);
-                break;
-            }
-            if(command_name == "close" && locked_target == this)
-            {
-                fail("the main window cannot be closed by AI");
-                break;
-            }
-            if(command_name == "bring_to_front")
-            {
-                locked_target->showNormal();
-                locked_target->raise();
-                locked_target->activateWindow();
-            }
-            else if(command_name == "minimize")
-                locked_target->showMinimized();
-            else if(command_name == "maximize")
-                locked_target->showMaximized();
-            else // close
-            {
-                auto* target = locked_target;
-                locked_target = nullptr; // let the target manage its own lifetime again once this returns
-                target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
-            }
-            succeed();
-            continue;
-        }
-
-        if(command_name == "set_title")
-        {
-            if(cmd.size() != 2 || cmd[1].empty())
-                error = "usage: set_title <title>";
-            else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
-                error = "cannot save title";
-            if(!error.isEmpty())
-            {
-                fail(error);
-                break;
-            }
-            succeed();
-            continue;
-        }
-
-        if(command_name == "log")
-        {
-            {
-                std::lock_guard<std::mutex> lock(console.edit_buf);
-                if(info.log_position == quint64(-1))
-                    info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
-                auto end = console.total_size;
-                auto first = end-quint64(console.history.size());
-                auto begin = std::max(info.log_position,first);
-                bool capped = end-begin > 16*1024;
-                if(capped)
-                    begin = end-16*1024;
-                auto text = console.history.mid(qsizetype(begin-first));
-                if(capped)
-                    text.remove(0,text.indexOf('\n')+1);
-                text = strip_ansi(text);
-                QStringList lines;
-                for(const auto& line : text.split('\n'))
-                    if(!line.contains("[DEBUG]"))
-                        lines << line;
-                output = lines.join('\n').right(4*1024);
-                info.log_position = end;
-            }
-            succeed(output);
-            continue;
-        }
-
-        if(command_name == "set_window")
-        {
-            auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
-            QString new_window = "main";
-            if(!param.isEmpty())
-            {
-                bool bare_type = (param == "tracking" || param == "recon" || param == "image");
-                if(bare_type)
-                {
-                    auto file_name = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString();
-                    if(file_name.isEmpty())
-                        error = "set_window: a "+param+" window needs a file name (2nd param) to tell it apart from other open "+param+" windows";
-                    else
-                    {
-                        QWidget* found = nullptr;
-                        for(auto* each : QApplication::allWidgets())
-                        {
-                            auto id = ai_window_id(each);
-                            if(id.startsWith(param) && id != param &&
-                               QFileInfo(each->windowTitle()).fileName().contains(file_name,Qt::CaseInsensitive))
-                            {
-                                found = each;
-                                break;
-                            }
-                        }
-                        if(!found)
-                            error = "set_window: no "+param+" window matching \""+file_name+"\" is open";
-                        else
-                            new_window = ai_window_id(found);
-                    }
-                }
-                else
-                {
-                    bool exists = param == "main";
-                    for(auto* each : QApplication::allWidgets())
-                        if(!exists && ai_window_id(each) == param)
-                            exists = true;
-                    if(!exists)
-                        error = "set_window: window \""+param+"\" not found, terminated by user?";
-                    else
-                        new_window = param;
-                }
-            }
-            if(error.isEmpty())
-            {
-                info.current_window = new_window; // succeed()'s generic window_before check below releases the previous target's lock
-                output = "current window: "+new_window;
-            }
-            if(!error.isEmpty())
-            {
-                fail(error);
-                break;
-            }
-            succeed(output);
-            continue;
-        }
-
-        if(command_name == "list_window")
-        {
-            auto* modal = QApplication::activeModalWidget();
-            bool application_busy = tipl::status_list.size() > 1;
-            QJsonObject windows;
-            for(auto* each : QApplication::allWidgets())
-            {
-                auto id = ai_window_id(each);
-                if(id.isEmpty())
-                    continue;
-                bool busy = each->property("busy").toBool();
-                if(auto* tracking = qobject_cast<tracking_window*>(each))
-                    busy |= tracking->history.running_commands ||
-                            (tracking->tractWidget &&
-                             std::any_of(
-                                 tracking->tractWidget->thread_data.begin(),
-                                 tracking->tractWidget->thread_data.end(),
-                                 [](const auto& thread){return bool(thread);})) ||
-                            std::any_of(
-                                tracking->slices.begin(),tracking->slices.end(),
-                                [](const auto& slice)
-                                {
-                                    auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
-                                    return custom && custom->running;
-                                });
-                bool waiting = modal && (modal == each || each->isAncestorOf(modal));
-                windows[id] = QJsonObject{
-                    {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
-                    {"title",QDir::fromNativeSeparators(each->windowTitle())}
-                };
-                application_busy |= busy;
-            }
-            {
-                std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-                for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
-                    windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
-                application_busy |= !shell_tasks.isEmpty();
-            }
-            succeed(QString::fromUtf8(QJsonDocument(QJsonObject{
-                {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
-                {"current_window",info.current_window},
-                {"windows",windows}}).toJson(QJsonDocument::Compact)));
-            continue;
-        }
-
         try
         {
-            bool handled_by_main = command(cmd,command_source::AI);
-            if(!handled_by_main && error_msg == "unknown command: "+cmd[0])
+            if(command_name == "bring_to_front" || command_name == "close" ||
+               command_name == "minimize" || command_name == "maximize")
+            {
+                if(!resolve_target(error))
+                {
+                    fail(error);
+                    break;
+                }
+                if(command_name == "close" && locked_target == this)
+                {
+                    fail("the main window cannot be closed by AI");
+                    break;
+                }
+                if(command_name == "bring_to_front")
+                {
+                    locked_target->showNormal();
+                    locked_target->raise();
+                    locked_target->activateWindow();
+                }
+                else if(command_name == "minimize")
+                    locked_target->showMinimized();
+                else if(command_name == "maximize")
+                    locked_target->showMaximized();
+                else // close
+                {
+                    auto* target = locked_target;
+                    locked_target = nullptr; // let the target manage its own lifetime again once this returns
+                    target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
+                }
+                succeed();
+                continue;
+            }
+
+            if(command_name == "set_title")
+            {
+                if(cmd.size() != 2 || cmd[1].empty())
+                    error = "usage: set_title <title>";
+                else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
+                    error = "cannot save title";
+                if(!error.isEmpty())
+                {
+                    fail(error);
+                    break;
+                }
+                succeed();
+                continue;
+            }
+
+            if(command_name == "log")
+            {
+                {
+                    std::lock_guard<std::mutex> lock(console.edit_buf);
+                    if(info.log_position == quint64(-1))
+                        info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
+                    auto end = console.total_size;
+                    auto first = end-quint64(console.history.size());
+                    auto begin = std::max(info.log_position,first);
+                    bool capped = end-begin > 16*1024;
+                    if(capped)
+                        begin = end-16*1024;
+                    auto text = console.history.mid(qsizetype(begin-first));
+                    if(capped)
+                        text.remove(0,text.indexOf('\n')+1);
+                    text = strip_ansi(text);
+                    QStringList lines;
+                    for(const auto& line : text.split('\n'))
+                        if(!line.contains("[DEBUG]"))
+                            lines << line;
+                    output = lines.join('\n').right(4*1024);
+                    info.log_position = end;
+                }
+                succeed(output);
+                continue;
+            }
+
+            if(command_name == "set_window")
+            {
+                auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
+                QString new_window = "main";
+                if(!param.isEmpty())
+                {
+                    bool bare_type = (param == "tracking" || param == "recon" || param == "image");
+                    if(bare_type)
+                    {
+                        auto file_name = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString();
+                        if(file_name.isEmpty())
+                            error = "set_window: a "+param+" window needs a file name (2nd param) to tell it apart from other open "+param+" windows";
+                        else
+                        {
+                            QWidget* found = nullptr;
+                            for(auto* each : QApplication::allWidgets())
+                            {
+                                auto id = ai_window_id(each);
+                                if(id.startsWith(param) && id != param &&
+                                   QFileInfo(each->windowTitle()).fileName().contains(file_name,Qt::CaseInsensitive))
+                                {
+                                    found = each;
+                                    break;
+                                }
+                            }
+                            if(!found)
+                                error = "set_window: no "+param+" window matching \""+file_name+"\" is open";
+                            else
+                                new_window = ai_window_id(found);
+                        }
+                    }
+                    else
+                    {
+                        bool exists = param == "main";
+                        for(auto* each : QApplication::allWidgets())
+                            if(!exists && ai_window_id(each) == param)
+                                exists = true;
+                        if(!exists)
+                            error = "set_window: window \""+param+"\" not found, terminated by user?";
+                        else
+                            new_window = param;
+                    }
+                }
+                if(error.isEmpty())
+                {
+                    info.current_window = new_window; // succeed()'s generic window_before check below releases the previous target's lock
+                    output = "current window: "+new_window;
+                }
+                if(!error.isEmpty())
+                {
+                    fail(error);
+                    break;
+                }
+                succeed(output);
+                continue;
+            }
+
+            if(command_name == "list_window")
+            {
+                auto* modal = QApplication::activeModalWidget();
+                bool application_busy = tipl::status_list.size() > 1;
+                QJsonObject windows;
+                for(auto* each : QApplication::allWidgets())
+                {
+                    auto id = ai_window_id(each);
+                    if(id.isEmpty())
+                        continue;
+                    bool busy = each->property("busy").toBool();
+                    if(auto* tracking = qobject_cast<tracking_window*>(each))
+                        busy |= tracking->history.running_commands ||
+                                (tracking->tractWidget &&
+                                 std::any_of(
+                                     tracking->tractWidget->thread_data.begin(),
+                                     tracking->tractWidget->thread_data.end(),
+                                     [](const auto& thread){return bool(thread);})) ||
+                                std::any_of(
+                                    tracking->slices.begin(),tracking->slices.end(),
+                                    [](const auto& slice)
+                                    {
+                                        auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
+                                        return custom && custom->running;
+                                    });
+                    bool waiting = modal && (modal == each || each->isAncestorOf(modal));
+                    windows[id] = QJsonObject{
+                        {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
+                        {"title",QDir::fromNativeSeparators(each->windowTitle())}
+                    };
+                    application_busy |= busy;
+                }
+                {
+                    std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+                    for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
+                        windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
+                    application_busy |= !shell_tasks.isEmpty();
+                }
+                succeed(QString::fromUtf8(QJsonDocument(QJsonObject{
+                    {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
+                    {"current_window",info.current_window},
+                    {"windows",windows}}).toJson(QJsonDocument::Compact)));
+                continue;
+            }
+
+            if(command(cmd,command_source::AI)) // handled by MainWindow directly: nothing more to do beyond recording the attempt
+                info.record_request(command_name);
+            else if(error_msg == "unknown command: "+cmd[0])
             {
                 if(resolve_target(error))
                 {
@@ -1431,11 +1432,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
                 }
             }
-            else // recognized by MainWindow, whether it succeeded or failed -- record the attempt either way, matching the forwarded path above
+            else // recognized by MainWindow but failed for a real reason (not "unknown command") -- still record the attempt
             {
                 info.record_request(command_name);
-                if(!handled_by_main)
-                    error = QString::fromStdString(error_msg);
+                error = QString::fromStdString(error_msg);
             }
         }
         catch(const std::exception& e){error = e.what();}
