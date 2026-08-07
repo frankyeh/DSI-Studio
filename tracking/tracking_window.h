@@ -7,6 +7,7 @@
 #include <QDockWidget>
 #include <QTextBrowser>
 #include <vector>
+#include <memory>
 #include "SliceModel.h"
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
@@ -30,6 +31,7 @@ struct command_report{
     const char* type;
     const std::vector<std::string>& cmd;
     command_source source;
+    tipl::progress prog;
     command_report(QWidget*,const char*,const std::vector<std::string>&,
                    command_source);
     ~command_report();
