@@ -2018,7 +2018,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         {
             QProcess process;
 #ifdef Q_OS_WIN
-            process.start("cmd.exe",QStringList() << "/c" << text);
+            process.setProgram("cmd.exe");
+            process.setNativeArguments("/c " + text);
+            process.start();
 #else
             process.start(text);
 #endif
@@ -2045,7 +2047,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         {
             QProcess process;
 #ifdef Q_OS_WIN
-            process.start("cmd.exe",QStringList() << "/c" << text);
+            process.setProgram("cmd.exe");
+            process.setNativeArguments("/c " + text);
+            process.start();
 #else
             process.start(text);
 #endif
