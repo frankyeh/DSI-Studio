@@ -1208,14 +1208,29 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 result["error"] = error;
             return result;
         };
-        auto fail = [&](const QString& error,const QString& output = {}){results.append(command_result(false,output,error));}; // caller still writes break -- can't break an outer loop from inside a lambda
-        auto succeed = [&](const QString& output = {}){results.append(command_result(true,output));}; // caller still writes continue
+        auto manual_hint = [](QString msg){return msg+". Read DSI Studio Manuals and retry.";};
+        auto window_before = info.current_window;
+        QString output,error;
+        {
+            std::lock_guard<std::mutex> lock(console.edit_buf);
+            console.capture = &output;
+        }
+        auto uncapture_and_unlock = [&] // shared cleanup for every exit path below: stop capturing console output for this command,
+        {                               // and release a stale lock if the command retargeted (open_fib/open_src/open_image/set_window)
+            {
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                console.capture = nullptr;
+            }
+            if(info.current_window != window_before)
+                unlock_target();
+        };
+        auto fail = [&](const QString& error,const QString& output = {}){uncapture_and_unlock();results.append(command_result(false,output,manual_hint(error)));}; // caller still writes break -- can't break an outer loop from inside a lambda
+        auto succeed = [&](const QString& output = {}){uncapture_and_unlock();results.append(command_result(true,output));}; // caller still writes continue
         tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
 
         if(command_name == "bring_to_front" || command_name == "close" ||
            command_name == "minimize" || command_name == "maximize")
         {
-            QString error;
             if(!resolve_target(error))
             {
                 fail(error);
@@ -1248,7 +1263,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
         if(command_name == "set_title")
         {
-            QString error;
             if(cmd.size() != 2 || cmd[1].empty())
                 error = "usage: set_title <title>";
             else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
@@ -1264,7 +1278,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
         if(command_name == "log")
         {
-            QString output;
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
                 if(info.log_position == quint64(-1))
@@ -1292,7 +1305,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
         if(command_name == "set_window")
         {
-            QString output,error;
             auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
             QString new_window = "main";
             if(!param.isEmpty())
@@ -1336,9 +1348,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             }
             if(error.isEmpty())
             {
-                if(new_window != info.current_window)
-                    unlock_target();
-                info.current_window = new_window;
+                info.current_window = new_window; // succeed()'s generic window_before check below releases the previous target's lock
                 output = "current window: "+new_window;
             }
             if(!error.isEmpty())
@@ -1395,13 +1405,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             continue;
         }
 
-        QString output,error;
-        auto manual_hint = [](QString msg){return msg+". Read DSI Studio Manuals and retry.";};
-        auto window_before = info.current_window;
-        {
-            std::lock_guard<std::mutex> lock(console.edit_buf);
-            console.capture = &output;
-        }
         try
         {
             bool handled_by_main = command(cmd,command_source::AI);
@@ -1415,7 +1418,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         if(!success)
                         {
                             auto window_error = QString::fromUtf8(window->error_msg);
-                            error = manual_hint(window_error.isEmpty() ? "command failed" : window_error);
+                            error = window_error.isEmpty() ? "command failed" : window_error;
                         }
                     };
                     if(auto* window = qobject_cast<tracking_window*>(locked_target))
@@ -1425,34 +1428,25 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     else if(auto* window = qobject_cast<view_image*>(locked_target))
                         execute(window,window->command(cmd,command_source::AI));
                     else
-                        error = manual_hint(QString::fromStdString(error_msg)); // target is main itself; nothing else to try
+                        error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
                 }
             }
             else // recognized by MainWindow, whether it succeeded or failed -- record the attempt either way, matching the forwarded path above
             {
                 info.record_request(command_name);
                 if(!handled_by_main)
-                    error = manual_hint(QString::fromStdString(error_msg));
+                    error = QString::fromStdString(error_msg);
             }
         }
         catch(const std::exception& e){error = e.what();}
         catch(...){error = "unknown error";}
 
-        {
-            std::lock_guard<std::mutex> lock(console.edit_buf);
-            console.capture = nullptr;
-        }
-
         output = strip_ansi(output);
         error = strip_ansi(error);
-
-        if(info.current_window != window_before)
-            unlock_target(); // open_fib/open_src/open_image retargeted: release whatever was locked for the previous window
 
         if(!error.isEmpty())
         {
             fail(error,output);
-            unlock_target();
             break;
         }
         succeed(output);
