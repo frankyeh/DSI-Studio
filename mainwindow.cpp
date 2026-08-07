@@ -2005,13 +2005,12 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             tipl::out() << QDir::currentPath().toStdString();
             return true;
         }
-        if(program.compare("dir",Qt::CaseInsensitive) &&
-           program.compare("curl",Qt::CaseInsensitive))
-            return fail("run_shell only allows dir, curl, and cd commands");
-        for(auto c : QString("&|;<>^`\n\r"))
-            if(text.contains(c))
-                return fail("run_shell command contains disallowed characters");
-        if(program.compare("curl",Qt::CaseInsensitive)) // dir: local and fast, just wait for it
+        if(source == command_source::AI &&
+           QMessageBox::question(this,"AI Shell Command Request",
+               "The AI agent wants to run this shell command:\n\n"+text,
+               QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
+            return fail("user declined to run this shell command");
+        if(program.compare("curl",Qt::CaseInsensitive)) // not curl: assume it's fast, wait for it
         {
             QProcess process;
 #ifdef Q_OS_WIN
