@@ -855,25 +855,6 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
 std::string quality_check_fib_files(const std::vector<std::filesystem::path>& file_list);
 std::string quality_check_nii_files(const std::vector<std::filesystem::path>& file_list);
 
-bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
-{
-    QFile file(QString::fromUtf8(
-        (tipl::remove_all_suffix(nii_name)+".json").c_str()));
-    if(!file.open(QIODevice::ReadOnly))
-        return false;
-
-    auto value = QJsonDocument::fromJson(file.readAll()).
-                 object()["PhaseEncodingDirection"].toString();
-    auto axis = QString("ijk").indexOf(value.left(1));
-    if(axis < 0 || value.size() > 2 ||
-        (value.size() == 2 && value[1] != '-'))
-        return false;
-
-    pe_dir = size_t(axis);
-    is_neg = value.endsWith('-');
-    return true;
-}
-
 std::vector<std::filesystem::path> search_dwi_nii_bids(const std::filesystem::path& dir);
 bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
              const std::filesystem::path& output_dir,
