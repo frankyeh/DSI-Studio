@@ -50,8 +50,6 @@ public:
                   std::vector<std::string>& cmd_,
                   std::string& error_msg_) :
             owner(owner),cmd(cmd_),error_msg(error_msg_),
-            // console.capture is set only while dispatch_cmd()'s AI-sourced command() call is running (mainwindow.cpp):
-            // a non-null capture here means this command was triggered as a side effect of that call, not issued directly
             source(owner.current_recording_instance || owner.running_commands || console.capture ?
                    command_source::Internal : owner.source)
         {
