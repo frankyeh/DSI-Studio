@@ -12,6 +12,7 @@
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
 #include "connectometry/group_connectometry_analysis.h"
+#include "console.h"
 class fib_data;
 class RenderingTableWidget;
 class RegionTableWidget;
@@ -25,7 +26,6 @@ QString command_window_id(QWidget*,const char*);
 void report_window_created(QWidget*,const char*);
 std::string command_record(const QString& window_id,
                            const std::vector<std::string>&,command_source);
-extern thread_local int command_depth; // nesting depth; command_history::surrogate demotes to Internal while >0. Callers that dispatch a command able to trigger nested commands (currently only dispatch_cmd()) bump this for the call's duration
 struct command_history{
 private:
     static bool is_loading(const std::string& cmd);
@@ -50,7 +50,9 @@ public:
                   std::vector<std::string>& cmd_,
                   std::string& error_msg_) :
             owner(owner),cmd(cmd_),error_msg(error_msg_),
-            source(owner.current_recording_instance || owner.running_commands || command_depth ?
+            // console.capture is set only while dispatch_cmd()'s AI-sourced command() call is running (mainwindow.cpp):
+            // a non-null capture here means this command was triggered as a side effect of that call, not issued directly
+            source(owner.current_recording_instance || owner.running_commands || console.capture ?
                    command_source::Internal : owner.source)
         {
             ++owner.current_recording_instance;
