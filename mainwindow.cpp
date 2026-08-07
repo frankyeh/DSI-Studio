@@ -1233,16 +1233,15 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(info.current_window != window_before)
                 unlock_target();
         };
-        auto fail = [&](const QString& error,const QString& output = {}){uncapture_and_unlock();results.append(command_result(false,output,manual_hint(error)));}; // caller still writes break -- can't break an outer loop from inside a lambda
-        auto succeed = [&](const QString& output = {}){uncapture_and_unlock();results.append(command_result(true,output));}; // caller still writes continue
         auto finish = [&](const QString& output = {}) // reports error/output, whichever applies; caller still writes "if(!finish(...)) break; continue;"
         {
+            uncapture_and_unlock();
             if(!error.isEmpty())
             {
-                fail(error,output);
+                results.append(command_result(false,output,manual_hint(error)));
                 return false;
             }
-            succeed(output);
+            results.append(command_result(true,output));
             return true;
         };
         tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
@@ -1252,32 +1251,30 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(command_name == "bring_to_front" || command_name == "close" ||
                command_name == "minimize" || command_name == "maximize")
             {
-                if(!resolve_target(error))
+                // instantaneous window-manager calls: no batching benefit from resolve_target's lock, just a plain lookup
+                if(auto* target = find_window(info.current_window))
                 {
-                    fail(error);
-                    break;
+                    if(command_name == "close" && target == this)
+                        error = "the main window cannot be closed by AI";
+                    else if(command_name == "bring_to_front")
+                    {
+                        target->showNormal();
+                        target->raise();
+                        target->activateWindow();
+                    }
+                    else if(command_name == "minimize")
+                        target->showMinimized();
+                    else if(command_name == "maximize")
+                        target->showMaximized();
+                    else // close
+                    {
+                        if(locked_target == target)
+                            locked_target = nullptr; // let the target manage its own lifetime again once this returns, if an earlier command in this batch had it locked
+                        target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
+                    }
                 }
-                if(command_name == "close" && locked_target == this)
-                {
-                    fail("the main window cannot be closed by AI");
-                    break;
-                }
-                if(command_name == "bring_to_front")
-                {
-                    locked_target->showNormal();
-                    locked_target->raise();
-                    locked_target->activateWindow();
-                }
-                else if(command_name == "minimize")
-                    locked_target->showMinimized();
-                else if(command_name == "maximize")
-                    locked_target->showMaximized();
-                else // close
-                {
-                    auto* target = locked_target;
-                    locked_target = nullptr; // let the target manage its own lifetime again once this returns
-                    target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
-                }
+                else
+                    error = "target window not found, terminated by user? Use set_window to select a window first.";
                 if(!finish())
                     break;
                 continue;
