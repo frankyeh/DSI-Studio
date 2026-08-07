@@ -88,7 +88,7 @@ class AIAgent : public QMainWindow
     QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
     quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
     bool web_agent_active_session = false; // true from New Chat (web agent) until New Chat starts a local one
-    QString github_last_issue_url; // remembered so Resume can default to it
+    QString github_last_issue_url = settings.value("ai/github_last_issue_url").toString(); // remembered (persisted) so Resume can default to it
     QString web_agent_session_id; // the actual chat this GitHub connection belongs to, independent of sidebar selection; survives Stop/Resume, cleared only on a fresh (non-resume) start
 
     QNetworkRequest github_request(const QUrl&) const;
