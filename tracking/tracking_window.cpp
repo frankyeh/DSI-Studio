@@ -88,7 +88,7 @@ void command_history::add_record(const std::string& output)
 void command_history::report(
     const std::vector<std::string>& cmd,command_source source)
 {
-    auto report = command_record(window,"tracking",cmd,source);
+    auto report = command_record(command_window_id(window,"tracking"),cmd,source);
     if(source != command_source::User || !replacing)
     {
         if(!pending_report.empty())
@@ -114,7 +114,7 @@ void report_window_created(QWidget* window,const char* type)
     tipl::out() << type << " window created, id: "
                 << command_window_id(window,type).toStdString();
 }
-std::string command_record(QWidget* window,const char* type,
+std::string command_record(const QString& window_id,
                            const std::vector<std::string>& cmd,
                            command_source source)
 {
@@ -128,7 +128,6 @@ std::string command_record(QWidget* window,const char* type,
     QJsonObject command{{"cmd",QString::fromUtf8(cmd[0])}};
     if(!param.isEmpty())
         command["param"] = param;
-    auto window_id = command_window_id(window,type);
     auto quote = [](const QString& text)
     {
         auto json = QJsonDocument(QJsonArray{text}).
@@ -145,19 +144,6 @@ thread_local int command_depth = 0;
 command_source command_origin(command_source source)
 {
     return command_depth ? command_source::Internal : source;
-}
-command_report::command_report(
-    QWidget* window,const char* type,const std::vector<std::string>& cmd,
-    command_source source):
-    window(window),type(type),cmd(cmd),
-    source(command_origin(source)),
-    prog(command_record(window,type,cmd,this->source))
-{
-    ++command_depth;
-}
-command_report::~command_report()
-{
-    --command_depth;
 }
 std::string command_history::file_stem(bool extended) const
 {
