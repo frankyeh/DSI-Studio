@@ -1409,12 +1409,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             {
                 if(resolve_target(error))
                 {
-                    auto target_type = info.current_window == "main" ? QString("main") :
-                                       info.current_window.startsWith("tracking") ? "tracking" :
-                                       info.current_window.startsWith("recon") ? "recon" : "image";
-                    auto target_title = target_type == "main" ? QString() :
-                                        QFileInfo(locked_target->windowTitle()).fileName();
-                    info.record_history(QJsonObject{{"type","request"},{"text",command_name},{"title",target_title},{"window",target_type}});
+                    info.record_request(command_name,locked_target);
                     auto execute = [&](auto* window,bool success)
                     {
                         if(!success)
@@ -1435,10 +1430,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             }
             else // recognized by MainWindow, whether it succeeded or failed -- record the attempt either way, matching the forwarded path above
             {
-                info.record_history(QJsonObject{
-                    {"type","request"},
-                    {"text",command_name},
-                    {"window","main"}});
+                info.record_request(command_name);
                 if(!handled_by_main)
                     error = manual_hint(QString::fromStdString(error_msg));
             }
