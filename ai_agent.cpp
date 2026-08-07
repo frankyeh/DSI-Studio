@@ -50,6 +50,7 @@
 #include "ai_agent.hpp"
 #include "ui_ai_agent.h"
 #include "mainwindow.h"
+#include "tracking/tracking_window.h"
 #include "TIPL/tipl.hpp"
 
 std::unordered_map<QString,ai_info> ai_infos;
@@ -1012,7 +1013,15 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         if(is_status_target(session)) // a background chat's reply must not steal the status bar from whatever is currently selected
             set_ai_status("Agent request completed.",true);
     };
+    dispatching_info = &info;
     reply_object(main_window.dispatch_cmd(info,request)); // MainWindow's command center handles everything
+    dispatching_info = nullptr;
+}
+
+void AIAgent::update_current_window(QWidget* window,const char* type)
+{
+    if(dispatching_info)
+        dispatching_info->current_window = command_window_id(window,type);
 }
 
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
