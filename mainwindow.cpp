@@ -1220,11 +1220,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 results.append(command_result(false,{},error));
                 break;
             }
-            tipl::progress prog(command_record(locked_target,
-                info.current_window == "main" ? "main" :
-                info.current_window.startsWith("tracking") ? "tracking" :
-                info.current_window.startsWith("recon") ? "recon" : "image",
-                cmd,command_source::AI));
+            tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
             if(command_name == "close" && locked_target == this)
             {
                 results.append(command_result(false,{},"the main window cannot be closed by AI"));
@@ -1480,7 +1476,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     if(cmd.empty())
         return fail("empty command");
-    command_report report(this,"main",cmd,source);
 
     if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
     {
