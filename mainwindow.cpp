@@ -1168,25 +1168,34 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         locked_target = nullptr;
     };
 
+    // pure lookup, no locking/side effects -- safe to reuse anywhere a window id needs checking (e.g. set_window)
+    auto find_window = [&](const QString& id) -> QWidget*
+    {
+        if(id == "main")
+            return this;
+        for(auto* each : QApplication::allWidgets())
+            if(ai_window_id(each) == id)
+                return each;
+        return nullptr;
+    };
+
     // resolves+locks the current target (unless already locked from a previous command in this same segment);
     // returns false (with `error` set) if it's busy elsewhere or can't be found
     auto resolve_target = [&](QString& error)
     {
         if(locked_target)
             return true;
-        QWidget* target = info.current_window == "main" ? static_cast<QWidget*>(this) : nullptr;
-        bool busy_elsewhere = false;
-        for(auto* each : QApplication::allWidgets())
+        bool busy_elsewhere = std::any_of(QApplication::allWidgets().begin(),QApplication::allWidgets().end(),
+            [](QWidget* each){return each->property("busy").toBool();});
+        if(busy_elsewhere)
         {
-            if(each->property("busy").toBool())
-                busy_elsewhere = true;
-            if(!target && ai_window_id(each) == info.current_window)
-                target = each;
+            error = "another CMD is running; check opened windows";
+            return false;
         }
-        if(busy_elsewhere || !target)
+        auto* target = find_window(info.current_window);
+        if(!target)
         {
-            error = busy_elsewhere ? "another CMD is running; check opened windows" :
-                                     "target window not found, terminated by user? Use set_window to select a window first.";
+            error = "target window not found, terminated by user? Use set_window to select a window first.";
             return false;
         }
         locked_updates_enabled = target->updatesEnabled();
@@ -1346,11 +1355,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     }
                     else
                     {
-                        bool exists = param == "main";
-                        for(auto* each : QApplication::allWidgets())
-                            if(!exists && ai_window_id(each) == param)
-                                exists = true;
-                        if(!exists)
+                        if(!find_window(param))
                             error = "set_window: window \""+param+"\" not found, terminated by user?";
                         else
                             new_window = param;
