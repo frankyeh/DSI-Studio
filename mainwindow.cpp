@@ -1595,6 +1595,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                                   QDir(dir).path()+"/derivatives");
         if(output_dir.isEmpty())
             return true;
+        if(!QDir(output_dir).exists() && !QDir().mkpath(output_dir))
+            return fail("cannot create output folder: "+output_dir.toStdString());
         add_work_dir(dir);
         auto files = search_dwi_nii_bids(tipl::qt::to_path(dir));
         if(files.empty())
