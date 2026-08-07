@@ -902,6 +902,16 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
         entry["reasoning"] = reasoning;
     return record_history(entry);
 }
+QJsonObject ai_info::record_request(const QString& command_name,QWidget* target)
+{
+    auto window_type = current_window == "main" ? QString("main") :
+                       current_window.startsWith("tracking") ? "tracking" :
+                       current_window.startsWith("recon") ? "recon" : "image";
+    QJsonObject entry{{"type","request"},{"text",command_name},{"window",window_type}};
+    if(target && window_type != "main")
+        entry["title"] = QFileInfo(target->windowTitle()).fileName();
+    return record_history(entry);
+}
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
