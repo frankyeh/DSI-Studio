@@ -606,6 +606,11 @@ void MainWindow::addSrc(QString filename)
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 extern QByteArray default_geo,default_state;
+void MainWindow::report_and_target_window(QWidget* window,const char* type)
+{
+    tipl::out() << type << " window created, id: " << command_window_id(window,type).toStdString();
+    ai_agent->update_current_window(window,type);
+}
 bool MainWindow::loadFib(QString filename)
 {
     std::shared_ptr<fib_data> new_handle(new fib_data);
@@ -617,8 +622,7 @@ bool MainWindow::loadFib(QString filename)
         return false;
     }
     tracking_windows.push_back(new tracking_window(this,new_handle));
-    report_window_created(tracking_windows.back(),"tracking");
-    ai_agent->update_current_window(tracking_windows.back(),"tracking");
+    report_and_target_window(tracking_windows.back(),"tracking");
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
     if(filename.contains("/presentation/"))
@@ -668,7 +672,7 @@ void MainWindow::loadNii(QStringList file_names)
         delete dialog;
         return;
     }
-    report_window_created(dialog,"image");
+    report_and_target_window(dialog,"image");
     dialog->show();
 }
 
@@ -684,8 +688,7 @@ bool MainWindow::loadSrc(QStringList filenames)
     {
         tipl::progress prog("SRC reconstruction");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
-        report_window_created(new_mdi,"recon");
-        ai_agent->update_current_window(new_mdi,"recon");
+        report_and_target_window(new_mdi,"recon");
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
         if(filenames.size() == 1)
@@ -1872,10 +1875,10 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     {
         if(cmd.size() != 1)
             return fail("open_console takes no arguments");
-        static Console* console = nullptr;
-        if(!console)
-            console = new Console(this);
-        console->showNormal();
+        static Console* console_window = nullptr;
+        if(!console_window)
+            console_window = new Console(this);
+        console_window->showNormal();
         return true;
     }
 
@@ -1946,8 +1949,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             delete window;
             return fail(message);
         }
-        report_window_created(window,"image");
-        ai_agent->update_current_window(window,"image");
+        report_and_target_window(window,"image");
         window->show();
         return true;
     }
