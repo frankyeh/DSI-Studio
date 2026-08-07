@@ -1388,10 +1388,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
                 application_busy |= !shell_tasks.isEmpty();
             }
-            results.append(command_result(true,QString::fromUtf8(QJsonDocument(QJsonObject{
+            succeed(QString::fromUtf8(QJsonDocument(QJsonObject{
                 {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
                 {"current_window",info.current_window},
-                {"windows",windows}}).toJson(QJsonDocument::Compact))));
+                {"windows",windows}}).toJson(QJsonDocument::Compact)));
             continue;
         }
 
