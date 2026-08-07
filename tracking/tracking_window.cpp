@@ -141,10 +141,6 @@ std::string command_record(const QString& window_id,
          toJson(QJsonDocument::Compact)+"}").toStdString();
 }
 thread_local int command_depth = 0;
-command_source command_origin(command_source source)
-{
-    return command_depth ? command_source::Internal : source;
-}
 std::string command_history::file_stem(bool extended) const
 {
     if(tipl::contains(current_cmd,"to_folder"))
