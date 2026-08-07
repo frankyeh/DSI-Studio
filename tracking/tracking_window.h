@@ -25,8 +25,7 @@ QString command_window_id(QWidget*,const char*);
 void report_window_created(QWidget*,const char*);
 std::string command_record(const QString& window_id,
                            const std::vector<std::string>&,command_source);
-command_source command_origin(command_source);
-extern thread_local int command_depth; // nesting depth; command_origin() demotes to Internal while >0. Callers that dispatch a command able to trigger nested commands (currently only dispatch_cmd()) bump this for the call's duration
+extern thread_local int command_depth; // nesting depth; command_history::surrogate demotes to Internal while >0. Callers that dispatch a command able to trigger nested commands (currently only dispatch_cmd()) bump this for the call's duration
 struct command_history{
 private:
     static bool is_loading(const std::string& cmd);
@@ -51,8 +50,8 @@ public:
                   std::vector<std::string>& cmd_,
                   std::string& error_msg_) :
             owner(owner),cmd(cmd_),error_msg(error_msg_),
-            source(owner.current_recording_instance || owner.running_commands ?
-                   command_source::Internal : command_origin(owner.source))
+            source(owner.current_recording_instance || owner.running_commands || command_depth ?
+                   command_source::Internal : owner.source)
         {
             ++owner.current_recording_instance;
         }
