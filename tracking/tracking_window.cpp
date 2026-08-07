@@ -109,11 +109,6 @@ QString command_window_id(QWidget* window,const char* type)
     return QString(type)+(type[0] == 'm' ? QString() :
            QString::number(reinterpret_cast<quintptr>(window),16));
 }
-void report_window_created(QWidget* window,const char* type)
-{
-    tipl::out() << type << " window created, id: "
-                << command_window_id(window,type).toStdString();
-}
 std::string command_record(const QString& window_id,
                            const std::vector<std::string>& cmd,
                            command_source source)
