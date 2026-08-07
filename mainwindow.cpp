@@ -1185,8 +1185,13 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     {
         if(locked_target)
             return true;
-        bool busy_elsewhere = std::any_of(QApplication::allWidgets().begin(),QApplication::allWidgets().end(),
-            [](QWidget* each){return each->property("busy").toBool();});
+        bool busy_elsewhere = false;
+        for(auto* each : QApplication::allWidgets())
+            if(each->property("busy").toBool())
+            {
+                busy_elsewhere = true;
+                break;
+            }
         if(busy_elsewhere)
         {
             error = "another CMD is running; check opened windows";
