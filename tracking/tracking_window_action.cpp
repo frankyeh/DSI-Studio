@@ -1340,12 +1340,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
 bool tracking_window::command(std::vector<std::string> cmd,
                               command_source source)
 {
-    struct restore_source{
+    struct restore_dispatch_state{
         command_history& history;
         command_source source;
-        ~restore_source(){history.source = source;}
-    } restore{history,history.source};
+        std::string ai_forwarding_cmd;
+        ~restore_dispatch_state(){history.source = source;history.ai_forwarding_cmd = ai_forwarding_cmd;}
+    } restore{history,history.source,history.ai_forwarding_cmd};
     history.source = source;
+    history.ai_forwarding_cmd = cmd.empty() ? std::string() : cmd[0];
     return command(std::move(cmd));
 }
 
