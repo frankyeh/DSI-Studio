@@ -1208,9 +1208,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 result["error"] = error;
             return result;
         };
+        tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
 
-        // bring_to_front/close/minimize/maximize: generic window control, works on whichever window is targeted;
-        // not left duplicated per window (every command() implementation had its own identical copy)
         if(command_name == "bring_to_front" || command_name == "close" ||
            command_name == "minimize" || command_name == "maximize")
         {
@@ -1220,7 +1219,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 results.append(command_result(false,{},error));
                 break;
             }
-            tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
             if(command_name == "close" && locked_target == this)
             {
                 results.append(command_result(false,{},"the main window cannot be closed by AI"));
@@ -1246,11 +1244,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             continue;
         }
 
-        // set_title/log/set_window: need this call's ai_info directly, which is meaningless outside an
-        // AI request, so handled here rather than in command()
         if(command_name == "set_title" || command_name == "log" || command_name == "set_window")
         {
-            tipl::progress prog(command_record("main",cmd,command_source::AI));
             QString output,error;
             if(command_name == "set_title")
             {
@@ -1327,7 +1322,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 if(error.isEmpty())
                 {
                     if(new_window != info.current_window)
-                        unlock_target(); // retargeting: release whatever was locked for the previous window
+                        unlock_target();
                     info.current_window = new_window;
                     output = "current window: "+new_window;
                 }
@@ -1341,7 +1336,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             continue;
         }
 
-        // list_window: enumerates all AI-addressable windows and their busy/idle/waiting status
         if(command_name == "list_window")
         {
             auto* modal = QApplication::activeModalWidget();
@@ -1387,10 +1381,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             continue;
         }
 
-        // everything else is offered to MainWindow first, with no target needed for that attempt -- this is
-        // how voice/run_shell (implemented only in MainWindow::command()) just work, and also
-        // covers ambiguous names like "open_fib" that exist differently elsewhere too.
-        // only if MainWindow doesn't recognize the command at all does it fall through to the real target
         QString output,error;
         auto manual_hint = [](QString msg){return msg+". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";};
         auto window_before = info.current_window;
@@ -1400,13 +1390,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         }
         try
         {
-            // single report for the whole probe-then-forward sequence below, labeled with the AI's actual
-            // current target -- so a command MainWindow doesn't recognize never gets its own misleading
-            // "window":"main" entry; nested commands this triggers (e.g. open_fib's post-processing, or the
-            // forwarded target's own command_history report) run at depth>0 and are demoted to "internal operation"
-            tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
-            struct depth_guard{depth_guard(){++command_depth;} ~depth_guard(){--command_depth;}} depth;
-
             bool handled_by_main = command(cmd,command_source::AI);
             if(!handled_by_main && error_msg == "unknown command: "+cmd[0])
             {
