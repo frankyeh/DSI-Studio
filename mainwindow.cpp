@@ -618,6 +618,7 @@ bool MainWindow::loadFib(QString filename)
     }
     tracking_windows.push_back(new tracking_window(this,new_handle));
     report_window_created(tracking_windows.back(),"tracking");
+    ai_agent->update_current_window(tracking_windows.back(),"tracking");
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
     if(filename.contains("/presentation/"))
@@ -684,6 +685,7 @@ bool MainWindow::loadSrc(QStringList filenames)
         tipl::progress prog("SRC reconstruction");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         report_window_created(new_mdi,"recon");
+        ai_agent->update_current_window(new_mdi,"recon");
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
         if(filenames.size() == 1)
@@ -1384,6 +1386,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             }
             results.append(command_result(true,QString::fromUtf8(QJsonDocument(QJsonObject{
                 {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
+                {"current_window",info.current_window},
                 {"windows",windows}}).toJson(QJsonDocument::Compact))));
             continue;
         }
@@ -1394,6 +1397,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         // only if MainWindow doesn't recognize the command at all does it fall through to the real target
         QString output,error;
         auto manual_hint = [](QString msg){return msg+". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";};
+        auto window_before = info.current_window;
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
             console.capture = &output;
@@ -1447,6 +1451,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
         output = strip_ansi(output);
         error = strip_ansi(error);
+
+        if(info.current_window != window_before)
+            unlock_target(); // open_fib/open_src/open_image retargeted: release whatever was locked for the previous window
 
         results.append(command_result(error.isEmpty(),output,error));
         if(!error.isEmpty())
@@ -1962,6 +1969,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             return fail(message);
         }
         report_window_created(window,"image");
+        ai_agent->update_current_window(window,"image");
         window->show();
         return true;
     }
