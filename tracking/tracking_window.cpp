@@ -150,14 +150,14 @@ command_report::command_report(
     QWidget* window,const char* type,const std::vector<std::string>& cmd,
     command_source source):
     window(window),type(type),cmd(cmd),
-    source(command_origin(source))
+    source(command_origin(source)),
+    prog(command_record(window,type,cmd,this->source))
 {
     ++command_depth;
 }
 command_report::~command_report()
 {
     --command_depth;
-    tipl::out() << command_record(window,type,cmd,source);
 }
 std::string command_history::file_stem(bool extended) const
 {
