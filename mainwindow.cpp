@@ -864,20 +864,21 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
              bool is_bids,
              bool overwrite,
              bool topup_eddy,
-             const char* progress_name = "convert nifti to src files");
+             std::string& error_msg);
 void search_dwi_nii(const std::filesystem::path& dir,std::vector<std::filesystem::path>& dwi_nii_files);
 
-bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
+bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite,std::string& error_msg)
 {
+    auto fail = [&](const std::string& msg){error_msg = msg;return tipl::error() << msg,false;};
     if(files.empty())
-        return false;
+        return fail("no files provided");
     std::sort(files.begin(),files.end());
     tipl::progress p("processing DICOM at "+files.front().parent_path().u8string());
     std::string manu,make,report,sequence;
     {
         tipl::io::dicom header;
         if(!header.load_from_file(files[0]))
-            return tipl::error() << "cannot read image volume. skip",false;
+            return fail("cannot read image volume. skip");
         header.get_sequence_id(sequence);
         header.get_text(0x0008,0x0070,manu);//Manufacturer
         header.get_text(0x0008,0x1090,make);
@@ -893,15 +894,15 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
 
 
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
-    std::string error_msg;
+    std::string parse_error;
     auto nii_file_name = get_dicom_output_name(files[0],"_" + sequence + ".nii.gz",true);
 
-    if(!parse_dwi(files,dicom_files,error_msg) || dicom_files.size() == 1)
+    if(!parse_dwi(files,dicom_files,parse_error) || dicom_files.size() == 1)
     {
         if(tipl::prog_aborted)
             return false;
-        if(!error_msg.empty())
-            return tipl::error() << error_msg,false;
+        if(!parse_error.empty())
+            return fail(parse_error);
 
         if(!overwrite && std::filesystem::exists(nii_file_name))
             return tipl::out() << nii_file_name << " exists. skipping",true;
@@ -914,17 +915,17 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
         {
             tipl::io::dicom v;
             if(!v.load_from_file(files[0]))
-                return tipl::error() << "cannot parse dicom file",false;
+                return fail("cannot parse dicom file");
             v >> std::tie(source_images,vs);
             if(source_images.empty())
-                return tipl::warning() << "cannot read " << files[0] << " as image, skipping",false;
+                return fail("cannot read "+files[0].u8string()+" as image, skipping");
         }
         else
         {
             tipl::out() << "parsing " << files.size() << " dicom files";
             tipl::io::dicom_volume v;
             if(!v.load_from_files(files))
-                return tipl::out() << v.error_msg,false;
+                return fail(v.error_msg);
             tipl::out() << "dim: " << v.dim << " vs: " << v.vs;
             tipl::out() << "trans: " << tipl::matrix<3,3,float>(v.orientation_matrix);
             tipl::out() << "dim order: " << tipl::vector<3,int>(v.dim_order);
@@ -932,7 +933,7 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
             v >> source_images;
             v.get_voxel_size(vs);
             if(source_images.empty())
-                return tipl::warning() << "cannot read as image volume, skipping",false;
+                return fail("cannot read as image volume, skipping");
         }
 
         tipl::matrix<4,4,float> trans;
@@ -966,15 +967,15 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
     src_data src;
     if(!src.load_from_file(dicom_files,false) ||
        !src.save_to_file(src_name))
-        return tipl::error() << src.error_msg,false;
+        return fail(src.error_msg);
     return true;
 }
 
-bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
+bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite,std::string& error_msg)
 {
     tipl::progress prog("convert DICOM to SRC or nifti files");
     std::vector<std::filesystem::path> pending{dir};
-    bool result = true;
+    size_t attempted = 0,succeeded = 0;
     for(size_t p = 0,done = 0,total = 0;p < pending.size();++p)
     {
         auto dir_list = tipl::search_dirs(pending[p],std::string());
@@ -983,20 +984,28 @@ bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
         for(size_t i = 0;i < dir_list.size();++i,++done)
         {
             if(!prog(done,total))
-                return false;
+                return false; // aborted by the user; not a reportable failure
             auto dicom_file_list = tipl::search_files(dir_list[i],"*.dcm");
             if(dicom_file_list.empty())
                 continue;
             has_dicom = true;
             while(i+1 < dir_list.size() && std::filesystem::exists(dir_list[i+1]/dicom_file_list.front().filename()))
                 tipl::search_files(dir_list[++i],"*.dcm",dicom_file_list),++done;
-            if(!dicom2src_and_nii(dicom_file_list,overwrite))
-                result = false;
+            ++attempted;
+            std::string series_error;
+            if(dicom2src_and_nii(dicom_file_list,overwrite,series_error))
+                ++succeeded;
+            else if(!series_error.empty())
+                error_msg += (error_msg.empty() ? std::string() : "\n")+series_error;
         }
         if(!has_dicom)
             pending.insert(pending.end(),dir_list.begin(),dir_list.end());
     }
-    return result;
+    // some series failing is not itself a failure as long as at least one converted; error_msg still
+    // carries every failure so the caller can warn about it even when reporting overall success
+    if(attempted == 0)
+        error_msg = "no DICOM files found in "+dir.u8string();
+    return attempted != 0 && succeeded != 0;
 }
 
 
@@ -1494,6 +1503,15 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 {
     error_msg.clear();
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
+    // for a batch command run to completion in this function: err empty means success, prompting "Finished." for a local user; non-empty means fail(err)
+    auto finish = [&](const std::string& err)
+    {
+        if(!err.empty())
+            return fail(err);
+        if(source == command_source::User)
+            QMessageBox::information(this,QApplication::applicationName(),"Finished.");
+        return true;
+    };
     if(cmd.empty())
         return fail("empty command");
 
@@ -1601,7 +1619,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         }
         if(tipl::prog_aborted)
             return true;
-        return result || fail(dicom_error.empty() ? "one or more DICOM files could not be renamed" : dicom_error);
+        return finish(result ? std::string() :
+            dicom_error.empty() ? "one or more DICOM files could not be renamed" : dicom_error);
     }
 
     if(cmd[0] == "rename_dicom_dir")
@@ -1612,7 +1631,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         add_work_dir(dir);
         std::string dicom_error;
         rename_dicom_at_dir(tipl::qt::to_path(dir),tipl::qt::to_path(dir),dicom_error);
-        return dicom_error.empty() || fail(dicom_error);
+        return finish(dicom_error);
     }
 
     if(cmd[0] == "convert_dicom_dir")
@@ -1621,8 +1640,13 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         if(dir.isEmpty())
             return true;
         add_work_dir(dir);
-        return dicom2src_and_nii(tipl::qt::to_path(dir),false) ||
-               fail("DICOM conversion failed");
+        std::string dicom_error;
+        if(!dicom2src_and_nii(tipl::qt::to_path(dir),false,dicom_error))
+            return fail(dicom_error.empty() ? "DICOM conversion failed" : dicom_error);
+        if(source == command_source::User) // some series may have failed even on overall success; say so instead of a bare "Finished."
+            QMessageBox::information(this,QApplication::applicationName(),
+                dicom_error.empty() ? "Finished." : QString::fromStdString("Finished with warnings:\n"+dicom_error));
+        return true;
     }
 
     if(cmd[0] == "bids_to_src")
@@ -1646,8 +1670,11 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             return fail(message);
         }
         std::sort(files.begin(),files.end());
-        return nii2src(files,tipl::qt::to_path(output_dir),true,true,false) ||
-               fail("BIDS to SRC conversion failed");
+        std::string src_error;
+        nii2src(files,tipl::qt::to_path(output_dir),true,true,false,src_error);
+        if(tipl::prog_aborted)
+            return true;
+        return finish(src_error);
     }
 
     if(cmd[0] == "nifti_dir_to_src")
@@ -1691,9 +1718,11 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             }
             selected.push_back(nii);
         }
-        return nii2src(selected,output_dir,false,true,false,
-                       "batch creating src") ||
-               fail("NIfTI to SRC conversion failed");
+        std::string src_error;
+        nii2src(selected,output_dir,false,true,false,src_error);
+        if(tipl::prog_aborted)
+            return true;
+        return finish(src_error);
     }
 
     if(cmd[0] == "collect_network_measures")
