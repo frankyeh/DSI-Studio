@@ -967,6 +967,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
        cmd[0] == "show_tract_recognition" || cmd[0] == "save_tract_recognition")
     {
         // cmd[1] : file name to save
+        if(cmd[1].empty() && tipl::begins_with(cmd[0],"save_"))
+            return run->failed("usage: "+cmd[0]+" <output file path>");
         auto regions = get_checked_regions();
         auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
         auto devices = cur_tracking_window.deviceWidget->devices;
@@ -1041,13 +1043,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             default_file += "_device_stat.txt";
         }
 
-        if(!cmd[1].empty())
+        if(!cmd[1].empty()) // save_X <path>: always write to file, no dialog, regardless of source
         {
             tipl::out() << "save " << cmd[1];
             if(!tipl::write_text_file(cmd[1],result,tipl::error()))
                 return run->failed("cannot write to " + cmd[1]);
         }
-        else
+        else if(run->source == command_source::AI) // show_X from the AI: return the text directly, no dialog, no file
+            tipl::out() << result;
+        else // show_X from a local user: unchanged interactive dialog
         {
             cmd[1] = show_info_dialog(title,result,default_file);
             if(!cmd[1].empty())
