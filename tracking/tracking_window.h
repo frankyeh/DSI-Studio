@@ -184,7 +184,10 @@ public:
     QDialog* command_dialog = nullptr;
 public:
     slice_view_scene scene;
-    bool slice_need_update = false;
+    enum slice_update_type{none = 0,region_updated = 1,tract_updated = 2,slice_updated = 4};
+    friend slice_update_type operator|(slice_update_type a,slice_update_type b){return slice_update_type(int(a)|int(b));}
+    friend slice_update_type& operator|=(slice_update_type& a,slice_update_type b){return a = a | b;}
+    slice_update_type slice_need_update = none;
     float get_scene_zoom(void){return get_scene_zoom(current_slice);}
     float get_scene_zoom(std::shared_ptr<SliceModel> slice);
 public:
