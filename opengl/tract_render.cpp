@@ -393,14 +393,19 @@ void TractRender::prepare_update(tracking_window& param,
         return;
 
     auto dim = param.handle->dim;
+    bool render_non_repeated = param["tract_render_option"].toInt() == 1;
 
     std::vector<unsigned int> visible;
     {
         auto tracks_count = active_tract_model->get_visible_track_count();
         visible.reserve(tracks_count);
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+        if(render_non_repeated && repeated.size() != tracks_count)
+            repeated = active_tract_model->find_repeated(1.0f,false);
         for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
         {
+            if(render_non_repeated && repeated[data_index])
+                continue;
             if(shader.skip_rate < 1.0f && uniform_gen() > shader.skip_rate)
                 continue;
             if (active_tract_model->get_tract(data_index).size() <= 3)
