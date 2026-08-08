@@ -2323,6 +2323,7 @@ void AIAgent::on_ai_send_message_clicked()
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
         if(info.provider == ai_provider::ChatGPT) // never a local launch target; reconnect instead of misresuming its session id as a local agent
         {
+            web_agent_session_id = info.sessions; // resume must target the selected chat, not whatever session was last active
             new_chat_dialog(true);
             return;
         }
