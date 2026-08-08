@@ -553,12 +553,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             }
             slice_need_update |= update_type;
         };
-        connect(ui->roi_fiber,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
-        connect(ui->roi_track,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,tract_updated);});
-        connect(ui->roi_ruler,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
-        connect(ui->roi_position,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
-        connect(ui->roi_label,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
-        connect(ui->roi_draw_edge,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,region_updated);});
+        connect(ui->roi_fiber,&QToolButton::toggled,this,[roi_show_toggled](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_track,&QToolButton::toggled,this,[roi_show_toggled](bool checked){roi_show_toggled(checked,tract_updated);});
+        connect(ui->roi_ruler,&QToolButton::toggled,this,[roi_show_toggled](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_position,&QToolButton::toggled,this,[roi_show_toggled](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_label,&QToolButton::toggled,this,[roi_show_toggled](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_draw_edge,&QToolButton::toggled,this,[roi_show_toggled](bool checked){roi_show_toggled(checked,region_updated);});
 
         connect(new QShortcut(QKeySequence(Qt::Key_F1),this),&QShortcut::activated,this,[this](void){ui->roi_fiber->setChecked(!ui->roi_fiber->isChecked());});
         connect(new QShortcut(QKeySequence(Qt::Key_F2),this),&QShortcut::activated,this,[this](void){ui->roi_track->setChecked(!ui->roi_track->isChecked());});
