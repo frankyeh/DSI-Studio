@@ -89,7 +89,6 @@ public slots:
     void show_complete_slice();
     void copyClipBoard();
     void center();
-
 };
 
 #endif // SLICE_VIEW_SCENE_H
