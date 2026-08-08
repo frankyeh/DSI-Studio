@@ -1124,10 +1124,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         chat_context_guard(QString& target_,QString value):target(target_),prev(target_) {target = std::move(value);}
         ~chat_context_guard() {target = prev;}
     } chat_guard(ai_chat_context,request["chat"].toString().trimmed());
-    auto no_command = [&]{return QJsonObject{{"status","success"},{"result",QJsonArray()}};};
+    auto no_command_or_fail = [&]{return has_chat ? QJsonObject{{"status","success"},{"result",QJsonArray()}} : fail("missing command field");};
     auto command_json = request["command"];
     if(command_json.isUndefined() || command_json.isNull())
-        return has_chat ? no_command() : fail("missing command field");
+        return no_command_or_fail();
 
     std::vector<std::vector<std::string>> cmds;
     // prepare cmds
@@ -1148,7 +1148,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             add(param);
     }
     if(cmds.empty())
-        return has_chat ? no_command() : fail("missing command field");
+        return no_command_or_fail();
 
     QJsonArray results;
 
