@@ -1702,7 +1702,14 @@ std::vector<char> TractModel::find_repeated(float d) const
                        std::back_inserter(check_set));
         for(size_t j : check_set)
         {
-            if(i == j || repeated[j])
+            // "shares a start bucket" and "shares an end bucket" are each symmetric, so without the j>i
+            // restriction, every duplicate pair gets fully evaluated twice (once from i, once from j).
+            // The original (unrestricted) code only ever wrote repeated[j], but since it ran both
+            // directions, any tract with >=1 duplicate partner ended up marked from one side or the
+            // other -- so marking both i and j here on a single evaluation reproduces that exact same
+            // final set (every member of a mutual-duplicate cluster gets deleted) while still testing
+            // each unordered pair only once.
+            if(j <= i || (repeated[i] && repeated[j]))
                 continue;
             if(min_distance(&tract_data[i][0],&tract_data[j][0],d) < d &&
                min_distance(&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3],d) < d &&
@@ -1710,6 +1717,7 @@ std::vector<char> TractModel::find_repeated(float d) const
                track_repeated(j,i))
             {
                 std::scoped_lock lock(m);
+                repeated[i] = true;
                 repeated[j] = true;
             }
         }
