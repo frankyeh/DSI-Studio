@@ -720,8 +720,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         ui->SliceModality->blockSignals(false);
         glWidget->no_update = false;
-        scene.no_update = false;
-        no_update = false;
         command({"set_slice"});
         ui->glAxiView->setChecked(true);
         if((*this)["orientation_convention"].toInt() == 1)
@@ -784,25 +782,29 @@ void tracking_window::report(QString string)
 extern console_stream console;
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
+
+    // update slice here
+    if(updatesEnabled())
+    {
+        if(slice_need_update) // clear bits nothing is showing for, so the rest of the code sees a clean, meaningful value
+        {
+            if(!ui->roi_track->isChecked())
+                slice_need_update = slice_update_type(int(slice_need_update) & ~int(tract_updated));
+            if(regionWidget->get_checked_regions().empty())
+                slice_need_update = slice_update_type(int(slice_need_update) & ~int(region_updated));
+        }
+        if(slice_need_update)
+        {
+            auto update_type = slice_need_update;
+            slice_need_update = none;
+            scene.show_slice(update_type);
+        }
+        if(scene.complete_view_ready)
+            scene.show_complete_slice();
+    }
+
     bool has_info = false;
     tipl::vector<3> pos;
-    // update slice here
-    if(slice_need_update) // clear bits nothing is showing for, so the rest of the code sees a clean, meaningful value
-    {
-        if(!ui->roi_track->isChecked())
-            slice_need_update = slice_update_type(int(slice_need_update) & ~int(tract_updated));
-        if(regionWidget->get_checked_regions().empty())
-            slice_need_update = slice_update_type(int(slice_need_update) & ~int(region_updated));
-    }
-    if(slice_need_update && updatesEnabled())
-    {
-        auto update_type = slice_need_update;
-        slice_need_update = none;
-        scene.show_slice(update_type);
-    }
-    if(scene.complete_view_ready && updatesEnabled())
-        scene.show_complete_slice();
-
     if (event->type() == QEvent::MouseMove && obj->isWidgetType())
     {
         auto mouseEvent = static_cast<QMouseEvent*>(event);
