@@ -883,12 +883,12 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                         tipl::matrix<4,4>(tipl::identity_matrix()) :
                         cur_tracking_window.current_slice->to_slice);
 
-        cur_tracking_window.regionWidget->begin_update();
+        cur_tracking_window.setUpdatesEnabled(false);
         cur_tracking_window.regionWidget->add_region(item(cur_row,0)->text()+QString(" endpoints1"));
         cur_tracking_window.regionWidget->regions.back()->add_points(std::move(points1));
         cur_tracking_window.regionWidget->add_region(item(cur_row,0)->text()+QString(" endpoints2"));
         cur_tracking_window.regionWidget->regions.back()->add_points(std::move(points2));
-        cur_tracking_window.regionWidget->end_update();
+        cur_tracking_window.setUpdatesEnabled(true);
         cur_tracking_window.slice_need_update |= region_updated;
         cur_tracking_window.glWidget->update();
         return true;
