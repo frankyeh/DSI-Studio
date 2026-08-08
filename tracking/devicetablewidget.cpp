@@ -177,7 +177,7 @@ DeviceTableWidget::DeviceTableWidget(tracking_window& cur_tracking_window_,QWidg
         auto previous = static_cast<Qt::CheckState>(item->data(Qt::UserRole+1).toInt());
         if (current != previous) {
             item->setData(Qt::UserRole+1, current);
-            emit need_update();
+            emit cur_tracking_window.need_gl_update();
         }
     });
 
@@ -339,7 +339,7 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
         }
         break;
     }
-    emit need_update();
+    emit cur_tracking_window.need_gl_update();
 }
 
 void DeviceTableWidget::new_device(std::shared_ptr<Device> device)
@@ -373,20 +373,20 @@ void DeviceTableWidget::new_device(std::shared_ptr<Device> device)
 
     cur_tracking_window.ui->DeviceDockWidget->show();
     no_update = false;
-    emit need_update();
+    emit cur_tracking_window.need_gl_update();
 
 }
 void DeviceTableWidget::check_all(void)
 {
     for(int row = 0;row < rowCount();++row)
         item(row,0)->setCheckState(Qt::Checked);
-    emit need_update();
+    emit cur_tracking_window.need_gl_update();
 }
 void DeviceTableWidget::uncheck_all(void)
 {
     for(int row = 0;row < rowCount();++row)
         item(row,0)->setCheckState(Qt::Unchecked);
-    emit need_update();
+    emit cur_tracking_window.need_gl_update();
 }
 bool DeviceTableWidget::load_device(const std::filesystem::path& filename)
 {
@@ -414,7 +414,7 @@ void DeviceTableWidget::shift_device(size_t index,float sel_length,const tipl::v
     item(index,7)->setText(QString::number(double(std::atan2(devices[index]->dir[1], devices[index]->dir[0]))*180.0/PI));
     item(index,8)->setText(QString::number(double(std::acos(devices[index]->dir[2]))*180.0/PI));
     no_update = false;
-    emit need_update();
+    emit cur_tracking_window.need_gl_update();
 }
 void DeviceTableWidget::load_device(void)
 {
@@ -446,7 +446,7 @@ void DeviceTableWidget::assign_colors(void)
         item(int(index),2)->setData(Qt::UserRole,0xFF000000 | uint32_t(c));
         devices[index]->color = c.color;
     }
-    emit need_update();
+    emit cur_tracking_window.need_gl_update();
 }
 size_t DeviceTableWidget::get_device(const std::string& name)
 {
@@ -633,7 +633,7 @@ bool DeviceTableWidget::command(std::vector<std::string> cmd)
             devices.back()->type = "Locator";
             new_device(devices.back());
         }
-        emit need_update();
+        emit cur_tracking_window.need_gl_update();
         return run->succeed();
     }
     if(cmd[0] == "delete_device")
@@ -659,14 +659,14 @@ bool DeviceTableWidget::command(std::vector<std::string> cmd)
             devices.erase(devices.begin()+rows[i]);
             removeRow(rows[i]);
         }
-        emit need_update();
+        emit cur_tracking_window.need_gl_update();
         return run->succeed();
     }
     if(cmd[0] == "delete_all_devices")
     {
         setRowCount(0);
         devices.clear();
-        emit need_update();
+        emit cur_tracking_window.need_gl_update();
         return run->succeed();
     }
     if(cmd[0] == "save_all_devices")
