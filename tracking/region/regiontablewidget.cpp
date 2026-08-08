@@ -849,8 +849,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 regions.back()->add_points(std::move(points[i]));
         }
         end_update();
-        cur_tracking_window.glWidget->update();
-        cur_tracking_window.slice_need_update |= region_updated;
+        emit need_update();
         cur_tracking_window.raise();
         return run->succeed();
     }
