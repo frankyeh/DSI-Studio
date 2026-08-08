@@ -213,7 +213,6 @@ public:
     QAction* addSubMenuItem(const std::string& each,const std::string& title,const char* action);
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
-    bool no_update = true;
 public:
     bool eventFilter(QObject *obj, QEvent *event) override;
     QVariant operator[](QString name)const;
