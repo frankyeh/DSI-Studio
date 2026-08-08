@@ -563,7 +563,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
             setData("max_tract_count",0);
             setData("check_ending",0);
             cur_tracking_window.handle->dir.dt_fa.clear(); // avoid slice showing previous dt
-            cur_tracking_window.slice_need_update = true;
+            cur_tracking_window.slice_need_update |= tracking_window::slice_updated;
         }
 
         return;
@@ -571,7 +571,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     if(cur_node->id == "roi_zoom")
     {
         cur_tracking_window.set_roi_zoom(cur_node->value.toInt());
-        cur_tracking_window.slice_need_update = true;
+        cur_tracking_window.slice_need_update |= tracking_window::slice_updated;
         return;
     }
     if(cur_node->id == "roi_position")
@@ -626,7 +626,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
        cur_node->id == "dt_threshold" ||
             cur_node->parent()->id == QString("ROI"))
     {
-        cur_tracking_window.slice_need_update = true;
+        cur_tracking_window.slice_need_update |= tracking_window::slice_updated;
         return;
     }
 
