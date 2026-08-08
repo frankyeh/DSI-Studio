@@ -865,6 +865,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                     tipl::vector<3> zero;
                     zero.to(slice->to_slice);
                     sel_coord.back() += p1-zero;
+                    cur_tracking_window.slice_need_update |= tracking_window::region_updated;
                     emit need_update();
                 }
             }
@@ -964,6 +965,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         if(move_slice)
         {
             move_slice = false;
+            cur_tracking_window.slice_need_update |= tracking_window::position_updated;
             emit need_update();
         }
         return;
@@ -974,6 +976,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     auto regionWidget = cur_tracking_window.regionWidget;
     if (regionWidget->currentRow() < 0 || regionWidget->currentRow() >= int(regionWidget->regions.size()))
     {
+        cur_tracking_window.slice_need_update |= tracking_window::region_updated;
         emit need_update();
         return;
     }
@@ -1127,6 +1130,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             tipl::out() << "warping picture: " << from << " to " << to;
             slice->warp_picture(from,to);
         }
+        cur_tracking_window.slice_need_update |= tracking_window::position_updated;
         emit need_update();
         return;
     }
@@ -1170,6 +1174,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     cur_region->add_points(std::move(points_int16),
                            mouseEvent->button() == Qt::RightButton || mouseEvent->modifiers() & Qt::ShiftModifier);
 
+    cur_tracking_window.slice_need_update |= tracking_window::region_updated;
     emit need_update();
 }
 
