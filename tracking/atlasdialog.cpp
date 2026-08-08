@@ -76,7 +76,7 @@ void AtlasDialog::on_merge_and_add_clicked()
     w->regionWidget->add_merged_regions_from_atlas(handle->atlas_list[atlas_index],name,roi_list);
 
     w->glWidget->update();
-    w->slice_need_update |= tracking_window::region_updated;
+    w->slice_need_update |= region_updated;
     w->raise();
 
     ui->region_list->clearSelection();
