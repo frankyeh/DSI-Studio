@@ -415,7 +415,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 if(auto label = unet_label[p.index()])
                     regions[label-1].push_back(p);
 
-            regionWidget->begin_update();
+            setUpdatesEnabled(false);
             for(size_t i = 0;prog(i,regions.size());++i)
             {
                 std::string name = i < unet.labels.size() ? unet.labels[i] : "tissue" + std::to_string(i + 1);
@@ -477,7 +477,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 if(!regions[i].empty())
                     regionWidget->regions.back()->add_points(std::move(regions[i]));
             }
-            regionWidget->end_update();
+            setUpdatesEnabled(true);
 
             slice_need_update |= region_updated;
             glWidget->update_slice();
