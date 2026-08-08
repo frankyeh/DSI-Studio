@@ -789,8 +789,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         {
             if(!ui->roi_track->isChecked())
                 slice_need_update = slice_update_type(int(slice_need_update) & ~int(tract_updated));
-            if(regionWidget->get_checked_regions().empty())
-                slice_need_update = slice_update_type(int(slice_need_update) & ~int(region_updated));
         }
         if(slice_need_update)
         {
