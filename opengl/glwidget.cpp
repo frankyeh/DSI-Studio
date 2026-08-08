@@ -1844,7 +1844,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         dirs.push_back(tipl::vector<3,float>());
         get_view_dir(last_select_point,dirs.back());
         angular_selection = (event->button() == Qt::RightButton);
-        emit edited();
+        cur_tracking_window.tractWidget->edit_tracts();
     }
     if(device_selected)
     {
