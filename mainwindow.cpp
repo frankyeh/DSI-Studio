@@ -1213,7 +1213,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 result["error"] = error;
             return result;
         };
-        auto manual_hint = [](QString msg){return msg+". Read DSI Studio Manuals and retry.";};
+        bool hint = true; // false for state/operational errors (busy, window not found, ...) that reading the manuals won't fix
+        auto manual_hint = [&](QString msg){return hint ? msg+". Read DSI Studio Manuals and retry." : msg;};
         auto window_before = info.current_window;
         QString output,error;
         QString* prev_capture; // a reentrant request handled during this command's processEvents() calls also captures; restore instead of clearing
@@ -1261,6 +1262,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                command_name == "minimize" || command_name == "maximize")
             {
                 // instantaneous window-manager calls: no batching benefit from resolve_target's lock, just a plain lookup
+                hint = false; // any error below is a state/policy issue, not something the manuals would resolve
                 if(auto* target = find_window(info.current_window))
                 {
                     if(command_name == "close" && target == this)
@@ -1439,7 +1441,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 info.record_request(command_name);
             else if(error_msg == "unknown command: "+cmd[0])
             {
-                if(resolve_target(error))
+                if(!resolve_target(error))
+                    hint = false; // busy/not-found is a state issue, not something the manuals would resolve
+                else
                 {
                     info.record_request(command_name,locked_target);
                     auto execute = [&](auto* window,bool success)
