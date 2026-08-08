@@ -115,7 +115,7 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
         if (item->column() == 2)
         {
             regions[uint32_t(item->row())]->region_render->color = item->data(Qt::UserRole).toUInt();
-            emit need_update();
+            emit region_changed();
         }
     });
     setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
@@ -155,14 +155,14 @@ void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,
 void RegionTableWidget::begin_update(void)
 {
     cur_tracking_window.scene.no_update = true;
-    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(need_update()),&cur_tracking_window,SIGNAL(need_gl_update()));
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
     cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
 
 void RegionTableWidget::end_update(void)
 {
     cur_tracking_window.scene.no_update = false;
-    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(need_update()),&cur_tracking_window,SIGNAL(need_gl_update()));
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
 
@@ -382,7 +382,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             });
         add_region("whole brain",seed_id);
         regions.back()->from_mask(mask);
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
     if(cmd[0] == "new_region_from_threshold")
@@ -492,7 +492,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if (check_item->checkState() != check_state)
                 check_item->setCheckState(check_state);
         }
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
     if(cmd[0] == "move_up_region" || cmd[0] == "move_down_region")
@@ -687,7 +687,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return run->failed(cur_tracking_window.handle->error_msg);
             if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
                 return run->failed(error_msg);
-            emit need_update();
+            emit region_changed();
             last_file_name = cmd[1];
             return run->succeed();
         }
@@ -746,7 +746,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
             }
         }
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
     if(cmd[0] == "save_region_color")
@@ -773,7 +773,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             check_row(row,checked);
         cur_tracking_window.scene.no_update = false;
         cur_tracking_window.glWidget->no_update = false;
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
     if(cmd[0] == "copy_region")
@@ -789,7 +789,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         begin_update();
         add_row(int(cur_row+1),cur_region->name.c_str());
         end_update();
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
     if(cmd[0] == "add_region_from_atlas")
@@ -849,7 +849,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 regions.back()->add_points(std::move(points[i]));
         }
         end_update();
-        emit need_update();
+        emit region_changed();
         cur_tracking_window.raise();
         return run->succeed();
     }
@@ -904,7 +904,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             removeRow(merge_list[index]);
         }
         end_update();
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
 
@@ -931,7 +931,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             regions.erase(regions.begin()+rows[i]);
             removeRow(rows[i]);
         }
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
 
@@ -940,7 +940,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         setRowCount(0);
         regions.clear();
         color_gen = 0;
-        emit need_update();
+        emit region_changed();
         return run->succeed();
     }
     if(cmd[0] == "move_slice_to_region")
@@ -1312,14 +1312,14 @@ void RegionTableWidget::undo(void)
     if(currentRow() < 0)
         return;
     regions[size_t(currentRow())]->undo();
-    emit need_update();
+    emit region_changed();
 }
 void RegionTableWidget::redo(void)
 {
     if(currentRow() < 0)
         return;
     regions[size_t(currentRow())]->redo();
-    emit need_update();
+    emit region_changed();
 }
 
 bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
@@ -1684,6 +1684,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
         openPersistentEditor(item(i,1));
         openPersistentEditor(item(i,2));
     }
-    emit need_update();
+    emit region_changed();
     return true;
 }
