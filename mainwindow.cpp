@@ -1152,21 +1152,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     QJsonArray results;
 
-    QWidget* locked_target = nullptr; // releases the locked window (setUpdatesEnabled/busy) on target switch or batch end
-    bool locked_updates_enabled = true;
+    QWidget* locked_target = nullptr; // releases the locked window (busy) on target switch or batch end
     auto unlock_target = [&]
     {
         if(!locked_target)
             return;
         locked_target->setProperty("busy",false);
-        locked_target->setUpdatesEnabled(locked_updates_enabled);
-        if(auto* window = qobject_cast<tracking_window*>(locked_target))
-        {
-            window->slice_need_update = true;
-            window->glWidget->update_slice();
-        }
-        else
-            locked_target->update();
         locked_target = nullptr;
     };
 
@@ -1205,8 +1196,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             error = "target window not found, terminated by user? Use set_window to select a window first.";
             return false;
         }
-        locked_updates_enabled = target->updatesEnabled();
-        target->setUpdatesEnabled(false);
         target->setProperty("busy",true);
         locked_target = target;
         return true;
