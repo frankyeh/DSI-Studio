@@ -862,7 +862,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             cur_tracking_window.current_slice->to_slice);
         cur_tracking_window.regionWidget->add_region(item(cur_row,0)->text());
         cur_tracking_window.regionWidget->regions.back()->add_points(std::move(points));
-        cur_tracking_window.slice_need_update |= tracking_window::region_updated;
+        cur_tracking_window.slice_need_update |= region_updated;
         cur_tracking_window.glWidget->update();
         return true;
     }
@@ -884,7 +884,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.regionWidget->add_region(item(cur_row,0)->text()+QString(" endpoints2"));
         cur_tracking_window.regionWidget->regions.back()->add_points(std::move(points2));
         cur_tracking_window.regionWidget->end_update();
-        cur_tracking_window.slice_need_update |= tracking_window::region_updated;
+        cur_tracking_window.slice_need_update |= region_updated;
         cur_tracking_window.glWidget->update();
         return true;
     }
