@@ -1107,7 +1107,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         mat_reader.write("dimension",new_dim.data(),1,3);
     if(new_vs != vs)
         mat_reader.write("voxel_size",new_vs.data(),1,3);
-    if(mat_reader.has("trans") && new_trans != trans)
+    if(new_trans != trans)
         mat_reader.write("trans",new_trans.data(),4,4);
 
     return !prog.aborted();
@@ -1126,7 +1126,8 @@ bool fib_data::load_template_fib(size_t id,float reso)
     if (!mat_reader.load_from_file(fib_template_list[id],prog))
         return error_msg = mat_reader.error_msg,false;
 
-    if(reso != vs[0])
+    tipl::vector<3> native_vs;
+    if(mat_reader.read_pointer("voxel_size",native_vs) && reso != native_vs[0])
     {
         tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
         if(!modify_fib(mat_reader,"regrid",std::to_string(reso)))
