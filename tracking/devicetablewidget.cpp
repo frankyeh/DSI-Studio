@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <QContextMenuEvent>
+#include <QSignalBlocker>
 #include <QDoubleSpinBox>
 #include <QInputDialog>
 #include <QFileDialog>
@@ -247,8 +248,6 @@ tipl::vector<3> DeviceTableWidget::handle_coordinates(tipl::vector<3> pos,bool i
 }
 void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
 {
-    if(no_update)
-        return;
     const double PI = 3.14159265358979323846;
     auto a2v = [](float phi,float theta, tipl::vector<3>& v)
     {
@@ -346,33 +345,34 @@ void DeviceTableWidget::new_device(std::shared_ptr<Device> device)
 {
     const double PI = 3.14159265358979323846;
     insertRow(int(devices.size())-1);
-    no_update = true;
-    auto p = handle_coordinates(device->pos);
-    QTableWidgetItem *items[9] =
     {
-        new QTableWidgetItem(device->name.c_str()),
-        new QTableWidgetItem(device->type.c_str()),
-        new QTableWidgetItem(QString::number(uint32_t(device->color))),
-        new QTableWidgetItem(QString::number(double(device->length))),
-        new QTableWidgetItem(QString::number(double(p[0]))),
-        new QTableWidgetItem(QString::number(double(p[1]))),
-        new QTableWidgetItem(QString::number(double(p[2]))),
-        new QTableWidgetItem(QString::number(double(std::atan2(device->dir[1], device->dir[0]))*180.0/PI)),
-        new QTableWidgetItem(QString::number(double(std::acos(device->dir[2]))*180.0/PI))
-    };
-    items[0]->setCheckState(Qt::Checked);
-    items[2]->setData(Qt::UserRole,uint32_t(device->color));
+        QSignalBlocker blocker(this); // building this row fires itemChanged per cell; don't let updateDevices react to our own writes
+        auto p = handle_coordinates(device->pos);
+        QTableWidgetItem *items[9] =
+        {
+            new QTableWidgetItem(device->name.c_str()),
+            new QTableWidgetItem(device->type.c_str()),
+            new QTableWidgetItem(QString::number(uint32_t(device->color))),
+            new QTableWidgetItem(QString::number(double(device->length))),
+            new QTableWidgetItem(QString::number(double(p[0]))),
+            new QTableWidgetItem(QString::number(double(p[1]))),
+            new QTableWidgetItem(QString::number(double(p[2]))),
+            new QTableWidgetItem(QString::number(double(std::atan2(device->dir[1], device->dir[0]))*180.0/PI)),
+            new QTableWidgetItem(QString::number(double(std::acos(device->dir[2]))*180.0/PI))
+        };
+        items[0]->setCheckState(Qt::Checked);
+        items[2]->setData(Qt::UserRole,uint32_t(device->color));
 
-    for(size_t i = 0;i < 9;++i)
-        setItem(int(devices.size())-1, i, items[i]);
-    for(size_t i = 1;i < 9;++i)
-        openPersistentEditor(items[i]);
+        for(size_t i = 0;i < 9;++i)
+            setItem(int(devices.size())-1, i, items[i]);
+        for(size_t i = 1;i < 9;++i)
+            openPersistentEditor(items[i]);
 
-    setRowHeight(int(devices.size())-1,22);
-    setCurrentCell(int(devices.size())-1,0);
+        setRowHeight(int(devices.size())-1,22);
+        setCurrentCell(int(devices.size())-1,0);
 
-    cur_tracking_window.ui->DeviceDockWidget->show();
-    no_update = false;
+        cur_tracking_window.ui->DeviceDockWidget->show();
+    }
     emit cur_tracking_window.need_gl_update();
 
 }
@@ -406,14 +406,15 @@ void DeviceTableWidget::shift_device(size_t index,float sel_length,const tipl::v
     if(index >= devices.size())
         return;
     devices[index]->move(sel_length,dis);
-    no_update = true;
-    auto p = handle_coordinates(devices[index]->pos);
-    item(index,4)->setText(QString::number(double(p[0])));
-    item(index,5)->setText(QString::number(double(p[1])));
-    item(index,6)->setText(QString::number(double(p[2])));
-    item(index,7)->setText(QString::number(double(std::atan2(devices[index]->dir[1], devices[index]->dir[0]))*180.0/PI));
-    item(index,8)->setText(QString::number(double(std::acos(devices[index]->dir[2]))*180.0/PI));
-    no_update = false;
+    {
+        QSignalBlocker blocker(this); // don't let updateDevices react to our own writes below
+        auto p = handle_coordinates(devices[index]->pos);
+        item(index,4)->setText(QString::number(double(p[0])));
+        item(index,5)->setText(QString::number(double(p[1])));
+        item(index,6)->setText(QString::number(double(p[2])));
+        item(index,7)->setText(QString::number(double(std::atan2(devices[index]->dir[1], devices[index]->dir[0]))*180.0/PI));
+        item(index,8)->setText(QString::number(double(std::acos(devices[index]->dir[2]))*180.0/PI));
+    }
     emit cur_tracking_window.need_gl_update();
 }
 void DeviceTableWidget::load_device(void)
@@ -482,15 +483,16 @@ void DeviceTableWidget::set_coordinate(bool is_acpc)
             locators.push_back(devices[index]);
         }
     }
-    no_update = true;
-    for(size_t i = 0;i < devices.size();++i)
     {
-        auto p = handle_coordinates(devices[i]->pos);
-        item(i,4)->setText(QString::number(double(p[0])));
-        item(i,5)->setText(QString::number(double(p[1])));
-        item(i,6)->setText(QString::number(double(p[2])));
+        QSignalBlocker blocker(this); // don't let updateDevices react to our own writes below
+        for(size_t i = 0;i < devices.size();++i)
+        {
+            auto p = handle_coordinates(devices[i]->pos);
+            item(i,4)->setText(QString::number(double(p[0])));
+            item(i,5)->setText(QString::number(double(p[1])));
+            item(i,6)->setText(QString::number(double(p[2])));
+        }
     }
-    no_update = false;
     QStringList header;
     if(is_acpc)
         header << "Name" << "Type" << "Color" << "Length" << "X(mm)" << "Y(mm)" << "Z(mm)" << "phi" << "theta";
