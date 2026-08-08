@@ -16,7 +16,7 @@ bool load_bval_bvec(size_t dwi_size,
                     const std::filesystem::path& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true);
 bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
-bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite);
+bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite,std::string& error_msg);
 bool find_readme(const std::filesystem::path& file,std::filesystem::path& intro_file_name)
 {
     auto path = file.parent_path();
@@ -341,15 +341,17 @@ int src(tipl::program_option<tipl::out>& po)
                 else
                     tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
+                std::string error_msg;
                 return nii2src(dwi_nii_files,output_dir,is_bids,
                                po.get("overwrite",0),
-                               po.get("topup_eddy",0)) ? 0 : 1;
+                               po.get("topup_eddy",0),error_msg) ? 0 : 1;
             }
         }
 
         tipl::out() << "cannot find NIFTI files...try looking for DICOM files in directory " << source.c_str() << std::endl;
+        std::string dicom_error;
         return dicom2src_and_nii(
-            source,po.get("overwrite",0)) ? 0 : 1;
+            source,po.get("overwrite",0),dicom_error) ? 0 : 1;
     }
     else
         file_list = po.get_files("source");
