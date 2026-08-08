@@ -57,7 +57,6 @@ public:
             tract_rendering[uint32_t(cur_row)]->need_update = true;
         }
         item(cur_row,1)->setText(QString::number(tract_models[uint32_t(cur_row)]->get_visible_track_count()));
-        emit show_tracts();
     }
     template<typename fun_type>
     bool for_each_bundle(fun_type&& fun,const std::string& indices = {})
