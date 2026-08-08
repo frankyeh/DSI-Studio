@@ -46,17 +46,18 @@ public:
 
     QString output_format(void);
     template<typename fun_type>
-    void for_current_bundle(fun_type&& fun)
+    bool for_current_bundle(fun_type&& fun)
     {
         int cur_row = currentRow();
         if(cur_row < 0 || item(cur_row,0)->checkState() != Qt::Checked)
-            return;
+            return false;
         {
             auto lock = tract_rendering[uint32_t(cur_row)]->start_writing();
             fun();
             tract_rendering[uint32_t(cur_row)]->need_update = true;
         }
         item(cur_row,1)->setText(QString::number(tract_models[uint32_t(cur_row)]->get_visible_track_count()));
+        return true;
     }
     template<typename fun_type>
     bool for_each_bundle(fun_type&& fun,const std::string& indices = {})
