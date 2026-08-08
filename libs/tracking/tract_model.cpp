@@ -1685,7 +1685,8 @@ std::vector<char> TractModel::find_repeated(float d) const
     {
         if(!prog(count++,total))
             return;
-        std::vector<size_t> check_set;
+        thread_local std::vector<size_t> check_set; // reused across calls on this thread to avoid a fresh allocation per tract
+        check_set.clear();
         if(x_reg.empty())
         {
             check_set.resize(tract_data.size());
