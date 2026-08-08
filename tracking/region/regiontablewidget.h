@@ -52,6 +52,7 @@ public:
     std::vector<float> color_map_values;
     size_t tract_map_id = 0;
     void update_color_map(void);
+    void update_region_color_values(void);
     tipl::rgb get_region_rendering_color(size_t index);
 public:
     std::vector<std::shared_ptr<ROIRegion> > get_checked_regions(void)
