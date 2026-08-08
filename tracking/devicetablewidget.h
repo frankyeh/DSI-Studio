@@ -46,8 +46,6 @@ public:
 public:
     std::string error_msg;
     bool command(std::vector<std::string> cmd);
-signals:
-    void need_update(void);
 private:
     QString new_device_str;
     void new_device(std::shared_ptr<Device> device);
