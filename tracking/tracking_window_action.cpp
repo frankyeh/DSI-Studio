@@ -801,7 +801,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         regionWidget->update_color_map();
         regionWidget->color_map_values.clear();
         tractWidget->need_update_all();
-        slice_need_update |= slice_updated;
+        slice_need_update |= position_updated;
         glWidget->update();
         return run->succeed();
     }
@@ -907,7 +907,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         current_slice->set_contrast_range(min_value_gl,max_value_gl);
         current_slice->set_contrast_color(min_color_gl,max_color_gl);
-        slice_need_update |= slice_updated;
+        slice_need_update |= image_updated;
         glWidget->update_slice();
         history.overwrite(cmd[0]);
         return run->succeed();
@@ -924,7 +924,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
         slices[slice_index]->directional_color = checked;
         glWidget->update_slice();
-        slice_need_update |= slice_updated;
+        slice_need_update |= image_updated;
         history.overwrite(cmd[0]);
         return run->succeed();
     }
@@ -946,7 +946,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             overlay_slices.erase(std::remove(overlay_slices.begin(),overlay_slices.end(),slices[slice_index]),overlay_slices.end());
 
         glWidget->update_slice();
-        slice_need_update |= slice_updated;
+        slice_need_update |= image_updated;
 
         history.overwrite(cmd[0]);
         return run->succeed();
@@ -969,7 +969,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             stay_slices.erase(std::remove(stay_slices.begin(),stay_slices.end(),slices[slice_index]),stay_slices.end());
 
         glWidget->update_slice();
-        slice_need_update |= slice_updated;
+        slice_need_update |= image_updated;
 
         history.overwrite(cmd[0]);
         return run->succeed();
@@ -1055,7 +1055,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                              param.substr(pos+1).c_str());
             }
         glWidget->update();
-        slice_need_update |= slice_updated;
+        slice_need_update |= position_updated;
         return run->succeed();
     }
     if(cmd[0] == "set_region_name" || cmd[0] == "set_region_color" ||
@@ -1105,7 +1105,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             updateSlicesMenu();
             set_data("show_slice",Qt::Checked);
             glWidget->update();
-            slice_need_update |= slice_updated;
+            slice_need_update |= image_updated;
             return run->succeed();
         }
 
