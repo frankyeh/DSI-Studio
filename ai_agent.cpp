@@ -1010,13 +1010,13 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     if(!status.isEmpty())
         ai_status_activity = status;
     // reflects only the currently selected chat (or, if none, a brand-new chat's own launch), not any other chat's activity
-    bool ongoing = (web_agent_active_session && !github_issue_api.isEmpty()) ||
-                   [this]
-                   {
-                       auto* item = ui->ai_project_list->currentItem();
-                       return item ? bool(ai_infos[item->data(Qt::UserRole).toString()].processes)
-                                   : active_ai_processes > 0;
-                   }();
+    auto* status_item = ui->ai_project_list->currentItem();
+    auto* status_info = status_item ? &ai_infos[status_item->data(Qt::UserRole).toString()] : nullptr;
+    bool ongoing = status_info ?
+        (status_info->provider == ai_provider::ChatGPT ?
+            (!github_issue_api.isEmpty() && status_info->sessions == web_agent_session_id) :
+            bool(status_info->processes)) :
+        (web_agent_active_session ? !github_issue_api.isEmpty() : active_ai_processes > 0);
     if(ongoing && (status.isEmpty() || temporary))
     {
         status = ai_status_activity;
