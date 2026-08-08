@@ -2060,6 +2060,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             tipl::out() << QDir::currentPath().toStdString();
             return true;
         }
+        if(!program.compare("curl",Qt::CaseInsensitive)) // curl's default progress meter redraws one line via \r for an interactive terminal;
+            text.insert(program.length()," -s -S"); // captured non-interactively, that just floods the log. -s hides it, -S still shows real errors
         if(source == command_source::AI)
         {
             QString message;
