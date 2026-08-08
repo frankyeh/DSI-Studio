@@ -400,6 +400,7 @@ view_image::view_image(QWidget *parent) :
     cur_image(new variant_image),
     ui(new Ui::view_image)
 {
+    setUpdatesEnabled(false); // re-enabled once an image is actually loaded and displayed (see init_image())
     ui->setupUi(this);
 
     table_event.reset(new TableKeyEventWatcher(ui->info));
