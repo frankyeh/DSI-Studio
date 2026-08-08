@@ -395,8 +395,6 @@ void slice_view_scene::update_3d(QImage captured)
 
 void slice_view_scene::show_slice(slice_update_type update_type)
 {
-    if(no_update)
-        return;
     need_complete_view |= update_type; // high-resolution image loading also depends on the complete (non-simple) pass, not just region/tract
     paint_image(view_image,true);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -409,7 +407,7 @@ void slice_view_scene::show_slice(slice_update_type update_type)
 void slice_view_scene::show_complete_slice(void)
 {
     complete_view_ready = false;
-    if(no_update || need_complete_view)
+    if(need_complete_view)
         return;
     view_image = complete_view_image;
     *this << view_image;
@@ -420,7 +418,7 @@ void slice_view_scene::paint_image(void)
 {
     while(!free_thread)
     {
-        if(!no_update && need_complete_view)
+        if(need_complete_view)
         {
             complete_view_ready = false;
             need_complete_view = none;
