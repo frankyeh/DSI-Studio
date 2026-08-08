@@ -1395,9 +1395,21 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
                     application_busy |= !shell_tasks.isEmpty();
                 }
+                // active tipl::progress operations, outermost to innermost; index 0 is the app-lifetime citation entry, skipped
+                QJsonArray progress;
+                for(size_t i = 1;i < tipl::status_list.size();++i)
+                {
+                    const auto& s = tipl::status_list[i];
+                    progress.append(QJsonObject{
+                        {"status",QString::fromStdString(s.status)},
+                        {"now",int(s.now)},
+                        {"total",int(s.total)},
+                        {"at",QString::fromStdString(s.at)}});
+                }
                 if(!finish(QString::fromUtf8(QJsonDocument(QJsonObject{
                     {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
                     {"current_window",info.current_window},
+                    {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact))))
                     break;
                 continue;
