@@ -35,7 +35,7 @@ struct ai_info{
     QList<QJsonObject> projects;
     QStringList prompts;
     QListWidgetItem* project_items = nullptr;
-    QJsonObject model_settings;
+    QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "github_issue_url": bound issue, web (ChatGPT) sessions only
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
     bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
@@ -43,6 +43,8 @@ struct ai_info{
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
     static QString history_file(const QString&);
+    static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
+    void save_config() const;
     bool save_title(QString);
     QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" and, for the first entry, "agent"/"model_settings" filled in), not the caller's pre-call copy
     QJsonObject record_reply(const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling

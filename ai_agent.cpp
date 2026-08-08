@@ -67,9 +67,24 @@ QString ai_info::history_file(const QString& session)
     return ai_project_dir+"/"+QString::fromLatin1(
                QUrl::toPercentEncoding(session))+".jsonl";
 }
+QString ai_info::config_file(const QString& session)
+{
+    return ai_project_dir+"/"+QString::fromLatin1(
+               QUrl::toPercentEncoding(session))+".json";
+}
 static bool is_new_chat(const QString& session)
 {
     return session.startsWith("new:");
+}
+void ai_info::save_config() const
+{
+    if(is_new_chat(sessions) || !QSettings().value("ai/keep_history",true).toBool())
+        return;
+    QFile file(config_file(sessions));
+    if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
+        file.write(QJsonDocument(QJsonObject{
+            {"agent",agent_name},
+            {"model_settings",model_settings}}).toJson(QJsonDocument::Compact));
 }
 static ai_info* assign_ai_session(const QString& from,const QString& to)
 {
@@ -367,6 +382,7 @@ AIAgent::AIAgent(MainWindow* parent):
         if(session == web_agent_session_id && !github_issue_api.isEmpty())
             disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
         QFile::remove(ai_info::history_file(session));
+        QFile::remove(ai_info::config_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
         auto* taken_item = ui->ai_project_list->takeItem(row); // defer delete: its row widget owns the "..." button whose menu action is still running
@@ -411,6 +427,8 @@ AIAgent::AIAgent(MainWindow* parent):
         set_ai_status();
     });
 
+    QString resume_session,resume_url;
+    qint64 resume_config_time = 0;
     for(const auto& info : dir.entryInfoList(
             {"*.jsonl"},QDir::Files,QDir::Time|QDir::Reversed))
     {
@@ -426,16 +444,43 @@ AIAgent::AIAgent(MainWindow* parent):
         if(history.isEmpty() || session.isEmpty())
             continue;
         auto first = history.first();
-        auto* ai = ai_info::create(session,first["agent"].toString());
+        QJsonObject config;
+        QFileInfo config_info(ai_info::config_file(session));
+        if(QFile config_file(config_info.filePath());config_file.open(QIODevice::ReadOnly))
+            config = QJsonDocument::fromJson(config_file.readAll()).object();
+        // config_file() is the current source of truth; fall back to the legacy fields once
+        // embedded in the first history entry, for chats saved before this file existed
+        auto* ai = ai_info::create(session,
+            config.contains("agent") ? config["agent"].toString() : first["agent"].toString());
         if(!ai)
             continue;
-        ai->model_settings = first["model_settings"].toObject();
+        ai->model_settings = config.contains("model_settings") ?
+            config["model_settings"].toObject() : first["model_settings"].toObject();
         ai->project_titles = settings.value("ai/title/"+session).toString();
         ai->projects = std::move(history);
         show_ai_project(*ai);
+
+        // among all sessions with a bound issue, resume whichever was bound most recently
+        // (config_file() is rewritten only on a deliberate agent/model/channel change, never
+        // by ordinary chat activity, so its mtime is a clean "last touched" signal)
+        auto issue_url = ai->model_settings["github_issue_url"].toString();
+        if(!issue_url.isEmpty() && config_info.lastModified().toMSecsSinceEpoch() > resume_config_time)
+        {
+            resume_session = session;
+            resume_url = issue_url;
+            resume_config_time = config_info.lastModified().toMSecsSinceEpoch();
+        }
     }
     if(ui->ai_project_list->count())
         ui->ai_project_list->setCurrentRow(0);
+
+    // auto-resume the GitHub issue channel that was still connected when DSI Studio last closed
+    if(!resume_session.isEmpty())
+        QTimer::singleShot(0,this,[this,resume_session,resume_url] // deferred: avoids blocking startup on the network round-trips inside connect_github_issue
+        {
+            web_agent_session_id = resume_session;
+            try_connect_github_issue(resume_url,true);
+        });
 }
 
 AIAgent::~AIAgent()
@@ -730,6 +775,11 @@ void AIAgent::poll_github_issue()
         if(is_new_chat(web_agent_session_id))
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
+        if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub")) // records which issue this session is bound to, so a restart can auto-resume polling it
+        {
+            info->model_settings["github_issue_url"] = github_issue_api.toString();
+            info->save_config();
+        }
 
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
@@ -883,11 +933,6 @@ void write_history(const ai_info& info,QIODevice::OpenMode mode,
 }
 QJsonObject ai_info::record_history(QJsonObject entry)
 {
-    if(projects.isEmpty())
-    {
-        entry["agent"] = agent_name;
-        entry["model_settings"] = model_settings;
-    }
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     projects.append(entry);
     write_history(*this,QIODevice::Append,QList<QJsonObject>{entry});
@@ -1002,6 +1047,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
             return void(reply = status_reply("error","invalid agent: include Codex, Claude, or ChatGPT in the agent name"));
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
+        found->save_config();
     }
     ai_info& info = *found;
 
@@ -1874,14 +1920,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
                                   assign_ai_session(session,assigned);
         session = assigned;
     }
-    if(info && info->model_settings != launch.model_setting)
+    if(info) // always save once info is known: a brand-new session must persist its agent even if the model happens to match the default
     {
         info->model_settings = launch.model_setting;
-        if(!info->projects.isEmpty())
-        {
-            info->projects[0]["model_settings"] = info->model_settings;
-            write_history(*info,QIODevice::Truncate,info->projects);
-        }
+        info->save_config();
     }
 
     auto* process = new QProcess(this);
@@ -2131,7 +2173,10 @@ QStringList AIAgent::configure_codex(
                     assign_ai_session(old_session,session) :
                     ai_info::create(session,launch.name);
                 if(info)
+                {
                     info->model_settings = launch.model_setting;
+                    info->save_config();
+                }
                 if(info && old_session != session)
                 {
                     process->setObjectName(session);
