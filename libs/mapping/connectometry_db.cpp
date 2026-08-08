@@ -470,6 +470,7 @@ bool connectometry_db::create_db(const std::vector<std::filesystem::path>& file_
     index_list = included_index;
     if(index_list.empty())
         index_list = fib.get_index_list();
+    index_list.erase(std::remove(index_list.begin(),index_list.end(),"qir"),index_list.end()); // qir is derived from qa and iso, both already included
     tipl::out() << "extracting indices: " << tipl::merge(index_list,',');
     if(!add_subjects(file_names))
         return index_list.clear(),false;
