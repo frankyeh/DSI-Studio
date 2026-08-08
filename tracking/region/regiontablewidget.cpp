@@ -154,12 +154,16 @@ void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,
 }
 void RegionTableWidget::begin_update(void)
 {
-    update_blocker.emplace(this); // blocks region_changed/cellChanged/itemSelectionChanged (and anything else) until end_update()
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(itemSelectionChanged()),&cur_tracking_window,nullptr);
 }
 
 void RegionTableWidget::end_update(void)
 {
-    update_blocker.reset();
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,&RegionTableWidget::itemSelectionChanged,&cur_tracking_window,[w=&cur_tracking_window](void){w->slice_need_update |= region_updated;});
 }
 
 void RegionTableWidget::add_row(int row,QString name)
