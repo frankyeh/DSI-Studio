@@ -66,7 +66,7 @@ public:
     }
     void save_checked_region_label_file(QString filename,int first_index);
 signals:
-    void need_update(void);
+    void region_changed(void);
 public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
     int color_gen = 0;
