@@ -1612,9 +1612,9 @@ bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     return delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
-bool TractModel::delete_repeated(float d)
-{   
-    tipl::progress prog("delete repeated tracts");
+std::vector<char> TractModel::find_repeated(float d) const
+{
+    tipl::progress prog("find repeated tracts");
     std::vector<std::vector<size_t> > x_reg;
     std::vector<size_t> track_location1,track_location2;
     {
@@ -1702,8 +1702,13 @@ bool TractModel::delete_repeated(float d)
             }
         }
     });
+    return repeated;
+}
+bool TractModel::delete_repeated(float d)
+{
+    auto repeated = find_repeated(d);
     std::vector<unsigned int> track_to_delete;
-    for(size_t i = 0;i < tract_data.size();++i)
+    for(size_t i = 0;i < repeated.size();++i)
         if(repeated[i])
             track_to_delete.push_back(uint32_t(i));
     return delete_tracts(track_to_delete);
