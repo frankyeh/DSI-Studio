@@ -535,6 +535,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         float f = cmd[0] == "cut_tract_rai_end" ? 0.0f : 0.25f;
         float t = cmd[0] == "cut_tract_lps_end" ? 1.0f : 0.75f;
         for_current_bundle([&](void){tract_models[cur_row]->cut_end_portion(f,t);});
+        emit show_tracts();
         return true;
     }
     if(tipl::begins_with(cmd[0],"flip_tract_"))
@@ -543,6 +544,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!get_cur_row(cmd[1],cur_row))
             return false;
         for_current_bundle([&](void){tract_models[cur_row]->flip(cmd[0].back()-'x');});
+        emit show_tracts();
         return true;
     }
     if(tipl::begins_with(cmd[0],"cut_tract_by_"))
