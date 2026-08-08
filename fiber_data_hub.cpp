@@ -173,9 +173,9 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
 
     const std::string usage =
         "hub_repo | hub_tags <repo> | hub_files <repo> [tag] [text] [offset] [limit] | "
-        "hub_open <repo> <tag> <file> | hub_download <repo> [tag] <file> <dir> "
+        "hub_open <repo> <tag> <file> | hub_show <repo> <tag> [file] | hub_download <repo> [tag] <file> <dir> "
         "([tag] and [text] empty means match all; both are treated as regular expressions, "
-        "except hub_open whose <tag> must be an exact, single tag)";
+        "except hub_open and hub_show whose <tag> must be an exact, single tag)";
 
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     auto arg = [&](size_t i){return QString::fromStdString(cmd[i]);};
@@ -344,6 +344,34 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         if(!select_repo() || !select_tag() || !select_file())
             return false;
         on_github_open_file_clicked();
+        return true;
+    }
+
+    if(cmd[0] == "hub_show")
+    {
+        if(!select_repo() || !select_tag())
+            return false;
+        if(cmd.size() < 4) // no file given: show the release note explaining what this tag's dataset is
+        {
+            tipl::out() << (notes[cur_tag].isEmpty() ?
+                QString("(no release note for this tag)") : notes[cur_tag]).toStdString();
+            return true;
+        }
+        if(!select_file())
+            return false;
+        auto row = files->currentRow();
+        auto file_name = files->item(row,0)->text();
+        if(!file_name.endsWith(".tsv"))
+            return fail("not a .tsv file: "+file_name.toStdString());
+        auto url = files->item(row,4)->text();
+        tipl::out() << "downloading " << url.toStdString();
+        auto reply = main_window.get(url);
+        QEventLoop loop;
+        QObject::connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
+        loop.exec();
+        if(reply->error() != QNetworkReply::NoError)
+            return fail(("cannot download "+file_name+": "+reply->errorString()).toStdString());
+        tipl::out() << QString::fromUtf8(reply->readAll()).toStdString();
         return true;
     }
 
