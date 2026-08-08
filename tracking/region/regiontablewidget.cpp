@@ -257,56 +257,57 @@ void RegionTableWidget::update_color_map(void)
     }
     cur_tracking_window.glWidget->region_color_bar_pos = {10,10};
 }
-tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
+// computes color_map_values for all regions; call once per frame before rendering any region
+void RegionTableWidget::update_region_color_values(void)
 {
-    if(index >= regions.size())
-        return tipl::rgb(0xFFFFFFFF);
-    if(cur_tracking_window["region_color_style"].toInt() == 0) // assigned color
-        return regions[index]->region_render->color;
+    if(cur_tracking_window["region_color_style"].toInt() == 0) // assigned color: no metric needed
+        return;
     if(color_map_values.size() != regions.size())
         color_map_values.clear();
     color_map_values.resize(regions.size(),std::nanf(""));
 
+    auto metric_index = cur_tracking_window["region_color_metrics"].toInt();
+    if(metric_index < cur_tracking_window.handle->slices.size() &&
+        !cur_tracking_window.handle->slices[metric_index]->optional()) // sample slice values
     {
-        auto metric_index = cur_tracking_window["region_color_metrics"].toInt();
-        if(metric_index < cur_tracking_window.handle->slices.size() &&
-           !cur_tracking_window.handle->slices[metric_index]->optional()) // sample slices values
-        {
+        for(size_t index = 0;index < regions.size();++index)
             if(std::isnan(color_map_values[index]))
             {
                 float mean,max_v,min_v;
                 regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
                 color_map_values[index] = mean;
             }
-        }
-        else // compute tract-region interscept
-        {
-            int tract_index = cur_tracking_window.tractWidget->currentRow();
-            if(tract_index >= 0 && tract_index < cur_tracking_window.tractWidget->tract_models.size())
-            {
-                auto tract = cur_tracking_window.tractWidget->tract_models[tract_index];
-                if(tract->get_visible_track_count())
-                {
-                    size_t id = size_t(tract_index+1)*
-                                ((tract->get_visible_track_count()+2) & 255)*
-                                ((tract->get_tracts().back().size()+3) & 255);
-                    if(id != tract_map_id)
-                    {
-                        tract_map_id = id;
-                        ConnectivityMatrix p(cur_tracking_window.handle);
-                        p.load_from_regions(regions,"roi");
-                        p.calculate(*tract.get(),false);
-                        color_map_values = p.t2r_value;
-                    }
-                }
-            }
-        }
+        return;
     }
-    if(std::isnan(color_map_values[index]))
-        color_map_values[index] = 0;
+    // compute tract-region interscept
+    int tract_index = cur_tracking_window.tractWidget->currentRow();
+    if(tract_index < 0 || tract_index >= cur_tracking_window.tractWidget->tract_models.size())
+        return;
+    auto tract = cur_tracking_window.tractWidget->tract_models[tract_index];
+    if(!tract->get_visible_track_count())
+        return;
+    size_t id = size_t(tract_index+1)*
+                ((tract->get_visible_track_count()+2) & 255)*
+                ((tract->get_tracts().back().size()+3) & 255);
+    if(id == tract_map_id)
+        return;
+    tract_map_id = id;
+    ConnectivityMatrix p(cur_tracking_window.handle);
+    p.load_from_regions(regions,"roi");
+    p.calculate(*tract.get(),false);
+    color_map_values = p.t2r_value;
+}
+tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
+{
+    if(index >= regions.size())
+        return tipl::rgb(0xFFFFFFFF);
+    if(cur_tracking_window["region_color_style"].toInt() == 0) // assigned color
+        return regions[index]->region_render->color;
+
+    auto v = (index < color_map_values.size() && !std::isnan(color_map_values[index])) ? color_map_values[index] : 0.0f;
     auto color_min = cur_tracking_window["region_color_min_value"].toFloat();
     auto color_r = cur_tracking_window["region_color_max_value"].toFloat()-color_min;
-    auto c = color_map_rgb.value2color(color_map_values[index],color_min,color_r);
+    auto c = color_map_rgb.value2color(v,color_min,color_r);
     c.a = 255;
     return c;
 }
