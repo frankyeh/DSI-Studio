@@ -42,7 +42,8 @@ private:
     {
         for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
         {
-            if (item(roi_index,0)->checkState() != Qt::Checked)
+            auto cell = item(roi_index,0);
+            if (!cell || cell->checkState() != Qt::Checked) // row may still be mid-construction (add_row hasn't set the item yet)
                 continue;
             fun(regions[roi_index]);
         }
