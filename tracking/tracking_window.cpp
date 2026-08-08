@@ -640,7 +640,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(tractWidget,&TractTableWidget::tract_changed,this,&tracking_window::need_gl_update);
         connect(tractWidget,SIGNAL(cellChanged(int,int)),tractWidget,SLOT(cell_changed(int,int))); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
-        connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
 
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
