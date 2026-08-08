@@ -314,6 +314,23 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
     return d;
 }
 
+// builds the per-tract render-or-not decision once, shared by TractRenderShader's shading-map pass
+// and TractRender::prepare_update's visible-list pass, instead of each re-deriving it independently
+void TractRender::update_skip(std::shared_ptr<TractModel>& model,bool render_non_repeated,float skip_rate)
+{
+    auto tracks_count = model->get_visible_track_count();
+    if(skip.size() == tracks_count)
+        return; // tract count unchanged: nothing that would change find_repeated or skip_rate has happened
+    skip.resize(tracks_count);
+    auto repeated = render_non_repeated ? model->find_repeated(1.0f,false) : std::vector<char>();
+    tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+    for(unsigned int data_index = 0;data_index < tracks_count;++data_index)
+        skip[data_index] =
+            (render_non_repeated && repeated[data_index]) ||
+            model->get_tract(data_index).size() <= 3 ||
+            (skip_rate < 1.0f && uniform_gen() > skip_rate);
+}
+
 TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):
     dim(cur_tracking_window.handle->dim),
     min_x_map(tipl::shape<2>(64,64),float(dim.width())),
@@ -331,31 +348,21 @@ TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):
     auto renders = cur_tracking_window.tractWidget->get_checked_tracks_rendering();
     bool render_non_repeated = cur_tracking_window["tract_render_option"].toInt() == 1;
 
-    // shares the same cache TractRender::prepare_update uses, so repeated tracts are excluded from
-    // both the visible-count target below and the shading density map, consistent with what's drawn
+    // skip_rate is just a rough target, not a strict one, so the denominator uses the cheap raw
+    // track count rather than the exact non-repeated count (which would need find_repeated here too)
     size_t total_visible_tract = 0;
-    for(size_t i = 0;i < models.size();++i)
-    {
-        auto tracks_count = models[i]->get_visible_track_count();
-        if(render_non_repeated && renders[i]->repeated.size() != tracks_count)
-            renders[i]->repeated = models[i]->find_repeated(1.0f,false);
-        total_visible_tract += render_non_repeated ?
-            size_t(std::count(renders[i]->repeated.begin(),renders[i]->repeated.end(),0)) : tracks_count;
-    }
+    for(auto& each : models)
+        total_visible_tract += each->get_visible_track_count();
 
     skip_rate = cur_tracking_window["tract_visible_tract"].toFloat()/float(total_visible_tract);
 
     tipl::par_for(models.size(),[&](size_t i)
     {
-        auto tracks_count = models[i]->get_visible_track_count();
-        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-        for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+        renders[i]->update_skip(models[i],render_non_repeated,skip_rate);
+        auto& skip = renders[i]->skip;
+        for (unsigned int data_index = 0; data_index < skip.size(); ++data_index)
         {
-            if(render_non_repeated && renders[i]->repeated[data_index])
-                continue;
-            if (models[i]->get_tract(data_index).size() < 6)
-                continue;
-            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+            if(skip[data_index])
                 continue;
             auto& cur_tract = models[i]->get_tract(data_index);
             unsigned int vertex_count = cur_tract.size()/3;
@@ -406,25 +413,16 @@ void TractRender::prepare_update(tracking_window& param,
         return;
 
     auto dim = param.handle->dim;
-    bool render_non_repeated = param["tract_render_option"].toInt() == 1;
 
+    // skip[] was already built by TractRenderShader's constructor (which runs before prepare_update
+    // for every checked model), combining repeated-status, size, and skip_rate in one pass
     std::vector<unsigned int> visible;
     {
         auto tracks_count = active_tract_model->get_visible_track_count();
         visible.reserve(tracks_count);
-        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-        if(render_non_repeated && repeated.size() != tracks_count)
-            repeated = active_tract_model->find_repeated(1.0f,false);
         for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
-        {
-            if(render_non_repeated && repeated[data_index])
-                continue;
-            if(shader.skip_rate < 1.0f && uniform_gen() > shader.skip_rate)
-                continue;
-            if (active_tract_model->get_tract(data_index).size() <= 3)
-                continue;
-            visible.push_back(data_index);
-        }
+            if(!skip[data_index])
+                visible.push_back(data_index);
     }
 
     auto tract_color_style = param["tract_color_style"].toInt();
