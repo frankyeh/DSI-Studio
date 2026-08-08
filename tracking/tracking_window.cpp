@@ -570,9 +570,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // regions
     {
 
-        connect(regionWidget,&RegionTableWidget::need_update,this,[this](void){slice_need_update |= region_updated;});
+        connect(regionWidget,&RegionTableWidget::region_changed,this,[this](void){slice_need_update |= region_updated;});
         connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update |= region_updated;});
-        connect(regionWidget,SIGNAL(need_update()),this,SIGNAL(need_gl_update()));
+        connect(regionWidget,SIGNAL(region_changed()),this,SIGNAL(need_gl_update()));
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
