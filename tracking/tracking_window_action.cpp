@@ -1162,7 +1162,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::filter::gaussian(maskJ);
         tipl::filter::gaussian(maskJ);
         reg_slice->source_images *= maskJ;
-        slice_need_update |= slice_updated;
+        slice_need_update |= image_updated;
         glWidget->update_slice();
         return run->succeed();
     }
@@ -1574,7 +1574,7 @@ void tracking_window::check_reg(void)
             }
         }
     }
-    slice_need_update |= slice_updated;
+    slice_need_update |= position_updated;
     if(all_ended)
     {
         timer2.reset();
