@@ -1693,6 +1693,15 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
 
 void AIAgent::new_chat_dialog(bool resume)
 {
+    // resuming an already-known chat: reconnect with its saved issue link directly, no dialog
+    if(resume)
+        if(auto* info = ai_info::find(web_agent_session_id))
+            if(auto url = info->model_settings["github_issue_url"].toString();!url.isEmpty())
+            {
+                try_connect_github_issue(url,true);
+                return;
+            }
+
     bool web = false;
     int agent_index = 0;
     QString model_name,issue_url;
