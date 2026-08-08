@@ -496,8 +496,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // scene view
     {
 
-        connect(&scene,SIGNAL(need_update()),glWidget,SLOT(update()));
-
 
         connect(ui->actionAxial_View,&QAction::triggered,this,[this](void){if(ui->glAxiView->isChecked()){glWidget->set_view(cur_dim);glWidget->update();}else ui->glAxiView->setChecked(true);});
         connect(ui->actionCoronal_View,&QAction::triggered,this,[this](void){if(ui->glCorView->isChecked()){glWidget->set_view(cur_dim);glWidget->update();}else ui->glCorView->setChecked(true);});
