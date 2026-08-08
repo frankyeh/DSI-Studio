@@ -10,6 +10,14 @@
 class fib_data;
 class tracking_window;
 class SliceModel;
+
+// image_updated: only the slice raster itself changed (contrast, new pixel data, color map...)
+// position_updated: the slice position/orientation/scale changed, which affects everything drawn on it
+enum slice_update_type{none = 0,region_updated = 1,tract_updated = 2,image_updated = 4,
+                        position_updated = region_updated|tract_updated|image_updated};
+inline slice_update_type operator|(slice_update_type a,slice_update_type b){return slice_update_type(int(a)|int(b));}
+inline slice_update_type& operator|=(slice_update_type& a,slice_update_type b){return a = a | b;}
+
 class slice_view_scene : public QGraphicsScene
 {
     Q_OBJECT
@@ -51,7 +59,7 @@ public:
     std::thread paint_image_thread;
 
     QImage view_image,complete_view_image,annotated_image;
-    bool need_complete_view = false;
+    slice_update_type need_complete_view = none;
     bool complete_view_ready = false;
     int view1_h = 0; // for 3 views updating 3D
     int view1_w = 0; // for 3 views updating 3D
@@ -77,7 +85,7 @@ protected:
     void mouseReleaseEvent( QGraphicsSceneMouseEvent * mouseEvent ) override;
     void wheelEvent(QGraphicsSceneWheelEvent *wheelEvent) override;
 public slots:
-    void show_slice();
+    void show_slice(slice_update_type update_type = position_updated);
     void show_complete_slice();
     void copyClipBoard();
     void center();
