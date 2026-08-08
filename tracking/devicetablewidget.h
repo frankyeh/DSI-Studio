@@ -50,7 +50,6 @@ private:
     QString new_device_str;
     void new_device(std::shared_ptr<Device> device);
 private:
-    bool no_update = false;
     std::vector<std::shared_ptr<Device> > locators;// ac,pc,inter
     tipl::vector<3> handle_coordinates(tipl::vector<3> pos,bool inverse = false);
 public slots:
