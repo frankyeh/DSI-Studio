@@ -1106,6 +1106,15 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     // instead of an error
     bool has_chat = !request["chat"].toString().trimmed().isEmpty() ||
                     !request["reasoning"].toString().trimmed().isEmpty();
+    // exposes this request's chat text (e.g. to run_shell's confirmation dialog) for the duration of this call;
+    // restores the previous value on every exit path, including a reentrant request nested inside a long command
+    struct chat_context_guard
+    {
+        QString& target;
+        QString prev;
+        chat_context_guard(QString& target_,QString value):target(target_),prev(target_) {target = std::move(value);}
+        ~chat_context_guard() {target = prev;}
+    } chat_guard(ai_chat_context,request["chat"].toString().trimmed());
     auto no_command = [&]{return QJsonObject{{"status","success"},{"result",QJsonArray()}};};
     auto command_json = request["command"];
     if(command_json.isUndefined() || command_json.isNull())
@@ -2051,11 +2060,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             tipl::out() << QDir::currentPath().toStdString();
             return true;
         }
-        if(source == command_source::AI &&
-           QMessageBox::question(this,"AI Shell Command Request",
-               "The AI agent wants to run this shell command:\n\n"+text,
-               QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
-            return fail("user declined to run this shell command");
+        if(source == command_source::AI)
+        {
+            QString message;
+            if(!ai_chat_context.isEmpty()) // explains why, using the agent's own accompanying chat message, when one was sent with this request
+                message = "The AI agent says:\n\n"+ai_chat_context+"\n\n";
+            message += "The AI agent wants to run this shell command:\n\n"+text;
+            if(QMessageBox::question(this,"AI Shell Command Request",message,
+                   QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
+                return fail("user declined to run this shell command");
+        }
         if(program.compare("curl",Qt::CaseInsensitive)) // not curl: assume it's fast, wait for it
         {
             QProcess process;
