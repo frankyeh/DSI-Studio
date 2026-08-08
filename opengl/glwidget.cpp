@@ -1703,8 +1703,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         if(region_selected)
         {
             cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
-            cur_tracking_window.command({"move_slice_to_region"});
-            emit region_edited();
+            cur_tracking_window.command({"move_slice_to_region"}); // already updates glWidget and slice_need_update via move_slice_to()
         }
         if(device_selected)
         {
@@ -2011,7 +2010,10 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         if(region_selected && selected_index < cur_tracking_window.regionWidget->regions.size())
         {
             if(cur_tracking_window.regionWidget->regions[selected_index]->shift(dis))
-                emit region_edited();
+            {
+                cur_tracking_window.slice_need_update |= region_updated;
+                emit cur_tracking_window.need_gl_update();
+            }
             return;
         }
         // a picture slice is selected
