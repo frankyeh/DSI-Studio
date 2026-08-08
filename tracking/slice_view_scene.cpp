@@ -393,11 +393,11 @@ void slice_view_scene::update_3d(QImage captured)
     *this << view_image;
 }
 
-void slice_view_scene::show_slice(void)
+void slice_view_scene::show_slice(slice_update_type update_type)
 {
     if(no_update)
         return;
-    need_complete_view = true;
+    need_complete_view |= update_type; // high-resolution image loading also depends on the complete (non-simple) pass, not just region/tract
     paint_image(view_image,true);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if(complete_view_ready)
@@ -423,7 +423,7 @@ void slice_view_scene::paint_image(void)
         if(!no_update && need_complete_view)
         {
             complete_view_ready = false;
-            need_complete_view = false;
+            need_complete_view = none;
             if(need_complete_view)
                 continue;
             paint_image(complete_view_image,false);
@@ -701,7 +701,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
            std::abs(p[2]-slice->slice_pos[2]) < 10.0f/display_ratio)
         {
             move_slice = true;
-            show_slice();
+            cur_tracking_window.slice_need_update |= position_updated;
         }
         else
         // select region
@@ -865,8 +865,8 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                     tipl::vector<3> zero;
                     zero.to(slice->to_slice);
                     sel_coord.back() += p1-zero;
-                    cur_tracking_window.slice_need_update |= tracking_window::region_updated;
-                    emit need_update();
+                    cur_tracking_window.slice_need_update |= region_updated;
+                    emit cur_tracking_window.need_gl_update(); // region moved: also redraw its 3D mesh/sphere
                 }
             }
 
@@ -965,8 +965,8 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         if(move_slice)
         {
             move_slice = false;
-            cur_tracking_window.slice_need_update |= tracking_window::position_updated;
-            emit need_update();
+            cur_tracking_window.slice_need_update |= position_updated;
+            emit cur_tracking_window.need_gl_update(); // slice position changed: 3D slice-plane texture depends on it
         }
         return;
     }
@@ -976,8 +976,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     auto regionWidget = cur_tracking_window.regionWidget;
     if (regionWidget->currentRow() < 0 || regionWidget->currentRow() >= int(regionWidget->regions.size()))
     {
-        cur_tracking_window.slice_need_update |= tracking_window::region_updated;
-        emit need_update();
+        cur_tracking_window.slice_need_update |= region_updated; // clears the stale drag preview left in the 2D scene; nothing changed in 3D
         return;
     }
     if(regionWidget->item(regionWidget->currentRow(),0)->checkState() != Qt::Checked)
@@ -1130,8 +1129,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             tipl::out() << "warping picture: " << from << " to " << to;
             slice->warp_picture(from,to);
         }
-        cur_tracking_window.slice_need_update |= tracking_window::position_updated;
-        emit need_update();
+        cur_tracking_window.slice_need_update |= position_updated; // 2D redraw only: the 3D slice texture is cached by position and won't reflect a warp-only change
         return;
     }
     }
@@ -1174,8 +1172,8 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     cur_region->add_points(std::move(points_int16),
                            mouseEvent->button() == Qt::RightButton || mouseEvent->modifiers() & Qt::ShiftModifier);
 
-    cur_tracking_window.slice_need_update |= tracking_window::region_updated;
-    emit need_update();
+    cur_tracking_window.slice_need_update |= region_updated;
+    emit cur_tracking_window.need_gl_update(); // region content changed: also redraw its 3D mesh/sphere
 }
 
 void slice_view_scene::center()
