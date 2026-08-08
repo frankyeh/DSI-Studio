@@ -850,7 +850,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         }
         end_update();
         cur_tracking_window.glWidget->update();
-        cur_tracking_window.slice_need_update = true;
+        cur_tracking_window.slice_need_update |= tracking_window::region_updated;
         cur_tracking_window.raise();
         return run->succeed();
     }
