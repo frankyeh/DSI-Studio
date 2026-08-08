@@ -1215,12 +1215,23 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             prev_capture = console.capture;
             console.capture = &output;
         }
+        auto prev_cwd = QDir::currentPath(); // a reentrant request restores this session's own directory when it's done, same reasoning as prev_capture
+        auto session_cwd = info.model_settings["cwd"].toString();
+        auto base_cwd = session_cwd.isEmpty() ? prev_cwd : session_cwd;
+        if(base_cwd != prev_cwd)
+            QDir::setCurrent(base_cwd);
         auto uncapture_and_unlock = [&] // shared cleanup for every exit path below: stop capturing console output for this command,
         {                               // and release a stale lock if the command retargeted (open_fib/open_src/open_image/set_window)
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
                 console.capture = prev_capture;
             }
+            if(auto cwd = QDir::currentPath();cwd != base_cwd) // "run_shell cd ..." changed it; remember it for this session
+            {
+                info.model_settings["cwd"] = cwd;
+                info.save_config();
+            }
+            QDir::setCurrent(prev_cwd);
             if(info.current_window != window_before)
                 unlock_target();
         };
