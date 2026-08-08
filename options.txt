@@ -70,7 +70,7 @@ Tract_color/Min Color/tract_color_min/color/14465098
 Tract_color/Show Color Bar/tract_show_color_bar/Off:On/1
 Tract/Style/tract_style/Line:Tube:End:End1:End2/1
 Tract/Line Width/tract_line_width/float:1.0:10:0.5:1/3
-Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
+Tract/Visible Tracts/tract_visible_tract/int:1000:1000000:5000/5000
 Tract/Shade/tract_shader/int:0:20:1/4
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:5:0.1:2/0.2
