@@ -398,7 +398,7 @@ AIAgent::AIAgent(MainWindow* parent):
             active_ai_processes = std::max(0,active_ai_processes-1);
             set_ai_status();
         }
-        if(session == web_agent_session_id && !github_issue_api.isEmpty())
+        if(session == web_agent_session_id)
             disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
         QFile::remove(ai_info::history_file(session));
         QFile::remove(ai_info::config_file(session));
@@ -697,6 +697,8 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 
 void AIAgent::disconnect_github_issue()
 {
+    if(github_issue_api.isEmpty()) // nothing to do; callers no longer need to check this themselves
+        return;
     ++github_connection_id; // reject any callback still in flight from this connection
     github_timer.stop();
     github_issue_api.clear();
@@ -708,6 +710,29 @@ void AIAgent::disconnect_github_issue()
     update_send_button(); // flips to "Resume" if still in a web-agent session
     if(auto* info = ai_info::find(web_agent_session_id)) // dot reverts from Active immediately, not just on the next poll
         show_ai_project(*info);
+}
+
+bool AIAgent::handle_github_reply(QNetworkReply* reply,quint64 connection_id,int& status,QByteArray& data)
+{
+    reply->deleteLater();
+    if(connection_id != github_connection_id)
+        return false; // this connection was superseded (disconnect, or a fresh reconnect)
+
+    status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    data = reply->readAll();
+    if(auto delay = github_retry_delay(reply,data))
+    {
+        if(!github_issue_api.isEmpty())
+            github_timer.start(delay); // rate limited (429, or 403 that means the same thing)
+        return false;
+    }
+    if(github_permanent_failure(status))
+    {
+        disconnect_github_issue(); // clear state first, so set_ai_status()'s "ongoing" check sees it disconnected and this message decays instead of animating forever
+        set_ai_status("GitHub issue channel authorization failed.",true);
+        return false;
+    }
+    return true;
 }
 
 void AIAgent::poll_github_issue()
@@ -728,22 +753,14 @@ void AIAgent::poll_github_issue()
     auto* reply = github_manager.get(request);
     connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id]()
     {
-        reply->deleteLater();
-        if(connection_id != github_connection_id)
-            return; // this connection was superseded (disconnect, or a fresh reconnect)
+        int status = 0;
+        QByteArray data;
+        if(!handle_github_reply(reply,connection_id,status,data))
+            return;
 
         auto restart = [this](int delay_ms = 500)
         {if(!github_issue_api.isEmpty()) github_timer.start(delay_ms);};
 
-        auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        auto data = reply->readAll();
-        if(auto delay = github_retry_delay(reply,data))
-            return restart(delay); // rate limited (429, or 403 that means the same thing)
-        if(github_permanent_failure(status))
-        {
-            disconnect_github_issue(); // clear state first, so set_ai_status()'s "ongoing" check sees it disconnected and this message decays instead of animating forever
-            return set_ai_status("GitHub issue channel authorization failed.",true);
-        }
         if(reply->error() != QNetworkReply::NoError && status != 304)
             return restart(5000); // transient network error: back off, retry later
         if(status == 304)
@@ -876,22 +893,10 @@ void AIAgent::send_pending_result()
     auto* reply = github_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id,pending_id]()
     {
-        reply->deleteLater();
-        if(connection_id != github_connection_id)
-            return; // this connection was superseded (disconnect, or a fresh reconnect)
-
-        auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if(auto delay = github_retry_delay(reply,reply->readAll()))
-        {
-            if(!github_issue_api.isEmpty())
-                github_timer.start(delay); // rate limited (429, or 403 that means the same thing)
+        int status = 0;
+        QByteArray data;
+        if(!handle_github_reply(reply,connection_id,status,data))
             return;
-        }
-        if(github_permanent_failure(status))
-        {
-            disconnect_github_issue(); // clear state first, so set_ai_status()'s "ongoing" check sees it disconnected and this message decays instead of animating forever
-            return set_ai_status("GitHub issue channel authorization failed.",true);
-        }
 
         if(reply->error() != QNetworkReply::NoError)
         {
@@ -1000,8 +1005,7 @@ void AIAgent::closeEvent(QCloseEvent* event)
             process->deleteLater();
         }
     active_ai_processes = 0;
-    if(!github_issue_api.isEmpty())
-        disconnect_github_issue();
+    disconnect_github_issue();
     web_agent_active_session = false;
     update_send_button();
     QMainWindow::closeEvent(event);
@@ -1568,8 +1572,7 @@ bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
 void AIAgent::update_agent_status_label()
 {
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
-    auto* item = ui->ai_project_list->currentItem();
-    auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    auto* info = selected_info();
     bool web = info ? info->provider == ai_provider::ChatGPT : web_agent_active_session;
     if(web)
     {
@@ -1606,10 +1609,15 @@ void AIAgent::try_set_current_model(const QString& name) // accepts any non-empt
     current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
 }
 
-void AIAgent::update_send_button()
+ai_info* AIAgent::selected_info() const
 {
     auto* item = ui->ai_project_list->currentItem();
-    auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    return item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+}
+
+void AIAgent::update_send_button()
+{
+    auto* info = selected_info();
     // selection wins whenever there is one, matching update_agent_status_label()/show_ai_project(): web_agent_active_session
     // only stands in for "no chat selected yet" (e.g. mid New Chat before its sidebar item exists)
     if(info ? info->provider == ai_provider::ChatGPT : web_agent_active_session)
@@ -1752,15 +1760,13 @@ void AIAgent::new_chat_dialog(bool resume)
 
     if(web)
     {
-        if(!github_issue_api.isEmpty())
-            disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
+        disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         if(try_connect_github_issue(issue_url,resume) && !resume)
             create_chat("ChatGPT(Web)");
         return;
     }
 
-    if(!github_issue_api.isEmpty())
-        disconnect_github_issue(); // leaving web-agent mode for a local chat
+    disconnect_github_issue(); // leaving web-agent mode for a local chat
     web_agent_active_session = false;
     update_send_button();
 
@@ -1791,8 +1797,7 @@ void AIAgent::on_ai_agent_status_clicked()
             QString model_name,issue_url;
             if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",web,agent_index,model_name,issue_url))
                 return;
-            if(!github_issue_api.isEmpty())
-                disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
+            disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
             try_connect_github_issue(issue_url,true);
             return;
         }
