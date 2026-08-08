@@ -448,8 +448,6 @@ AIAgent::AIAgent(MainWindow* parent):
         set_ai_status();
     });
 
-    QString resume_session,resume_url;
-    qint64 resume_config_time = 0;
     for(const auto& info : dir.entryInfoList(
             {"*.jsonl"},QDir::Files,QDir::Time|QDir::Reversed))
     {
@@ -466,8 +464,7 @@ AIAgent::AIAgent(MainWindow* parent):
             continue;
         auto first = history.first();
         QJsonObject config;
-        QFileInfo config_info(ai_info::config_file(session));
-        if(QFile config_file(config_info.filePath());config_file.open(QIODevice::ReadOnly))
+        if(QFile config_file(ai_info::config_file(session));config_file.open(QIODevice::ReadOnly))
             config = QJsonDocument::fromJson(config_file.readAll()).object();
         // config_file() is the current source of truth; fall back to the legacy fields once
         // embedded in the first history entry, for chats saved before this file existed
@@ -480,28 +477,10 @@ AIAgent::AIAgent(MainWindow* parent):
         ai->project_titles = settings.value("ai/title/"+session).toString();
         ai->projects = std::move(history);
         show_ai_project(*ai);
-
-        // among all sessions with a bound issue, resume whichever was bound most recently
-        // (config_file() is rewritten only on a deliberate agent/model/channel change, never
-        // by ordinary chat activity, so its mtime is a clean "last touched" signal)
-        auto issue_path = ai->model_settings["github_issue_url"].toString();
-        if(!issue_path.isEmpty() && config_info.lastModified().toMSecsSinceEpoch() > resume_config_time)
-        {
-            resume_session = session;
-            resume_url = "https://github.com/"+issue_path;
-            resume_config_time = config_info.lastModified().toMSecsSinceEpoch();
-        }
     }
     if(ui->ai_project_list->count())
         ui->ai_project_list->setCurrentRow(0);
-
-    // auto-resume the GitHub issue channel that was still connected when DSI Studio last closed
-    if(!resume_session.isEmpty())
-        QTimer::singleShot(0,this,[this,resume_session,resume_url] // deferred: avoids blocking startup on the network round-trips inside connect_github_issue
-        {
-            web_agent_session_id = resume_session;
-            try_connect_github_issue(resume_url,true);
-        });
+    // GitHub issue channels are never auto-reconnected at startup; use Resume to reconnect a chat explicitly
 }
 
 AIAgent::~AIAgent()
