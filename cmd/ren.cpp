@@ -78,7 +78,7 @@ std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path pat
     return files;
 }
 
-bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite);
+bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite,std::string& error_msg);
 int ren(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("run ren");
@@ -91,7 +91,8 @@ int ren(tipl::program_option<tipl::out>& po)
         for(const auto& dir : subject_dir)
         {
             tipl::progress prog("DICOM to SRC/NII",dir.u8string());
-            if(!dicom2src_and_nii(dir,overwrite))
+            std::string dicom_error;
+            if(!dicom2src_and_nii(dir,overwrite,dicom_error))
                 result = false;
         }
     }
