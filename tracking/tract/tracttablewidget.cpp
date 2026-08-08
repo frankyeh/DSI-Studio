@@ -443,7 +443,7 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget)
     if(!render_tracts(glwidget,std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
     {
         render_time *= 2;
-        emit tract_changed();
+        emit cur_tracking_window.need_gl_update(); // still mid-render, not a data change: no need to touch the 2D slice
         return false;
     }
     render_time = 200;
