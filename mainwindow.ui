@@ -1662,7 +1662,7 @@ QLabel#tools_view_image_hint {
              <item>
               <widget class="QPushButton" name="NII_qc">
                <property name="statusTip">
-                <string>run qc_nii</string>
+                <string>run show_qc_nii</string>
                </property>
                <property name="toolTip">
                 <string>Select NIFTI files to run quality control</string>
@@ -1679,7 +1679,7 @@ QLabel#tools_view_image_hint {
              <item>
               <widget class="QPushButton" name="SRC_qc">
                <property name="statusTip">
-                <string>run qc_src</string>
+                <string>run show_qc_src</string>
                </property>
                <property name="toolTip">
                 <string>Select SRC files to run quality control</string>
@@ -1696,7 +1696,7 @@ QLabel#tools_view_image_hint {
              <item>
               <widget class="QPushButton" name="FIB_qc">
                <property name="statusTip">
-                <string>run qc_fib</string>
+                <string>run show_qc_fib</string>
                </property>
                <property name="toolTip">
                 <string>Select FIB files to run quality control</string>
