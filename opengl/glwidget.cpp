@@ -36,6 +36,7 @@ GLWidget::GLWidget(tracking_window& cur_tracking_window_,
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_)
 {
+    setUpdatesEnabled(false); // re-enabled once tracking_window's own construction finishes
     transformation_matrix.identity();
     rotation_matrix.identity();
     transformation_matrix2.identity();
@@ -407,11 +408,9 @@ void GLWidget::initializeGL()
 }
 void GLWidget::paintGL()
 {
-    if(no_update)
-        return;
     if(check_error(__FUNCTION__))
     {
-        no_update = true;
+        setUpdatesEnabled(false); // GL context is broken: stop attempting further paints
         return;
     }
 
@@ -1488,7 +1487,7 @@ void GLWidget::resizeGL(int width_, int height_)
 }
 void GLWidget::scale_by(float scalefactor)
 {
-    if(no_update)
+    if(!updatesEnabled())
         return;
     makeCurrent();
     glPushMatrix();
