@@ -249,12 +249,31 @@ AIAgent::AIAgent(MainWindow* parent):
 {
     ui->setupUi(this);
     ui->ai_work_dir->setText(main_window.work_dir());
-    connect(ui->ai_browse_work_dir,&QPushButton::clicked,this,[this]
+    // keeps the field in sync with the selected chat's own dispatch directory (model_settings["cwd"]),
+    // the same value run_shell's "cd" updates; also used as --add-dir when launching Codex/Claude
+    auto sync_work_dir = [this]
+    {
+        auto* item = ui->ai_project_list->currentItem();
+        if(!item)
+            return;
+        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        auto cwd = ui->ai_work_dir->text().trimmed();
+        if(info.model_settings["cwd"].toString() != cwd)
+        {
+            info.model_settings["cwd"] = cwd;
+            info.save_config();
+        }
+    };
+    connect(ui->ai_work_dir,&QLineEdit::editingFinished,this,sync_work_dir);
+    connect(ui->ai_browse_work_dir,&QPushButton::clicked,this,[this,sync_work_dir]
     {
         auto path = QFileDialog::getExistingDirectory(
             this,"Select AI Work Directory",ui->ai_work_dir->text());
         if(!path.isEmpty())
+        {
             ui->ai_work_dir->setText(QDir::toNativeSeparators(path));
+            sync_work_dir();
+        }
     });
     ai_status_timer = new QTimer(this);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
@@ -411,6 +430,8 @@ AIAgent::AIAgent(MainWindow* parent):
 
         stop_blink(ui->ai_project_list->itemWidget(item));
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        ui->ai_work_dir->setText(info.model_settings.contains("cwd") ?
+            info.model_settings["cwd"].toString() : main_window.work_dir());
         if(info.provider != ai_provider::ChatGPT) // a web chat has no agent/model of its own to adopt as "current"
         {
             current_agent_index = int(info.provider);
