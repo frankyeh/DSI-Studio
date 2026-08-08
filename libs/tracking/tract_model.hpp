@@ -74,7 +74,7 @@ public:
         // selection
         bool delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         bool select_tracts(const std::vector<unsigned int>& tracts_to_select);
-        std::vector<char> find_repeated(float d,bool show_progress = true) const;
+        std::vector<char> find_repeated(float d) const;
         bool delete_repeated(float d);
         bool delete_branch(void);
         bool delete_by_length(float length);
