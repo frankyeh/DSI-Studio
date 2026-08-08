@@ -89,8 +89,6 @@ public slots:
     void show_complete_slice();
     void copyClipBoard();
     void center();
-signals:
-    void need_update();
 
 };
 
