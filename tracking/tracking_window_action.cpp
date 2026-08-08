@@ -215,8 +215,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "set_slice")
     {
-        if(no_update)
-            return run->canceled();
         size_t index = run->from_cmd(1,ui->SliceModality->currentIndex());
         if(index >= slices.size())
             return run->failed("invalid slice index " + cmd[1]);
@@ -239,7 +237,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         QSignalBlocker blocker(ui->SliceModality);
         ui->SliceModality->setCurrentIndex(int(index));
-        no_update = true;
+
+
+        setUpdatesEnabled(false);
+
         auto previous_slice = current_slice;
         auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
         current_slice = new_slice;
@@ -308,8 +309,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         update_unet_models();
 
-        no_update = false;
         command({"set_slice_contrast"});
+
+        setUpdatesEnabled(true);
         return run->succeed();
     }
     if(cmd[0] == "list_unet")
@@ -485,8 +487,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "enable_slice")
     {
-        if(no_update)
-            return run->canceled();
         bool x = ui->glSagCheck->isChecked(),
              y = ui->glCorCheck->isChecked(),
              z = ui->glAxiCheck->isChecked();
@@ -504,8 +504,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "move_slice")
     {
-        if(no_update)
-            return run->canceled();
         int x = ui->glSagSlider->value(),y = ui->glCorSlider->value(),z = ui->glAxiSlider->value();
         if(cmd[1].empty())
             cmd[1] = std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
@@ -888,9 +886,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         // cmd[1] : min max values
         // cmd[2] : min max colors
-        if(no_update)
-            return run->canceled();
-
         double min_value_gl(ui->min_value_gl->value()),max_value_gl(ui->max_value_gl->value());
         if(cmd[1].empty())
             cmd[1] = std::to_string(min_value_gl) + " " +
