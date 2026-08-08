@@ -1687,7 +1687,7 @@ void tracking_window::insertPicture()
     reg_slice_ptr->is_diffusion_space = false;
     reg_slice_ptr->update_transform();
 
-    slice_need_update |= slice_updated;
+    slice_need_update |= position_updated;
     if(QMessageBox::Yes == QMessageBox::question(this,QApplication::applicationName(),"Apply registration?",QMessageBox::No | QMessageBox::Yes))
     {
         reg_slice_ptr->run_registration();
@@ -2072,7 +2072,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     for(size_t i = 0,sz = mask.size();i < sz;++i)
         if(mask[i])
             slice->source_images[i] = mark_value;
-    slice_need_update |= slice_updated;
+    slice_need_update |= image_updated;
     glWidget->update();
 }
 
@@ -2094,7 +2094,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     for(size_t i = 0,sz = t_mask.size();i < sz;++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;
-    slice_need_update |= slice_updated;
+    slice_need_update |= image_updated;
     glWidget->update();
 }
 
@@ -2115,7 +2115,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           return;
     }
     current_slice->view->v2c.set_color_map(new_color_map);
-    slice_need_update |= slice_updated;
+    slice_need_update |= image_updated;
     glWidget->update_slice();
 }
 
