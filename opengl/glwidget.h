@@ -128,7 +128,6 @@ public:
      void renderLR(void);
  signals:
      void edited();
-     void region_edited();
  protected:
      void initializeGL() override;
      void resizeGL(int width, int height) override;
