@@ -184,6 +184,7 @@ void TractTableWidget::addNewTracts(std::shared_ptr<TractModel> new_tract,bool c
 void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                              std::vector<std::vector<std::vector<float> > >& lesser)
 {
+    bool added = false;
     for(unsigned int index = 0;index < lesser.size();++index)
     {
         if(lesser[index].empty())
@@ -193,6 +194,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         tract_models.back()->add_tracts(lesser[index],tipl::rgb(255,255-color,255-color));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         tract_rendering.back()->need_update = true;
+        added = true;
     }
     for(unsigned int index = 0;index < greater.size();++index)
     {
@@ -203,7 +205,10 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         tract_models.back()->add_tracts(greater[index],tipl::rgb(255-color,255-color,255));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         tract_rendering.back()->need_update = true;
+        added = true;
     }
+    if(!added)
+        return;
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit tract_changed();
 }
@@ -534,8 +539,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return false;
         float f = cmd[0] == "cut_tract_rai_end" ? 0.0f : 0.25f;
         float t = cmd[0] == "cut_tract_lps_end" ? 1.0f : 0.75f;
-        for_current_bundle([&](void){tract_models[cur_row]->cut_end_portion(f,t);});
-        emit tract_changed();
+        if(for_current_bundle([&](void){tract_models[cur_row]->cut_end_portion(f,t);}))
+            emit tract_changed();
         return true;
     }
     if(tipl::begins_with(cmd[0],"flip_tract_"))
@@ -543,8 +548,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
             return false;
-        for_current_bundle([&](void){tract_models[cur_row]->flip(cmd[0].back()-'x');});
-        emit tract_changed();
+        if(for_current_bundle([&](void){tract_models[cur_row]->flip(cmd[0].back()-'x');}))
+            emit tract_changed();
         return true;
     }
     if(tipl::begins_with(cmd[0],"cut_tract_by_"))
@@ -948,6 +953,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "delete_all_tracts")
     {
+        if(tract_rendering.empty())
+            return run->canceled();
         setRowCount(0);
         while(!tract_rendering.empty())
         {
@@ -1094,6 +1101,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "color_all_cluster")
     {
+        if(tract_models.empty())
+            return run->canceled();
         for(unsigned int index = 0;index < tract_models.size();++index)
         {
             tipl::rgb c = tipl::rgb::generate(index);
@@ -1230,8 +1239,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_repeated(distance);
-        },cmd[2]);
-        emit tract_changed();
+        },cmd[2]); // emits tract_changed() itself, only if something was actually removed
         return true;
     }
 
@@ -1255,8 +1263,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             tract_models[index]->resample(new_step);
             return true;
-        },cmd[2]);
-        emit tract_changed();
+        },cmd[2]); // emits tract_changed() itself, only if something was actually resampled
         return true;
     }
 
@@ -1279,8 +1286,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_by_length(threshold);
-        },cmd[2]);
-        emit tract_changed();
+        },cmd[2]); // emits tract_changed() itself, only if something was actually removed
         return true;
     }
     if(cmd[0] == "separate_deleted_tract")
@@ -1327,6 +1333,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(dis <= 2.0f || angle <= 0.0f)
             return run->failed("invalid distance and angles" + cmd[2]);
         tract_models[cur_row]->reconnect_tract(dis,std::cos(angle*3.14159265358979323846f/180.0f));
+        tract_rendering[uint32_t(cur_row)]->need_update = true;
+        emit tract_changed();
         return true;
     }
 
@@ -1392,8 +1400,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 }
             else
                 ++j;
-        }
-        emit tract_changed();
+        } // delete_row() above already emits tract_changed() exactly when a merge actually happened
         return true;
     }
     if(cmd[0] == "sort_tract_by_name")
@@ -1401,6 +1408,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         std::vector<std::string> name_list;
         for(int i= 0;i < rowCount();++i)
             name_list.push_back(item(i,0)->text().toStdString());
+        bool reordered = false;
         for(int i= 0;i < rowCount()-1;++i)
         {
             int j = std::min_element(name_list.begin()+i,name_list.end())-name_list.begin();
@@ -1419,8 +1427,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             std::swap(thread_data[i],thread_data[j]);
             std::swap(tract_models[i],tract_models[j]);
             std::swap(tract_rendering[i],tract_rendering[j]);
+            reordered = true;
         }
-        emit tract_changed();
+        // pure reordering: which tracts are checked and their geometry are unchanged, so the 2D slice needs nothing, only 3D row/list order
+        if(reordered)
+            emit cur_tracking_window.need_gl_update();
         return true;
     }
     if(cmd[0] == "save_tdi" || cmd[0] == "save_tdi2")
@@ -1529,8 +1540,9 @@ void TractTableWidget::move_up(void)
         std::swap(tract_models[uint32_t(currentRow())],tract_models[currentRow()-1]);
         std::swap(tract_rendering[uint32_t(currentRow())],tract_rendering[currentRow()-1]);
         setCurrentCell(currentRow()-1,0);
+        // pure reordering: which tracts are checked and their geometry are unchanged, so the 2D slice needs nothing, only 3D row/list order
+        emit cur_tracking_window.need_gl_update();
     }
-    emit tract_changed();
 }
 
 void TractTableWidget::move_down(void)
@@ -1550,8 +1562,9 @@ void TractTableWidget::move_down(void)
         std::swap(tract_models[uint32_t(currentRow())],tract_models[currentRow()+1]);
         std::swap(tract_rendering[uint32_t(currentRow())],tract_rendering[currentRow()+1]);
         setCurrentCell(currentRow()+1,0);
+        // pure reordering: which tracts are checked and their geometry are unchanged, so the 2D slice needs nothing, only 3D row/list order
+        emit cur_tracking_window.need_gl_update();
     }
-    emit tract_changed();
 }
 
 
