@@ -496,7 +496,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // scene view
     {
 
-        connect(&scene,&slice_view_scene::need_update,this,[this](void){slice_need_update = true;});
+        connect(&scene,&slice_view_scene::need_update,this,[this](void){slice_need_update |= slice_updated;});
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(update()));
 
 
@@ -519,7 +519,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 glWidget->set_view(cur_dim);
                 glWidget->update();
                 glWidget->setFocus();
-                slice_need_update = true;
+                slice_need_update |= slice_updated;
                 set_data("roi_layout",0);}
         };
 
@@ -527,8 +527,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glCorView,&QPushButton::toggled,this,slice_view_toggled);
         connect(ui->glAxiView,&QPushButton::toggled,this,slice_view_toggled);
 
-        connect(ui->show_3view,qOverload<bool>(&QToolButton::toggled),this,[this](bool checked){if(checked){set_data("roi_layout",1);glWidget->update();slice_need_update = true;}});
-        connect(ui->show_mosaic,&QToolButton::clicked,this,[this](void){set_data("roi_layout",std::min<int>(7,std::max<int>(2,(*this)["roi_layout"].toInt()+1)));glWidget->update();slice_need_update = true;});
+        connect(ui->show_3view,qOverload<bool>(&QToolButton::toggled),this,[this](bool checked){if(checked){set_data("roi_layout",1);glWidget->update();slice_need_update |= slice_updated;}});
+        connect(ui->show_mosaic,&QToolButton::clicked,this,[this](void){set_data("roi_layout",std::min<int>(7,std::max<int>(2,(*this)["roi_layout"].toInt()+1)));glWidget->update();slice_need_update |= slice_updated;});
 
 
         connect(ui->tool0,&QPushButton::pressed,this,[this](void){scene.sel_mode = 0;scene.setFocus();});
@@ -537,8 +537,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->tool3,&QPushButton::pressed,this,[this](void){scene.sel_mode = 3;scene.setFocus();});
         connect(ui->tool4,&QPushButton::pressed,this,[this](void){scene.sel_mode = 4;scene.setFocus();});
         connect(ui->tool5,&QPushButton::pressed,this,[this](void){scene.sel_mode = 5;scene.setFocus();});
-        connect(ui->tool6,&QPushButton::pressed,this,[this](void){scene.sel_mode = 6;slice_need_update = true;scene.setFocus();});
-        connect(ui->zoom,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double arg1){if(float(arg1) == (*this)["roi_zoom"].toFloat())return;set_data("roi_zoom",arg1);slice_need_update = true;});
+        connect(ui->tool6,&QPushButton::pressed,this,[this](void){scene.sel_mode = 6;slice_need_update |= slice_updated;scene.setFocus();});
+        connect(ui->zoom,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double arg1){if(float(arg1) == (*this)["roi_zoom"].toFloat())return;set_data("roi_zoom",arg1);slice_need_update |= slice_updated;});
 
 
         auto roi_show_toggled = [this](bool checked)
@@ -552,7 +552,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                     scene.show_grid = !scene.show_grid;
                 set_data(name.c_str(),button->isChecked());
             }
-            slice_need_update = true;
+            slice_need_update |= slice_updated;
         };
         connect(ui->roi_fiber,&QToolButton::toggled,this,roi_show_toggled);
         connect(ui->roi_track,&QToolButton::toggled,this,roi_show_toggled);
@@ -572,8 +572,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // regions
     {
 
-        connect(regionWidget,&RegionTableWidget::need_update,this,[this](void){slice_need_update = true;});
-        connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update = true;});
+        connect(regionWidget,&RegionTableWidget::need_update,this,[this](void){slice_need_update |= region_updated;});
+        connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update |= region_updated;});
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
@@ -641,14 +641,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->stop_tracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
         connect(tractWidget,&TractTableWidget::show_tracts,this,[this](void)
         {
-            slice_need_update = true;
+            slice_need_update |= tract_updated;
             glWidget->update();
         });
         connect(tractWidget,SIGNAL(cellChanged(int,int)),tractWidget,SLOT(cell_changed(int,int))); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(update()));
-        connect(glWidget,&GLWidget::region_edited,this,[this](void){slice_need_update = true;});
+        connect(glWidget,&GLWidget::region_edited,this,[this](void){slice_need_update |= region_updated;});
 
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
@@ -796,7 +796,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     // update slice here
     if(slice_need_update && updatesEnabled())
     {
-        slice_need_update = false;
+        slice_need_update = none;
         scene.show_slice();
     }
     if(scene.complete_view_ready && updatesEnabled())
@@ -901,7 +901,7 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
 
     glWidget->update_slice();
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
 }
 
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
@@ -914,7 +914,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     if(renderWidget->getData("fa_threshold").toFloat() != 0.0f)
         set_data("fa_threshold",
                  renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu);
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
 }
 
 void tracking_window::keyPressEvent ( QKeyEvent * event )
