@@ -1764,6 +1764,7 @@ void AIAgent::on_ai_agent_status_clicked()
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
         if(info.provider == ai_provider::ChatGPT) // no agent/model to change here; the only meaningful action is reconnecting
         {
+            web_agent_session_id = info.sessions; // resume must target the selected chat, not whatever session was last active
             new_chat_dialog(true);
             return;
         }
