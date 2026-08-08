@@ -369,23 +369,41 @@ bool src_data::check_b_table(bool use_template)
                              ".210",".210fx",".210fy",".210fz",
                              ".201",".201fx",".201fy",".201fz"};
 
-    tipl::transformation_matrix<float> T;
+    tipl::reg::mm_reg<tipl::out> reg;
     std::shared_ptr<fib_data> template_fib(new fib_data);
     if(use_template && template_fib->load_template_fib(voxel.template_id,voxel.vs[2]))
     {
         tipl::progress prog("registering to template");
-        auto iso = template_fib->get_iso();
-        T = tipl::reg::linear<tipl::out>(
-               tipl::reg::make_list(tipl::reg::template_image_pre(tipl::image<3>(iso))),template_fib->vs,
-               tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::affine});
+        reg.modality_names = {"iso"};
+        reg.It[0] = tipl::reg::template_image_pre(tipl::image<3>(template_fib->get_iso()));
+        reg.Itvs = template_fib->vs;
+        reg.ItR = template_fib->trans_to_mni;
+        reg.Its = template_fib->dim;
+        reg.It_is_mni = true;
+        // dwi is already the output of subject_image_pre() (see update_dwi_sum()); running it through
+        // subject_image_pre() again here used to double-blur/re-normalize it, degenerating the moment-based
+        // initial guess in estimate_affine_param() to all zeros and leaving the search to drift unbounded
+        reg.I[0] = tipl::image<3,unsigned char>(dwi);
+        reg.Ivs = voxel.vs;
+        reg.IR = voxel.trans_to_mni;
+        reg.Is = dwi.shape();
+        reg.match_resolution(true);
+        bool ended = false;
+        std::thread reg_thread([&]
+        {
+            reg.linear_reg(tipl::prog_aborted);
+            reg.nonlinear_reg(tipl::prog_aborted);
+            ended = true;
+        });
+        while(!ended)
+            prog(0,1);
+        reg_thread.join();
         if(prog.aborted())
         {
             template_fib.reset();
             return false;
         }
-        float r = tipl::correlation(iso,tipl::resample<tipl::interpolation::linear>(dwi,iso.shape(),T));
-        tipl::out() << "linear r: " << r;
-        if(r < 0.3f)
+        if(reg.r[0] < 0.3f)
             tipl::warning() << "poor registration found. check b-table may not be reliable using template";
     }
     else
@@ -438,10 +456,12 @@ bool src_data::check_b_table(bool use_template)
                 float fa = template_fib->dir.fa[0][index.index()];
                 if(fa < template_fib->dir.fa_otsu)
                     continue;
-                tipl::vector<3> pos(index),dir(template_fib->dir.get_fib(index.index(),0));
-                (dir*=0.1f)+=pos;
-                T(pos);
-                T(dir);
+                tipl::vector<3> offset(index);
+                offset += tipl::vector<3>(template_fib->dir.get_fib(index.index(),0))*0.1f;
+                // sample the nonlinear warp field directly: pos is the template voxel mapped into subject
+                // space, dir is a nearby point along the fiber mapped the same way, so their difference
+                // gives the locally warped fiber direction (replaces the old bare affine T(pos)/T(dir))
+                tipl::vector<3> pos(reg.to2from[index.index()]),dir(tipl::estimate(reg.to2from,offset));
                 dir -= pos;
                 dir.normalize();
                 pos.round();
@@ -453,7 +473,7 @@ bool src_data::check_b_table(bool use_template)
                     ncount += w;
                 }
             }
-            result[i] = sum_cos/ncount;
+            result[i] = ncount > 0.0 ? float(sum_cos/ncount) : 0.0f; // ncount==0 means no template/subject overlap; report 0 rather than NaN
         }
         else
             // for animal studies, use fiber coherence index
