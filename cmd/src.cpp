@@ -247,13 +247,14 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
              bool is_bids,
              bool overwrite,
              bool topup_eddy,
-             const char* progress_name = "convert nifti to src files")
+             std::string& error_msg)
 {
-    tipl::progress prog(progress_name);
+    tipl::progress prog(is_bids ? "converting BIDS to SRC" : "converting NIFTI to SRC");
     if(!is_bids)
     {
         std::atomic_size_t done = 0;
         std::atomic_bool result = true;
+        std::mutex error_mutex;
         tipl::par_for(dwi_nii_files.size(),[&](size_t i)
         {
             if(!prog(done.fetch_add(1),dwi_nii_files.size()))
@@ -277,6 +278,8 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
             {
                 tipl::warning() << src.error_msg;
                 result = false;
+                std::lock_guard<std::mutex> lock(error_mutex);
+                error_msg += (error_msg.empty() ? std::string() : "\n")+src.error_msg;
             }
         });
         return result;
@@ -289,7 +292,6 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
               dwi_nii_files[i+1].parent_path() == dwi_list.front().parent_path())
             dwi_list.push_back(dwi_nii_files[++i]);
 
-        std::string error_msg;
         if(!handle_bids_folder(
                 dwi_list,output_dir,overwrite,topup_eddy,error_msg))
         {
