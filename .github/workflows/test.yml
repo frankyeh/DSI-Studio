@@ -211,7 +211,7 @@ jobs:
 
             dicom)
               mkdir -p data
-              curl -L https://ndownloader.figshare.com/files/36168675 -o data/download.zip
+              curl -fL --retry 3 "https://figshare.com/ndownloader/articles/31802656/versions/2" -o data/download.zip
               cd data
               jar xf download.zip
               rm download.zip
