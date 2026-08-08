@@ -232,6 +232,8 @@ public:
         QAction *action = qobject_cast<QAction *>(sender());
         return action ? action->data().toString() : QString();
     }
+signals:
+    void need_gl_update(); // queued to glWidget so paintGL isn't reentered from inside a mouse-event handler
 public slots:
     void check_reg(void);
 private slots:
