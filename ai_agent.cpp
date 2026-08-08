@@ -484,11 +484,11 @@ AIAgent::AIAgent(MainWindow* parent):
         // among all sessions with a bound issue, resume whichever was bound most recently
         // (config_file() is rewritten only on a deliberate agent/model/channel change, never
         // by ordinary chat activity, so its mtime is a clean "last touched" signal)
-        auto issue_url = ai->model_settings["github_issue_url"].toString();
-        if(!issue_url.isEmpty() && config_info.lastModified().toMSecsSinceEpoch() > resume_config_time)
+        auto issue_path = ai->model_settings["github_issue_url"].toString();
+        if(!issue_path.isEmpty() && config_info.lastModified().toMSecsSinceEpoch() > resume_config_time)
         {
             resume_session = session;
-            resume_url = issue_url;
+            resume_url = "https://github.com/"+issue_path;
             resume_config_time = config_info.lastModified().toMSecsSinceEpoch();
         }
     }
@@ -798,7 +798,10 @@ void AIAgent::poll_github_issue()
         web_agent_session_id = session_id;
         if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub")) // records which issue this session is bound to, so a restart can auto-resume polling it
         {
-            info->model_settings["github_issue_url"] = github_issue_api.toString();
+            // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
+            // "https://api.github.com/repos/<owner>/<repo>/issues/<number>", built by DSI Studio itself
+            info->model_settings["github_issue_url"] =
+                QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
             info->save_config();
         }
 
@@ -1653,7 +1656,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     model.setEditable(true); // lets the user type a specific model name (e.g. a dated Claude model), not just pick a known alias
     // web_agent_session_id (not sidebar selection) is the reliable way to find which chat is being resumed
     auto* resume_info = resume ? ai_info::find(web_agent_session_id) : nullptr;
-    QLineEdit issue_url_edit(resume_info ? resume_info->model_settings["github_issue_url"].toString() : QString());
+    auto resume_issue_path = resume_info ? resume_info->model_settings["github_issue_url"].toString() : QString();
+    QLineEdit issue_url_edit(resume_issue_path.isEmpty() ? QString() : "https://github.com/"+resume_issue_path);
     issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
     QLabel field_label;
     field_stack->addWidget(&model);
@@ -1694,9 +1698,9 @@ void AIAgent::new_chat_dialog(bool resume)
     // resuming an already-known chat: reconnect with its saved issue link directly, no dialog
     if(resume)
         if(auto* info = ai_info::find(web_agent_session_id))
-            if(auto url = info->model_settings["github_issue_url"].toString();!url.isEmpty())
+            if(auto path = info->model_settings["github_issue_url"].toString();!path.isEmpty())
             {
-                try_connect_github_issue(url,true);
+                try_connect_github_issue("https://github.com/"+path,true);
                 return;
             }
 
