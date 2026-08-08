@@ -84,8 +84,6 @@ public:
     void add_row(int row,QString name);
     void add_region(QString name,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
     void add_high_reso_region(QString name,float reso,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
-    void begin_update(void);
-    void end_update(void);
     bool set_roi(const std::string& settings,std::shared_ptr<RoiMgr> roi);
     std::string get_roi_settings(void);
     QString getROIname(void);
