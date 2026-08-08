@@ -916,6 +916,7 @@ void GLWidget::renderLR()
     std::vector<bool> region_visualized(cur_tracking_window.regionWidget->regions.size());
     if (get_param("show_region"))
     {
+        cur_tracking_window.regionWidget->update_region_color_values(); // once per frame, before any region is rendered
         glDisable(GL_COLOR_MATERIAL);
         setupLight((float)(get_param("region_light_ambient"))/10.0,
                    (float)(get_param("region_light_diffuse"))/10.0,
