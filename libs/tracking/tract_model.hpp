@@ -59,6 +59,7 @@ private:
         std::vector<std::pair<unsigned int,unsigned int> > redo_size;
         // offset, size
         void erase_empty(void);
+        std::vector<char> find_repeated_d1(void) const; // exact, optimized path used by find_repeated() when d==1
 public:
         // for loading multiple clusters
         // it can be empty
