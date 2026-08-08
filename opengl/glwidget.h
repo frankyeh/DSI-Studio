@@ -94,7 +94,6 @@ Q_OBJECT
      int last_time;
      bool get_mouse_pos(QPoint cur_pos,tipl::vector<3,float>& position);
      void paintGL() override;
-     bool no_update = true;
  public:
      tipl::vector<2,int> tract_color_bar_pos = {10,10};
      tipl::vector<2,int> region_color_bar_pos = {10,10};
