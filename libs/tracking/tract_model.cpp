@@ -1658,13 +1658,20 @@ std::vector<char> TractModel::find_repeated(float d) const
         size_t n_size = tract_data[j].size();
         for(size_t m = 0;m < m_size;m += 3)
         {
-            bool found_near_point = false;
-            for(size_t n = 0;n < n_size;n += 3)
-                if(min_distance(&tract_data[i][m],&tract_data[j][n],d) < d)
-                {
+            // track_repeated only runs on pairs whose endpoints already matched, so near-duplicate
+            // tracts are expected to align along similar arc length: search outward from the point in j
+            // that corresponds proportionally to m, instead of scanning from 0. Same index set as a plain
+            // 0..n_size scan (so results are unchanged) but true duplicates resolve in ~O(1) per point.
+            size_t center = (m_size > 3) ? (m*(n_size-3))/(m_size-3) : 0;
+            center -= center%3;
+            bool found_near_point = min_distance(&tract_data[i][m],&tract_data[j][center],d) < d;
+            for(size_t r = 3;!found_near_point && (r <= center || center+r < n_size);r += 3)
+            {
+                if(r <= center && min_distance(&tract_data[i][m],&tract_data[j][center-r],d) < d)
                     found_near_point = true;
-                    break;
-                }
+                else if(center+r < n_size && min_distance(&tract_data[i][m],&tract_data[j][center+r],d) < d)
+                    found_near_point = true;
+            }
             if(!found_near_point)
                 return false;
         }
