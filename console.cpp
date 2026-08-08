@@ -89,7 +89,7 @@ console_stream::overflow(std::basic_streambuf<char>::int_type v)
     if(history.size() > max_console_history)
         history.remove(0,history.size()-max_console_history);
 
-    if(capture)
+    if(capture && tipl::is_main_thread()) // worker-thread output must not land in another request's capture buffer
         capture->push_back(char(v));
     if(v == '\n')
         has_output = true;
@@ -109,7 +109,7 @@ std::streamsize console_stream::xsputn(
     total_size += text.size();
     if(history.size() > max_console_history)
         history.remove(0,history.size()-max_console_history);
-    if(capture)
+    if(capture && tipl::is_main_thread())
         *capture += text;
 
     return n;
