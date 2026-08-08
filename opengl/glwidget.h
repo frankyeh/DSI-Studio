@@ -126,8 +126,6 @@ public:
      void rotate(void);
      void record_video(void);
      void renderLR(void);
- signals:
-     void edited();
  protected:
      void initializeGL() override;
      void resizeGL(int width, int height) override;
