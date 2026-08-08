@@ -495,6 +495,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     // scene view
     {
+        connect(this,SIGNAL(need_gl_update()),glWidget,SLOT(update()),Qt::QueuedConnection);
 
 
         connect(ui->actionAxial_View,&QAction::triggered,this,[this](void){if(ui->glAxiView->isChecked()){glWidget->set_view(cur_dim);glWidget->update();}else ui->glAxiView->setChecked(true);});
@@ -571,7 +572,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(regionWidget,&RegionTableWidget::need_update,this,[this](void){slice_need_update |= region_updated;});
         connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update |= region_updated;});
-        connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
+        connect(regionWidget,SIGNAL(need_update()),this,SIGNAL(need_gl_update()));
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
@@ -618,8 +619,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     // Device
     {
-        connect(deviceWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
-
         connect(ui->actionOpenDevice,SIGNAL(triggered()),deviceWidget,SLOT(load_device()));
         connect(ui->actionSaveDevice,SIGNAL(triggered()),deviceWidget,SLOT(save_device()));
 
