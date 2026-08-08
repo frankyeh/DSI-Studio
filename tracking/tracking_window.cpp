@@ -540,7 +540,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->zoom,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double arg1){if(float(arg1) == (*this)["roi_zoom"].toFloat())return;set_data("roi_zoom",arg1);slice_need_update |= position_updated;});
 
 
-        auto roi_show_toggled = [this](bool checked)
+        auto roi_show_toggled = [this](bool checked,slice_update_type update_type)
         {
             auto button = qobject_cast<QToolButton*>(sender());
             auto name = button->objectName().toStdString();
@@ -551,17 +551,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                     scene.show_grid = !scene.show_grid;
                 set_data(name.c_str(),button->isChecked());
             }
-            // roi_fiber/roi_ruler/roi_position/roi_label are drawn straight from slice geometry (image_updated);
-            // roi_track draws tract intersections (tract_updated); roi_draw_edge affects region outline rendering (region_updated)
-            slice_need_update |= name == "roi_track" ? tract_updated :
-                                  name == "roi_draw_edge" ? region_updated : image_updated;
+            slice_need_update |= update_type;
         };
-        connect(ui->roi_fiber,&QToolButton::toggled,this,roi_show_toggled);
-        connect(ui->roi_track,&QToolButton::toggled,this,roi_show_toggled);
-        connect(ui->roi_ruler,&QToolButton::toggled,this,roi_show_toggled);
-        connect(ui->roi_position,&QToolButton::toggled,this,roi_show_toggled);
-        connect(ui->roi_label,&QToolButton::toggled,this,roi_show_toggled);
-        connect(ui->roi_draw_edge,&QToolButton::toggled,this,roi_show_toggled);
+        connect(ui->roi_fiber,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_track,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,tract_updated);});
+        connect(ui->roi_ruler,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_position,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_label,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,image_updated);});
+        connect(ui->roi_draw_edge,&QToolButton::toggled,this,[this](bool checked){roi_show_toggled(checked,region_updated);});
 
         connect(new QShortcut(QKeySequence(Qt::Key_F1),this),&QShortcut::activated,this,[this](void){ui->roi_fiber->setChecked(!ui->roi_fiber->isChecked());});
         connect(new QShortcut(QKeySequence(Qt::Key_F2),this),&QShortcut::activated,this,[this](void){ui->roi_track->setChecked(!ui->roi_track->isChecked());});
