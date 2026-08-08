@@ -856,7 +856,7 @@ void view_image::init_image(void)
         ui->apply_to_all->show();
     }
     ui->type->setCurrentIndex(cur_image->pixel_type);
-    no_update = false;
+    setUpdatesEnabled(true);
     show_image(true);
 }
 void view_image::set_overlay(void)
@@ -923,7 +923,7 @@ void view_image::show_info(QString info)
 }
 void view_image::show_image(bool update_others)
 {
-    if(cur_image->empty() || no_update)
+    if(cur_image->empty() || !updatesEnabled())
         return;
 
     tipl::color_image buffer;
@@ -1209,7 +1209,7 @@ void view_image::run_action2()
 
 void view_image::on_type_currentIndexChanged(int index)
 {
-    if(cur_image->empty() || no_update)
+    if(cur_image->empty() || !updatesEnabled())
         return;
     command({"change_type",std::to_string(index)});
     init_image();
@@ -1265,9 +1265,12 @@ void view_image::on_mat_images_currentIndexChanged(int index)
 {
     if(index < 0)
         return;
-    no_update = true;
+    setUpdatesEnabled(false);
     if(!cur_image->read_mat_image(mat.index_of(ui->mat_images->currentText().toStdString()),mat))
+    {
+        setUpdatesEnabled(true);
         return;
+    }
     ui->type->setCurrentIndex(cur_image->pixel_type);
     init_image();
 }
