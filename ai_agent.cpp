@@ -1533,8 +1533,6 @@ bool AIAgent::run_agent_login(ai_provider provider)
 bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
 {
     web_agent_active_session = true; // reflects the chosen mode even if the connection below fails, so the label/Resume button stay accurate
-    github_last_issue_url = url;
-    settings.setValue("ai/github_last_issue_url",url);
     update_send_button();
     update_agent_status_label();
     set_ai_status("Connecting to "+url+"...");
@@ -1655,7 +1653,9 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     auto* field_stack = new QStackedLayout(&field_container);
     QComboBox model;
     model.setEditable(true); // lets the user type a specific model name (e.g. a dated Claude model), not just pick a known alias
-    QLineEdit issue_url_edit(resume ? github_last_issue_url : QString());
+    // web_agent_session_id (not sidebar selection) is the reliable way to find which chat is being resumed
+    auto* resume_info = resume ? ai_info::find(web_agent_session_id) : nullptr;
+    QLineEdit issue_url_edit(resume_info ? resume_info->model_settings["github_issue_url"].toString() : QString());
     issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
     QLabel field_label;
     field_stack->addWidget(&model);
