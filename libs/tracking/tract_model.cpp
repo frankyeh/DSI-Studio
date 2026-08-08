@@ -1662,10 +1662,6 @@ std::vector<char> TractModel::find_repeated(float d) const
         size_t n_size = tract_data[j].size();
         for(size_t m = 0;m < m_size;m += 3)
         {
-            // track_repeated only runs on pairs whose endpoints already matched, so near-duplicate
-            // tracts are expected to align along similar arc length: search outward from the point in j
-            // that corresponds proportionally to m, instead of scanning from 0. Same index set as a plain
-            // 0..n_size scan (so results are unchanged) but true duplicates resolve in ~O(1) per point.
             size_t center = (m_size > 3) ? (m*(n_size-3))/(m_size-3) : 0;
             center -= center%3;
             bool found_near_point = min_distance(&tract_data[i][m],&tract_data[j][center],d) < d;
@@ -1702,13 +1698,6 @@ std::vector<char> TractModel::find_repeated(float d) const
                        std::back_inserter(check_set));
         for(size_t j : check_set)
         {
-            // "shares a start bucket" and "shares an end bucket" are each symmetric, so without the j>i
-            // restriction, every duplicate pair gets fully evaluated twice (once from i, once from j).
-            // The original (unrestricted) code only ever wrote repeated[j], but since it ran both
-            // directions, any tract with >=1 duplicate partner ended up marked from one side or the
-            // other -- so marking both i and j here on a single evaluation reproduces that exact same
-            // final set (every member of a mutual-duplicate cluster gets deleted) while still testing
-            // each unordered pair only once.
             if(j <= i || (repeated[i] && repeated[j]))
                 continue;
             if(min_distance(&tract_data[i][0],&tract_data[j][0],d) < d &&
