@@ -767,12 +767,10 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "check_all_regions" || cmd[0] == "uncheck_all_regions")
     {
         bool checked = cmd[0] == "check_all_regions";
-        cur_tracking_window.glWidget->no_update = true;
-        cur_tracking_window.scene.no_update = true;
+        begin_update();
         for(int row = 0;row < rowCount();++row)
             check_row(row,checked);
-        cur_tracking_window.scene.no_update = false;
-        cur_tracking_window.glWidget->no_update = false;
+        end_update();
         emit region_changed();
         return run->succeed();
     }
