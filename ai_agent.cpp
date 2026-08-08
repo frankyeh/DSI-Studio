@@ -1567,13 +1567,23 @@ bool AIAgent::try_connect_github_issue(const QString& url,bool resume)
 
 void AIAgent::update_agent_status_label()
 {
-    auto* item = ui->ai_project_list->currentItem();
-    bool web = item ? ai_infos[item->data(Qt::UserRole).toString()].provider == ai_provider::ChatGPT
-                     : web_agent_active_session;
-    if(web)
-        return void(ui->ai_agent_status->setText("ChatGPT(Web)"));
-
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
+    auto* item = ui->ai_project_list->currentItem();
+    auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    bool web = info ? info->provider == ai_provider::ChatGPT : web_agent_active_session;
+    if(web)
+    {
+        auto* web_info = info ? info : ai_info::find(web_agent_session_id);
+        // prefer the live connection's own link: model_settings["github_issue_url"] only updates once a request
+        // actually arrives on it, so right after reconnecting to a *different* link it would still show the old one
+        QString path;
+        if(!github_issue_api.isEmpty() && (!web_info || web_info->sessions == web_agent_session_id))
+            path = QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
+        else if(web_info)
+            path = web_info->model_settings["github_issue_url"].toString();
+        return void(ui->ai_agent_status->setText(path.isEmpty() ? "ChatGPT(Web)" : "ChatGPT(Web)"+dot+path));
+    }
+
     QString text = (current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude") +
                    dot + current_model_name;
     if(current_model_info.contains("provider"))
@@ -1773,10 +1783,17 @@ void AIAgent::on_ai_agent_status_clicked()
     if(auto* item = ui->ai_project_list->currentItem())
     {
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
-        if(info.provider == ai_provider::ChatGPT) // no agent/model to change here; the only meaningful action is reconnecting
+        if(info.provider == ai_provider::ChatGPT) // change or reconnect using a possibly different issue link
         {
             web_agent_session_id = info.sessions; // resume must target the selected chat, not whatever session was last active
-            new_chat_dialog(true);
+            bool web = false;
+            int agent_index = 0;
+            QString model_name,issue_url;
+            if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",web,agent_index,model_name,issue_url))
+                return;
+            if(!github_issue_api.isEmpty())
+                disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
+            try_connect_github_issue(issue_url,true);
             return;
         }
         QDialog dialog(this);
