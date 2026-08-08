@@ -85,6 +85,7 @@ public:
     std::shared_ptr<std::thread> calculation_thread;
 public:
     bool need_update = true;
+    std::vector<char> repeated;
     unsigned int update_data_count = 0;
     bool about_to_write = false;
     unsigned int reading_threads = 0;
