@@ -473,7 +473,7 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
     expandAll();
     collapseAll();
 
-    tract_update_list = {"tract_alpha","tract_style",
+    tract_update_list = {"tract_alpha","tract_style","tract_render_option",
                          "tract_color_saturation","tract_color_brightness",
                          "tract_color_style", "tract_color_metrics", "tract_color_map",
                          "tract_color_max","tract_color_min",
