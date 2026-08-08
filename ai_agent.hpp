@@ -16,6 +16,7 @@
 class MainWindow;
 class QListWidgetItem;
 class QMenu;
+class QNetworkReply;
 class QNetworkRequest;
 class QProcess;
 class QShowEvent;
@@ -96,9 +97,14 @@ class AIAgent : public QMainWindow
     QNetworkRequest github_request(const QUrl&) const;
     bool connect_github_issue(const QString&,QString& error);
     void disconnect_github_issue();
+    // shared QNetworkReply::finished preamble for the poll/publish channels: consumes reply (deleteLater, reads
+    // body into data), checks for a superseded connection / rate limiting / a permanent auth failure. Returns
+    // false if the caller should stop (reply already handled).
+    bool handle_github_reply(QNetworkReply* reply,quint64 connection_id,int& status,QByteArray& data);
     void poll_github_issue();
     void publish_github_result(QJsonObject);
     void send_pending_result();
+    ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
     bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
     bool try_connect_github_issue(const QString& url,bool resume); // connect_github_issue() plus the shared success/failure UI feedback
