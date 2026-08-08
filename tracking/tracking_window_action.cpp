@@ -578,9 +578,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
 
         if(is_region)
-            emit regionWidget->need_update();
+            emit regionWidget->region_changed();
         else
-            emit tractWidget->show_tracts();
+            emit tractWidget->tract_changed();
         return run->succeed();
     }
     if(cmd[0] == "presentation_mode")
