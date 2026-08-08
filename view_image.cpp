@@ -1093,7 +1093,7 @@ void view_image::on_actionSave_triggered()
         slice->update_image(tipl::image<3>(cur_image->I_float32));
         slice->vs = cur_image->vs;
         slice->trans_to_mni = cur_image->T;
-        tracking->slice_need_update |= tracking_window::slice_updated;
+        tracking->slice_need_update |= tracking_window::image_updated;
         QMessageBox::information(this,QApplication::applicationName(),"Image Updated");
         return;
     }
