@@ -320,6 +320,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 {
 
     setAcceptDrops(true);
+    setUpdatesEnabled(false);
     tipl::progress prog("initializing tracking GUI");
 
 
@@ -720,6 +721,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         ui->SliceModality->blockSignals(false);
         glWidget->no_update = false;
+        setUpdatesEnabled(true);
         command({"set_slice"});
         ui->glAxiView->setChecked(true);
         if((*this)["orientation_convention"].toInt() == 1)
