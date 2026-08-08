@@ -152,19 +152,6 @@ void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,
         return;
     regions.back()->add_points(std::move(all_points));
 }
-void RegionTableWidget::begin_update(void)
-{
-    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
-    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
-    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(itemSelectionChanged()),&cur_tracking_window,nullptr);
-}
-
-void RegionTableWidget::end_update(void)
-{
-    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
-    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
-    cur_tracking_window.connect(cur_tracking_window.regionWidget,&RegionTableWidget::itemSelectionChanged,&cur_tracking_window,[w=&cur_tracking_window](void){w->slice_need_update |= region_updated;});
-}
 
 void RegionTableWidget::add_row(int row,QString name)
 {
@@ -505,7 +492,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         int new_row = cur_row + shift;
         regions[cur_row].swap(regions[new_row]);
 
-        begin_update();
+        cur_tracking_window.setUpdatesEnabled(false);
         for(int i = 0;i < columnCount();++i)
         {
             auto item0 = takeItem(cur_row,i);
@@ -513,7 +500,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             setItem(cur_row,i,item1);
             setItem(new_row,i,item0);
         }
-        end_update();
+        cur_tracking_window.setUpdatesEnabled(true);
         setCurrentCell(new_row,0);
         return run->succeed();
     }
@@ -767,10 +754,10 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "check_all_regions" || cmd[0] == "uncheck_all_regions")
     {
         bool checked = cmd[0] == "check_all_regions";
-        begin_update();
+        cur_tracking_window.setUpdatesEnabled(false);
         for(int row = 0;row < rowCount();++row)
             check_row(row,checked);
-        end_update();
+        cur_tracking_window.setUpdatesEnabled(true);
         emit region_changed();
         return run->succeed();
     }
@@ -837,14 +824,14 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
 
         tipl::progress prog("adding regions");
-        begin_update();
+        cur_tracking_window.setUpdatesEnabled(false);
         for(size_t i = 0;prog(i,points.size());++i)
         {
             add_region(labels[i].c_str());
             if(!points.empty())
                 regions.back()->add_points(std::move(points[i]));
         }
-        end_update();
+        cur_tracking_window.setUpdatesEnabled(true);
         emit region_changed();
         cur_tracking_window.raise();
         return run->succeed();
@@ -893,13 +880,13 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(prog.aborted())
             return run->canceled();
         regions[merge_list[0]]->from_mask(mask);
-        begin_update();
+        cur_tracking_window.setUpdatesEnabled(false);
         for(int index = merge_list.size()-1;index >= 1;--index)
         {
             regions.erase(regions.begin()+merge_list[index]);
             removeRow(merge_list[index]);
         }
-        end_update();
+        cur_tracking_window.setUpdatesEnabled(true);
         emit region_changed();
         return run->succeed();
     }
@@ -1210,14 +1197,14 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 
     {
         tipl::progress prog("loading ROIs");
-        begin_update();
+        cur_tracking_window.setUpdatesEnabled(false);
         for(uint32_t i = 0;prog(i,loaded_regions[0].size());++i)
             {
                 regions.push_back(loaded_regions[0][i]);
                 add_row(int(regions.size()-1),loaded_regions[0][i]->name.c_str());
                 check_row(currentRow(),loaded_regions.size() == 1);
             }
-        end_update();
+        cur_tracking_window.setUpdatesEnabled(true);
     }
     return true;
 
@@ -1525,7 +1512,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
             std::vector<QTableWidgetItem*> items;
             std::vector<std::shared_ptr<ROIRegion>> new_region(arg.size());
-            begin_update();
+            cur_tracking_window.setUpdatesEnabled(false);
             size_t col_count = columnCount();
             for(size_t i = 0;i < arg.size();++i)
             {
@@ -1540,7 +1527,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             for(size_t i = 0,pos = 0;i < arg.size();++i)
                 for(size_t j = 0;j < col_count;++j,++pos)
                     setItem(region_rows[i],j,items[pos]);
-            end_update();
+            cur_tracking_window.setUpdatesEnabled(true);
         }
 
 
@@ -1645,7 +1632,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             auto r = tipl::morphology::connected_component_labeling(cur_region.to_mask());
 
             QString name = item(region_rows.front(),0)->text();
-            begin_update();
+            cur_tracking_window.setUpdatesEnabled(false);
             for(size_t j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
             {
                 if(r[j].empty())
@@ -1660,7 +1647,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 regions.push_back(new_region);
                 add_row(int(regions.size()-1),name + "_" + QString::number(++total_count));
             }
-            end_update();
+            cur_tracking_window.setUpdatesEnabled(true);
         }
     }
 
