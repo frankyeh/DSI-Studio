@@ -127,7 +127,6 @@ private:// batch processing
     std::vector<bool> other_is_mni;
     */
 private: // visualization
-    bool no_update = true;
     tipl::value_to_color<float> v2c;
     unsigned char cur_dim = 2;
     int slice_pos[3] = {0,0,0};
