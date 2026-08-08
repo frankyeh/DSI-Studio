@@ -1595,16 +1595,14 @@ void AIAgent::try_set_current_model(const QString& name) // accepts any non-empt
 
 void AIAgent::update_send_button()
 {
-    if(web_agent_active_session)
-    {
-        ui->ai_send_message->setText(github_issue_api.isEmpty() ? "Resume" : "Stop");
-        return;
-    }
     auto* item = ui->ai_project_list->currentItem();
     auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
-    if(info && info->provider == ai_provider::ChatGPT)
+    // selection wins whenever there is one, matching update_agent_status_label()/show_ai_project(): web_agent_active_session
+    // only stands in for "no chat selected yet" (e.g. mid New Chat before its sidebar item exists)
+    if(info ? info->provider == ai_provider::ChatGPT : web_agent_active_session)
     {
-        ui->ai_send_message->setText("Resume");
+        bool connected = !github_issue_api.isEmpty() && (!info || info->sessions == web_agent_session_id);
+        ui->ai_send_message->setText(connected ? "Stop" : "Resume");
         return;
     }
     bool running = info && info->processes;
@@ -2313,40 +2311,38 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
 
 void AIAgent::on_ai_send_message_clicked()
 {
-    if(web_agent_active_session)
+    auto* item = ui->ai_project_list->currentItem();
+    auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    auto text = ui->ai_chat_input->toPlainText().trimmed();
+
+    // selection wins whenever there is one; matches update_send_button() so the click always does what the label says
+    if(info ? info->provider == ai_provider::ChatGPT : web_agent_active_session)
     {
-        if(!github_issue_api.isEmpty())
+        if(!github_issue_api.isEmpty() && (!info || info->sessions == web_agent_session_id))
         {
             disconnect_github_issue();
             set_ai_status("GitHub issue channel stopped.",true);
             return;
         }
+        if(info)
+            web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
         new_chat_dialog(true);
         return;
     }
 
-    auto* item = ui->ai_project_list->currentItem();
-    auto text = ui->ai_chat_input->toPlainText().trimmed();
-    if(item)
+    if(info)
     {
-        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
-        if(info.provider == ai_provider::ChatGPT) // never a local launch target; reconnect instead of misresuming its session id as a local agent
-        {
-            web_agent_session_id = info.sessions; // resume must target the selected chat, not whatever session was last active
-            new_chat_dialog(true);
-            return;
-        }
-        if(info.processes)
+        if(info->processes)
         {
             if(!text.isEmpty())
             {
-                start_ai(info.sessions,text,ai_input::User);
+                start_ai(info->sessions,text,ai_input::User);
                 update_send_button();
                 return;
             }
-            info.prompts.clear(); // stop means stop: no auto-continue into a queued message
-            info.processes->setProperty("user_stopped",true);
-            info.processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+            info->prompts.clear(); // stop means stop: no auto-continue into a queued message
+            info->processes->setProperty("user_stopped",true);
+            info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
             return;
         }
     }
