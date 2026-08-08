@@ -11,7 +11,7 @@ void check_name(std::string& name)
 }
 
 std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
-                                   std::filesystem::path output,bool* had_error = nullptr)
+                                   std::filesystem::path output,std::string& error_msg)
 {
     std::string person,sequence,imagename;
     {
@@ -36,33 +36,25 @@ std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
     std::filesystem::create_directories(output.parent_path(),ec);
     if(ec)
     {
-        if(had_error)
-            *had_error = true;
-        return tipl::error() << "cannot create directory "
-               << output.parent_path() << ": " << ec.message(),
-               std::filesystem::path();
+        error_msg = "cannot create directory "+output.parent_path().string()+": "+ec.message();
+        return tipl::error() << error_msg,std::filesystem::path();
     }
     if(std::filesystem::exists(output))
     {
-        if(had_error)
-            *had_error = true;
-        return tipl::error() << "destination already exists: "
-               << output,std::filesystem::path();
+        error_msg = "destination already exists: "+output.string();
+        return tipl::error() << error_msg,std::filesystem::path();
     }
     std::filesystem::rename(file_name,output,ec);
     if(ec)
     {
-        if(had_error)
-            *had_error = true;
-        return tipl::error() << "cannot rename " << file_name
-               << " to " << output << ": " << ec.message(),
-               std::filesystem::path();
+        error_msg = "cannot rename "+file_name.string()+" to "+output.string()+": "+ec.message();
+        return tipl::error() << error_msg,std::filesystem::path();
     }
     return output;
 }
 
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
-                                                       std::filesystem::path output,bool& had_error)
+                                                       std::filesystem::path output,std::string& error_msg)
 {
     tipl::progress prog("Renaming DICOM");
     tipl::out() << "current directory is " << std::filesystem::current_path();
@@ -70,16 +62,15 @@ std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path pat
     tipl::out() << "output directory is " << output;
 
     auto files = tipl::search_files(path,"",true);
-    std::vector<char> failed(files.size(),0); // per-file flag; each par_for thread only ever writes its own index
+    std::vector<std::string> errors(files.size()); // per-file message; each par_for thread only ever writes its own index
     tipl::par_for(files.size(),[&](size_t i)
     {
-        bool file_had_error = false;
-        auto renamed = rename_dicom(files[i],output,&file_had_error);
-        failed[i] = file_had_error;
+        auto renamed = rename_dicom(files[i],output,errors[i]);
         files[i] = renamed.empty() ? std::filesystem::path() : renamed.parent_path().parent_path();
     });
-    if(std::any_of(failed.begin(),failed.end(),[](char c){return bool(c);}))
-        had_error = true;
+    for(const auto& e : errors)
+        if(!e.empty())
+            error_msg += (error_msg.empty() ? std::string() : "\n")+e;
     files.erase(std::remove_if(files.begin(),files.end(),
                                [](const auto& p){return p.empty();}),files.end());
     std::sort(files.begin(),files.end());
@@ -91,9 +82,9 @@ bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite);
 int ren(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("run ren");
-    bool had_error = false;
-    auto subject_dir = rename_dicom_at_dir(po.get("source"),po.get("output",po.get("source")),had_error);
-    bool result = !had_error;
+    std::string error_msg;
+    auto subject_dir = rename_dicom_at_dir(po.get("source"),po.get("output",po.get("source")),error_msg);
+    bool result = error_msg.empty();
     if(po.get("to_src_nii",0))
     {
         bool overwrite = po.get("overwrite",0);
