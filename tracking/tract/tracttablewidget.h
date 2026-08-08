@@ -98,7 +98,7 @@ public:
                 item(int(selected[i]),2)->setText(QString::number(tract_models[selected[i]]->get_deleted_track_count()));
             }
         if(updated)
-            emit show_tracts();
+            emit tract_changed();
         return true;
     }
 public:
@@ -109,7 +109,7 @@ public:
     bool command(std::vector<std::string> cmd);
 
 signals:
-    void show_tracts(void);
+    void tract_changed(void);
 private:
     void delete_row(int row);
 public slots:
