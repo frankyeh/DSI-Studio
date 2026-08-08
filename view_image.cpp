@@ -698,7 +698,7 @@ bool view_image::open(QStringList file_names_)
 {
     if(file_names_.empty())
         return false;
-    no_update = true;
+    setUpdatesEnabled(false);
 
 
     file_names = file_names_;
