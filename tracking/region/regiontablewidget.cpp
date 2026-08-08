@@ -154,14 +154,14 @@ void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,
 }
 void RegionTableWidget::begin_update(void)
 {
-    cur_tracking_window.scene.no_update = true;
+    cur_tracking_window.setUpdatesEnabled(false);
     cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
     cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
 
 void RegionTableWidget::end_update(void)
 {
-    cur_tracking_window.scene.no_update = false;
+    cur_tracking_window.setUpdatesEnabled(true);
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(region_changed()),&cur_tracking_window,SIGNAL(need_gl_update()));
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
