@@ -777,7 +777,7 @@ bool view_image::open(QStringList file_names_)
 
 void view_image::init_image(void)
 {
-    no_update = true;
+    setUpdatesEnabled(false);
     ui->type->setCurrentIndex(cur_image->pixel_type);
     float min_value = 0.0f;
     float max_value = 0.0f;
