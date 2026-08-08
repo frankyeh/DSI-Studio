@@ -184,12 +184,6 @@ public:
     QDialog* command_dialog = nullptr;
 public:
     slice_view_scene scene;
-    // image_updated: only the slice raster itself changed (contrast, new pixel data, color map...)
-    // position_updated: the slice position/orientation/scale changed, which affects everything drawn on it
-    enum slice_update_type{none = 0,region_updated = 1,tract_updated = 2,image_updated = 4,
-                            position_updated = region_updated|tract_updated|image_updated};
-    friend slice_update_type operator|(slice_update_type a,slice_update_type b){return slice_update_type(int(a)|int(b));}
-    friend slice_update_type& operator|=(slice_update_type& a,slice_update_type b){return a = a | b;}
     slice_update_type slice_need_update = none;
     float get_scene_zoom(void){return get_scene_zoom(current_slice);}
     float get_scene_zoom(std::shared_ptr<SliceModel> slice);
