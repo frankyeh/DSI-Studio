@@ -85,7 +85,7 @@ public:
     std::shared_ptr<std::thread> calculation_thread;
 public:
     bool need_update = true;
-    std::vector<char> repeated;
+    std::vector<char> skip; // final render-or-not decision (repeated, too short, or skip_rate-thinned)
     unsigned int update_data_count = 0;
     bool about_to_write = false;
     unsigned int reading_threads = 0;
@@ -141,6 +141,7 @@ public:
     }
     TractRender(void);
     ~TractRender(void);
+    void update_skip(std::shared_ptr<TractModel>& model,bool render_non_repeated,float skip_rate);
     void prepare_update(tracking_window& param,
                         std::shared_ptr<TractModel>& active_tract_model,
                         const TractRenderShader& shader);
