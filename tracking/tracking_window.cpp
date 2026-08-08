@@ -720,7 +720,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     //tipl::out() << "begin visualization";
     {
         ui->SliceModality->blockSignals(false);
-        glWidget->no_update = false;
+        glWidget->setUpdatesEnabled(true);
         setUpdatesEnabled(true);
         command({"set_slice"});
         ui->glAxiView->setChecked(true);
