@@ -1209,15 +1209,17 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         auto manual_hint = [](QString msg){return msg+". Read DSI Studio Manuals and retry.";};
         auto window_before = info.current_window;
         QString output,error;
+        QString* prev_capture; // a reentrant request handled during this command's processEvents() calls also captures; restore instead of clearing
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
+            prev_capture = console.capture;
             console.capture = &output;
         }
         auto uncapture_and_unlock = [&] // shared cleanup for every exit path below: stop capturing console output for this command,
         {                               // and release a stale lock if the command retargeted (open_fib/open_src/open_image/set_window)
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
-                console.capture = nullptr;
+                console.capture = prev_capture;
             }
             if(info.current_window != window_before)
                 unlock_target();
