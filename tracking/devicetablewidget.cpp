@@ -706,7 +706,7 @@ void DeviceTableWidget::lead_to_roi(void)
     auto& cur_device = devices[uint32_t(currentRow())];
     auto lead_pos = cur_device->get_lead_positions(cur_tracking_window.handle->vs[0]);
 
-    cur_tracking_window.regionWidget->begin_update();
+    cur_tracking_window.setUpdatesEnabled(false);
 
     std::vector<std::shared_ptr<ROIRegion> > new_regions;
     for(unsigned int i = 0;i < lead_pos.size();++i)
@@ -727,5 +727,5 @@ void DeviceTableWidget::lead_to_roi(void)
         tipl::add_constant(points.begin(),points.end(),tipl::vector<3,short>(lead_pos[i]*resolution+0.5f));
         new_regions[i]->add_points(std::move(points));
     });
-    cur_tracking_window.regionWidget->end_update();
+    cur_tracking_window.setUpdatesEnabled(true);
 }
