@@ -1897,13 +1897,25 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return true;
     }
 
-    if(cmd[0] == "qc_nii" || cmd[0] == "qc_src" || cmd[0] == "qc_fib")
+    if(cmd[0] == "show_qc_nii" || cmd[0] == "show_qc_src" || cmd[0] == "show_qc_fib" ||
+       cmd[0] == "save_qc_nii" || cmd[0] == "save_qc_src" || cmd[0] == "save_qc_fib")
     {
-        bool nii = cmd[0] == "qc_nii",src = cmd[0] == "qc_src";
-        auto filenames = select_images(
-            nii ? "NIFTI files (*.nii *nii.gz);;All files (*)" :
-            src ? "Src files (*.sz *src.gz);;All files (*)" :
-                  "Fib files (*.fz *fib.gz);;All files (*)");
+        bool save = tipl::begins_with(cmd[0],"save_");
+        bool nii = tipl::contains(cmd[0],"nii"),src = tipl::contains(cmd[0],"src");
+        QString filter = nii ? "NIFTI files (*.nii *nii.gz);;All files (*)" :
+                          src ? "Src files (*.sz *src.gz);;All files (*)" :
+                                "Fib files (*.fz *fib.gz);;All files (*)";
+        std::string save_path;
+        QStringList filenames;
+        if(save)
+        {
+            if(cmd.size() < 2 || cmd[1].empty())
+                return fail("usage: "+cmd[0]+" <output file path> [input files...]");
+            save_path = cmd[1];
+            filenames = cmd.size() >= 3 ? get_files(2) : tipl::qt::open_image_files(this,work_dir(),filter);
+        }
+        else
+            filenames = select_images(filter);
         if(filenames.isEmpty())
             return true;
         std::vector<std::filesystem::path> files;
@@ -1912,10 +1924,19 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             files.push_back(tipl::qt::to_path(file));
         tipl::progress prog(nii ? "checking NIFTI files" :
                             src ? "checking SRC files" : "checking FIB files");
-        show_info_dialog(nii ? "NIFTI report" : src ? "SRC report" : "FIB report",
-                         nii ? quality_check_nii_files(files) :
-                         src ? quality_check_src_files(files,false,false,0) :
-                               quality_check_fib_files(files));
+        auto result = nii ? quality_check_nii_files(files) :
+                      src ? quality_check_src_files(files,false,false,0) :
+                            quality_check_fib_files(files);
+        if(save)
+        {
+            tipl::out() << "save " << save_path;
+            if(!tipl::write_text_file(save_path,result,tipl::error()))
+                return fail("cannot write to "+save_path);
+        }
+        else if(source == command_source::AI)
+            tipl::out() << result;
+        else
+            show_info_dialog(nii ? "NIFTI report" : src ? "SRC report" : "FIB report",result);
         return true;
     }
 
