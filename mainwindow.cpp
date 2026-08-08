@@ -785,7 +785,7 @@ void MainWindow::open_DWI(QStringList filenames)
         dp->close();
 }
 
-std::filesystem::path rename_dicom(const std::filesystem::path& file_name,std::filesystem::path output);
+std::filesystem::path rename_dicom(const std::filesystem::path& file_name,std::filesystem::path output,std::string& error_msg);
 
 void MainWindow::add_work_dir(QString dir)
 {
@@ -808,7 +808,7 @@ QString MainWindow::work_dir() const
 
 
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
-                                                       std::filesystem::path output);
+                                                       std::filesystem::path output,std::string& error_msg);
 
 bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
                std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
@@ -1587,15 +1587,21 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         add_work_dir(QFileInfo(files[0]).absolutePath());
         tipl::progress prog("Rename DICOM Files");
         bool result = true;
+        std::string dicom_error;
         for(int index = 0;prog(index,files.size());++index)
         {
             auto file = tipl::qt::to_path(files[index]);
-            if(rename_dicom(file,file.parent_path()).empty())
+            std::string error;
+            if(rename_dicom(file,file.parent_path(),error).empty())
+            {
                 result = false;
+                if(!error.empty())
+                    dicom_error += (dicom_error.empty() ? std::string() : "\n")+error;
+            }
         }
         if(tipl::prog_aborted)
             return true;
-        return result || fail("one or more DICOM files could not be renamed");
+        return result || fail(dicom_error.empty() ? "one or more DICOM files could not be renamed" : dicom_error);
     }
 
     if(cmd[0] == "rename_dicom_dir")
@@ -1604,8 +1610,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         if(dir.isEmpty())
             return true;
         add_work_dir(dir);
-        rename_dicom_at_dir(tipl::qt::to_path(dir),tipl::qt::to_path(dir));
-        return true;
+        std::string dicom_error;
+        rename_dicom_at_dir(tipl::qt::to_path(dir),tipl::qt::to_path(dir),dicom_error);
+        return dicom_error.empty() || fail(dicom_error);
     }
 
     if(cmd[0] == "convert_dicom_dir")
