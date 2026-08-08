@@ -1615,14 +1615,18 @@ bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 std::vector<char> TractModel::find_repeated(float d) const
 {
     tipl::progress prog("find repeated tracts");
-    std::vector<std::vector<size_t> > x_reg;
+    // separate start/end buckets: the pair filter below only ever tests start-vs-start and end-vs-end,
+    // so a candidate whose start only happens to land in i's end bucket (or vice versa) would always
+    // fail it anyway -- keeping the two roles apart shrinks check_set without dropping any real match
+    std::vector<std::vector<size_t> > x_reg_start,x_reg_end;
     std::vector<size_t> track_location1,track_location2;
     {
         auto ratio = d;
         tipl::shape<3> new_geo(geo[0]/ratio+1,geo[1]/ratio+1,geo[2]/ratio+1);
         if(geo[0]/ratio <= 256)
         {
-            x_reg.resize(new_geo.size());
+            x_reg_start.resize(new_geo.size());
+            x_reg_end.resize(new_geo.size());
             track_location1.resize(tract_data.size());
             track_location2.resize(tract_data.size());
             for(size_t i = 0; i < tract_data.size();++i)
@@ -1631,11 +1635,11 @@ std::vector<char> TractModel::find_repeated(float d) const
                 int y = std::max<int>(0,std::min<int>(std::round(tract_data[i][1]/ratio),new_geo[1]-1));
                 int z = std::max<int>(0,std::min<int>(std::round(tract_data[i][2]/ratio),new_geo[2]-1));
 
-                x_reg[track_location1[i] = tipl::voxel2index(x,y,z,new_geo)].push_back(i);
+                x_reg_start[track_location1[i] = tipl::voxel2index(x,y,z,new_geo)].push_back(i);
                 x = std::max<int>(0,std::min<int>(std::round(tract_data[i][tract_data[i].size()-3]/ratio),new_geo[0]-1));
                 y = std::max<int>(0,std::min<int>(std::round(tract_data[i][tract_data[i].size()-2]/ratio),new_geo[1]-1));
                 z = std::max<int>(0,std::min<int>(std::round(tract_data[i][tract_data[i].size()-1]/ratio),new_geo[2]-1));
-                x_reg[track_location2[i] = tipl::voxel2index(x,y,z,new_geo)].push_back(i);
+                x_reg_end[track_location2[i] = tipl::voxel2index(x,y,z,new_geo)].push_back(i);
             }
         }
     }
@@ -1687,14 +1691,14 @@ std::vector<char> TractModel::find_repeated(float d) const
             return;
         thread_local std::vector<size_t> check_set; // reused across calls on this thread to avoid a fresh allocation per tract
         check_set.clear();
-        if(x_reg.empty())
+        if(x_reg_start.empty())
         {
             check_set.resize(tract_data.size());
             std::iota(check_set.begin(), check_set.end(), 0);
         }
         else
-            std::set_union(x_reg[track_location1[i]].begin(), x_reg[track_location1[i]].end(),
-                       x_reg[track_location2[i]].begin(), x_reg[track_location2[i]].end(),
+            std::set_union(x_reg_start[track_location1[i]].begin(), x_reg_start[track_location1[i]].end(),
+                       x_reg_end[track_location2[i]].begin(), x_reg_end[track_location2[i]].end(),
                        std::back_inserter(check_set));
         for(size_t j : check_set)
         {
