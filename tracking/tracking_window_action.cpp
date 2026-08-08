@@ -477,7 +477,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             }
             regionWidget->end_update();
 
-            slice_need_update = true;
+            slice_need_update |= region_updated;
             glWidget->update_slice();
         }
         return true;
@@ -526,7 +526,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     "Image files (*.png *.bmp *.jpg);;All files (*)").toStdString()).empty())
             return run->canceled();
 
-        slice_need_update = false; // turn off simple drawing
+        slice_need_update = none; // turn off simple drawing
         scene.paint_image(scene.view_image,false);     
         if(!scene.view_image.save(cmd[1].c_str()))
             return run->failed("cannot save mapping to " + cmd[1]);
@@ -801,7 +801,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         regionWidget->update_color_map();
         regionWidget->color_map_values.clear();
         tractWidget->need_update_all();
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
         glWidget->update();
         return run->succeed();
     }
@@ -907,7 +907,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         current_slice->set_contrast_range(min_value_gl,max_value_gl);
         current_slice->set_contrast_color(min_color_gl,max_color_gl);
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
         glWidget->update_slice();
         history.overwrite(cmd[0]);
         return run->succeed();
@@ -924,7 +924,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
         slices[slice_index]->directional_color = checked;
         glWidget->update_slice();
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
         history.overwrite(cmd[0]);
         return run->succeed();
     }
@@ -946,7 +946,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             overlay_slices.erase(std::remove(overlay_slices.begin(),overlay_slices.end(),slices[slice_index]),overlay_slices.end());
 
         glWidget->update_slice();
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
 
         history.overwrite(cmd[0]);
         return run->succeed();
@@ -969,7 +969,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             stay_slices.erase(std::remove(stay_slices.begin(),stay_slices.end(),slices[slice_index]),stay_slices.end());
 
         glWidget->update_slice();
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
 
         history.overwrite(cmd[0]);
         return run->succeed();
@@ -1055,7 +1055,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                              param.substr(pos+1).c_str());
             }
         glWidget->update();
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
         return run->succeed();
     }
     if(cmd[0] == "set_region_name" || cmd[0] == "set_region_color" ||
@@ -1105,7 +1105,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             updateSlicesMenu();
             set_data("show_slice",Qt::Checked);
             glWidget->update();
-            slice_need_update = true;
+            slice_need_update |= slice_updated;
             return run->succeed();
         }
 
@@ -1162,7 +1162,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::filter::gaussian(maskJ);
         tipl::filter::gaussian(maskJ);
         reg_slice->source_images *= maskJ;
-        slice_need_update = true;
+        slice_need_update |= slice_updated;
         glWidget->update_slice();
         return run->succeed();
     }
@@ -1574,7 +1574,7 @@ void tracking_window::check_reg(void)
             }
         }
     }
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
     if(all_ended)
     {
         timer2.reset();
@@ -1687,7 +1687,7 @@ void tracking_window::insertPicture()
     reg_slice_ptr->is_diffusion_space = false;
     reg_slice_ptr->update_transform();
 
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
     if(QMessageBox::Yes == QMessageBox::question(this,QApplication::applicationName(),"Apply registration?",QMessageBox::No | QMessageBox::Yes))
     {
         reg_slice_ptr->run_registration();
@@ -2072,7 +2072,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     for(size_t i = 0,sz = mask.size();i < sz;++i)
         if(mask[i])
             slice->source_images[i] = mark_value;
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
     glWidget->update();
 }
 
@@ -2094,7 +2094,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     for(size_t i = 0,sz = t_mask.size();i < sz;++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
     glWidget->update();
 }
 
@@ -2115,7 +2115,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           return;
     }
     current_slice->view->v2c.set_color_map(new_color_map);
-    slice_need_update = true;
+    slice_need_update |= slice_updated;
     glWidget->update_slice();
 }
 
