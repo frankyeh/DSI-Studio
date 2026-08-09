@@ -993,10 +993,7 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
 }
 QJsonObject ai_info::record_request(const QString& command_name,QWidget* target)
 {
-    auto window_type = current_window == "main" ? QString("main") :
-                       current_window.startsWith("tracking") ? "tracking" :
-                       current_window.startsWith("recon") ? "recon" :
-                       current_window.startsWith("connectometry") ? "connectometry" : "image";
+    auto window_type = command_window_type(current_window);
     QJsonObject entry{{"type","request"},{"text",command_name},{"window",window_type}};
     if(target && window_type != "main")
         entry["title"] = QFileInfo(target->windowTitle()).fileName();
@@ -1117,10 +1114,10 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     dispatching_info = nullptr;
 }
 
-void AIAgent::update_current_window(QWidget* window,const char* type)
+void AIAgent::update_current_window(QWidget* window)
 {
     if(dispatching_info)
-        dispatching_info->current_window = command_window_id(window,type);
+        dispatching_info->current_window = command_window_id(window);
 }
 
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
