@@ -26,9 +26,7 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <atomic>
 #include <mutex>
-#include <thread>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "ai_agent.hpp"
@@ -1108,7 +1106,8 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
                                          });
 }
 
-static std::mutex shell_tasks_mutex; // run_shell (curl) tasks still in flight: id -> original command text
+// run_shell (curl) tasks still in flight: id -> original command text; only ever touched on the GUI
+// thread (dispatch_cmd's caller, and QProcess's own signals, both run there), so no lock is needed
 static QMap<QString,QString> shell_tasks;
 
 // forwards cmd to whichever AI-addressable window type target actually is; false with error left empty means
@@ -1427,12 +1426,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     };
                     application_busy |= busy;
                 }
-                {
-                    std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-                    for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
-                        windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
-                    application_busy |= !shell_tasks.isEmpty();
-                }
+                for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
+                    windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
+                application_busy |= !shell_tasks.isEmpty();
                 // active tipl::progress operations, outermost to innermost; index 0 is the app-lifetime citation entry, skipped
                 QJsonArray progress;
                 for(size_t i = 1;i < tipl::status_list.size();++i)
@@ -2107,12 +2103,10 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
         if(is_curl) // curl's default progress meter redraws one line via \r for an interactive terminal;
             text.insert(program.length()," -s -S"); // captured non-interactively, that just floods the log. -s hides it, -S still shows real errors
-#ifdef Q_OS_WIN
-        bool needs_confirmation = program.compare("dir",Qt::CaseInsensitive) != 0 ? true : false;
-#else
-        bool needs_confirmation = program.compare("ls",Qt::CaseInsensitive) != 0 ? true : false;
-#endif
-        if(source == command_source::AI && needs_confirmation)
+        // every command other than cd is confirmed: checking only the first token (e.g. exempting a
+        // bare "dir"/"ls") is not safe here, since the full text -- including any "&&"/";"/"|"/"$()" a
+        // real shell would chain onto it -- is what actually runs, not just that first token
+        if(source == command_source::AI)
         {
             QString message;
             if(!ai_chat_context.isEmpty()) // explains why, using the agent's own accompanying chat message, when one was sent with this request
@@ -2146,21 +2140,24 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         }
         // curl can hang, so run it as a self-owned asynchronous QProcess instead of blocking any thread;
         // "list_window" shows the id as busy until it finishes (there is intentionally no completion timeout here)
-        static std::atomic<int> next_curl_id{0};
+        static int next_curl_id = 0;
         QString id = "curl"+QString::number(++next_curl_id);
-        auto* process = new QProcess;
+        auto* process = new QProcess(this); // falls back to MainWindow as owner if it outlives this call
         configure_process(*process,text);
-        QObject::connect(process,&QProcess::errorOccurred,[process,id,text](QProcess::ProcessError)
+        auto cleanup = [process,id] // every terminal path removes the task and releases the process the same way
         {
-            if(process->error() == QProcess::FailedToStart)
-            {
-                tipl::error() << (id+" cannot start: "+text).toStdString();
-                std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-                shell_tasks.remove(id);
-            }
+            shell_tasks.remove(id);
+            process->deleteLater();
+        };
+        QObject::connect(process,&QProcess::errorOccurred,[id,text,cleanup](QProcess::ProcessError error)
+        {
+            if(error != QProcess::FailedToStart) // Crashed etc. still emits finished; that path already cleans up
+                return;
+            tipl::error() << (id+" cannot start: "+text).toStdString();
+            cleanup();
         });
         QObject::connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-            [process,id,text](int exit_code,QProcess::ExitStatus exit_status)
+            [process,id,text,cleanup](int exit_code,QProcess::ExitStatus exit_status)
         {
             tipl::out() << process->readAllStandardOutput().toStdString();
             auto err = process->readAllStandardError().toStdString();
@@ -2168,15 +2165,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                 tipl::error() << err;
             if(exit_status != QProcess::NormalExit || exit_code != 0)
                 tipl::error() << (id+" exited with code "+QString::number(exit_code)+": "+text).toStdString();
-            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-            shell_tasks.remove(id);
+            cleanup();
         });
-        QObject::connect(process,&QProcess::errorOccurred,process,&QObject::deleteLater);
-        QObject::connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),process,&QObject::deleteLater);
-        {
-            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-            shell_tasks[id] = text;
-        }
+        shell_tasks[id] = text;
         process->start();
         tipl::out() << ("started "+id+": "+text).toStdString();
         return true;
