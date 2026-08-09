@@ -4,7 +4,6 @@
 #include <QSignalBlocker>
 #include <QClipboard>
 #include <QMessageBox>
-#include <QPainter>
 
 #include "atlasdialog.h"
 #include "tracking_window.h"
@@ -601,9 +600,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->succeed();
         }
 
-        // roi: slice is the base; region/tract are read from slice_view_scene's own cached layers
-        // (see overlay_cache) and composited here, rather than re-rendering per channel -- only
-        // valid for the single-slice layout, since those layers are cached per dimension, not per
+        // roi: slice is the plain anatomy; region/tract are read as their own isolated layers from
+        // slice_view_scene's cache (see overlay_cache), not re-rendered per channel -- only valid
+        // for the single-slice layout, since those layers are cached per dimension, not per
         // multi-view composite
         tipl::out() << "R_side=" << ((*this)["orientation_convention"].toInt() ? "right" : "left");
         if((*this)["roi_layout"].toInt() != 0)
@@ -663,14 +662,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }))
             return false;
 
+        // shown as its own isolated layer (transparent -> black once grayscaled), not composited
+        // onto the anatomical slice: a small region blob or thin tract line would otherwise be
+        // visually swamped by the much larger, dominant brain-shape luminance in a coarse digit grid
         if(region_on && !preview_channel(last_roi_preview,"region",[&](void)->QImage
         {
-            QImage composite = base;
-            QPainter painter(&composite);
-            painter.setCompositionMode(QPainter::CompositionMode(int((*this)["roi_composition"].toInt()) + QPainter::CompositionMode_SourceAtop));
-            painter.setOpacity((*this)["roi_opacity"].toFloat());
-            painter.drawImage(0,0,region_layer);
-            QImage gray = composite.convertToFormat(QImage::Format_Grayscale8);
+            QImage gray = region_layer.convertToFormat(QImage::Format_Grayscale8);
             gray.save(QDir::tempPath()+"/dsi_preview_roi_region.jpg","JPG");
             return gray;
         }))
@@ -678,9 +675,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if(tract_on && !preview_channel(last_roi_preview,"tract",[&](void)->QImage
         {
-            QImage composite = base;
-            QPainter(&composite).drawImage(0,0,tract_layer);
-            QImage gray = composite.convertToFormat(QImage::Format_Grayscale8);
+            QImage gray = tract_layer.convertToFormat(QImage::Format_Grayscale8);
             gray.save(QDir::tempPath()+"/dsi_preview_roi_tract.jpg","JPG");
             return gray;
         }))
