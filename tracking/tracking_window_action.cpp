@@ -4,6 +4,7 @@
 #include <QSignalBlocker>
 #include <QClipboard>
 #include <QMessageBox>
+#include <QPainter>
 
 #include "atlasdialog.h"
 #include "tracking_window.h"
@@ -548,6 +549,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
             }
             else
                 cache[label] = gray = grab();
+            // measured on the full capture, not the crop below, whose corners may not be background
+            double bg = (double(gray.constScanLine(0)[0])+double(gray.constScanLine(0)[gray.width()-1])+
+                         double(gray.constScanLine(gray.height()-1)[0])+double(gray.constScanLine(gray.height()-1)[gray.width()-1]))/4.0;
             QImage region = gray;
             if(!cmd[2].empty())
             {
@@ -559,7 +563,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                                     int((x1-x0)*gray.width()),int((y1-y0)*gray.height()));
             }
             TextPreview preview(region.width(),region.height(),
-                [&](int x,int y){ return double(region.constScanLine(y)[x]); });
+                [&](int x,int y){ return double(region.constScanLine(y)[x]); },bg);
             tipl::out() << label << ":";
             tipl::out() << preview.render_art(16);
             tipl::out() << preview.render_occupancy();
@@ -597,33 +601,91 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->succeed();
         }
 
-        // roi: slice is always the background, region shows when any region is checked, tract
-        // shows when the roi_track toolbutton is toggled on
+        // roi: slice is the base; region/tract are read from slice_view_scene's own cached layers
+        // (see overlay_cache) and composited here, rather than re-rendering per channel -- only
+        // valid for the single-slice layout, since those layers are cached per dimension, not per
+        // multi-view composite
         tipl::out() << "R_side=" << ((*this)["orientation_convention"].toInt() ? "right" : "left");
-        struct channel_def{ const char* label; bool roi_track; bool simple; bool on; };
-        const channel_def channels[] = {
-            {"slice", false,true, true},
-            {"region",false,false,!regionWidget->get_checked_regions().empty()},
-            {"tract", true, false,ui->roi_track->isChecked()},
-        };
-        for(const auto& ch : channels)
+        if((*this)["roi_layout"].toInt() != 0)
         {
-            if(!ch.on)
-                continue;
-            if(!preview_channel(last_roi_preview,ch.label,[&](void)->QImage
+            struct channel_def{ const char* label; bool roi_track; bool simple; bool on; };
+            const channel_def channels[] = {
+                {"slice", false,true, true},
+                {"region",false,false,!regionWidget->get_checked_regions().empty()},
+                {"tract", true, false,ui->roi_track->isChecked()},
+            };
+            for(const auto& ch : channels)
             {
-                bool prior_roi_track = ui->roi_track->isChecked();
-                ui->roi_track->setChecked(ch.roi_track);
-                slice_need_update = none; // turn off simple drawing
-                scene.paint_image(scene.view_image,ch.simple);
-                QImage gray = scene.view_image.convertToFormat(QImage::Format_Grayscale8);
-                ui->roi_track->setChecked(prior_roi_track);
-                slice_need_update |= position_updated;
-                gray.save(QDir::tempPath()+"/dsi_preview_roi_"+QString(ch.label)+".jpg","JPG");
-                return gray;
-            }))
-                return false;
+                if(!ch.on)
+                    continue;
+                if(!preview_channel(last_roi_preview,ch.label,[&](void)->QImage
+                {
+                    bool prior_roi_track = ui->roi_track->isChecked();
+                    ui->roi_track->setChecked(ch.roi_track);
+                    slice_need_update = none;
+                    scene.paint_image(scene.view_image,ch.simple);
+                    QImage gray = scene.view_image.convertToFormat(QImage::Format_Grayscale8);
+                    ui->roi_track->setChecked(prior_roi_track);
+                    slice_need_update |= position_updated;
+                    gray.save(QDir::tempPath()+"/dsi_preview_roi_"+QString(ch.label)+".jpg","JPG");
+                    return gray;
+                }))
+                    return false;
+            }
+            return run->succeed();
         }
+
+        QImage base,region_layer,tract_layer;
+        bool region_on = false,tract_on = false;
+        if(cmd[2].empty()) // not zooming: refresh the caches and read them for this call
+        {
+            slice_need_update = none;
+            QImage refreshed;
+            scene.paint_image(refreshed,false); // side effect: brings overlay_cache[cur_dim] up to date
+            slice_need_update |= position_updated;
+            scene.paint_image(base,true); // plain slice, no overlays
+            region_layer = scene.region_layer(cur_dim);
+            tract_layer = scene.tract_layer(cur_dim);
+            region_on = !region_layer.isNull();
+            tract_on = ui->roi_track->isChecked() && !tract_layer.isNull();
+        }
+        else // zooming: only channels with an existing cached capture can be zoomed into
+        {
+            region_on = last_roi_preview.count("region") != 0;
+            tract_on = last_roi_preview.count("tract") != 0;
+        }
+
+        if(!preview_channel(last_roi_preview,"slice",[&](void)->QImage
+        {
+            QImage gray = base.convertToFormat(QImage::Format_Grayscale8);
+            gray.save(QDir::tempPath()+"/dsi_preview_roi_slice.jpg","JPG");
+            return gray;
+        }))
+            return false;
+
+        if(region_on && !preview_channel(last_roi_preview,"region",[&](void)->QImage
+        {
+            QImage composite = base;
+            QPainter painter(&composite);
+            painter.setCompositionMode(QPainter::CompositionMode(int((*this)["roi_composition"].toInt()) + QPainter::CompositionMode_SourceAtop));
+            painter.setOpacity((*this)["roi_opacity"].toFloat());
+            painter.drawImage(0,0,region_layer);
+            QImage gray = composite.convertToFormat(QImage::Format_Grayscale8);
+            gray.save(QDir::tempPath()+"/dsi_preview_roi_region.jpg","JPG");
+            return gray;
+        }))
+            return false;
+
+        if(tract_on && !preview_channel(last_roi_preview,"tract",[&](void)->QImage
+        {
+            QImage composite = base;
+            QPainter(&composite).drawImage(0,0,tract_layer);
+            QImage gray = composite.convertToFormat(QImage::Format_Grayscale8);
+            gray.save(QDir::tempPath()+"/dsi_preview_roi_tract.jpg","JPG");
+            return gray;
+        }))
+            return false;
+
         return run->succeed();
     }
     if(cmd[0] == "save_slice_image" || cmd[0] == "save_slice_mni_image")
