@@ -8,6 +8,7 @@
 #include <QTextBrowser>
 #include <vector>
 #include <memory>
+#include <map>
 #include "SliceModel.h"
 #include "slice_view_scene.h"
 #include "tract/tracttablewidget.h"
@@ -185,9 +186,9 @@ public:
 public:
     slice_view_scene scene;
     slice_update_type slice_need_update = none;
-    // grayscale caches from the last preview_3d_screen/preview_roi_screen capture, so a zoom
+    // grayscale caches from the last preview_screen capture, keyed by channel label, so a zoom
     // request can crop and re-render text art without regrabbing from OpenGL or the slice scene
-    QImage last_3d_preview,last_roi_preview;
+    std::map<std::string,QImage> last_3d_preview,last_roi_preview;
     float get_scene_zoom(void){return get_scene_zoom(current_slice);}
     float get_scene_zoom(std::shared_ptr<SliceModel> slice);
 public:
