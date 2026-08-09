@@ -88,7 +88,7 @@ void TractTableWidget::contextMenuEvent(QContextMenuEvent * event )
 
 
 void TractTableWidget::draw_tracts(unsigned char dim,int pos,
-                                   QImage& scaled_image,float display_ratio)
+                                   const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& tract_image)
 {
     auto selected_tracts = get_checked_tracks();
     auto selected_tracts_rendering = get_checked_tracks_rendering();
@@ -117,24 +117,29 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     std::vector<std::vector<unsigned int> > colors;
     tipl::aggregate_results(std::move(lines_threaded),lines);
     tipl::aggregate_results(std::move(colors_threaded),colors);
+
+    // drawn into its own transparent layer (not onto a pre-composited destination) so this can be
+    // captured and blended independently of the slice/region layers, e.g. by preview_screen
+    QImage layer(int(slice_image_shape.width()*display_ratio),int(slice_image_shape.height()*display_ratio),QImage::Format_ARGB32);
+    layer.fill(Qt::transparent);
     struct draw_point_class{
         int height;
         int width;
         std::vector<QRgb*> I;
-        draw_point_class(QImage& scaled_image):I(uint32_t(scaled_image.height()))
+        draw_point_class(QImage& layer):I(uint32_t(layer.height()))
         {
-            for (int y = 0; y < scaled_image.height(); ++y)
-                I[uint32_t(y)] = reinterpret_cast<QRgb*>(scaled_image.scanLine(y));
-            height = scaled_image.height();
-            width = scaled_image.width();
+            for (int y = 0; y < layer.height(); ++y)
+                I[uint32_t(y)] = reinterpret_cast<QRgb*>(layer.scanLine(y));
+            height = layer.height();
+            width = layer.width();
         }
         inline void operator()(int x,int y,unsigned int color)
         {
             if(y < 0 || x < 0 || y >= height || x >= width)
                 return;
-            I[uint32_t(y)][uint32_t(x)] = color;
+            I[uint32_t(y)][uint32_t(x)] = (color & 0x00FFFFFFu) | 0xFF000000u; // force opaque so the layer composites cleanly
         }
-    } draw_point(scaled_image);
+    } draw_point(layer);
 
 
     auto draw_line = [&](int x,int y,int x1,int y1,unsigned int color)
@@ -154,6 +159,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
         for(size_t j = 1;j < line.size();++j)
             draw_line(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]),color[j]);
     });
+    tract_image = std::move(layer);
 }
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
