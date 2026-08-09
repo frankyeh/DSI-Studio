@@ -444,17 +444,36 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         return true;
     }
 
+    if(name == "progress")
+    {
+        // vbc->prog is run_permutation's own 0~100 counter, driven by its QTimer poll, independent
+        // of tipl::status_list; meaningless before the first run ever starts, hence run_started.
+        // "stopped" also covers a local user's Stop click, not just this session's own "stop" command
+        if(!run_started)
+            tipl::out() << "not_started";
+        else if(timer)
+            tipl::out() << "running\t" << vbc->prog;
+        else
+            tipl::out() << (run_completed ? "finished" : "stopped") << "\t" << vbc->prog;
+        return true;
+    }
+
+    if(name == "stop")
+    {
+        if(!timer)
+            return fail("no run in progress");
+        vbc->clear();
+        timer->stop();
+        timer.reset();
+        ui->progressBar->setValue(0);
+        ui->run->setText("Run");
+        return true;
+    }
+
     if(name == "run")
     {
-        if(ui->run->text() == "Stop")
-        {
-            vbc->clear();
-            timer->stop();
-            timer.reset();
-            ui->progressBar->setValue(0);
-            ui->run->setText("Run");
-            return true;
-        }
+        if(timer) // same condition "stop" itself checks, rather than reading the button's display text
+            return command({"stop"},source);
         // longitudinal data without loading demographics
         if(db.is_longitudinal && !model.get())
         {
@@ -518,6 +537,9 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
                 vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
         }
 
+        run_started = true;
+        run_completed = false;
+        suppress_run_dialogs = (source != command_source::User);
         vbc->run_permutation(uint32_t(ui->thread_count->value()),uint32_t(ui->permutation_count->value()));
 
         ui->run->setText("Stop");
@@ -528,10 +550,18 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         return true;
     }
 
+    if(name == "get_result")
+    {
+        if(!run_completed)
+            return fail(timer ? "run still in progress" : "no completed run to report");
+        tipl::out() << vbc->generate_report();
+        return true;
+    }
+
     if(name == "show_result")
     {
-        if(!vbc->model.get())
-            return fail("run the analysis first");
+        if(!run_completed)
+            return fail(timer ? "run still in progress" : "no completed run to show");
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(vbc->handle);
         {
@@ -757,11 +787,13 @@ void group_connectometry::calculate_FDR(void)
         ui->chart_widget_layout->addWidget(fdr_chart_view);
 
 
-        if(vbc->inc_track->get_visible_track_count() ||
-           vbc->dec_track->get_visible_track_count())
-            QMessageBox::information(this,QApplication::applicationName(),"tractography saved");
-        else
-            QMessageBox::information(this,QApplication::applicationName(),"no significant finding");
+        run_completed = true;
+        bool has_tractography = vbc->inc_track->get_visible_track_count() ||
+                                 vbc->dec_track->get_visible_track_count();
+        tipl::out() << (has_tractography ? "tractography saved" : "no significant finding");
+        if(!suppress_run_dialogs)
+            QMessageBox::information(this,QApplication::applicationName(),
+                has_tractography ? "tractography saved" : "no significant finding");
 
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
