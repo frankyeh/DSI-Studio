@@ -225,7 +225,7 @@ void db_window::on_delete_subject_clicked()
 
 void db_window::on_actionCalculate_change_triggered()
 {
-    if(vbc->handle->db.is_longitudinal)
+    if(vbc->handle->db.type != connectometry_db::longitudinal_type::plain)
     {
         QMessageBox::critical(this,"ERROR","The data cannot compute differences in longitudinal data");
         return;
