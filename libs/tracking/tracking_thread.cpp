@@ -125,11 +125,13 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
 
     if(!roi_mgr->seeds.empty())
     try{
-        unsigned int current_seed_idx;
-        while(!joining &&
-             (current_seed_idx = global_seed_count_atom++) < max_seed_count &&
-              global_tract_count_atom < max_tract_count)
+        unsigned int current_seed_idx = global_seed_count_atom;
+        while(!joining && global_tract_count_atom < max_tract_count)
         {
+            if(current_seed_idx >= max_seed_count)
+                break;
+            if(!global_seed_count_atom.compare_exchange_weak(current_seed_idx,current_seed_idx+1))
+                continue;
             std::mt19937 local_gen(param.random_seed + current_seed_idx);
             tipl::vector<3> sub_voxel_shift = tipl::vector<3>(subvoxel_gen(local_gen),subvoxel_gen(local_gen),subvoxel_gen(local_gen));;
             uint32_t seed_index = rand(roi_mgr->seeds.size(),local_gen);
