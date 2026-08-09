@@ -140,7 +140,6 @@ public:
     }
     TractRender(void);
     ~TractRender(void);
-    void update_skip(std::shared_ptr<TractModel>& model,bool render_non_repeated,float skip_rate);
     void prepare_update(tracking_window& param,
                         std::shared_ptr<TractModel>& active_tract_model,
                         const TractRenderShader& shader);
