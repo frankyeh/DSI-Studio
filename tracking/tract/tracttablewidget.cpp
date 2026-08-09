@@ -224,7 +224,8 @@ void TractTableWidget::start_tracking(void)
     QString tract_name = cur_tracking_window.regionWidget->getROIname();
     std::vector<std::string> tracking_param({std::string("run_tracking"),
                                              tract_name.toStdString(),
-                                             cur_tracking_window.get_parameter_id()});
+                                             cur_tracking_window.get_parameter_id(
+                                                 cur_tracking_window.ui->tract_target_0->currentIndex() > 0)});
 
     {
         auto roi_setting = cur_tracking_window.regionWidget->get_roi_settings();
@@ -471,7 +472,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         auto roi = cmd.size() == 3 ? " " + cmd[2] : "";
         cmd.resize(3);
-        cmd[2] = cur_tracking_window.get_parameter_id() + roi;
+        cmd[2] = cur_tracking_window.get_parameter_id(
+                     cur_tracking_window.ui->tract_target_0->currentIndex() > 0) + roi;
     }
 
 
