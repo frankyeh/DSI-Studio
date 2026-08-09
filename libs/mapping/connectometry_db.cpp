@@ -726,7 +726,7 @@ void connectometry_db::move_down(int id)
 void connectometry_db::match_consecutive_subjects(void)
 {
     match.clear();
-    for(size_t i = 0;i < subject_names.size();i += 2)
+    for(size_t i = 0;i+1 < subject_names.size();i += 2)
         match.push_back(std::make_pair(i,i+1));
 }
 bool connectometry_db::match_subjects_from_file(const std::string& file_name)
@@ -737,6 +737,11 @@ bool connectometry_db::match_subjects_from_file(const std::string& file_name)
     std::vector<size_t> data;
     std::copy(std::istream_iterator<int>(in),
               std::istream_iterator<int>(),std::back_inserter(data));
+    if(data.empty() || data.size() % 2)
+        return handle->error_msg = "invalid match file (expects pairs of subject indices): " + file_name,false;
+    for(auto index : data)
+        if(index >= subject_names.size())
+            return handle->error_msg = "subject index out of range in match file: " + std::to_string(index),false;
     match.clear();
     for(size_t i = 0;i+1 < data.size();i += 2)
         match.push_back(std::make_pair(data[i],data[i+1]));
@@ -758,6 +763,8 @@ bool connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
 {
     if(is_longitudinal)
         return (handle->error_msg = "the database cannot compute differences in longitudinal data"),false;
+    if(match.empty())
+        return (handle->error_msg = "no subjects have been matched"),false;
 
     std::vector<std::shared_ptr<tipl::io::mat_matrix> > dif_matrices;
 
