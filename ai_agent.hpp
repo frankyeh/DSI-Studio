@@ -58,7 +58,7 @@ struct ai_info{
 // session registry: defined in cmd/ai.cpp alongside ai_info's own member implementations; every chat,
 // local or web, is one entry here, keyed by its own ai_info::sessions
 extern std::unordered_map<QString,ai_info> ai_infos;
-
+extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, before any window exists
 
 // one entry per ai_provider (Codex/Claude): resolved executable path (empty if not found) and the discovered model profiles (name -> info)
 struct ai_agent_entry
