@@ -241,17 +241,7 @@ void db_window::on_actionCalculate_change_triggered()
 
 void db_window::on_actionSave_DB_as_triggered()
 {
-    QString default_ext = ".mod.dz";
-    if(vbc->handle->db.is_longitudinal)
-    {
-        default_ext = ".dif.dz";
-        if(vbc->handle->db.longitudinal_filter_type == 1)
-            default_ext = ".pos_dif.dz";
-        if(vbc->handle->db.longitudinal_filter_type == 2)
-            default_ext = ".neg_dif.dz";
-
-    }
-    QString filename = tipl::qt::save_image_file(this,windowTitle()+default_ext,"Database files (*.dz);;All files (*)");
+    QString filename = tipl::qt::save_image_file(this,windowTitle()+vbc->handle->db.suggest_output_suffix().c_str(),"Database files (*.dz);;All files (*)");
     if (filename.isEmpty())
         return;
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
