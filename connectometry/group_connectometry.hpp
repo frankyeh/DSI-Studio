@@ -90,8 +90,11 @@ public:
 private slots:
     // shared by every button whose click just forwards its own name as a command()
     // (open_mr_files/run/show_result/load_roi_from_atlas/clear_all_roi/load_roi_from_file/show_cohort/apply_selection);
-    // wired up explicitly in the constructor since connectSlotsByName() needs one method name per button
-    void on_button_command_clicked();
+    // wired up explicitly in the constructor rather than via connectSlotsByName()'s on_<name>_<signal>
+    // convention, since one shared slot can't match every button's individual name; deliberately
+    // not named on_..._clicked, since connectSlotsByName() would otherwise still try (and fail) to
+    // parse it as on_<widget:button_command>_clicked and warn on every construction
+    void forward_button_command();
     void on_fdr_control_toggled(bool checked);
     void on_effect_size_valueChanged(double arg1);
     void on_threshold_valueChanged(double arg1);
