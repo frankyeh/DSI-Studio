@@ -1,4 +1,6 @@
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <cstring>
 #include <unordered_set>
 #include "connectometry_db.hpp"
@@ -721,10 +723,41 @@ void connectometry_db::move_down(int id)
         std::swap_ranges(ptr, ptr + mask_size, ptr + mask_size);
     }
 }
+void connectometry_db::match_consecutive_subjects(void)
+{
+    match.clear();
+    for(size_t i = 0;i < subject_names.size();i += 2)
+        match.push_back(std::make_pair(i,i+1));
+}
+bool connectometry_db::match_subjects_from_file(const std::string& file_name)
+{
+    std::ifstream in(file_name);
+    if(!in)
+        return handle->error_msg = "cannot open match file: " + file_name,false;
+    std::vector<size_t> data;
+    std::copy(std::istream_iterator<int>(in),
+              std::istream_iterator<int>(),std::back_inserter(data));
+    match.clear();
+    for(size_t i = 0;i+1 < data.size();i += 2)
+        match.push_back(std::make_pair(data[i],data[i+1]));
+    return true;
+}
+std::string connectometry_db::suggest_output_suffix(void) const
+{
+    if(!is_longitudinal)
+        return ".mod.dz";
+    if(longitudinal_filter_type == 1)
+        return ".pos_dif.dz";
+    if(longitudinal_filter_type == 2)
+        return ".neg_dif.dz";
+    return ".dif.dz";
+}
 bool can_be_normalized_by_iso(const std::string& name);
 void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
-void connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso)
+bool connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso)
 {
+    if(is_longitudinal)
+        return (handle->error_msg = "the database cannot compute differences in longitudinal data"),false;
 
     std::vector<std::shared_ptr<tipl::io::mat_matrix> > dif_matrices;
 
@@ -781,7 +814,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
         dif_matrices.push_back(dif_mat);
     }
     if(prog.aborted())
-        return;
+        return false;
 
 
     {
@@ -820,6 +853,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
     modified = true;
     is_longitudinal = true;
     longitudinal_filter_type = filter_type;
+    return true;
 }
 
 
