@@ -30,6 +30,14 @@ public:
     };
 
     std::vector<feature_info> feature;
+    size_t find_feature(const std::string& name_or_index) const; // feature.size() if not found
+    // resolves voi_text ("Intercept"/"longitudinal", or a feature name/index) and variable_list_text
+    // (comma-separated feature names/indices; voi is added automatically if not already present)
+    // against `feature`, then selects exactly that set (clearing everything else). Returns the
+    // resolved study-variable-of-interest string, ready for stat_model::select_feature(); returns
+    // an empty string and sets handle->error_msg on failure. Shared by the GUI's "set_voi" command
+    // and the "cnt" CLI action so both stay in sync.
+    std::string select_voi(const std::string& voi_text,const std::string& variable_list_text);
 public:
 
     std::vector<double> X;
