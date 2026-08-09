@@ -21,6 +21,9 @@ class QJsonObject;
 class FiberDataHub;
 enum class command_source;
 
+QString command_window_id(QWidget* window); // "main"/"trackingXXXX"/"reconXXXX"/"imageXXXX"/"connectometryXXXX", or empty if not an AI-addressable window
+QString command_window_type(const QString& id); // "main"/"tracking"/"recon"/"image"/"connectometry" derived from an id string, as produced by command_window_id
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -49,7 +52,7 @@ public:
     QJsonObject dispatch_cmd(ai_info&,const QJsonObject& request); // the AI agent's single command center: every request (set_title/log/set_window/list_window/voice/run_shell/GUI commands) runs through this command array, dispatched against a target window (main/tracking/recon/image) when one applies
     AIAgent* ai_agent; // created in the constructor; callers (e.g. the local-socket server in main.cpp) use ai_agent->ai_request(...) directly
     QString ai_chat_context; // the current AI request's accompanying chat text, if any; set/restored around dispatch_cmd() so run_shell's confirmation dialog can explain purpose
-    void report_and_target_window(QWidget*,const char*); // logs "<type> window created, id: ..." and makes it the AI session's new target; call whenever a window is created
+    void report_and_target_window(QWidget*); // logs "<type> window created, id: ..." and makes it the AI session's new target; call whenever a window is created
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);
