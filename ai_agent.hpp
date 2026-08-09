@@ -78,6 +78,8 @@ class AIAgent : public QMainWindow
     QString ai_status_activity;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
+    int ai_debug_level = 0; // "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete); read from QSettings in the constructor, kept in sync by AI Settings' own setValue+assign
+    void ai_log(QString text);
 
     // app-wide default agent/model: only consulted for a chat that doesn't exist yet (New Chat's pre-fill, and
     // "Change Agent/Model" with nothing selected) -- an existing chat's own ai_info::model_settings is always
