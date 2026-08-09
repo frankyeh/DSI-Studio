@@ -1081,6 +1081,7 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Screen"/>
     <addaction name="actionSave_3D_screen_in_high_resolution"/>
+    <addaction name="actionSave_3D_Screen_Left_Right_Views"/>
     <addaction name="separator"/>
     <addaction name="actionSave_3D_screen_in_3_views"/>
     <addaction name="actionSave_3D_Screen_in_3_Views_Horizontal"/>
@@ -3611,6 +3612,18 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run save_hd_screen</string>
+   </property>
+  </action>
+  <action name="actionSave_3D_Screen_Left_Right_Views">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save 3D Screen Left/Right Views...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_lr_screen</string>
    </property>
   </action>
   <action name="actionSave_All_Regions_As">
