@@ -26,7 +26,7 @@ namespace Ui {
 class AIAgent;
 }
 
-enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,ChatGPT = 2}; // ChatGPT: web agent via GitHub issue, not a local CLI; never indexes AIAgent::agent_entries (sized for Codex/Claude only)
+enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model
 enum class ai_input {User,Pending};
 
 struct ai_info{
@@ -42,7 +42,7 @@ struct ai_info{
     bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
-    static ai_info* create(QString,QString);
+    static ai_info* create(QString,QString,ai_provider = ai_provider::Unknown); // provider defaults to identify_provider(agent's name); pass explicitly to bypass that (e.g. AgentServer, which isn't identified by name)
     static QString history_file(const QString&);
     static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;
