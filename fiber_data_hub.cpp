@@ -396,9 +396,6 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         ui->download_dir->setText(dir.path());
         ui->download_overwrite->setChecked(false);
 
-        // a wildcard (*, ?, [...]), not a raw regex: far more intuitive for a filename pattern than
-        // regex is, and it anchors to a full-name match, so a plain exact filename still works exactly
-        // as before instead of matching anywhere as a substring
         bool ok = true;
         auto file_re = make_re(QRegularExpression::wildcardToRegularExpression(arg(3)),"file",ok);
         if(!ok)
@@ -407,10 +404,11 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         bool any = false;
         if(!for_each_tag(arg(2),[&](const QString& tag_name)
         {
-            files->clearSelection();
+            files->selectionModel()->clearSelection();
             for(int row = 0;row < files->rowCount();++row)
                 if(file_re.match(files->item(row,0)->text()).hasMatch())
-                    files->selectRow(row); // additive in the table's default ExtendedSelection mode
+                    files->selectionModel()->select(files->model()->index(row,0),
+                        QItemSelectionModel::Select | QItemSelectionModel::Rows);
             on_github_release_files_itemSelectionChanged();
             if(!files->selectionModel()->selectedRows().size())
             {
