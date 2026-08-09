@@ -74,7 +74,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     // each button's objectName is exactly the command() name it should trigger
     for(auto* button : {ui->open_mr_files,ui->run,ui->show_result,ui->load_roi_from_atlas,
                          ui->clear_all_roi,ui->load_roi_from_file,ui->show_cohort,ui->apply_selection})
-        connect(button,&QPushButton::clicked,this,&group_connectometry::on_button_command_clicked);
+        connect(button,&QPushButton::clicked,this,&group_connectometry::forward_button_command);
     ui->thread_count->setValue(tipl::max_thread_count);
     ui->chart_widget_layout->addWidget(null_pos_chart_view);
     ui->chart_widget_layout->addWidget(null_neg_chart_view);
@@ -226,7 +226,7 @@ void group_connectometry::show_dis_table(void)
     ui->dist_table->selectRow(0);
 }
 
-void group_connectometry::on_button_command_clicked()
+void group_connectometry::forward_button_command()
 {
     if(auto* button = qobject_cast<QPushButton*>(sender()))
         command({button->objectName().toStdString()},command_source::User);
@@ -475,7 +475,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         if(timer) // same condition "stop" itself checks, rather than reading the button's display text
             return command({"stop"},source);
         // longitudinal data without loading demographics
-        if(db.is_longitudinal && !model.get())
+        if(db.type != connectometry_db::longitudinal_type::plain && !model.get())
         {
             model.reset(new stat_model);
             model->read_demo(vbc->handle->db);
@@ -500,7 +500,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             vbc->t_threshold = float(ui->threshold->value());
             vbc->rho_threshold = float(ui->effect_size->value());
             vbc->region_pruning = ui->region_pruning->isChecked();
-            vbc->normalize_iso = db.is_longitudinal ? false : ui->normalize_iso->isChecked();
+            vbc->normalize_iso = (db.type != connectometry_db::longitudinal_type::plain) ? false : ui->normalize_iso->isChecked();
             vbc->output_file_name = ui->output_name->text().toStdString();
         }
 
@@ -705,6 +705,24 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
 
     if(name == "get_demo")
     {
+        // the 4 database kinds this app produces, in the order suggest_output_suffix() names their
+        // default file suffix (.mod/.dif/.pos_dif/.neg_dif.dz): readable here without needing a
+        // completed run first (unlike get_result's report text, which states the same thing)
+        switch(db.type)
+        {
+        case connectometry_db::longitudinal_type::plain:
+            tipl::out() << "database type: cross-sectional (not longitudinal)";
+            break;
+        case connectometry_db::longitudinal_type::pos_filtered:
+            tipl::out() << "database type: longitudinal, increase-only (positive magnitude, scan2>scan1 kept)";
+            break;
+        case connectometry_db::longitudinal_type::neg_filtered:
+            tipl::out() << "database type: longitudinal, decrease-only (positive magnitude, scan2<scan1 kept)";
+            break;
+        case connectometry_db::longitudinal_type::unfiltered:
+            tipl::out() << "database type: longitudinal, unfiltered (signed scan2-scan1 change)";
+            break;
+        }
         tipl::out() << "subject\t" << tipl::merge(db.titles,'\t');
         for(size_t row = 0;row < db.subject_names.size();++row)
         {
@@ -836,7 +854,7 @@ void group_connectometry::sync_variable_list(void)
     for(int i = 0;i < ui->variable_list->count();++i)
         if(db.feature[uint32_t(i)].selected)
             ui->foi->addItem(ui->variable_list->item(i)->text());
-    if(db.is_longitudinal && db.longitudinal_filter_type == 0)
+    if(db.type == connectometry_db::longitudinal_type::unfiltered)
         ui->foi->addItem(QString("longitudinal change"));
     ui->foi->setCurrentText(foi_str);
 }
@@ -864,7 +882,7 @@ void group_connectometry::on_threshold_valueChanged(double t)
 bool can_be_normalized_by_iso(const std::string& name);
 void group_connectometry::on_index_name_currentIndexChanged(int index)
 {
-    if(can_be_normalized_by_iso(ui->index_name->currentText().toStdString()) && !db.is_longitudinal)
+    if(can_be_normalized_by_iso(ui->index_name->currentText().toStdString()) && db.type == connectometry_db::longitudinal_type::plain)
         ui->normalize_iso->show();
     else
         ui->normalize_iso->hide();
