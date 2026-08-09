@@ -1929,13 +1929,20 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 {
     ai_launch launch;
 
+    // a failed launch still owes the caller's message a home: queued as a pending prompt on the
+    // session so the next successful run picks it up, rather than silently dropping it
+    auto preserve_pending = [&]()
+    {
+        if(input == ai_input::Pending && !session.isEmpty())
+            ai_infos[session].prompts.append(text);
+    };
+
     // Resolve agent
     launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
     launch.executable = agent_entries[int(provider)].executable;
     if(launch.executable.isEmpty())
     {
-        if(input == ai_input::Pending && !session.isEmpty())
-            ai_infos[session].prompts.append(text);
+        preserve_pending();
         auto message = launch.name+" executable was not found.";
         set_ai_status(message,true);
         QMessageBox::warning(this,"AI Agent",message);
@@ -1968,8 +1975,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         launch.name += "/Ollama("+launch.model_url.host()+")";
         if(!configured)
         {
-            if(input == ai_input::Pending && !session.isEmpty())
-                ai_infos[session].prompts.append(text);
+            preserve_pending();
             set_ai_status("Ollama is not configured.",true);
             QMessageBox::warning(
                 this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
@@ -1981,8 +1987,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
         set_ai_status(launch.name+" needs sign-in: check your browser.",true);
         if(!run_agent_login(provider))
         {
-            if(input == ai_input::Pending && !session.isEmpty())
-                ai_infos[session].prompts.append(text);
+            preserve_pending();
             set_ai_status(launch.name+" is not signed in.",true);
             return launch;
         }
