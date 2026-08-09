@@ -747,7 +747,7 @@ std::string connectometry_db::select_voi(const std::string& voi_text,const std::
             c = ',';
     if(voi_text == "Intercept" || voi_text == "longitudinal")
     {
-        if(!is_longitudinal)
+        if(type == longitudinal_type::plain)
             return (handle->error_msg = "the longitudinal change can only be studied in a longitudinal database"),std::string();
         foi_str = "longitudinal change";
     }
@@ -804,11 +804,11 @@ bool connectometry_db::match_subjects_from_file(const std::string& file_name)
 }
 std::string connectometry_db::suggest_output_suffix(void) const
 {
-    if(!is_longitudinal)
+    if(type == longitudinal_type::plain)
         return ".mod.dz";
-    if(longitudinal_filter_type == 1)
+    if(type == longitudinal_type::pos_filtered)
         return ".pos_dif.dz";
-    if(longitudinal_filter_type == 2)
+    if(type == longitudinal_type::neg_filtered)
         return ".neg_dif.dz";
     return ".dif.dz";
 }
@@ -816,7 +816,7 @@ bool can_be_normalized_by_iso(const std::string& name);
 void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
 bool connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso)
 {
-    if(is_longitudinal)
+    if(type != longitudinal_type::plain)
         return (handle->error_msg = "the database cannot compute differences in longitudinal data"),false;
     if(match.empty())
         return (handle->error_msg = "no subjects have been matched"),false;
@@ -913,8 +913,9 @@ bool connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
     set_current_index(0);
 
     modified = true;
-    is_longitudinal = true;
-    longitudinal_filter_type = filter_type;
+    type = (filter_type == 1) ? longitudinal_type::pos_filtered :
+           (filter_type == 2) ? longitudinal_type::neg_filtered :
+           longitudinal_type::unfiltered;
     return true;
 }
 
@@ -1206,7 +1207,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
         }
     tipl::out() << "variables to be considered: "<< out.str() << std::endl;
 
-    if(!has_variable && !db.is_longitudinal)
+    if(!has_variable && db.type == connectometry_db::longitudinal_type::plain)
     {
         error_msg = "No variables selected for regression. Please check selected variables.";
         return false;
