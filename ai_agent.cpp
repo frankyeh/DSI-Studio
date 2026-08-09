@@ -959,7 +959,8 @@ QJsonObject ai_info::record_request(const QString& command_name,QWidget* target)
 {
     auto window_type = current_window == "main" ? QString("main") :
                        current_window.startsWith("tracking") ? "tracking" :
-                       current_window.startsWith("recon") ? "recon" : "image";
+                       current_window.startsWith("recon") ? "recon" :
+                       current_window.startsWith("connectometry") ? "connectometry" : "image";
     QJsonObject entry{{"type","request"},{"text",command_name},{"window",window_type}};
     if(target && window_type != "main")
         entry["title"] = QFileInfo(target->windowTitle()).fileName();
