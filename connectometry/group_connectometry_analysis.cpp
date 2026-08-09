@@ -420,23 +420,29 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         }
         else
         {
-            std::string prefix_inc = "increased ", prefix_dec = "decreased ";
+            // hypothesis_inc/hypothesis_dec each name a specific group (cat_name1/cat_name0 below)
+            // as having the HIGHER value at that direction's voxels -- the comparative word must
+            // therefore be the SAME for both hypotheses, since only the named group differs; using
+            // different words per direction inverts the meaning of whichever direction gets the
+            // "wrong" one (e.g. "less decline in SCA2" reads as the same finding as "more decline
+            // in CONTROL", not its own separate result -- confirmed live, this was a real bug)
+            std::string prefix = "higher ";
             // a filtered longitudinal database stores a positive MAGNITUDE of change (see
             // connectometry_db::calculate_change), not a naturally bidirectional metric -- label
-            // it as such, and use more/less rather than increased/decreased, which would read as
-            // contradictory paired with "increase/decline over time" (e.g. "decreased decline")
+            // it as such, and use "more" rather than "higher", which would read as contradictory
+            // paired with "increase/decline over time" (e.g. "higher decline")
             if(handle->db.type == connectometry_db::longitudinal_type::pos_filtered)
             {
                 index_name += " increase over time";
-                prefix_inc = "more "; prefix_dec = "less ";
+                prefix = "more ";
             }
             else if(handle->db.type == connectometry_db::longitudinal_type::neg_filtered)
             {
                 index_name += " decline over time";
-                prefix_inc = "more "; prefix_dec = "less ";
+                prefix = "more ";
             }
-            hypothesis_inc = prefix_inc + index_name;
-            hypothesis_dec = prefix_dec + index_name;
+            hypothesis_inc = prefix + index_name;
+            hypothesis_dec = prefix + index_name;
             if(model->variables[model->study_feature].is_categorical)
             {
                 hypothesis_dec += " in " + model->variables[model->study_feature].cat_name0;
