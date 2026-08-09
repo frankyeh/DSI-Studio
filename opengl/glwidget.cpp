@@ -2311,7 +2311,37 @@ bool GLWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "get_camera")
     {
-        tipl::out() << "camera: " << get_camera();
+        // reinterpret the raw matrix as something anatomically meaningful rather than 16 opaque
+        // floats: the fixed camera always looks along its own +Z; mapping that axis (a direction,
+        // not a point) through the inverse of transformation_matrix gives the viewing direction in
+        // LPS/object space, and mapping the origin (a point) the same way gives the voxel-space
+        // location currently centered in view
+        auto inv = tipl::inverse(transformation_matrix);
+        tipl::vector<3,float> dir(inv.begin()+8);
+        dir.normalize();
+        tipl::vector<3,float> neg_dir(-dir[0],-dir[1],-dir[2]);
+        tipl::vector<3,float> pos(inv.begin()+12);
+
+        auto lps_label = [](tipl::vector<3,float> v)->std::string
+        {
+            struct axis{ float mag; const char* label; };
+            axis axes[3] = {{v[0],v[0] >= 0 ? "Left" : "Right"},
+                            {v[1],v[1] >= 0 ? "Posterior" : "Anterior"},
+                            {v[2],v[2] >= 0 ? "Superior" : "Inferior"}};
+            for(int i = 0;i < 2;++i)
+                for(int j = i+1;j < 3;++j)
+                    if(std::fabs(axes[j].mag) > std::fabs(axes[i].mag))
+                        std::swap(axes[i],axes[j]);
+            std::string label;
+            for(auto& a : axes)
+                if(std::fabs(a.mag) > 0.25f)
+                    label += (label.empty() ? "" : "-") + std::string(a.label);
+            return label.empty() ? "oblique" : label;
+        };
+
+        tipl::out() << "view_direction: " << dir[0] << " " << dir[1] << " " << dir[2]
+                    << " (looking toward " << lps_label(dir) << ", viewed from " << lps_label(neg_dir) << ")";
+        tipl::out() << "view_position (voxel): " << pos[0] << " " << pos[1] << " " << pos[2];
         return run->succeed();
     }
     if(tipl::begins_with(cmd[0],"store_camera"))
