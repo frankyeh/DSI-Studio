@@ -1091,7 +1091,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return QJsonObject{{"status","error"},{"result",QJsonArray{
             QJsonObject{{"status","error"},{"error",error}}}}};
     };
-    // "main"/"trackingXXXX"/"reconXXXX"/"imageXXXX", or empty if not an AI-addressable window
+    // "main"/"trackingXXXX"/"reconXXXX"/"imageXXXX"/"connectometryXXXX", or empty if not an AI-addressable window
     auto ai_window_id = [](QWidget* window)
     {
         if(qobject_cast<MainWindow*>(window))
@@ -1100,6 +1100,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             return command_window_id(window,"tracking");
         if(qobject_cast<reconstruction_window*>(window))
             return command_window_id(window,"recon");
+        if(qobject_cast<group_connectometry*>(window))
+            return command_window_id(window,"connectometry");
         return qobject_cast<view_image*>(window) ?
             command_window_id(window,"image") : QString();
     };
@@ -1339,7 +1341,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 QString new_window = "main";
                 if(!param.isEmpty())
                 {
-                    bool bare_type = (param == "tracking" || param == "recon" || param == "image");
+                    bool bare_type = (param == "tracking" || param == "recon" || param == "image" || param == "connectometry");
                     if(bare_type)
                     {
                         auto file_name = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString();
@@ -1407,6 +1409,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                                         auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
                                         return custom && custom->running;
                                     });
+                    else if(auto* gc = qobject_cast<group_connectometry*>(each))
+                        busy |= bool(gc->timer);
                     bool waiting = modal && (modal == each || each->isAncestorOf(modal));
                     windows[id] = QJsonObject{
                         {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
@@ -1462,6 +1466,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     else if(auto* window = qobject_cast<reconstruction_window*>(locked_target))
                         execute(window,window->command(cmd,command_source::AI));
                     else if(auto* window = qobject_cast<view_image*>(locked_target))
+                        execute(window,window->command(cmd,command_source::AI));
+                    else if(auto* window = qobject_cast<group_connectometry*>(locked_target))
                         execute(window,window->command(cmd,command_source::AI));
                     else
                         error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
@@ -1917,6 +1923,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         else
         {
             auto* window = new group_connectometry(this,database,file);
+            window->setWindowTitle(file);
+            report_and_target_window(window,"connectometry");
             window->setAttribute(Qt::WA_DeleteOnClose);
             window->show();
         }
