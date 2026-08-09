@@ -131,7 +131,7 @@ public:
     explicit AIAgent(MainWindow*);
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
-    void update_current_window(QWidget*,const char*); // called where open_fib/open_src/open_image create their window; no-op unless an AI dispatch is in progress
+    void update_current_window(QWidget*); // called where open_fib/open_src/open_image create their window; no-op unless an AI dispatch is in progress
 
 protected:
     void showEvent(QShowEvent*) override;
