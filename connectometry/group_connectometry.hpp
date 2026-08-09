@@ -58,6 +58,9 @@ public:
     connectometry_db& db;
     std::shared_ptr<stat_model> model;
     std::shared_ptr<QTimer> timer;
+    bool run_started = false; // false only before the very first "run" on this window; never reset by Stop
+    bool run_completed = false; // true only once a run reaches 100% naturally; false again once a new run starts
+    bool suppress_run_dialogs = false; // set from the starting command's source; true unless a local user clicked Run
     size_t selected_count = 0;
     explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_);
     ~group_connectometry();
