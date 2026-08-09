@@ -18,6 +18,28 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
 extern std::vector<std::string> template_name_list;
 int db(tipl::program_option<tipl::out>& po)
 {
+    if(po.has("match")) // turn an existing database into a longitudinal-change database
+    {
+        fib_data fib;
+        if(!fib.load_from_file(po.get("source")) || !fib.db.has_db())
+            return tipl::error() << "not a database file: " << fib.error_msg,1;
+
+        std::string match_arg = po.get("match");
+        if(match_arg == "consecutive")
+            fib.db.match_consecutive_subjects();
+        else if(!fib.db.match_subjects_from_file(match_arg))
+            return tipl::error() << fib.error_msg,1;
+
+        if(!fib.db.calculate_change(uint8_t(po.get("dif_type",0)),
+                                     uint8_t(po.get("filter_type",0)),
+                                     po.get("normalize_iso",1)))
+            return tipl::error() << fib.error_msg,1;
+
+        if(!fib.save_to_file(po.get("output","longitudinal"+fib.db.suggest_output_suffix())))
+            return tipl::error() << "cannot save db file:" << fib.error_msg,1;
+        return 0;
+    }
+
     auto name_list = po.get_files("source","*.qsdr.fz");
     if(name_list.empty())
         return tipl::error() << po.error_msg,1;
