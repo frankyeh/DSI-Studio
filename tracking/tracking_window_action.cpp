@@ -18,6 +18,7 @@
 #include "manual_alignment.h"
 #include "devicetablewidget.h"
 #include "libs/tracking/tracking_thread.hpp"
+#include "cmd/img.hpp"
 
 
 extern std::vector<std::vector<std::string> > unet_names,unet_http,unet_desc;
@@ -525,9 +526,104 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
 
         slice_need_update = none; // turn off simple drawing
-        scene.paint_image(scene.view_image,false);     
+        scene.paint_image(scene.view_image,false);
         if(!scene.view_image.save(cmd[1].c_str()))
             return run->failed("cannot save mapping to " + cmd[1]);
+        return run->succeed();
+    }
+    if(cmd[0] == "preview_screen")
+    {
+        if(cmd[1] != "roi" && cmd[1] != "3d")
+            return run->failed("cmd[1] must be \"roi\" or \"3d\"");
+        // serves a cached crop (zoom) or a fresh capture via `grab`, then prints it as text art
+        auto preview_channel = [&](std::map<std::string,QImage>& cache,const std::string& label,auto&& grab)->bool
+        {
+            QImage gray;
+            if(!cmd[2].empty()) // zoom: reuse the cached capture, no regrab
+            {
+                auto it = cache.find(label);
+                if(it == cache.end())
+                    return run->failed("no previous capture of channel \""+label+"\" to zoom into");
+                gray = it->second;
+            }
+            else
+                cache[label] = gray = grab();
+            QImage region = gray;
+            if(!cmd[2].empty())
+            {
+                std::istringstream in(cmd[2]);
+                double x0,y0,x1,y1;
+                if(!(in >> x0 >> y0 >> x1 >> y1))
+                    return run->failed("invalid zoom rectangle, expected \"x0 y0 x1 y1\" in 0..1");
+                region = gray.copy(int(x0*gray.width()),int(y0*gray.height()),
+                                    int((x1-x0)*gray.width()),int((y1-y0)*gray.height()));
+            }
+            TextPreview preview(region.width(),region.height(),
+                [&](int x,int y){ return double(region.constScanLine(y)[x]); });
+            tipl::out() << label << ":";
+            tipl::out() << preview.render_art(16);
+            tipl::out() << preview.render_occupancy();
+            tipl::out() << preview.format_stats();
+            return true;
+        };
+
+        if(cmd[1] == "3d")
+        {
+            glWidget->command({"get_camera"});
+            static const char* channels[] = {"show_slice","show_region","show_tract","show_surface"};
+            for(const char* flag : channels)
+            {
+                if(!(*this)[flag].toInt())
+                    continue;
+                std::string label = flag+5; // strip "show_"
+                if(!preview_channel(last_3d_preview,label,[&](void)->QImage
+                {
+                    // isolate this one layer by temporarily toggling the others off
+                    std::vector<std::pair<std::string,QVariant> > saved;
+                    for(const char* other : channels)
+                    {
+                        saved.push_back({other,(*this)[other]});
+                        set_data(other,int(other == std::string(flag)));
+                    }
+                    QImage gray = glWidget->grab_image().convertToFormat(QImage::Format_Grayscale8);
+                    for(auto& kv : saved)
+                        set_data(kv.first.c_str(),kv.second);
+                    glWidget->update();
+                    gray.save(QDir::tempPath()+"/dsi_preview_3d_"+QString::fromStdString(label)+".jpg","JPG");
+                    return gray;
+                }))
+                    return false;
+            }
+            return run->succeed();
+        }
+
+        // roi: slice is always the background, region shows when any region is checked, tract
+        // shows when the roi_track toolbutton is toggled on
+        tipl::out() << "R_side=" << ((*this)["orientation_convention"].toInt() ? "right" : "left");
+        struct channel_def{ const char* label; bool roi_track; bool simple; bool on; };
+        const channel_def channels[] = {
+            {"slice", false,true, true},
+            {"region",false,false,!regionWidget->get_checked_regions().empty()},
+            {"tract", true, false,ui->roi_track->isChecked()},
+        };
+        for(const auto& ch : channels)
+        {
+            if(!ch.on)
+                continue;
+            if(!preview_channel(last_roi_preview,ch.label,[&](void)->QImage
+            {
+                bool prior_roi_track = ui->roi_track->isChecked();
+                ui->roi_track->setChecked(ch.roi_track);
+                slice_need_update = none; // turn off simple drawing
+                scene.paint_image(scene.view_image,ch.simple);
+                QImage gray = scene.view_image.convertToFormat(QImage::Format_Grayscale8);
+                ui->roi_track->setChecked(prior_roi_track);
+                slice_need_update |= position_updated;
+                gray.save(QDir::tempPath()+"/dsi_preview_roi_"+QString(ch.label)+".jpg","JPG");
+                return gray;
+            }))
+                return false;
+        }
         return run->succeed();
     }
     if(cmd[0] == "save_slice_image" || cmd[0] == "save_slice_mni_image")
