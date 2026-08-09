@@ -4,6 +4,7 @@
 #include <QSignalBlocker>
 #include <QClipboard>
 #include <QMessageBox>
+#include <QComboBox>
 
 #include "atlasdialog.h"
 #include "tracking_window.h"
@@ -1192,8 +1193,15 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 "invalid parameter or domain: "+cmd[1]+
                 "; use list_param without an argument to list all domains");
 
-        tipl::out() << id.toStdString() << "\t"
-                    << renderWidget->getData(id).toString().toStdString();
+        auto& item = (*renderWidget->treemodel)[id];
+        tipl::out() << id.toStdString() << "\t" << item.getValue().toString().toStdString();
+        if(auto* combo = qobject_cast<QComboBox*>(item.GUI)) // dropdown: content can change at runtime (e.g. loaded metrics)
+        {
+            QStringList options;
+            for(int i = 0;i < combo->count();++i)
+                options << QString("%1=%2").arg(i).arg(combo->itemText(i));
+            tipl::out() << "options: " << options.join(", ").toStdString();
+        }
         return run->succeed();
     }
     if(cmd[0] == "set_param" || cmd[0] == "set_params")
