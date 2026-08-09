@@ -42,7 +42,7 @@ struct ai_info{
     bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
-    static ai_info* create(QString,QString,ai_provider = ai_provider::Unknown); // provider defaults to identify_provider(agent's name); pass explicitly to bypass that (e.g. AgentServer, which isn't identified by name)
+    static ai_info* create(QString,QString);
     static QString history_file(const QString&);
     static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;
