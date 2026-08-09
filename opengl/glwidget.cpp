@@ -2269,6 +2269,25 @@ bool GLWidget::command(std::vector<std::string> cmd)
         rotate_angle(angle,x,y,z);
         return true;
     }
+    if(cmd[0] == "rotate_view")
+    {
+        // left/right yaw around the vertical (Y) axis, up/down pitch around the horizontal (X) axis
+        float angle = 0.0f;
+        std::istringstream(cmd[2]) >> angle;
+        if(angle == 0.0f)
+            return run->failed("please specify a nonzero angle in degrees as cmd[2]");
+        if(cmd[1] == "left")
+            rotate_angle(angle,0,1,0);
+        else if(cmd[1] == "right")
+            rotate_angle(-angle,0,1,0);
+        else if(cmd[1] == "up")
+            rotate_angle(-angle,1,0,0);
+        else if(cmd[1] == "down")
+            rotate_angle(angle,1,0,0);
+        else
+            return run->failed("cmd[1] must be \"left\", \"right\", \"up\", or \"down\"");
+        return run->succeed();
+    }
     if(cmd[0] == "set_stereoscopic")
     {
         makeCurrent();
