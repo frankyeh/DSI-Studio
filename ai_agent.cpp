@@ -1577,6 +1577,12 @@ bool AIAgent::try_connect_github_issue(const QString& url)
 
 void AIAgent::update_agent_status_label()
 {
+    // the send button's enabled state/label depends on the same selected-chat context this function
+    // reflects, so it must be refreshed whenever this is -- a scope guard makes that automatic on every
+    // return path below (including future ones) instead of relying on every call site to also remember
+    // update_send_button(), which is exactly how the button was left in its default-enabled Designer
+    // state whenever no chat existed yet to trigger a selection-change refresh
+    struct guard { AIAgent* self; ~guard(){self->update_send_button();} } refresh_send_button{this};
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
     auto* info = selected_info();
     if(info && info->provider == ai_provider::AgentServer) // a log/routing record, no agent/model of its own to show or change
