@@ -54,12 +54,6 @@
 #include "TIPL/tipl.hpp"
 
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
-// "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete)
-int& ai_debug_level()
-{
-    static int level = QSettings().value("ai/debug",0).toInt();
-    return level;
-}
 static ai_info* assign_ai_session(const QString& from,const QString& to)
 {
     if(from == to)
@@ -99,11 +93,11 @@ static void stop_blink(QWidget* row)
     row->setStyleSheet({});
 }
 
-void ai_log(QString text)
+void AIAgent::ai_log(QString text)
 {
-    if(ai_debug_level() <= 0)
+    if(ai_debug_level <= 0)
         return;
-    if(ai_debug_level() == 1 && text.size() > ai_debug_truncate_length)
+    if(ai_debug_level == 1 && text.size() > ai_debug_truncate_length)
         text = text.left(ai_debug_truncate_length)+"...";
     auto prefix = QString("[DEBUG] ");
     tipl::out() << (prefix+text.remove('\r').
@@ -172,6 +166,7 @@ AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
     ui->setupUi(this);
+    ai_debug_level = settings.value("ai/debug",0).toInt();
     ui->ai_work_dir->setText(main_window.work_dir());
     // keeps the field in sync with the selected chat's own dispatch directory (model_settings["cwd"]),
     // the same value run_shell's "cd" updates; also used as --add-dir when launching Codex/Claude
@@ -1802,7 +1797,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/show_reasoning",show_reasoning.isChecked());
     settings.setValue("ai/debug",debug.currentIndex());
     settings.setValue("ai/github_token",github_pat.text().trimmed());
-    ai_debug_level() = debug.currentIndex();
+    ai_debug_level = debug.currentIndex();
     if(reasoning_changed)
         if(auto* item = ui->ai_project_list->currentItem())
             show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
