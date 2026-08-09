@@ -72,12 +72,6 @@ public slots:
 
     void show_fdr_report();
 
-    void on_open_mr_files_clicked();
-
-    void on_run_clicked();
-
-    void on_show_result_clicked();
-
     void on_roi_whole_brain_toggled(bool checked);
 
 public slots:
@@ -86,12 +80,11 @@ public slots:
 public:
     Ui::group_connectometry *ui;
 private slots:
-    void on_load_roi_from_atlas_clicked();
-    void on_clear_all_roi_clicked();
-    void on_load_roi_from_file_clicked();
-    void on_show_cohort_clicked();
+    // shared by every button whose click just forwards its own name as a command()
+    // (open_mr_files/run/show_result/load_roi_from_atlas/clear_all_roi/load_roi_from_file/show_cohort/apply_selection);
+    // wired up explicitly in the constructor since connectSlotsByName() needs one method name per button
+    void on_button_command_clicked();
     void on_fdr_control_toggled(bool checked);
-    void on_apply_selection_clicked();
     void on_effect_size_valueChanged(double arg1);
     void on_threshold_valueChanged(double arg1);
     void on_index_name_currentIndexChanged(int index);

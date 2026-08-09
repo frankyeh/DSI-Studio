@@ -4,6 +4,7 @@
 #include <QStringListModel>
 #include <QComboBox>
 #include <functional>
+#include <type_traits>
 #include "tracking/region/Regions.h"
 #include "group_connectometry.hpp"
 #include "ui_group_connectometry.h"
@@ -70,6 +71,10 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 {
 
     ui->setupUi(this);
+    // each button's objectName is exactly the command() name it should trigger
+    for(auto* button : {ui->open_mr_files,ui->run,ui->show_result,ui->load_roi_from_atlas,
+                         ui->clear_all_roi,ui->load_roi_from_file,ui->show_cohort,ui->apply_selection})
+        connect(button,&QPushButton::clicked,this,&group_connectometry::on_button_command_clicked);
     ui->thread_count->setValue(tipl::max_thread_count);
     ui->chart_widget_layout->addWidget(null_pos_chart_view);
     ui->chart_widget_layout->addWidget(null_neg_chart_view);
@@ -241,9 +246,10 @@ void group_connectometry::show_dis_table(void)
     ui->dist_table->selectRow(0);
 }
 
-void group_connectometry::on_open_mr_files_clicked()
+void group_connectometry::on_button_command_clicked()
 {
-    command({"open_mr_files"},command_source::User);
+    if(auto* button = qobject_cast<QPushButton*>(sender()))
+        command({button->objectName().toStdString()},command_source::User);
 }
 
 
@@ -302,30 +308,69 @@ struct group_connectometry_param
 {
     std::string id;
     std::function<QString(void)> get;
-    std::function<void(QString)> set;
+    std::function<bool(QString)> set; // returns false on malformed/out-of-range input; the widget is left unchanged
     QComboBox* combo = nullptr; // set for dropdown-backed params, so list_param can show their options
 };
 
 static std::vector<group_connectometry_param> get_settable_params(Ui::group_connectometry* ui)
 {
+    // one generic setter for every widget kind below; if constexpr picks the right parse/apply
+    // logic for whichever concrete type "box" is deduced as at each call site
+    auto set_value = [](auto* box)
+    {
+        return [box](QString v)->bool
+        {
+            using T = std::remove_pointer_t<decltype(box)>;
+            bool ok = true;
+            if constexpr(std::is_same_v<T,QLineEdit>)
+                box->setText(v);
+            else if constexpr(std::is_same_v<T,QComboBox>)
+            {
+                int i = v.toInt(&ok);
+                if(ok && (i < 0 || i >= box->count()))
+                    ok = false;
+                if(ok)
+                    box->setCurrentIndex(i);
+            }
+            else if constexpr(std::is_base_of_v<QAbstractButton,T>) // QCheckBox and QRadioButton (e.g. roi_whole_brain)
+            {
+                int i = v.toInt(&ok);
+                if(ok)
+                    box->setChecked(i != 0);
+            }
+            else if constexpr(std::is_same_v<T,QDoubleSpinBox>)
+            {
+                double d = v.toDouble(&ok);
+                if(ok)
+                    box->setValue(d);
+            }
+            else // QSpinBox
+            {
+                int i = v.toInt(&ok);
+                if(ok)
+                    box->setValue(i);
+            }
+            return ok;
+        };
+    };
     return {
-        {"no_tractogram",[ui]{return QString::number(ui->no_tractogram->isChecked());},[ui](QString v){ui->no_tractogram->setChecked(v.toInt());}},
-        {"index_name",[ui]{return QString::number(ui->index_name->currentIndex());},[ui](QString v){ui->index_name->setCurrentIndex(v.toInt());},ui->index_name},
-        {"foi",[ui]{return QString::number(ui->foi->currentIndex());},[ui](QString v){ui->foi->setCurrentIndex(v.toInt());},ui->foi},
-        {"length_threshold",[ui]{return QString::number(ui->length_threshold->value());},[ui](QString v){ui->length_threshold->setValue(v.toInt());}},
-        {"tip",[ui]{return QString::number(ui->tip->value());},[ui](QString v){ui->tip->setValue(v.toInt());}},
-        {"fdr_control",[ui]{return QString::number(ui->fdr_control->isChecked());},[ui](QString v){ui->fdr_control->setChecked(v.toInt());}},
-        {"fdr_threshold",[ui]{return QString::number(ui->fdr_threshold->value());},[ui](QString v){ui->fdr_threshold->setValue(v.toDouble());}},
-        {"threshold",[ui]{return QString::number(ui->threshold->value());},[ui](QString v){ui->threshold->setValue(v.toDouble());}},
-        {"effect_size",[ui]{return QString::number(ui->effect_size->value());},[ui](QString v){ui->effect_size->setValue(v.toDouble());}},
-        {"region_pruning",[ui]{return QString::number(ui->region_pruning->isChecked());},[ui](QString v){ui->region_pruning->setChecked(v.toInt());}},
-        {"normalize_iso",[ui]{return QString::number(ui->normalize_iso->isChecked());},[ui](QString v){ui->normalize_iso->setChecked(v.toInt());}},
-        {"output_name",[ui]{return ui->output_name->text();},[ui](QString v){ui->output_name->setText(v);}},
-        {"exclude_cerebellum",[ui]{return QString::number(ui->exclude_cb->isChecked());},[ui](QString v){ui->exclude_cb->setChecked(v.toInt());}},
-        {"roi_whole_brain",[ui]{return QString::number(ui->roi_whole_brain->isChecked());},[ui](QString v){ui->roi_whole_brain->setChecked(v.toInt());}},
-        {"thread_count",[ui]{return QString::number(ui->thread_count->value());},[ui](QString v){ui->thread_count->setValue(v.toInt());}},
-        {"permutation_count",[ui]{return QString::number(ui->permutation_count->value());},[ui](QString v){ui->permutation_count->setValue(v.toInt());}},
-        {"select_text",[ui]{return ui->select_text->text();},[ui](QString v){ui->select_text->setText(v);}},
+        {"no_tractogram",[ui]{return QString::number(ui->no_tractogram->isChecked());},set_value(ui->no_tractogram)},
+        {"index_name",[ui]{return QString::number(ui->index_name->currentIndex());},set_value(ui->index_name),ui->index_name},
+        {"foi",[ui]{return QString::number(ui->foi->currentIndex());},set_value(ui->foi),ui->foi},
+        {"length_threshold",[ui]{return QString::number(ui->length_threshold->value());},set_value(ui->length_threshold)},
+        {"tip",[ui]{return QString::number(ui->tip->value());},set_value(ui->tip)},
+        {"fdr_control",[ui]{return QString::number(ui->fdr_control->isChecked());},set_value(ui->fdr_control)},
+        {"fdr_threshold",[ui]{return QString::number(ui->fdr_threshold->value());},set_value(ui->fdr_threshold)},
+        {"threshold",[ui]{return QString::number(ui->threshold->value());},set_value(ui->threshold)},
+        {"effect_size",[ui]{return QString::number(ui->effect_size->value());},set_value(ui->effect_size)},
+        {"region_pruning",[ui]{return QString::number(ui->region_pruning->isChecked());},set_value(ui->region_pruning)},
+        {"normalize_iso",[ui]{return QString::number(ui->normalize_iso->isChecked());},set_value(ui->normalize_iso)},
+        {"output_name",[ui]{return ui->output_name->text();},set_value(ui->output_name)},
+        {"exclude_cerebellum",[ui]{return QString::number(ui->exclude_cb->isChecked());},set_value(ui->exclude_cb)},
+        {"roi_whole_brain",[ui]{return QString::number(ui->roi_whole_brain->isChecked());},set_value(ui->roi_whole_brain)},
+        {"thread_count",[ui]{return QString::number(ui->thread_count->value());},set_value(ui->thread_count)},
+        {"permutation_count",[ui]{return QString::number(ui->permutation_count->value());},set_value(ui->permutation_count)},
+        {"select_text",[ui]{return ui->select_text->text();},set_value(ui->select_text)},
     };
 }
 
@@ -380,10 +425,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         {
             for(auto& p : params)
                 if(p.id == id)
-                {
-                    p.set(QString::fromStdString(value));
-                    return true;
-                }
+                    return p.set(QString::fromStdString(value));
             return false;
         };
         if(name == "set_param")
@@ -522,7 +564,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         }
         tracking_window* current_tracking_window = new tracking_window(this,new_data);
         if(auto* mw = qobject_cast<MainWindow*>(parentWidget()))
-            mw->report_and_target_window(current_tracking_window,"tracking");
+            mw->report_and_target_window(current_tracking_window);
         current_tracking_window->set_memorize_parameters(false);
         current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
         current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
@@ -707,15 +749,6 @@ void group_connectometry::calculate_FDR(void)
         timer.reset();
     }
 }
-void group_connectometry::on_run_clicked()
-{
-    command({"run"},command_source::User);
-}
-
-void group_connectometry::on_show_result_clicked()
-{
-    command({"show_result"},command_source::User);
-}
 
 void group_connectometry::on_roi_whole_brain_toggled(bool checked)
 {
@@ -737,21 +770,6 @@ void group_connectometry::add_new_roi(QString name,QString source,
     roi_list.push_back(new_roi);
 }
 
-void group_connectometry::on_load_roi_from_atlas_clicked()
-{
-    command({"load_roi_from_atlas"},command_source::User);
-}
-
-void group_connectometry::on_clear_all_roi_clicked()
-{
-    command({"clear_all_roi"},command_source::User);
-}
-
-void group_connectometry::on_load_roi_from_file_clicked()
-{
-    command({"load_roi_from_file"},command_source::User);
-}
-
 void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 {
     auto foi_str = ui->foi->currentText();
@@ -764,21 +782,10 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
     ui->foi->setCurrentText(foi_str);
 }
 
-void group_connectometry::on_show_cohort_clicked()
-{
-    command({"show_cohort"},command_source::User);
-}
-
 void group_connectometry::on_fdr_control_toggled(bool checked)
 {
     ui->fdr_threshold->setEnabled(checked);
 }
-
-void group_connectometry::on_apply_selection_clicked()
-{
-    command({"apply_selection"},command_source::User);
-}
-
 
 void group_connectometry::on_effect_size_valueChanged(double rho)
 {
