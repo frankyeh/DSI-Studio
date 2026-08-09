@@ -1,6 +1,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <algorithm>
+#include <sstream>
 #include <cstring>
 #include <unordered_set>
 #include "connectometry_db.hpp"
@@ -722,6 +724,59 @@ void connectometry_db::move_down(int id)
         auto ptr = handle->mat_reader[each].get_data<float>() + id*mask_size;
         std::swap_ranges(ptr, ptr + mask_size, ptr + mask_size);
     }
+}
+size_t connectometry_db::find_feature(const std::string& name_or_index) const
+{
+    for(size_t i = 0;i < feature.size();++i)
+        if(feature[i].title == name_or_index)
+            return i;
+    std::istringstream in(name_or_index);
+    size_t index;
+    if((in >> index) && in.eof() && index < feature.size())
+        return index;
+    return feature.size();
+}
+std::string connectometry_db::select_voi(const std::string& voi_text,const std::string& variable_list_text_in)
+{
+    std::string foi_str;
+    std::vector<size_t> indices;
+    // accepts space- and/or comma-separated indices, matching the CLI's pre-existing --variable_list tolerance
+    std::string variable_list_text = variable_list_text_in;
+    for(auto& c : variable_list_text)
+        if(c == ' ' || c == '\t')
+            c = ',';
+    if(voi_text == "Intercept" || voi_text == "longitudinal")
+    {
+        if(!is_longitudinal)
+            return (handle->error_msg = "the longitudinal change can only be studied in a longitudinal database"),std::string();
+        foi_str = "longitudinal change";
+    }
+    else
+    {
+        auto voi_index = find_feature(voi_text);
+        if(voi_index == feature.size())
+            return (handle->error_msg = "invalid variable of interest: " + voi_text),std::string();
+        foi_str = feature[voi_index].title;
+        indices.push_back(voi_index);
+    }
+    for(const auto& token : tipl::split(variable_list_text,','))
+    {
+        if(token.empty())
+            continue;
+        auto index = find_feature(token);
+        if(index == feature.size())
+            return (handle->error_msg = "invalid variable: " + token),std::string();
+        indices.push_back(index);
+    }
+    if(indices.empty())
+        return (handle->error_msg = "empty variable list"),std::string();
+    std::sort(indices.begin(),indices.end());
+    indices.erase(std::unique(indices.begin(),indices.end()),indices.end());
+    for(auto& f : feature)
+        f.selected = false;
+    for(auto i : indices)
+        feature[i].selected = true;
+    return foi_str;
 }
 void connectometry_db::match_consecutive_subjects(void)
 {
