@@ -42,7 +42,7 @@ void match_db::on_buttonBox_accepted()
     if(vbc->handle->db.match.empty())
     {
         QMessageBox::critical(this,"ERROR","Match data first before calculating change");
-        accept();
+        return;
     }
     unsigned char dif_type = 0;
     if(ui->dif_type1->isChecked())
@@ -50,9 +50,11 @@ void match_db::on_buttonBox_accepted()
     if(ui->dif_type2->isChecked())
         dif_type = 1;
     if(!vbc->handle->db.calculate_change(dif_type,ui->inc_dec_filter->currentIndex(),ui->normalize_iso->isChecked()))
+    {
         QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
-    else
-        QMessageBox::information(this,QApplication::applicationName(),"database updated");
+        return;
+    }
+    QMessageBox::information(this,QApplication::applicationName(),"database updated");
     accept();
 }
 
