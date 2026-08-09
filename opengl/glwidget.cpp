@@ -2358,6 +2358,12 @@ bool GLWidget::command(std::vector<std::string> cmd)
             cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
             return save_screen(grab_image());
         }
+        if(cmd[0] == "save_lr_screen")
+        {
+            if(!get_save_image_name("lr_screen"))
+                return run->canceled();
+            return save_screen(getLRView());
+        }
         if(cmd[0] == "save_hd_screen")
         {
             if(cmd[2].empty())
