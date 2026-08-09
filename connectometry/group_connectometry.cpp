@@ -108,30 +108,10 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     ui->foi_widget->hide();
     on_roi_whole_brain_toggled(true);
 
-    // CHECK R2
-    std::string check_quality;
-    float outlier_threshold = tipl::outlier_range(db.R2.begin(),db.R2.end()).first;
-    for(unsigned int index = 0;index < db.subject_names.size();++index)
-    {
-        if(db.R2[index] < outlier_threshold)
-        {
-            if(check_quality.empty())
-                check_quality = "Poor image quality found found in subject(s): ";
-            std::ostringstream out;
-            out << " #" << index+1 << " " << db.subject_names[index];
-            check_quality += out.str();
-        }
-    }
-
     selected_count = db.subject_names.size();
     for(const auto& each : db.index_list)
         ui->index_name->addItem(QString::fromStdString(each));
 
-    if(!check_quality.empty())
-    {
-        QMessageBox::critical(this,"Warning",check_quality.c_str());
-        tipl::out() << check_quality << std::endl;
-    }
     ui->subject_demo->clear();
     ui->subject_demo->setColumnCount(1);
     ui->subject_demo->setHorizontalHeaderLabels(QStringList("Subject ID"));
