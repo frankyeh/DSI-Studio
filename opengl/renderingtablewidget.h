@@ -117,6 +117,13 @@ public:
             throw std::runtime_error("cannot find the setting value: "+name.toStdString());
         return *(iter->second);
     }
+    QModelIndex indexFor(QString name) const
+    {
+        auto iter = name_data_mapping.find(name);
+        if(iter == name_data_mapping.end())
+            return QModelIndex();
+        return createIndex(iter->second->row(),0,iter->second);
+    }
     QStringList get_param_list(QString root_name)
     {
         QStringList result;
@@ -158,6 +165,17 @@ public:
     void setMinMax(QString name,float min,float max,float step){(*treemodel)[name].setMinMax(min,max,step);}
     void setList(QString name,QStringList list){(*treemodel)[name].setList(list);}
     void initialize(void);
+    // expands the parameter's parent category and selects/scrolls to it, so a human watching the
+    // tree can see which parameter an AI-issued set_param/set_params call is changing
+    void reveal(QString name)
+    {
+        auto index = treemodel->indexFor(name);
+        if(!index.isValid())
+            return;
+        expand(treemodel->parent(index));
+        setCurrentIndex(index);
+        scrollTo(index);
+    }
 public:
     void saveParameters(void){treemodel->saveParameters();}
     void setMemorizeParameters(bool memorize){treemodel->memorize_parameters = memorize;}
