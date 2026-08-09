@@ -12,6 +12,7 @@
 #include <QUrl>
 
 #include <array>
+#include <unordered_map>
 
 class MainWindow;
 class QListWidgetItem;
@@ -53,6 +54,11 @@ struct ai_info{
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };
+
+// session registry: defined in cmd/ai.cpp alongside ai_info's own member implementations; every chat,
+// local or web, is one entry here, keyed by its own ai_info::sessions
+extern std::unordered_map<QString,ai_info> ai_infos;
+
 
 // one entry per ai_provider (Codex/Claude): resolved executable path (empty if not found) and the discovered model profiles (name -> info)
 struct ai_agent_entry
