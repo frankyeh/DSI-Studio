@@ -605,6 +605,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
         // for the single-slice layout, since those layers are cached per dimension, not per
         // multi-view composite
         tipl::out() << "R_side=" << ((*this)["orientation_convention"].toInt() ? "right" : "left");
+        {
+            static const char* dim_names[3] = {"sagittal","coronal","axial"};
+            tipl::out() << "slice_info: " << ui->SliceModality->currentText().toStdString()
+                        << " " << dim_names[cur_dim]
+                        << " " << (current_slice->slice_pos[cur_dim]+1) << "/" << current_slice->dim[cur_dim];
+        }
         if((*this)["roi_layout"].toInt() != 0)
         {
             struct channel_def{ const char* label; bool roi_track; bool simple; bool on; };
