@@ -36,49 +36,11 @@ int cnt(tipl::program_option<tipl::out>& po)
     if(!po.check("voi") || !po.check("variable_list"))
         return 1;
 
-    std::vector<unsigned int> variable_list;
-    std::string foi_str;
-
-
-    {
-
-        std::string var_text = po.get("variable_list");
-        std::replace(var_text.begin(),var_text.end(),',',' ');
-        std::istringstream var_in(var_text);
-        variable_list.assign((std::istream_iterator<int>(var_in)),(std::istream_iterator<int>()));
-        if(variable_list.empty())
-            return tipl::error() << "empty variable list",1;
-        for(auto v : variable_list)
-            if(v >= db.feature.size())
-                return tipl::error() << "invalid variable value: " << v,1;
-
-
-        if(po.get("voi") == "Intercept" || po.get("voi") == "longitudinal")
-        {
-            if(!db.is_longitudinal)
-                return tipl::error() << "The longitudinal change can only be studied in a longitudinal database.",1;
-            foi_str = "longitudinal change";
-        }
-        else
-        {
-            unsigned int voi_index = po.get("voi",variable_list.front());
-            if(voi_index >= db.feature.size())
-                return tipl::error() << "invalid variable of interest: " << voi_index,1;
-            // the variable to study needs to be included in the model
-            variable_list.push_back(voi_index);
-            foi_str = db.feature[voi_index].title;
-        }
-
-        // sort and variables, make them unique
-        std::sort(variable_list.begin(),variable_list.end());
-        variable_list.erase(std::unique(variable_list.begin(),variable_list.end()),variable_list.end());
-
-        for(auto& each : db.feature)
-            each.selected = false;
-
-        for(auto index : variable_list)
-            db.feature[index].selected = true;
-    }
+    // shared with the GUI's "set_voi" command (connectometry_db::select_voi), which also accepts
+    // feature names instead of indices; --voi/--variable_list here still take the documented indices
+    std::string foi_str = db.select_voi(po.get("voi"),po.get("variable_list"));
+    if(foi_str.empty())
+        return tipl::error() << vbc->handle->error_msg,1;
 
     {
         tipl::progress prog("connectometry parameters");
