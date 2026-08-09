@@ -47,8 +47,8 @@ public:
 public:// subject specific data
     std::vector<std::string> subject_names;
     std::vector<float> R2;
-    bool is_longitudinal = false;
-    unsigned char longitudinal_filter_type = 0; // 0: no filter 1: only increased value 2:only decreased values
+    enum class longitudinal_type : unsigned char { plain = 0, unfiltered = 1, pos_filtered = 2, neg_filtered = 3 };
+    longitudinal_type type = longitudinal_type::plain;
 public:
     size_t mask_size = 0;
     tipl::image<3,size_t> vi2si;
