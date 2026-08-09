@@ -185,7 +185,7 @@ void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice,
 {
     new_slice = slice.mirrored(cur_tracking_window.slice_view_flip_x(cur_dim),cur_tracking_window.slice_view_flip_y(cur_dim));
 }
-QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple)
+QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple,slice_update_type update_type)
 {
     QImage new_view_image;
     tipl::color_image slice_image;
@@ -211,18 +211,33 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
 
     if(!simple)
     {
-        QImage region_image;
-        cur_tracking_window.regionWidget->draw_region(current_slice->to_dif,cur_dim,pos,slice_image.shape(),display_ratio,region_image);
-        if(!region_image.isNull())
+        auto& cache = overlay_cache[cur_dim];
+        bool moved = (cache.pos != pos);
+        cache.pos = pos;
+
+        if(moved || (int(update_type) & int(region_updated)))
+        {
+            cache.region_image = QImage(); // draw_region only assigns when it has something to draw
+            cur_tracking_window.regionWidget->draw_region(current_slice->to_dif,cur_dim,pos,slice_image.shape(),display_ratio,cache.region_image);
+        }
+        if(!cache.region_image.isNull())
         {
             QPainter painter(&scaled_image);
             painter.setCompositionMode(QPainter::CompositionMode(cur_tracking_window["roi_composition"].toInt() + QPainter::CompositionMode_SourceAtop));
             painter.setOpacity(cur_tracking_window["roi_opacity"].toFloat());
-            painter.drawImage(0,0,region_image);
+            painter.drawImage(0,0,cache.region_image);
         }
 
         if(cur_tracking_window["roi_track"].toInt())
-            cur_tracking_window.tractWidget->draw_tracts(cur_dim,pos,scaled_image,display_ratio);
+        {
+            if(moved || (int(update_type) & int(tract_updated)))
+            {
+                cache.tract_image = QImage(); // draw_tracts only assigns when it has something to draw
+                cur_tracking_window.tractWidget->draw_tracts(cur_dim,pos,slice_image.shape(),display_ratio,cache.tract_image);
+            }
+            if(!cache.tract_image.isNull())
+                QPainter(&scaled_image).drawImage(0,0,cache.tract_image);
+        }
     }
 
 
@@ -421,10 +436,11 @@ void slice_view_scene::paint_image(void)
         if(need_complete_view)
         {
             complete_view_ready = false;
+            auto update_type = need_complete_view;
             need_complete_view = none;
             if(need_complete_view)
                 continue;
-            paint_image(complete_view_image,false);
+            paint_image(complete_view_image,false,update_type);
             if(need_complete_view)
                 continue;
             complete_view_ready = true;
@@ -434,7 +450,7 @@ void slice_view_scene::paint_image(void)
     }
 }
 
-void slice_view_scene::paint_image(QImage& out,bool simple)
+void slice_view_scene::paint_image(QImage& out,bool simple,slice_update_type update_type)
 {
     QImage I;
     auto current_slice = cur_tracking_window.current_slice;
@@ -442,13 +458,13 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
     float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
     simple |= cur_tracking_window.slice_need_update;
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
-        I = get_view_image(current_slice,cur_dim,current_slice->slice_pos[cur_dim],display_ratio,simple);
+        I = get_view_image(current_slice,cur_dim,current_slice->slice_pos[cur_dim],display_ratio,simple,update_type);
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
-        auto view1 = get_view_image(current_slice,0,current_slice->slice_pos[0],display_ratio,simple);
-        auto view2 = get_view_image(current_slice,1,current_slice->slice_pos[1],display_ratio,simple);
-        auto view3 = get_view_image(current_slice,2,current_slice->slice_pos[2],display_ratio,simple);
+        auto view1 = get_view_image(current_slice,0,current_slice->slice_pos[0],display_ratio,simple,update_type);
+        auto view2 = get_view_image(current_slice,1,current_slice->slice_pos[1],display_ratio,simple,update_type);
+        auto view3 = get_view_image(current_slice,2,current_slice->slice_pos[2],display_ratio,simple,update_type);
         I = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         view1_h = view1.height();
         view1_w = view1.width();
@@ -505,7 +521,7 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
             {
                 if(z < skip_slices)
                     continue;
-                auto view = get_view_image(current_slice,cur_dim,slice_pos,scale,simple);
+                auto view = get_view_image(current_slice,cur_dim,slice_pos,scale,simple,update_type);
                 if(z == skip_slices)
                     painter.fillRect(0,0,I.width(),I.height(),view.pixel(0,0));
                 painter.drawImage(QPoint(scale*int(dim[dim_order[uint8_t(cur_dim)][0]]*((z-skip_slices)%mosaic_column_count)),
