@@ -193,9 +193,36 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_atlas")
     {
-        tipl::out() << "template\tatlas\tname\tregions";
+        if(!cmd[1].empty())
+        {
+            size_t atlas_id = handle->atlas_list.size();
+            for(size_t i = 0;i < handle->atlas_list.size();++i)
+                if(handle->atlas_list[i]->name == cmd[1])
+                {
+                    atlas_id = i;
+                    break;
+                }
+            if(atlas_id == handle->atlas_list.size())
+            {
+                std::istringstream in(cmd[1]);
+                size_t index;
+                if((in >> index) && in.eof() && index < handle->atlas_list.size())
+                    atlas_id = index;
+            }
+            if(atlas_id == handle->atlas_list.size())
+                return run->failed("atlas not found: "+cmd[1]+"; use list_atlas without an argument to list atlases for the current template");
+
+            tipl::out() << "region\tname";
+            auto& region_list = handle->atlas_list[atlas_id]->get_list();
+            for(size_t r = 0;r < region_list.size();++r)
+                tipl::out() << r << "\t" << region_list[r];
+            return run->succeed();
+        }
+
+        tipl::out() << "template: " << handle->template_id; // atlas_list is always scoped to the current template
+        tipl::out() << "atlas\tname\tregions";
         for(size_t i = 0;i < handle->atlas_list.size();++i)
-            tipl::out() << handle->template_id << "\t" << i << "\t"
+            tipl::out() << i << "\t"
                         << handle->atlas_list[i]->name << "\t"
                         << handle->atlas_list[i]->get_list().size();
         return run->succeed();
