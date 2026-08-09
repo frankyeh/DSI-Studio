@@ -2309,6 +2309,11 @@ bool GLWidget::command(std::vector<std::string> cmd)
             return run->failed("cannot write " + cmd[1]);
         return true;
     }
+    if(cmd[0] == "get_camera")
+    {
+        tipl::out() << "camera: " << get_camera();
+        return run->succeed();
+    }
     if(tipl::begins_with(cmd[0],"store_camera"))
     {
         QSettings().setValue(QString("camera")+cmd[0].back(),QString(get_camera().c_str()));
