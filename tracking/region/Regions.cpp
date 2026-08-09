@@ -510,15 +510,21 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     if(handle->db.has_db()) // connectometry database
     {
         tipl::progress p("compute subject data");
-        for(unsigned int subject_index = 0;p(subject_index,handle->db.subject_names.size());++subject_index)
+        auto old_index_name = handle->db.index_name;
+        for(unsigned int index_id = 0;index_id < handle->db.index_list.size();++index_id)
         {
-            auto I = handle->db.get_index_image(subject_index);
-            float mean,max,min;
-            calculate_region_stat(I.alias(),points,mean,max,min,is_diffusion_space ? nullptr : &to_diffusion_space[0]);
-            data.push_back(mean);
-            std::ostringstream out;
-            out << handle->db.subject_names[subject_index] << (" mean_") << handle->db.index_name;
-            titles.push_back(out.str());
+            handle->db.set_current_index(index_id);
+            for(unsigned int subject_index = 0;p(subject_index,handle->db.subject_names.size());++subject_index)
+            {
+                auto I = handle->db.get_index_image(subject_index);
+                float mean,max,min;
+                calculate_region_stat(I.alias(),points,mean,max,min,is_diffusion_space ? nullptr : &to_diffusion_space[0]);
+                data.push_back(mean);
+                std::ostringstream out;
+                out << handle->db.subject_names[subject_index] << (" mean_") << handle->db.index_list[index_id];
+                titles.push_back(out.str());
+            }
         }
+        handle->db.set_current_index(old_index_name);
     }
 }
