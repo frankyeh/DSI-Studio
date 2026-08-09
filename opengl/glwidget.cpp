@@ -2355,8 +2355,19 @@ bool GLWidget::command(std::vector<std::string> cmd)
         {
             if(!get_save_image_name("screen"))
                 return run->canceled();
-            cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
-            return save_screen(grab_image());
+            if(run->source == command_source::User)
+                cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
+            if(cmd[2].empty())
+                return save_screen(grab_image());
+            std::istringstream in(cmd[2]);
+            int w = width(),h = height(),ow = width(),oh = height();
+            in >> w >> h;
+            resize(w,h);
+            resizeGL(w,h);
+            bool result = save_screen(grab_image());
+            resize(ow,oh);
+            resizeGL(ow,oh);
+            return result;
         }
         if(cmd[0] == "save_lr_screen")
         {
@@ -2374,18 +2385,8 @@ bool GLWidget::command(std::vector<std::string> cmd)
                 if(!ok || cmd[2].empty())
                     return run->canceled();
             }
-            if(!get_save_image_name("hdscreen"))
-                return run->canceled();
-            cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
-            std::istringstream in(cmd[2]);
-            int w = width(),h = height(),ow = width(),oh = height();
-            in >> w >> h;
-            resize(w,h);
-            resizeGL(w,h);
-            bool result = save_screen(grab_image());
-            resize(ow,oh);
-            resizeGL(ow,oh);
-            return result;
+            cmd[0] = "save_screen";
+            return command(cmd);
         }
         if(cmd[0] == "save_3view_screen")
         {
