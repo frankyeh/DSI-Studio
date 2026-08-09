@@ -330,7 +330,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
     for(size_t index = 0;index < info.selected_subject.size();++index)
         subject_data[index] = handle->db.subject_indices[info.selected_subject[index]];
 
-    if(!handle->db.is_longitudinal && normalize_iso &&
+    if(handle->db.type == connectometry_db::longitudinal_type::plain && normalize_iso &&
         tipl::contains(handle->db.index_list,"iso"))
     {
         tipl::out() << "normalize "+handle->db.index_name + " by iso";
@@ -406,7 +406,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         if(model->study_feature == 0)
         {
             // if db has filtered longitudinal changes to study decreased values
-            if(handle->db.longitudinal_filter_type == 2)
+            if(handle->db.type == connectometry_db::longitudinal_type::neg_filtered)
             {
                 hypothesis_inc = std::string("decreased ") + index_name;
                 hypothesis_dec = std::string("increased ") + index_name;
@@ -420,8 +420,23 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         }
         else
         {
-            hypothesis_inc = index_name;
-            hypothesis_dec = index_name;
+            std::string prefix_inc = "increased ", prefix_dec = "decreased ";
+            // a filtered longitudinal database stores a positive MAGNITUDE of change (see
+            // connectometry_db::calculate_change), not a naturally bidirectional metric -- label
+            // it as such, and use more/less rather than increased/decreased, which would read as
+            // contradictory paired with "increase/decline over time" (e.g. "decreased decline")
+            if(handle->db.type == connectometry_db::longitudinal_type::pos_filtered)
+            {
+                index_name += " increase over time";
+                prefix_inc = "more "; prefix_dec = "less ";
+            }
+            else if(handle->db.type == connectometry_db::longitudinal_type::neg_filtered)
+            {
+                index_name += " decline over time";
+                prefix_inc = "more "; prefix_dec = "less ";
+            }
+            hypothesis_inc = prefix_inc + index_name;
+            hypothesis_dec = prefix_dec + index_name;
             if(model->variables[model->study_feature].is_categorical)
             {
                 hypothesis_dec += " in " + model->variables[model->study_feature].cat_name0;
@@ -446,15 +461,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                     hypothesis_dec += std::string(" associated with lower ")+ foi_str;
                 }
             }
-
-            std::string prefix = "higher ";
-            if(handle->db.longitudinal_filter_type == 1) // db filter to only positive values
-                prefix = "increased ";
-            if(handle->db.longitudinal_filter_type == 2) // db filter to only negative values
-                prefix = "decreased ";
-
-            hypothesis_inc = prefix + hypothesis_inc;
-            hypothesis_dec = prefix + hypothesis_dec;
         }
     }
     // output report
@@ -462,7 +468,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         std::ostringstream out;
 
         out << "\nCorrelational tractography (Yeh, et al. Neuroimage 245 (2021): 118651) was derived to visualize pathways that have ";
-        if(handle->db.is_longitudinal)
+        if(handle->db.type != connectometry_db::longitudinal_type::plain)
             out << "a longitudinal change of ";
         out << handle->db.index_name;
         if(model->study_feature)
@@ -687,10 +693,10 @@ std::string group_connectometry_analysis::generate_report(void)
         html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+".jpg").filename().u8string() << "\" width=\"1200\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Tracks with " << hypo << " " << fdr << "</p>" << std::endl;
     };
-    auto report_fdr = [&](bool sig,std::string hypo,std::string result){
+    auto report_fdr = [&](bool sig,float fdr,std::string hypo,std::string result){
         html_report << "<p>";
         if(sig)
-            html_report << " The connectometry analysis found tracts showing ";
+            html_report << " The connectometry analysis found tracts showing " << (fdr < 0.05f ? "significantly " : "");
         else
             html_report << " The connectometry analysis did not find tracts showing significant ";
         html_report << hypo << " " << result << ".</p>" << std::endl;
@@ -722,13 +728,13 @@ std::string group_connectometry_analysis::generate_report(void)
 
     if(prog == 100)
         output_track_image("inc",hypothesis_inc,fdr_result_pos);
-    report_fdr(has_inc_finding(),hypothesis_inc,fdr_result_pos);
+    report_fdr(has_inc_finding(),fdr_inc[length_threshold_voxels],hypothesis_inc,fdr_result_pos);
 
     html_report << "<h3>Tracks with " << hypothesis_dec << "</h3>" << std::endl;
 
     if(prog == 100)
         output_track_image("dec",hypothesis_dec,fdr_result_neg);
-    report_fdr(has_dec_finding(),hypothesis_dec,fdr_result_neg);
+    report_fdr(has_dec_finding(),fdr_dec[length_threshold_voxels],hypothesis_dec,fdr_result_neg);
 
     if(prog == 100)
     {
