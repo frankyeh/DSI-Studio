@@ -42,7 +42,7 @@ public:
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                                  std::vector<std::vector<std::vector<float> > >& lesser);
     void draw_tracts(unsigned char dim,int pos,
-                     QImage& scaledimage,float display_ratio);
+                     const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& tract_image);
 
     QString output_format(void);
     template<typename fun_type>
