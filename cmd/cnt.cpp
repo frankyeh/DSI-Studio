@@ -51,7 +51,7 @@ int cnt(tipl::program_option<tipl::out>& po)
             vbc->no_tractogram = 1;
         }
         vbc->region_pruning = (po.get("region_pruning",1) == 1);
-        if(!db.is_longitudinal)
+        if(db.type == connectometry_db::longitudinal_type::plain)
             vbc->normalize_iso = (po.get("normalize_iso",1) == 1);
         vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
