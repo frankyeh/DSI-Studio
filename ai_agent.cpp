@@ -361,7 +361,7 @@ AIAgent::AIAgent(MainWindow* parent):
         set_ai_status();
     });
 
-    for(const auto& info : dir.entryInfoList(
+    for(const auto& info : QDir(ai_project_dir).entryInfoList(
             {"*.jsonl"},QDir::Files,QDir::Time|QDir::Reversed))
     {
         auto session = QUrl::fromPercentEncoding(
