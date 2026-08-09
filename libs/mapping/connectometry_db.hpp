@@ -52,7 +52,10 @@ public:
     bool set_current_index(const std::string& name);
 public://longitudinal studies
     std::vector<std::pair<size_t,size_t> > match;
-    void calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso);
+    void match_consecutive_subjects(void);
+    bool match_subjects_from_file(const std::string& file_name);
+    bool calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso);
+    std::string suggest_output_suffix(void) const;
 public:
     connectometry_db(){}
     bool has_db(void)const{return !subject_names.empty();}
