@@ -1217,14 +1217,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     {
         if(locked_target)
             return true;
-        bool busy_elsewhere = false;
-        for(auto* each : QApplication::allWidgets())
-            if(each->property("busy").toBool())
-            {
-                busy_elsewhere = true;
-                break;
-            }
-        if(busy_elsewhere)
+        auto all_widgets = QApplication::allWidgets();
+        if(std::any_of(all_widgets.begin(),all_widgets.end(),
+                        [](auto* each){return each->property("busy").toBool();}))
         {
             error = "another CMD is running; check opened windows";
             return false;
@@ -1243,17 +1238,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     for(const auto& cmd : cmds)
     {
         auto command_name = QString::fromUtf8(cmd[0]);
-        auto command_result = [&](bool ok,const QString& output = {},const QString& error = {}) // avoids repeating {"cmd",command_name} everywhere
-        {
-            QJsonObject result{{"cmd",command_name},{"status",ok ? "success" : "error"}};
-            if(!output.isEmpty())
-                result["output"] = output;
-            if(!error.isEmpty())
-                result["error"] = error;
-            return result;
-        };
-        bool hint = true; // false for state/operational errors (busy, window not found, ...) that reading the manuals won't fix
-        auto manual_hint = [&](QString msg){return hint ? msg+". Read DSI Studio Manuals and retry." : msg;};
+        bool hint = true; // false for state/operational errors that reading the manuals won't fix; most such cases are now reported via output instead of error, so this only matters for whatever's left
         auto window_before = info.current_window;
         QString output,error;
         QString* prev_capture; // a reentrant request handled during this command's processEvents() calls also captures; restore instead of clearing
@@ -1267,8 +1252,11 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         auto base_cwd = session_cwd.isEmpty() ? prev_cwd : session_cwd;
         if(base_cwd != prev_cwd)
             QDir::setCurrent(base_cwd);
-        auto uncapture_and_unlock = [&] // shared cleanup for every exit path below: stop capturing console output for this command,
-        {                               // and release a stale lock if the command retargeted (open_fib/open_src/open_image/set_window)
+        // reports error/output, whichever applies; caller writes "if(!finish(...)) break; continue;". Also the shared
+        // cleanup for every exit path: stops capturing console output for this command, and releases a stale lock
+        // if the command retargeted (open_fib/open_src/open_image/set_window)
+        auto finish = [&](const QString& output = {})
+        {
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
                 console.capture = prev_capture;
@@ -1281,17 +1269,14 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             QDir::setCurrent(prev_cwd);
             if(info.current_window != window_before)
                 unlock_target();
-        };
-        auto finish = [&](const QString& output = {}) // reports error/output, whichever applies; caller still writes "if(!finish(...)) break; continue;"
-        {
-            uncapture_and_unlock();
+
+            QJsonObject result{{"cmd",command_name},{"status",error.isEmpty() ? "success" : "error"}};
+            if(!output.isEmpty())
+                result["output"] = output;
             if(!error.isEmpty())
-            {
-                results.append(command_result(false,output,manual_hint(error)));
-                return false;
-            }
-            results.append(command_result(true,output));
-            return true;
+                result["error"] = hint ? error+". Read DSI Studio Manuals and retry." : error;
+            results.append(result);
+            return error.isEmpty();
         };
         tipl::progress prog(command_record(info.current_window,cmd,command_source::AI));
 
@@ -1301,7 +1286,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                command_name == "minimize" || command_name == "maximize")
             {
                 // instantaneous window-manager calls: no batching benefit from resolve_target's lock, just a plain lookup
-                hint = false; // any error below is a state/policy issue, not something the manuals would resolve
                 if(auto* target = find_window(info.current_window))
                 {
                     if(command_name == "close" && target == this)
@@ -1323,77 +1307,53 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
                     }
                 }
-                else
-                    error = "target window not found, terminated by user? Use set_window to select a window first.";
-                if(!finish())
-                    break;
-                continue;
+                else // not an agent mistake: most likely a local user closed it -- informational, not an error
+                    output = "target window not found, terminated by user? Use set_window to select a window first.";
             }
-
-            if(command_name == "set_title")
+            else if(command_name == "set_title")
             {
                 if(cmd.size() != 2 || cmd[1].empty())
                     error = "usage: set_title <title>";
                 else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
                     error = "cannot save title";
-                if(!finish())
-                    break;
-                continue;
             }
-
-            if(command_name == "log")
+            else if(command_name == "log")
             {
-                {
-                    std::lock_guard<std::mutex> lock(console.edit_buf);
-                    if(info.log_position == quint64(-1))
-                        info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
-                    auto end = console.total_size;
-                    auto first = end-quint64(console.history.size());
-                    // any parameter (cmd[1] or cmd[2]) pulls everything still retained in the console
-                    // buffer instead of just what's new since this session's own cursor
-                    bool full = (cmd.size() > 1 && !cmd[1].empty()) || (cmd.size() > 2 && !cmd[2].empty());
-                    auto begin = full ? first : std::max(info.log_position,first);
-                    bool capped = end-begin > 16*1024;
-                    if(capped)
-                        begin = end-16*1024;
-                    auto text = console.history.mid(qsizetype(begin-first));
-                    if(capped)
-                        text.remove(0,text.indexOf('\n')+1);
-                    text = strip_ansi(text);
-                    QStringList lines;
-                    for(const auto& line : text.split('\n'))
-                        if(!line.contains("[DEBUG]"))
-                            lines << line;
-                    output = lines.join('\n').right(4*1024);
-                    info.log_position = end;
-                }
-                if(!finish(output))
-                    break;
-                continue;
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                if(info.log_position == quint64(-1))
+                    info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
+                auto end = console.total_size;
+                auto first = end-quint64(console.history.size());
+                // any parameter (cmd[1] or cmd[2]) pulls everything still retained in the console
+                // buffer instead of just what's new since this session's own cursor
+                bool full = (cmd.size() > 1 && !cmd[1].empty()) || (cmd.size() > 2 && !cmd[2].empty());
+                auto begin = full ? first : std::max(info.log_position,first);
+                bool capped = end-begin > 16*1024;
+                if(capped)
+                    begin = end-16*1024;
+                auto text = console.history.mid(qsizetype(begin-first));
+                if(capped)
+                    text.remove(0,text.indexOf('\n')+1);
+                text = strip_ansi(text);
+                QStringList lines;
+                for(const auto& line : text.split('\n'))
+                    if(!line.contains("[DEBUG]"))
+                        lines << line;
+                output = lines.join('\n').right(4*1024);
+                info.log_position = end;
             }
-
-            if(command_name == "set_window")
+            else if(command_name == "set_window")
             {
                 auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
-                QString new_window = "main";
-                if(!param.isEmpty())
+                if(param.isEmpty() || find_window(param))
                 {
-                    if(!find_window(param))
-                        error = "set_window: window \""+param+"\" not found, terminated by user?";
-                    else
-                        new_window = param;
+                    info.current_window = param.isEmpty() ? "main" : param; // finish()'s generic window_before check below releases the previous target's lock
+                    output = "current window: "+info.current_window;
                 }
-                if(error.isEmpty())
-                {
-                    info.current_window = new_window; // finish()'s generic window_before check below releases the previous target's lock
-                    output = "current window: "+new_window;
-                }
-                if(!finish(output))
-                    break;
-                continue;
+                else // not an error: informational, current window is left unchanged
+                    output = "window \""+param+"\" not found, terminated by user? current window remains: "+info.current_window;
             }
-
-            if(command_name == "list_window")
+            else if(command_name == "list_window")
             {
                 auto* modal = QApplication::activeModalWidget();
                 bool application_busy = tipl::status_list.size() > 1;
@@ -1441,21 +1401,21 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         {"total",int(s.total)},
                         {"at",QString::fromStdString(s.at)}});
                 }
-                if(!finish(QString::fromUtf8(QJsonDocument(QJsonObject{
+                output = QString::fromUtf8(QJsonDocument(QJsonObject{
                     {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
                     {"current_window",info.current_window},
                     {"progress",progress},
-                    {"windows",windows}}).toJson(QJsonDocument::Compact))))
-                    break;
-                continue;
+                    {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
-
-            if(command(cmd,command_source::AI)) // handled by MainWindow directly: nothing more to do beyond recording the attempt
+            else if(command(cmd,command_source::AI)) // handled by MainWindow directly: nothing more to do beyond recording the attempt
                 info.record_request(command_name);
             else if(error_msg == "unknown command: "+cmd[0])
             {
                 if(!resolve_target(error))
-                    hint = false; // busy/not-found is a state issue, not something the manuals would resolve
+                {
+                    output = error; // busy-elsewhere / window-not-found: a status report, not an agent mistake
+                    error.clear();
+                }
                 else
                 {
                     info.record_request(command_name,locked_target);
