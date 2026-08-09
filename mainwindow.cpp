@@ -606,10 +606,37 @@ void MainWindow::addSrc(QString filename)
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 extern QByteArray default_geo,default_state;
-void MainWindow::report_and_target_window(QWidget* window,const char* type)
+QString command_window_id(QWidget* window)
 {
-    tipl::out() << type << " window created, id: " << command_window_id(window,type).toStdString();
-    ai_agent->update_current_window(window,type);
+    // the one place that maps a widget to its AI-addressable window type; everything downstream
+    // that needs the type back out of an id string uses command_window_type(const QString&) instead
+    const char* type =
+        qobject_cast<MainWindow*>(window) ? "main" :
+        qobject_cast<tracking_window*>(window) ? "tracking" :
+        qobject_cast<reconstruction_window*>(window) ? "recon" :
+        qobject_cast<group_connectometry*>(window) ? "connectometry" :
+        qobject_cast<view_image*>(window) ? "image" : nullptr;
+    return type ? command_window_id(window,type) : QString();
+}
+QString command_window_type(const QString& id)
+{
+    if(id == "main")
+        return "main";
+    if(id.startsWith("tracking"))
+        return "tracking";
+    if(id.startsWith("recon"))
+        return "recon";
+    if(id.startsWith("connectometry"))
+        return "connectometry";
+    if(id.startsWith("image"))
+        return "image";
+    return QString();
+}
+void MainWindow::report_and_target_window(QWidget* window)
+{
+    auto id = command_window_id(window);
+    tipl::out() << "window created, id: " << id.toStdString(); // id itself is "<type><hex>", the type needs no separate extraction here
+    ai_agent->update_current_window(window);
 }
 bool MainWindow::loadFib(QString filename)
 {
@@ -622,7 +649,7 @@ bool MainWindow::loadFib(QString filename)
         return false;
     }
     tracking_windows.push_back(new tracking_window(this,new_handle));
-    report_and_target_window(tracking_windows.back(),"tracking");
+    report_and_target_window(tracking_windows.back());
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
     if(filename.contains("/presentation/"))
@@ -672,7 +699,7 @@ void MainWindow::loadNii(QStringList file_names)
         delete dialog;
         return;
     }
-    report_and_target_window(dialog,"image");
+    report_and_target_window(dialog);
     dialog->show();
 }
 
@@ -688,7 +715,7 @@ bool MainWindow::loadSrc(QStringList filenames)
     {
         tipl::progress prog("SRC reconstruction");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
-        report_and_target_window(new_mdi,"recon");
+        report_and_target_window(new_mdi);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
         if(filenames.size() == 1)
@@ -1084,26 +1111,36 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 static std::mutex shell_tasks_mutex; // run_shell (curl) tasks still in flight: id -> original command text
 static QMap<QString,QString> shell_tasks;
 
+// forwards cmd to whichever AI-addressable window type target actually is; false with error left empty means
+// target isn't one of these (e.g. it's main itself) and the caller should fall back to its own error_msg
+static bool command_window(QWidget* target,const std::vector<std::string>& cmd,command_source source,QString& error)
+{
+    auto run = [&](auto* window)
+    {
+        if(window->command(cmd,source))
+            return true;
+        error = QString::fromUtf8(window->error_msg);
+        if(error.isEmpty())
+            error = "command failed";
+        return false;
+    };
+    if(auto* w = qobject_cast<tracking_window*>(target))
+        return run(w);
+    if(auto* w = qobject_cast<reconstruction_window*>(target))
+        return run(w);
+    if(auto* w = qobject_cast<view_image*>(target))
+        return run(w);
+    if(auto* w = qobject_cast<group_connectometry*>(target))
+        return run(w);
+    return false;
+}
+
 QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 {
     auto fail = [](const QString& error)
     {
         return QJsonObject{{"status","error"},{"result",QJsonArray{
             QJsonObject{{"status","error"},{"error",error}}}}};
-    };
-    // "main"/"trackingXXXX"/"reconXXXX"/"imageXXXX"/"connectometryXXXX", or empty if not an AI-addressable window
-    auto ai_window_id = [](QWidget* window)
-    {
-        if(qobject_cast<MainWindow*>(window))
-            return command_window_id(window,"main");
-        if(qobject_cast<tracking_window*>(window))
-            return command_window_id(window,"tracking");
-        if(qobject_cast<reconstruction_window*>(window))
-            return command_window_id(window,"recon");
-        if(qobject_cast<group_connectometry*>(window))
-            return command_window_id(window,"connectometry");
-        return qobject_cast<view_image*>(window) ?
-            command_window_id(window,"image") : QString();
     };
     // removes ANSI escape/color codes from captured command output before it's reported to the AI agent
     auto strip_ansi = [](QString text)
@@ -1169,7 +1206,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         if(id == "main")
             return this;
         for(auto* each : QApplication::allWidgets())
-            if(ai_window_id(each) == id)
+            if(command_window_id(each) == id)
                 return each;
         return nullptr;
     };
@@ -1341,38 +1378,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 QString new_window = "main";
                 if(!param.isEmpty())
                 {
-                    bool bare_type = (param == "tracking" || param == "recon" || param == "image" || param == "connectometry");
-                    if(bare_type)
-                    {
-                        auto file_name = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString();
-                        if(file_name.isEmpty())
-                            error = "set_window: a "+param+" window needs a file name (2nd param) to tell it apart from other open "+param+" windows";
-                        else
-                        {
-                            QWidget* found = nullptr;
-                            for(auto* each : QApplication::allWidgets())
-                            {
-                                auto id = ai_window_id(each);
-                                if(id.startsWith(param) && id != param &&
-                                   QFileInfo(each->windowTitle()).fileName().contains(file_name,Qt::CaseInsensitive))
-                                {
-                                    found = each;
-                                    break;
-                                }
-                            }
-                            if(!found)
-                                error = "set_window: no "+param+" window matching \""+file_name+"\" is open";
-                            else
-                                new_window = ai_window_id(found);
-                        }
-                    }
+                    if(!find_window(param))
+                        error = "set_window: window \""+param+"\" not found, terminated by user?";
                     else
-                    {
-                        if(!find_window(param))
-                            error = "set_window: window \""+param+"\" not found, terminated by user?";
-                        else
-                            new_window = param;
-                    }
+                        new_window = param;
                 }
                 if(error.isEmpty())
                 {
@@ -1391,7 +1400,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 QJsonObject windows;
                 for(auto* each : QApplication::allWidgets())
                 {
-                    auto id = ai_window_id(each);
+                    auto id = command_window_id(each);
                     if(id.isEmpty())
                         continue;
                     bool busy = each->property("busy").toBool();
@@ -1453,23 +1462,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 else
                 {
                     info.record_request(command_name,locked_target);
-                    auto execute = [&](auto* window,bool success)
-                    {
-                        if(!success)
-                        {
-                            auto window_error = QString::fromUtf8(window->error_msg);
-                            error = window_error.isEmpty() ? "command failed" : window_error;
-                        }
-                    };
-                    if(auto* window = qobject_cast<tracking_window*>(locked_target))
-                        execute(window,window->command(cmd,command_source::AI));
-                    else if(auto* window = qobject_cast<reconstruction_window*>(locked_target))
-                        execute(window,window->command(cmd,command_source::AI));
-                    else if(auto* window = qobject_cast<view_image*>(locked_target))
-                        execute(window,window->command(cmd,command_source::AI));
-                    else if(auto* window = qobject_cast<group_connectometry*>(locked_target))
-                        execute(window,window->command(cmd,command_source::AI));
-                    else
+                    if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
                         error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
                 }
             }
@@ -1924,7 +1917,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         {
             auto* window = new group_connectometry(this,database,file);
             window->setWindowTitle(file);
-            report_and_target_window(window,"connectometry");
+            report_and_target_window(window);
             window->setAttribute(Qt::WA_DeleteOnClose);
             window->show();
         }
@@ -2047,7 +2040,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             delete window;
             return fail(message);
         }
-        report_and_target_window(window,"image");
+        report_and_target_window(window);
         window->show();
         return true;
     }
