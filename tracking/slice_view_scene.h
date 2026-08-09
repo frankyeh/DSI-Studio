@@ -62,8 +62,21 @@ public:
     bool complete_view_ready = false;
     int view1_h = 0; // for 3 views updating 3D
     int view1_w = 0; // for 3 views updating 3D
-    void paint_image(QImage& I,bool simple);
+    void paint_image(QImage& I,bool simple,slice_update_type update_type = position_updated);
     void paint_image(void);
+private:
+    // region/tract layers are the expensive part of a repaint; cached per dimension (sagittal/
+    // coronal/axial) and only recomputed when the triggering update_type says that layer changed,
+    // or the slice position moved out from under the cache
+    struct overlay_layer_cache{
+        int pos = -1;
+        QImage region_image,tract_image;
+    } overlay_cache[3];
+public:
+    // last cached region/tract layer for dimension `dim`, null if there was nothing to draw there;
+    // lets a caller (e.g. preview_screen) reuse them directly instead of re-triggering a repaint
+    QImage region_layer(unsigned char dim) const { return overlay_cache[dim].region_image; }
+    QImage tract_layer(unsigned char dim) const { return overlay_cache[dim].tract_image; }
 public:
     bool show_grid = false;
     void new_annotated_image(void);
@@ -71,7 +84,7 @@ public:
     void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float tic_ratio);
     void show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim);
     void show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim);
-    QImage get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple);
+    QImage get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple,slice_update_type update_type = position_updated);
     void add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
 public:
