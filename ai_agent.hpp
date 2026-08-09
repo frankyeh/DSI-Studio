@@ -73,13 +73,16 @@ class AIAgent : public QMainWindow
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
 
-    // current agent/model selection, shown via update_agent_status_label() instead of the visible combo boxes this used to be
+    // app-wide default agent/model: only consulted for a chat that doesn't exist yet (New Chat's pre-fill, and
+    // "Change Agent/Model" with nothing selected) -- an existing chat's own ai_info::model_settings is always
+    // authoritative for that chat once created, never reconciled against these
     std::array<ai_agent_entry,2> agent_entries; // indexed by ai_provider
     int current_agent_index = 0;
     QString current_model_name = "default";
     QJsonObject current_model_info;
     void update_agent_status_label();
-    void try_set_current_model(const QString& name); // no-op if name is unknown, matching non-editable QComboBox::setCurrentText
+    void try_set_current_model(const QString& name); // no-op if name is unknown, matching non-editable QComboBox::setCurrentText; writes the app-wide default above, not any chat's own model
+    void set_chat_model(ai_info& info,const QString& name) const; // same resolution as try_set_current_model(), but writes directly into this chat's own model_settings and persists it
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
     QNetworkAccessManager github_manager;
@@ -90,7 +93,6 @@ class AIAgent : public QMainWindow
     qint64 github_last_id = 0;
     QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
     quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
-    bool web_agent_active_session = false; // true from New Chat (web agent) until New Chat starts a local one
     QString web_agent_session_id; // the actual chat this GitHub connection belongs to, independent of sidebar selection; survives Stop/Resume, cleared only on a fresh (non-resume) start
 
     QNetworkRequest github_request(const QUrl&) const;
@@ -105,11 +107,12 @@ class AIAgent : public QMainWindow
     void send_pending_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     enum class send_action {Send,StopLocal,StopWeb,ResumeWeb};
-    send_action current_send_action() const; // single source of truth for what the Send/Stop/Resume button means right now; update_send_button() only turns this into a label, on_ai_send_message_clicked() only executes it
-    void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
+    send_action current_send_action() const; // single source of truth for what the Send/Stop/Resume button means right now; update_send_button() only turns this into a label, on_ai_send_message_clicked() only executes it. Send (disabled/no-op) whenever no chat is selected -- every other action requires an existing chat
+    void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
     bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
-    bool try_connect_github_issue(const QString& url,bool resume); // connect_github_issue() plus the shared success/failure UI feedback
+    bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
+    ai_info* create_new_chat(const QString& agent); // drops any abandoned empty placeholder first, then creates+selects a fresh "new:<uuid>" chat for the given agent name ("Codex"/"Claude"/"ChatGPT(Web)"); for web, this exists even before a connection is attempted, so a failed connection is just this chat's own Error state rather than needing separate anonymous-session tracking
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               int& agent_index,QString& value); // value: model name for a local agent, issue URL for ChatGPT (web) -- mutually exclusive, caller checks agent_index == ai_provider::ChatGPT
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
@@ -126,7 +129,7 @@ class AIAgent : public QMainWindow
     void start_ai(QString,const QString&,ai_input);
     QStringList configure_codex(const ai_launch&,QString,const QString&);
     QStringList configure_claude(const ai_launch&,QString,const QString&,bool);
-    ai_launch prepare_ai(ai_provider,QString&,const QString&,ai_input);
+    ai_launch prepare_ai(ai_provider,const QJsonObject& model_setting,QString&,const QString&,ai_input); // model_setting: resolved by the caller (the chat's own info.model_settings, or the app-wide default if no chat exists yet) -- prepare_ai no longer re-resolves or reconciles it
 
 public:
     explicit AIAgent(MainWindow*);
