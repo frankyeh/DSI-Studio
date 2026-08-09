@@ -13,6 +13,7 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
+#include "mainwindow.h"
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
                                      const QModelIndex &index) const
@@ -394,7 +395,9 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             for(const auto& kv : tipl::split(param,'&'))
             {
                 auto pos = kv.find('=');
-                if(pos != std::string::npos && !set_one(kv.substr(0,pos),kv.substr(pos+1)))
+                if(pos == std::string::npos)
+                    return fail("invalid parameter: "+kv);
+                if(!set_one(kv.substr(0,pos),kv.substr(pos+1)))
                     return fail("invalid parameter: "+kv.substr(0,pos));
             }
         return true;
@@ -518,6 +521,8 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             new_data->slices.push_back(std::make_shared<slice_model>("inc_t",result_fib->inc_ptr[0],new_data->dim));
         }
         tracking_window* current_tracking_window = new tracking_window(this,new_data);
+        if(auto* mw = qobject_cast<MainWindow*>(parentWidget()))
+            mw->report_and_target_window(current_tracking_window,"tracking");
         current_tracking_window->set_memorize_parameters(false);
         current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
         current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
