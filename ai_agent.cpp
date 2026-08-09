@@ -1072,8 +1072,15 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         auto agent = request["agent"].toString().trimmed();
         if(agent.isEmpty())
             return void(reply = status_reply("error","missing agent for new session"));
-        if(!(found = ai_info::create(session,agent)))
-            return void(reply = status_reply("error","invalid agent: include Codex, Claude, or ChatGPT in the agent name"));
+        // built directly rather than via ai_info::create(): a pipe-dispatched session is always a log/routing
+        // record for this dispatcher, never a real local Codex/Claude subprocess, regardless of what the
+        // calling agent names itself -- it can't send a live chat message or have its model changed from the
+        // GUI (see current_send_action()/on_ai_agent_status_clicked())
+        auto& new_info = ai_infos[session];
+        new_info.sessions = session;
+        new_info.provider = ai_provider::AgentServer;
+        new_info.agent_name = agent;
+        found = &new_info;
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
         found->save_config();
@@ -1572,6 +1579,9 @@ void AIAgent::update_agent_status_label()
 {
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
     auto* info = selected_info();
+    if(info && info->provider == ai_provider::AgentServer) // a log/routing record, no agent/model of its own to show or change
+        return void(ui->ai_agent_status->setVisible(false));
+    ui->ai_agent_status->setVisible(true);
     if(info && info->provider == ai_provider::ChatGPT)
     {
         // prefer the live connection's own link: model_settings["github_issue_url"] only updates once a request
@@ -1647,7 +1657,9 @@ AIAgent::send_action AIAgent::current_send_action() const
 
 void AIAgent::update_send_button()
 {
-    ui->ai_send_message->setEnabled(bool(selected_info())); // Send with no chat selected is a no-op -- disable rather than silently ignore the click
+    auto* info = selected_info();
+    // disabled with no chat selected, and for AgentServer (a log/routing record, no local subprocess to send to)
+    ui->ai_send_message->setEnabled(info && info->provider != ai_provider::AgentServer);
     switch(current_send_action())
     {
     case send_action::StopWeb:
@@ -1831,6 +1843,8 @@ void AIAgent::on_ai_agent_status_clicked()
             try_connect_github_issue(value);
             return;
         }
+        if(info.provider == ai_provider::AgentServer) // no local agent/model of its own to change
+            return;
         QDialog dialog(this);
         dialog.setWindowTitle("Change Model");
         QFormLayout layout(&dialog);
@@ -2377,7 +2391,8 @@ void AIAgent::on_ai_send_message_clicked()
         info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         return;
     case send_action::Send:
-        if(!info || text.isEmpty()) // no chat selected yet: use New Chat first, matching the button being disabled in that state
+        // AgentServer: no local subprocess -- Send is disabled (see update_send_button()), this is just the safety net
+        if(!info || info->provider == ai_provider::AgentServer || text.isEmpty())
             return;
         start_ai(info->sessions,text,ai_input::User);
         update_send_button();
