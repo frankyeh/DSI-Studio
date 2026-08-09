@@ -2355,6 +2355,23 @@ bool GLWidget::command(std::vector<std::string> cmd)
         {
             return I.save(cmd[1].c_str()) ? true : run->failed("cannot save screen to " + cmd[1]);
         };
+        // cmd[2], if given as "width height", temporarily resizes the GL widget around the grab --
+        // shared by every save_xxx_screen command below except save_hd_screen, which prompts for a
+        // size interactively and then delegates to save_screen instead of using this directly
+        auto with_resize = [&](auto&& grab)->QImage
+        {
+            if(cmd[2].empty())
+                return grab();
+            std::istringstream in(cmd[2]);
+            int w = width(),h = height(),ow = width(),oh = height();
+            in >> w >> h;
+            resize(w,h);
+            resizeGL(w,h);
+            QImage I = grab();
+            resize(ow,oh);
+            resizeGL(ow,oh);
+            return I;
+        };
 
         if(cmd[0] == "save_screen")
         {
@@ -2362,23 +2379,13 @@ bool GLWidget::command(std::vector<std::string> cmd)
                 return run->canceled();
             if(run->source == command_source::User)
                 cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
-            if(cmd[2].empty())
-                return save_screen(grab_image());
-            std::istringstream in(cmd[2]);
-            int w = width(),h = height(),ow = width(),oh = height();
-            in >> w >> h;
-            resize(w,h);
-            resizeGL(w,h);
-            bool result = save_screen(grab_image());
-            resize(ow,oh);
-            resizeGL(ow,oh);
-            return result;
+            return save_screen(with_resize([&](){return grab_image();}));
         }
         if(cmd[0] == "save_lr_screen")
         {
             if(!get_save_image_name("lr_screen"))
                 return run->canceled();
-            return save_screen(getLRView());
+            return save_screen(with_resize([&](){return getLRView();}));
         }
         if(cmd[0] == "save_hd_screen")
         {
@@ -2397,19 +2404,19 @@ bool GLWidget::command(std::vector<std::string> cmd)
         {
             if(!get_save_image_name("3view"))
                 return run->canceled();
-            return save_screen(get3View(0));
+            return save_screen(with_resize([&](){return get3View(0);}));
         }
         if(cmd[0] == "save_h3view_screen")
         {
             if(!get_save_image_name("h3view"))
                 return run->canceled();
-            return save_screen(get3View(1));
+            return save_screen(with_resize([&](){return get3View(1);}));
         }
         if(cmd[0] == "save_v3view_screen")
         {
             if(!get_save_image_name("v3view"))
                 return run->canceled();
-            return save_screen(get3View(2));
+            return save_screen(with_resize([&](){return get3View(2);}));
         }
 
     }
