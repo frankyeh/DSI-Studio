@@ -105,11 +105,11 @@ bool connectometry_db::load_db_from_fib(fib_data* handle_)
     // new db can be all positive, the checking the report text can confirm longitudinal setting
     if(handle->report.find("longitudinal scans were calculated") != std::string::npos)
     {
-        is_longitudinal = true;
+        type = longitudinal_type::unfiltered;
         if(handle->report.find("Only increased longitudinal changes") != std::string::npos)
-            longitudinal_filter_type = 1;
+            type = longitudinal_type::pos_filtered;
         if(handle->report.find("Only decreased longitudinal changes") != std::string::npos)
-            longitudinal_filter_type = 2;
+            type = longitudinal_type::neg_filtered;
     }
 
 
