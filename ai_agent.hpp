@@ -72,7 +72,6 @@ class AIAgent : public QMainWindow
     QString ai_status_activity;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
-    int active_ai_processes = 0;
 
     // current agent/model selection, shown via update_agent_status_label() instead of the visible combo boxes this used to be
     std::array<ai_agent_entry,2> agent_entries; // indexed by ai_provider
@@ -105,12 +104,14 @@ class AIAgent : public QMainWindow
     void publish_github_result(QJsonObject);
     void send_pending_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
+    enum class send_action {Send,StopLocal,StopWeb,ResumeWeb};
+    send_action current_send_action() const; // single source of truth for what the Send/Stop/Resume button means right now; update_send_button() only turns this into a label, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume depending on web_agent_active_session
     bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
     bool try_connect_github_issue(const QString& url,bool resume); // connect_github_issue() plus the shared success/failure UI feedback
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
-                              bool& web,int& agent_index,QString& model_name,QString& issue_url);
+                              int& agent_index,QString& value); // value: model name for a local agent, issue URL for ChatGPT (web) -- mutually exclusive, caller checks agent_index == ai_provider::ChatGPT
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);

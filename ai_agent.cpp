@@ -395,7 +395,6 @@ AIAgent::AIAgent(MainWindow* parent):
         if(auto* process = ai_infos[session].processes)
         {
             process->disconnect(); process->kill(); process->deleteLater(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
-            active_ai_processes = std::max(0,active_ai_processes-1);
             set_ai_status();
         }
         if(session == web_agent_session_id)
@@ -1017,7 +1016,6 @@ void AIAgent::closeEvent(QCloseEvent* event)
             process->kill();
             process->deleteLater();
         }
-    active_ai_processes = 0;
     disconnect_github_issue();
     web_agent_active_session = false;
     update_send_button();
@@ -1035,7 +1033,9 @@ void AIAgent::set_ai_status(QString status,bool temporary)
         (status_info->provider == ai_provider::ChatGPT ?
             (!github_issue_api.isEmpty() && status_info->sessions == web_agent_session_id) :
             bool(status_info->processes)) :
-        (web_agent_active_session ? !github_issue_api.isEmpty() : active_ai_processes > 0);
+        (web_agent_active_session ? !github_issue_api.isEmpty() :
+            std::any_of(ai_infos.begin(),ai_infos.end(),
+                [](const auto& item){return bool(item.second.processes);}));
     if(ongoing && (status.isEmpty() || temporary))
     {
         status = ai_status_activity;
@@ -1627,7 +1627,7 @@ ai_info* AIAgent::selected_info() const
     return item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
 }
 
-void AIAgent::update_send_button()
+AIAgent::send_action AIAgent::current_send_action() const
 {
     auto* info = selected_info();
     // selection wins whenever there is one, matching update_agent_status_label()/show_ai_project(): web_agent_active_session
@@ -1635,12 +1635,28 @@ void AIAgent::update_send_button()
     if(info ? info->provider == ai_provider::ChatGPT : web_agent_active_session)
     {
         bool connected = !github_issue_api.isEmpty() && (!info || info->sessions == web_agent_session_id);
-        ui->ai_send_message->setText(connected ? "Stop" : "Resume");
-        return;
+        return connected ? send_action::StopWeb : send_action::ResumeWeb;
     }
     bool running = info && info->processes;
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
-    ui->ai_send_message->setText(running && !has_input ? "Stop" : "Send");
+    return (running && !has_input) ? send_action::StopLocal : send_action::Send;
+}
+
+void AIAgent::update_send_button()
+{
+    switch(current_send_action())
+    {
+    case send_action::StopWeb:
+    case send_action::StopLocal:
+        ui->ai_send_message->setText("Stop");
+        break;
+    case send_action::ResumeWeb:
+        ui->ai_send_message->setText("Resume");
+        break;
+    case send_action::Send:
+        ui->ai_send_message->setText("Send");
+        break;
+    }
 }
 
 bool AIAgent::is_status_target(const QString& session) const
@@ -1652,7 +1668,7 @@ bool AIAgent::is_status_target(const QString& session) const
 
 // resume only ever applies to the web agent: the Agent combo is locked to ChatGPT and disabled, only the issue URL (defaulted to the last one) can still be changed
 bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
-                                   bool& web,int& agent_index,QString& model_name,QString& issue_url)
+                                   int& agent_index,QString& value)
 {
     QDialog dialog(this);
     dialog.setWindowTitle(title);
@@ -1716,10 +1732,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     if(dialog.exec() != QDialog::Accepted)
         return false;
 
-    web = agent.currentIndex() == int(ai_provider::ChatGPT);
     agent_index = agent.currentIndex();
-    model_name = web ? QString() : model_combo_key(model);
-    issue_url = issue_url_edit.text().trimmed();
+    value = (agent_index == int(ai_provider::ChatGPT)) ? issue_url_edit.text().trimmed() : model_combo_key(model);
     return true;
 }
 
@@ -1734,12 +1748,12 @@ void AIAgent::new_chat_dialog(bool resume)
                 return;
             }
 
-    bool web = false;
     int agent_index = 0;
-    QString model_name,issue_url;
+    QString value;
     if(!run_new_chat_dialog(resume,resume ? "Resume Chat" : "New Chat",resume ? "Resume" : "Start",
-                             web,agent_index,model_name,issue_url))
+                             agent_index,value))
         return;
+    bool web = agent_index == int(ai_provider::ChatGPT);
     if(!resume)
         web_agent_session_id.clear(); // starting fresh: no longer tied to whatever chat the old web session was
 
@@ -1773,7 +1787,7 @@ void AIAgent::new_chat_dialog(bool resume)
     if(web)
     {
         disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
-        if(try_connect_github_issue(issue_url,resume) && !resume)
+        if(try_connect_github_issue(value,resume) && !resume)
             create_chat("ChatGPT(Web)");
         return;
     }
@@ -1783,7 +1797,7 @@ void AIAgent::new_chat_dialog(bool resume)
     update_send_button();
 
     current_agent_index = agent_index;
-    try_set_current_model(model_name);
+    try_set_current_model(value);
     update_agent_status_label();
     create_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
     ui->ai_chat_input->clear();
@@ -1804,13 +1818,12 @@ void AIAgent::on_ai_agent_status_clicked()
         if(info.provider == ai_provider::ChatGPT) // change or reconnect using a possibly different issue link
         {
             web_agent_session_id = info.sessions; // resume must target the selected chat, not whatever session was last active
-            bool web = false;
             int agent_index = 0;
-            QString model_name,issue_url;
-            if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",web,agent_index,model_name,issue_url))
+            QString value;
+            if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",agent_index,value))
                 return;
             disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
-            try_connect_github_issue(issue_url,true);
+            try_connect_github_issue(value,true);
             return;
         }
         QDialog dialog(this);
@@ -1834,20 +1847,19 @@ void AIAgent::on_ai_agent_status_clicked()
         return;
     }
 
-    bool web = false;
     int agent_index = 0;
-    QString model_name,issue_url;
-    if(!run_new_chat_dialog(false,"Change Agent/Model","Save",web,agent_index,model_name,issue_url))
+    QString value;
+    if(!run_new_chat_dialog(false,"Change Agent/Model","Save",agent_index,value))
         return;
 
-    if(web)
+    if(agent_index == int(ai_provider::ChatGPT))
     {
-        try_connect_github_issue(issue_url,false);
+        try_connect_github_issue(value,false);
         return;
     }
 
     current_agent_index = agent_index;
-    try_set_current_model(model_name);
+    try_set_current_model(value);
     update_agent_status_label();
 }
 
@@ -2047,7 +2059,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
 
     connect(process,&QProcess::started,this,[=]
     {
-        ++active_ai_processes;
         if(provider != ai_provider::Claude)
             process->closeWriteChannel();
         auto session = process->objectName();
@@ -2095,7 +2106,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
             QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
-        active_ai_processes = std::max(0,active_ai_processes-1);
         bool user_stopped = process->property("user_stopped").toBool();
         auto session = process->objectName();
         if(is_status_target(session))
@@ -2349,46 +2359,31 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
 
 void AIAgent::on_ai_send_message_clicked()
 {
-    auto* item = ui->ai_project_list->currentItem();
-    auto* info = item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    auto* info = selected_info();
     auto text = ui->ai_chat_input->toPlainText().trimmed();
 
-    // selection wins whenever there is one; matches update_send_button() so the click always does what the label says
-    if(info ? info->provider == ai_provider::ChatGPT : web_agent_active_session)
+    // executes whatever current_send_action() reports, so the click always does what the label says
+    switch(current_send_action())
     {
-        if(!github_issue_api.isEmpty() && (!info || info->sessions == web_agent_session_id))
-        {
-            disconnect_github_issue();
-            set_ai_status("GitHub issue channel stopped.",true);
-            return;
-        }
+    case send_action::StopWeb:
+        disconnect_github_issue();
+        set_ai_status("GitHub issue channel stopped.",true);
+        return;
+    case send_action::ResumeWeb:
         if(info)
             web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
         new_chat_dialog(true);
         return;
-    }
-
-    if(info)
-    {
-        if(info->processes)
-        {
-            if(!text.isEmpty())
-            {
-                start_ai(info->sessions,text,ai_input::User);
-                update_send_button();
-                return;
-            }
-            info->prompts.clear(); // stop means stop: no auto-continue into a queued message
-            info->processes->setProperty("user_stopped",true);
-            info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
-            return;
-        }
-    }
-
-    if(text.isEmpty())
+    case send_action::StopLocal: // only reachable when info && info->processes, see current_send_action()
+        info->prompts.clear(); // stop means stop: no auto-continue into a queued message
+        info->processes->setProperty("user_stopped",true);
+        info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         return;
-
-    start_ai(item ? item->data(Qt::UserRole).toString() : QString(),
-             text,ai_input::User);
-    update_send_button();
+    case send_action::Send:
+        if(text.isEmpty())
+            return;
+        start_ai(info ? info->sessions : QString(),text,ai_input::User);
+        update_send_button();
+        return;
+    }
 }
