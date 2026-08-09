@@ -203,7 +203,7 @@ public:
 public:
     std::shared_ptr<QTimer> timer2;
     void start_reg(void);
-    std::string get_parameter_id(void);
+    std::string get_parameter_id(bool auto_track); // auto_track: whether TIP applies (automatic fiber tracking) -- caller decides, typically from ui->tract_target_0->currentIndex() > 0 for an interactive call, or true for the AI run_auto_track command (which never touches that combo)
 public:
     std::shared_ptr<tract_report> tact_report_imp;
     std::shared_ptr<connectivity_matrix_dialog> connectivity_matrix;
