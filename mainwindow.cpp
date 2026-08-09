@@ -2100,9 +2100,26 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             tipl::out() << QDir::currentPath().toStdString();
             return true;
         }
-        if(!program.compare("curl",Qt::CaseInsensitive)) // curl's default progress meter redraws one line via \r for an interactive terminal;
+        // runs "text" through a real shell so pipes/redirection/&&/globbing behave the same on every OS
+        auto configure_process = [](QProcess& process,const QString& shell_text)
+        {
+#ifdef Q_OS_WIN
+            process.setProgram("cmd.exe");
+            process.setNativeArguments("/c " + shell_text);
+#else
+            process.setProgram("/bin/sh");
+            process.setArguments({"-c",shell_text});
+#endif
+        };
+        bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
+        if(is_curl) // curl's default progress meter redraws one line via \r for an interactive terminal;
             text.insert(program.length()," -s -S"); // captured non-interactively, that just floods the log. -s hides it, -S still shows real errors
-        if(source == command_source::AI)
+#ifdef Q_OS_WIN
+        bool needs_confirmation = program.compare("dir",Qt::CaseInsensitive) != 0 ? true : false;
+#else
+        bool needs_confirmation = program.compare("ls",Qt::CaseInsensitive) != 0 ? true : false;
+#endif
+        if(source == command_source::AI && needs_confirmation)
         {
             QString message;
             if(!ai_chat_context.isEmpty()) // explains why, using the agent's own accompanying chat message, when one was sent with this request
@@ -2112,20 +2129,20 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                    QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
                 return fail("user declined to run this shell command");
         }
-        if(program.compare("curl",Qt::CaseInsensitive)) // not curl: assume it's fast, wait for it
+        if(!is_curl) // not curl: assume it's fast, wait for it, but bound the wait so a stuck program cannot deadlock this request forever
         {
             QProcess process;
-#ifdef Q_OS_WIN
-            process.setProgram("cmd.exe");
-            process.setNativeArguments("/c " + text);
+            configure_process(process,text);
             process.start();
-#else
-            process.start(text);
-#endif
             if(!process.waitForStarted(3000))
                 return fail("cannot start command");
-            if(!process.waitForFinished(-1)) // no timeout: wait until it actually completes
-                return fail("command did not finish");
+            constexpr int shell_timeout_ms = 600000; // 10 minutes; longer operations should use curl's async path instead
+            if(!process.waitForFinished(shell_timeout_ms))
+            {
+                process.kill();
+                process.waitForFinished(3000);
+                return fail("command timed out after 10 minutes");
+            }
             tipl::out() << process.readAllStandardOutput().toStdString();
             auto err = process.readAllStandardError().toStdString();
             if(!err.empty())
@@ -2134,42 +2151,40 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                 return fail("command exited with code "+std::to_string(process.exitCode()));
             return true;
         }
-        // curl can hang, so run it detached; "list_window" shows the id as busy until it finishes
+        // curl can hang, so run it as a self-owned asynchronous QProcess instead of blocking any thread;
+        // "list_window" shows the id as busy until it finishes (there is intentionally no completion timeout here)
         static std::atomic<int> next_curl_id{0};
         QString id = "curl"+QString::number(++next_curl_id);
+        auto* process = new QProcess;
+        configure_process(*process,text);
+        QObject::connect(process,&QProcess::errorOccurred,[process,id,text](QProcess::ProcessError)
+        {
+            if(process->error() == QProcess::FailedToStart)
+            {
+                tipl::error() << (id+" cannot start: "+text).toStdString();
+                std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+                shell_tasks.remove(id);
+            }
+        });
+        QObject::connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+            [process,id,text](int exit_code,QProcess::ExitStatus exit_status)
+        {
+            tipl::out() << process->readAllStandardOutput().toStdString();
+            auto err = process->readAllStandardError().toStdString();
+            if(!err.empty())
+                tipl::error() << err;
+            if(exit_status != QProcess::NormalExit || exit_code != 0)
+                tipl::error() << (id+" exited with code "+QString::number(exit_code)+": "+text).toStdString();
+            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
+            shell_tasks.remove(id);
+        });
+        QObject::connect(process,&QProcess::errorOccurred,process,&QObject::deleteLater);
+        QObject::connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),process,&QObject::deleteLater);
         {
             std::lock_guard<std::mutex> lock(shell_tasks_mutex);
             shell_tasks[id] = text;
         }
-        std::thread([text,id]
-        {
-            QProcess process;
-#ifdef Q_OS_WIN
-            process.setProgram("cmd.exe");
-            process.setNativeArguments("/c " + text);
-            process.start();
-#else
-            process.start(text);
-#endif
-            bool started = process.waitForStarted(3000);
-            bool finished = started && process.waitForFinished(-1);
-            if(finished)
-            {
-                tipl::out() << process.readAllStandardOutput().toStdString();
-                if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
-                    tipl::error() << (id+" exited with code "+
-                        QString::number(process.exitCode())+": "+text).toStdString();
-            }
-            if(!started)
-                tipl::error() << (id+" cannot start: "+text).toStdString();
-            else if(!finished)
-                tipl::error() << (id+" did not finish: "+text).toStdString();
-            auto err = process.readAllStandardError().toStdString();
-            if(!err.empty())
-                tipl::error() << err;
-            std::lock_guard<std::mutex> lock(shell_tasks_mutex);
-            shell_tasks.remove(id);
-        }).detach();
+        process->start();
         tipl::out() << ("started "+id+": "+text).toStdString();
         return true;
     }
