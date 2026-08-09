@@ -2335,7 +2335,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         // not a point) through the inverse of transformation_matrix gives the viewing direction in
         // LPS/object space, and mapping the origin (a point) the same way gives the voxel-space
         // location currently centered in view
-        auto inv = tipl::inverse(transformation_matrix);
+        tipl::matrix<4,4> inv = tipl::inverse(transformation_matrix);
         tipl::vector<3,float> dir(inv.begin()+8);
         dir.normalize();
         tipl::vector<3,float> neg_dir(-dir[0],-dir[1],-dir[2]);
