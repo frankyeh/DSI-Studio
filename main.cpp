@@ -28,7 +28,7 @@ std::string device_content_file,topup_param_file;
 std::vector<std::string> template_name_list;
 std::vector<std::filesystem::path> qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
 std::vector<std::vector<std::string> > unet_http,unet_desc,unet_names;
-
+QString ai_project_dir;
 
 class CustomSliceModel;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
@@ -192,9 +192,10 @@ bool load_file_name(void)
         });
     }
 
+    QDir().mkpath(ai_project_dir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/ai_projects");
+    QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/unet");
+
     auto unet_info = tipl::read_text_file(unet_dir/"README.md");
-    QDir().mkpath(QStandardPaths::writableLocation(
-                      QStandardPaths::AppLocalDataLocation)+"/unet");
 
     for(const auto& species : species_list)
     {
