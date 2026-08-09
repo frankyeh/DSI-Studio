@@ -92,6 +92,10 @@ static void stop_blink(QWidget* row)
     row->findChild<QTimer*>()->stop();
     row->setStyleSheet({});
 }
+bool is_valid_session_id(const QString& id)
+{
+    return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
+}
 
 void AIAgent::ai_log(QString text)
 {
@@ -711,6 +715,11 @@ void AIAgent::poll_github_issue()
                 {"state","error"},
                 {"response",QJsonObject{{"status","error"},
                     {"error","malformed request: missing session"}}}}));
+        if(!is_valid_session_id(request_obj["session"].toString()))
+            return publish_github_result(stamp(QJsonObject{
+                {"state","error"},
+                {"response",QJsonObject{{"status","error"},
+                    {"error","malformed request: session must be a UUID"}}}}));
 
         bool include_log = request_obj["include_log"].toBool();
         request_obj.remove("id");
@@ -920,7 +929,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         return void(reply = status_reply("error","invalid JSON: "+parse_error.errorString()));
     if(session.isEmpty())
         return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
-    if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
+    if(!is_valid_session_id(session))
         return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
 
     auto* found = ai_info::find(session);
