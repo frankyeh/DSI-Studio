@@ -174,8 +174,10 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
     const std::string usage =
         "hub_repo | hub_tags <repo> | hub_files <repo> [tag] [text] [offset] [limit] | "
         "hub_open <repo> <tag> <file> | hub_show <repo> <tag> [file] | hub_download <repo> [tag] <file> <dir> "
-        "([tag] and [text] empty means match all; both are treated as regular expressions, "
-        "except hub_open and hub_show whose <tag> must be an exact, single tag)";
+        "([tag] and [text] empty means match all; [tag] and [text] are treated as regular expressions, "
+        "as is hub_download's <file> (matching every file in every matched tag, so one call can "
+        "download many files); hub_open and hub_show take <tag> as an exact, single tag and "
+        "<file> as an exact filename or the row index returned by hub_files)";
 
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     auto arg = [&](size_t i){return QString::fromStdString(cmd[i]);};
@@ -394,20 +396,30 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         ui->download_dir->setText(dir.path());
         ui->download_overwrite->setChecked(false);
 
+        bool ok = true;
+        auto file_re = make_re(arg(3),"file",ok);
+        if(!ok)
+            return false;
+
         bool any = false;
         if(!for_each_tag(arg(2),[&](const QString& tag_name)
         {
-            if(!select_file())
-                tipl::out() << "skip\t" << tag_name.toStdString() << "\t" << error_msg;
-            else
+            files->clearSelection();
+            for(int row = 0;row < files->rowCount();++row)
+                if(file_re.match(files->item(row,0)->text()).hasMatch())
+                    files->selectRow(row); // additive in the table's default ExtendedSelection mode
+            on_github_release_files_itemSelectionChanged();
+            if(!files->selectionModel()->selectedRows().size())
             {
-                on_github_download_clicked();
-                any = true;
+                tipl::out() << "skip\t" << tag_name.toStdString() << "\tno file matched: " << arg(3).toStdString();
+                return true;
             }
+            on_github_download_clicked(); // downloads every currently selected row
+            any = true;
             return true;
         }))
             return false;
-        return any || fail("no matching tag with the specified file found");
+        return any || fail("no matching tag with a matching file found");
     }
 
     return fail(usage);
