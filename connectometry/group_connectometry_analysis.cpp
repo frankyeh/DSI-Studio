@@ -475,8 +475,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
             out << " correlated with " << foi_str;
         out << ".";
 
-        if(normalize_iso && tipl::contains(handle->db.index_list,"iso") &&
-           (can_be_normalized_by_iso(handle->db.index_name)))
+        if(handle->db.type == connectometry_db::longitudinal_type::plain && normalize_iso &&
+           tipl::contains(handle->db.index_list,"iso") && (can_be_normalized_by_iso(handle->db.index_name)))
             out << " The " << handle->db.index_name << " values were normalized by the isotropic diffusion.";
         else
             normalize_iso = false;
