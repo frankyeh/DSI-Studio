@@ -2,6 +2,8 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStringListModel>
+#include <QComboBox>
+#include <functional>
 #include "tracking/region/Regions.h"
 #include "group_connectometry.hpp"
 #include "ui_group_connectometry.h"
@@ -240,17 +242,7 @@ void group_connectometry::show_dis_table(void)
 
 void group_connectometry::on_open_mr_files_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                this,
-                "Open demographics",
-                work_dir,
-                "Comma- or Tab-Separated Values(*.csv *.tsv);;Text File(*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!db.parse_demo(filename.toStdString()))
-        QMessageBox::critical(this,"ERROR",db.handle->error_msg.c_str());
-    else
-        load_demographics();
+    command({"open_mr_files"},command_source::User);
 }
 
 
@@ -303,6 +295,353 @@ void group_connectometry::load_demographics(void)
     }
     on_variable_list_clicked(QModelIndex());
     fill_demo_table(db,ui->subject_demo);
+}
+
+struct group_connectometry_param
+{
+    std::string id;
+    std::function<QString(void)> get;
+    std::function<void(QString)> set;
+    QComboBox* combo = nullptr; // set for dropdown-backed params, so list_param can show their options
+};
+
+static std::vector<group_connectometry_param> get_settable_params(Ui::group_connectometry* ui)
+{
+    return {
+        {"no_tractogram",[ui]{return QString::number(ui->no_tractogram->isChecked());},[ui](QString v){ui->no_tractogram->setChecked(v.toInt());}},
+        {"index_name",[ui]{return QString::number(ui->index_name->currentIndex());},[ui](QString v){ui->index_name->setCurrentIndex(v.toInt());},ui->index_name},
+        {"foi",[ui]{return QString::number(ui->foi->currentIndex());},[ui](QString v){ui->foi->setCurrentIndex(v.toInt());},ui->foi},
+        {"length_threshold",[ui]{return QString::number(ui->length_threshold->value());},[ui](QString v){ui->length_threshold->setValue(v.toInt());}},
+        {"tip",[ui]{return QString::number(ui->tip->value());},[ui](QString v){ui->tip->setValue(v.toInt());}},
+        {"fdr_control",[ui]{return QString::number(ui->fdr_control->isChecked());},[ui](QString v){ui->fdr_control->setChecked(v.toInt());}},
+        {"fdr_threshold",[ui]{return QString::number(ui->fdr_threshold->value());},[ui](QString v){ui->fdr_threshold->setValue(v.toDouble());}},
+        {"threshold",[ui]{return QString::number(ui->threshold->value());},[ui](QString v){ui->threshold->setValue(v.toDouble());}},
+        {"effect_size",[ui]{return QString::number(ui->effect_size->value());},[ui](QString v){ui->effect_size->setValue(v.toDouble());}},
+        {"region_pruning",[ui]{return QString::number(ui->region_pruning->isChecked());},[ui](QString v){ui->region_pruning->setChecked(v.toInt());}},
+        {"normalize_iso",[ui]{return QString::number(ui->normalize_iso->isChecked());},[ui](QString v){ui->normalize_iso->setChecked(v.toInt());}},
+        {"output_name",[ui]{return ui->output_name->text();},[ui](QString v){ui->output_name->setText(v);}},
+        {"exclude_cerebellum",[ui]{return QString::number(ui->exclude_cb->isChecked());},[ui](QString v){ui->exclude_cb->setChecked(v.toInt());}},
+        {"roi_whole_brain",[ui]{return QString::number(ui->roi_whole_brain->isChecked());},[ui](QString v){ui->roi_whole_brain->setChecked(v.toInt());}},
+        {"thread_count",[ui]{return QString::number(ui->thread_count->value());},[ui](QString v){ui->thread_count->setValue(v.toInt());}},
+        {"permutation_count",[ui]{return QString::number(ui->permutation_count->value());},[ui](QString v){ui->permutation_count->setValue(v.toInt());}},
+        {"select_text",[ui]{return ui->select_text->text();},[ui](QString v){ui->select_text->setText(v);}},
+    };
+}
+
+bool group_connectometry::command(std::vector<std::string> cmd,command_source source)
+{
+    if(cmd.empty())
+        return tipl::error() << (error_msg = "empty command"),false;
+    cmd.resize(3);
+    std::string name = cmd[0],param = cmd[1];
+    error_msg.clear();
+    auto fail = [&](const std::string& msg)->bool
+    {
+        error_msg = msg;
+        tipl::error() << error_msg;
+        if(source == command_source::User)
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        return false;
+    };
+
+    if(name == "list_param")
+    {
+        auto params = get_settable_params(ui);
+        auto id = QString::fromStdString(param).trimmed().toLower();
+        id.replace('-','_');
+        if(id.isEmpty() || id == "all")
+        {
+            tipl::out() << "id\tvalue";
+            for(auto& p : params)
+                tipl::out() << p.id << "\t" << p.get().toStdString();
+            return true;
+        }
+        for(auto& p : params)
+            if(id == p.id.c_str())
+            {
+                tipl::out() << p.id << "\t" << p.get().toStdString();
+                if(p.combo)
+                {
+                    QStringList options;
+                    for(int i = 0;i < p.combo->count();++i)
+                        options << QString("%1=%2").arg(i).arg(p.combo->itemText(i));
+                    tipl::out() << "options: " << options.join(", ").toStdString();
+                }
+                return true;
+            }
+        return fail("invalid parameter: "+param+"; use list_param without an argument to list all parameters");
+    }
+
+    if(name == "set_param" || name == "set_params")
+    {
+        auto params = get_settable_params(ui);
+        auto set_one = [&](const std::string& id,const std::string& value)->bool
+        {
+            for(auto& p : params)
+                if(p.id == id)
+                {
+                    p.set(QString::fromStdString(value));
+                    return true;
+                }
+            return false;
+        };
+        if(name == "set_param")
+        {
+            if(!set_one(param,cmd[2]))
+                return fail("invalid parameter: "+param);
+        }
+        else
+            for(const auto& kv : tipl::split(param,'&'))
+            {
+                auto pos = kv.find('=');
+                if(pos != std::string::npos && !set_one(kv.substr(0,pos),kv.substr(pos+1)))
+                    return fail("invalid parameter: "+kv.substr(0,pos));
+            }
+        return true;
+    }
+
+    if(name == "open_mr_files")
+    {
+        if(param.empty())
+        {
+            if(source != command_source::User)
+                return fail("please specify a demographics file");
+            QString filename = QFileDialog::getOpenFileName(
+                        this,"Open demographics",work_dir,
+                        "Comma- or Tab-Separated Values(*.csv *.tsv);;Text File(*.txt);;All files (*)");
+            if(filename.isEmpty())
+                return false; // canceled, not an error
+            param = filename.toStdString();
+        }
+        if(!db.parse_demo(param))
+            return fail(db.handle->error_msg);
+        load_demographics();
+        return true;
+    }
+
+    if(name == "run")
+    {
+        if(ui->run->text() == "Stop")
+        {
+            vbc->clear();
+            timer->stop();
+            timer.reset();
+            ui->progressBar->setValue(0);
+            ui->run->setText("Run");
+            return true;
+        }
+        // longitudinal data without loading demographics
+        if(db.is_longitudinal && !model.get())
+        {
+            model.reset(new stat_model);
+            model->read_demo(vbc->handle->db);
+        }
+        if(!model.get())
+            return fail("Load demographic file first");
+
+        // check cohort text
+        if(!command({"show_cohort"},source))
+            return false;
+        if(model->remove_list.empty()) // select cohort failed
+            return fail("cohort selection failed");
+
+        // setup parameters
+        {
+            vbc->no_tractogram = ui->no_tractogram->isChecked();
+            vbc->foi_str = ui->foi->currentText().toStdString();
+            vbc->handle->db.set_current_index(ui->index_name->currentIndex());
+            vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
+            vbc->tip_iteration = uint32_t(ui->tip->value());
+            vbc->fdr_threshold = ui->fdr_control->isChecked() ? float(ui->fdr_threshold->value()) : 0.0f;
+            vbc->t_threshold = float(ui->threshold->value());
+            vbc->rho_threshold = float(ui->effect_size->value());
+            vbc->region_pruning = ui->region_pruning->isChecked();
+            vbc->normalize_iso = db.is_longitudinal ? false : ui->normalize_iso->isChecked();
+            vbc->output_file_name = ui->output_name->text().toStdString();
+        }
+
+        // setup statistical model
+        {
+            vbc->model.reset(new stat_model);
+            *(vbc->model.get()) = *(model.get());
+            if(!vbc->model->select_feature(db,ui->foi->currentText().toStdString()))
+                return fail(vbc->model->error_msg);
+        }
+
+        // setup roi
+        {
+            vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
+            if(ui->exclude_cb->isChecked())
+                vbc->exclude_cerebellum();
+
+            // apply ROI
+            if(!ui->roi_whole_brain->isChecked())
+            {
+                std::vector<unsigned char> roi_type(roi_list.size());
+                std::vector<std::string> roi_name(roi_list.size());
+                for(unsigned int index = 0;index < roi_list.size();++index)
+                {
+                    roi_type[index] = uint8_t(ui->roi_table->item(int(index),2)->text().toInt());
+                    roi_name[index] = ui->roi_table->item(int(index),0)->text().toStdString();
+                }
+                for(unsigned int index = 0;index < roi_list.size();++index)
+                    vbc->roi_mgr->setRegions(roi_list[index],roi_type[index],roi_name[index].c_str());
+            }
+
+            // if no seed assigned, assign whole brain
+            if(vbc->roi_mgr->seeds.empty())
+                vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
+        }
+
+        vbc->run_permutation(uint32_t(ui->thread_count->value()),uint32_t(ui->permutation_count->value()));
+
+        ui->run->setText("Stop");
+        timer.reset(new QTimer(this));
+        timer->setInterval(1000);
+        connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
+        timer->start();
+        return true;
+    }
+
+    if(name == "show_result")
+    {
+        if(!vbc->model.get())
+            return fail("run the analysis first");
+        std::shared_ptr<fib_data> new_data(new fib_data);
+        *(new_data.get()) = *(vbc->handle);
+        {
+            result_fib.reset(new connectometry_result);
+            stat_model info;
+            info.resample(*(vbc->model.get()),false,false,0);
+            vbc->calculate_spm(*result_fib.get(),info);
+            new_data->slices.push_back(std::make_shared<slice_model>("dec_t",result_fib->dec_ptr[0],new_data->dim));
+            new_data->slices.push_back(std::make_shared<slice_model>("inc_t",result_fib->inc_ptr[0],new_data->dim));
+        }
+        tracking_window* current_tracking_window = new tracking_window(this,new_data);
+        current_tracking_window->set_memorize_parameters(false);
+        current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
+        current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
+        current_tracking_window->showNormal();
+        current_tracking_window->tractWidget->addNewTracts(vbc->hypothesis_inc.c_str());
+        current_tracking_window->tractWidget->addNewTracts(vbc->hypothesis_dec.c_str());
+
+        current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->inc_track.get()));
+        current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->dec_track.get()));
+
+        for(const auto& each : std::vector<std::pair<std::string, std::string>>{
+            {"show_surface", "1"},{"show_slice", "0"},{"show_region", "0"},{"bkg_color", "16777215"},{"surface_alpha", "0.2"}})
+                current_tracking_window->set_data(each.first.c_str(),each.second.c_str());
+
+        current_tracking_window->command({"set_zoom","0.8"});
+        current_tracking_window->command({"add_surface","0","25"});
+        current_tracking_window->command({"update_tract"});
+        return true;
+    }
+
+    if(name == "load_roi_from_atlas")
+    {
+        if(source != command_source::User)
+            return fail("load_roi_from_atlas requires interactive selection");
+        if(vbc->handle->atlas_list.empty())
+            return fail("no atlas available");
+        std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,vbc->handle));
+        if(atlas_dialog->exec() != QDialog::Accepted)
+            return false; // canceled, not an error
+        for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
+        {
+            std::vector<tipl::vector<3,short> > points;
+            if(!vbc->handle->get_atlas_roi(atlas_dialog->atlas_name,atlas_dialog->roi_name[i],points))
+                return fail("cannot get atlas ROI: "+atlas_dialog->roi_name[i]);
+            add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),points);
+        }
+        return true;
+    }
+
+    if(name == "clear_all_roi")
+    {
+        roi_list.clear();
+        ui->roi_table->setRowCount(0);
+        return true;
+    }
+
+    if(name == "load_roi_from_file")
+    {
+        if(param.empty())
+        {
+            if(source != command_source::User)
+                return fail("please specify a NIFTI ROI file");
+            QString file = tipl::qt::open_image_file(this,work_dir + "/roi.nii.gz","Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
+            if(file.isEmpty())
+                return false; // canceled, not an error
+            param = file.toStdString();
+        }
+        tipl::image<3> I;
+        tipl::matrix<4,4> transform;
+        std::string nifti_error;
+        if(!(tipl::io::gz_nifti(param,std::ios::in)
+                >> transform >> I
+                >> [&nifti_error](const std::string& e){nifti_error = e;}))
+            return fail(nifti_error);
+        transform.inv();
+        transform *= vbc->handle->trans_to_mni;
+        std::vector<tipl::vector<3,short> > new_roi;
+        for (tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
+        {
+            tipl::vector<3> pos(index);
+            pos.to(transform);
+            pos.round();
+            if(!I.shape().is_valid(pos) || I.at(pos) == 0)
+                continue;
+            new_roi.push_back(tipl::vector<3,short>((const unsigned int*)index.begin()));
+        }
+        if(new_roi.empty())
+            return fail("The nifti contain no voxel with value greater than 0.");
+        add_new_roi(QFileInfo(param.c_str()).baseName(),"Local File",new_roi);
+        return true;
+    }
+
+    if(name == "show_cohort")
+    {
+        if(!model.get())
+            return fail("load demographic file first");
+        if(!model->select_cohort(db,ui->select_text->text().toStdString()))
+            return fail(model->error_msg);
+        selected_count = 0;
+        ui->subject_demo->setUpdatesEnabled(false);
+        for(size_t i = 0;i < model->remove_list.size();++i)
+        {
+            if(!model->remove_list[i])
+                selected_count++;
+            for(int j = 0;j < ui->subject_demo->columnCount();++j)
+                ui->subject_demo->item(int(i),j)->setBackground(model->remove_list[i] ? Qt::white : QColor(255,255,200));
+        }
+        ui->subject_demo->setUpdatesEnabled(true);
+        ui->cohort_report->setText(QString("n=%1").arg(selected_count));
+
+        ui->run->setEnabled(selected_count > 2);
+        ui->effect_size->setEnabled(selected_count > 2);
+        ui->threshold->setEnabled(selected_count > 2);
+        return true;
+    }
+
+    if(name == "apply_selection")
+    {
+        QString new_text(ui->select_text->text());
+        if(!new_text.isEmpty())
+            new_text += ",";
+        if(param.empty())
+        {
+            new_text += ui->cohort_index->currentText();
+            new_text += (ui->cohort_operator->currentIndex() == 3 ? QString("/") : ui->cohort_operator->currentText());
+            new_text += ui->cohort_value->text();
+        }
+        else
+            new_text += param.c_str();
+        ui->select_text->setText(new_text);
+        return command({"show_cohort"},source);
+    }
+
+    return fail("unknown command: "+name);
 }
 
 void group_connectometry::calculate_FDR(void)
@@ -365,132 +704,12 @@ void group_connectometry::calculate_FDR(void)
 }
 void group_connectometry::on_run_clicked()
 {
-    if(ui->run->text() == "Stop")
-    {
-        vbc->clear();
-        timer->stop();
-        timer.reset();
-        ui->progressBar->setValue(0);
-        ui->run->setText("Run");
-        return;
-    }
-    // longitudinal data without loading demographics
-    if(db.is_longitudinal && !model.get())
-    {
-        model.reset(new stat_model);
-        model->read_demo(vbc->handle->db);
-    }
-
-    if(!model.get())
-    {
-        QMessageBox::information(this,QApplication::applicationName(),"Load demographic file first");
-        return;
-    }
-
-    // check cohort text
-    on_show_cohort_clicked();
-    if(model->remove_list.empty()) // select cohort failed
-        return;
-
-    // setup parameters
-    {
-        vbc->no_tractogram = ui->no_tractogram->isChecked();
-        vbc->foi_str = ui->foi->currentText().toStdString();
-        vbc->handle->db.set_current_index(ui->index_name->currentIndex());
-        vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
-        vbc->tip_iteration = uint32_t(ui->tip->value());
-        if(ui->fdr_control->isChecked())
-            vbc->fdr_threshold = float(ui->fdr_threshold->value());
-        else
-            vbc->fdr_threshold = 0.0f;
-
-        vbc->t_threshold = float(ui->threshold->value());
-        vbc->rho_threshold = float(ui->effect_size->value());
-        vbc->region_pruning = ui->region_pruning->isChecked();
-        vbc->normalize_iso = db.is_longitudinal ? false : ui->normalize_iso->isChecked();
-        vbc->output_file_name = ui->output_name->text().toStdString();
-    }
-
-    // setup statistical model
-    {
-        vbc->model.reset(new stat_model);
-        *(vbc->model.get()) = *(model.get());
-        if(!vbc->model->select_feature(db,ui->foi->currentText().toStdString()))
-        {
-            QMessageBox::critical(this,"ERROR",vbc->model->error_msg.c_str());
-            return;
-        }
-    }
-
-    // setup roi
-    {
-        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
-        if(ui->exclude_cb->isChecked())
-            vbc->exclude_cerebellum();
-
-        // apply ROI
-        if(!ui->roi_whole_brain->isChecked())
-        {
-            std::vector<unsigned char> roi_type(roi_list.size());
-            std::vector<std::string> roi_name(roi_list.size());
-            for(unsigned int index = 0;index < roi_list.size();++index)
-            {
-                roi_type[index] = uint8_t(ui->roi_table->item(int(index),2)->text().toInt());
-                roi_name[index] = ui->roi_table->item(int(index),0)->text().toStdString();
-            }
-            for(unsigned int index = 0;index < roi_list.size();++index)
-                vbc->roi_mgr->setRegions(roi_list[index],roi_type[index],roi_name[index].c_str());
-        }
-
-        // if no seed assigned, assign whole brain
-        if(vbc->roi_mgr->seeds.empty())
-            vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
-    }
-
-    vbc->run_permutation(uint32_t(ui->thread_count->value()),uint32_t(ui->permutation_count->value()));
-
-
-    ui->run->setText("Stop");
-    timer.reset(new QTimer(this));
-    timer->setInterval(1000);
-    connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
-    timer->start();
+    command({"run"},command_source::User);
 }
 
 void group_connectometry::on_show_result_clicked()
 {
-    if(!vbc->model.get())
-        return;
-    std::shared_ptr<fib_data> new_data(new fib_data);
-    *(new_data.get()) = *(vbc->handle);
-    {
-        result_fib.reset(new connectometry_result);
-        stat_model info;
-        info.resample(*(vbc->model.get()),false,false,0);
-        vbc->calculate_spm(*result_fib.get(),info);
-        new_data->slices.push_back(std::make_shared<slice_model>("dec_t",result_fib->dec_ptr[0],new_data->dim));
-        new_data->slices.push_back(std::make_shared<slice_model>("inc_t",result_fib->inc_ptr[0],new_data->dim));
-    }
-    tracking_window* current_tracking_window = new tracking_window(this,new_data);
-    current_tracking_window->set_memorize_parameters(false);
-    current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
-    current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
-    current_tracking_window->showNormal();
-    current_tracking_window->tractWidget->addNewTracts(vbc->hypothesis_inc.c_str());
-    current_tracking_window->tractWidget->addNewTracts(vbc->hypothesis_dec.c_str());
-
-    current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->inc_track.get()));
-    current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->dec_track.get()));
-
-    for(const auto& each : std::vector<std::pair<std::string, std::string>>{
-        {"show_surface", "1"},{"show_slice", "0"},{"show_region", "0"},{"bkg_color", "16777215"},{"surface_alpha", "0.2"}})
-            current_tracking_window->set_data(each.first.c_str(),each.second.c_str());
-
-    current_tracking_window->command({"set_zoom","0.8"});
-    current_tracking_window->command({"add_surface","0","25"});
-    current_tracking_window->command({"update_tract"});
-
-
+    command({"show_result"},command_source::User);
 }
 
 void group_connectometry::on_roi_whole_brain_toggled(bool checked)
@@ -515,56 +734,17 @@ void group_connectometry::add_new_roi(QString name,QString source,
 
 void group_connectometry::on_load_roi_from_atlas_clicked()
 {
-    if(vbc->handle->atlas_list.empty())
-        return;
-    std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,vbc->handle));
-    if(atlas_dialog->exec() == QDialog::Accepted)
-    {
-        for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
-        {            
-            std::vector<tipl::vector<3,short> > points;
-            if(!vbc->handle->get_atlas_roi(atlas_dialog->atlas_name,atlas_dialog->roi_name[i],points))
-                return;
-            add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),points);
-        }
-    }
+    command({"load_roi_from_atlas"},command_source::User);
 }
 
 void group_connectometry::on_clear_all_roi_clicked()
 {
-    roi_list.clear();
-    ui->roi_table->setRowCount(0);
+    command({"clear_all_roi"},command_source::User);
 }
 
 void group_connectometry::on_load_roi_from_file_clicked()
 {
-    QString file = tipl::qt::open_image_file(this,work_dir + "/roi.nii.gz","Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
-    if(file.isEmpty())
-        return;
-    tipl::image<3> I;
-    tipl::matrix<4,4> transform;
-    if(!(tipl::io::gz_nifti(file.toStdString(),std::ios::in)
-            >> transform >> I
-            >> [this](const std::string& e){QMessageBox::critical(this,"ERROR",e.c_str());}))
-        return;
-    transform.inv();
-    transform *= vbc->handle->trans_to_mni;
-    std::vector<tipl::vector<3,short> > new_roi;
-    for (tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
-    {
-        tipl::vector<3> pos(index);
-        pos.to(transform);
-        pos.round();
-        if(!I.shape().is_valid(pos) || I.at(pos) == 0)
-            continue;
-        new_roi.push_back(tipl::vector<3,short>((const unsigned int*)index.begin()));
-    }
-    if(new_roi.empty())
-    {
-        QMessageBox::critical(this,"ERROR","The nifti contain no voxel with value greater than 0.");
-        return;
-    }
-    add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);
+    command({"load_roi_from_file"},command_source::User);
 }
 
 void group_connectometry::on_variable_list_clicked(const QModelIndex &)
@@ -581,30 +761,7 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 
 void group_connectometry::on_show_cohort_clicked()
 {
-    if(!model.get())
-        return;
-    if(!model->select_cohort(db,ui->select_text->text().toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR",model->error_msg.c_str());
-        return;
-    }
-    selected_count = 0;
-    ui->subject_demo->setUpdatesEnabled(false);
-    for(size_t i = 0;i < model->remove_list.size();++i)
-    {
-        if(!model->remove_list[i])
-            selected_count++;
-        for(int j = 0;j < ui->subject_demo->columnCount();++j)
-            ui->subject_demo->item(int(i),j)->setBackground(model->remove_list[i] ? Qt::white : QColor(255,255,200));
-    }
-    ui->subject_demo->setUpdatesEnabled(true);
-    ui->cohort_report->setText(QString("n=%1").arg(selected_count));
-
-
-    ui->run->setEnabled(selected_count > 2);
-    ui->effect_size->setEnabled(selected_count > 2);
-    ui->threshold->setEnabled(selected_count > 2);
-
+    command({"show_cohort"},command_source::User);
 }
 
 void group_connectometry::on_fdr_control_toggled(bool checked)
@@ -614,14 +771,7 @@ void group_connectometry::on_fdr_control_toggled(bool checked)
 
 void group_connectometry::on_apply_selection_clicked()
 {
-    QString new_text(ui->select_text->text());
-    if(!new_text.isEmpty())
-        new_text += ",";
-    new_text += ui->cohort_index->currentText();
-    new_text += (ui->cohort_operator->currentIndex() == 3 ? QString("/") : ui->cohort_operator->currentText());
-    new_text += ui->cohort_value->text();
-    ui->select_text->setText(new_text);
-    on_show_cohort_clicked();
+    command({"apply_selection"},command_source::User);
 }
 
 

@@ -33,6 +33,7 @@ private slots:
 
 class tracking_window;
 class fib_data;
+enum class command_source;
 class group_connectometry : public QDialog
 {
     Q_OBJECT
@@ -63,6 +64,8 @@ public:
 
 public:
     void load_demographics(void);
+    std::string error_msg;
+    bool command(std::vector<std::string> cmd,command_source source);
 public slots:
 
     void show_report();
