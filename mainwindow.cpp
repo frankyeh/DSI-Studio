@@ -1310,7 +1310,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
                     auto end = console.total_size;
                     auto first = end-quint64(console.history.size());
-                    auto begin = std::max(info.log_position,first);
+                    // any parameter (cmd[1] or cmd[2]) pulls everything still retained in the console
+                    // buffer instead of just what's new since this session's own cursor
+                    bool full = (cmd.size() > 1 && !cmd[1].empty()) || (cmd.size() > 2 && !cmd[2].empty());
+                    auto begin = full ? first : std::max(info.log_position,first);
                     bool capped = end-begin > 16*1024;
                     if(capped)
                         begin = end-16*1024;
