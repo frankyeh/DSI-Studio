@@ -29,6 +29,8 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model
 enum class ai_input {User,Pending};
+enum class session_status {New,Resume}; // New: no real backend-assigned id yet (still "new:<uuid>"); Resume: session already has a real, established id to continue
+bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 
 struct ai_info{
     QString sessions,agent_name,project_titles;
