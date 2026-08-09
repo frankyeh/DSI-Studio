@@ -126,21 +126,24 @@ class TextPreview
 public:
     PreviewStats stats;
 public:
-    TextPreview(int width,int height,pixel_fun_type pixel_fun):
-        w(width),h(height),get_pixel(pixel_fun)
+    // bg is the background luminance, supplied by the caller rather than sampled from this image's
+    // own corners: on a zoomed crop, the crop's corners can land anywhere in the source (e.g. the
+    // center), which is not necessarily background, so the caller passes the value measured once on
+    // the full, un-cropped capture
+    TextPreview(int width,int height,pixel_fun_type pixel_fun,double bg_):
+        w(width),h(height),get_pixel(pixel_fun),bg(bg_)
     {
         if(w <= 0 || h <= 0)
             return;
-        bg = (get_pixel(0,0)+get_pixel(w-1,0)+get_pixel(0,h-1)+get_pixel(w-1,h-1))/4.0;
         compute_stats();
     }
     bool empty(void) const { return w <= 0 || h <= 0; }
 private:
-    // downsamples the source into a cols x rows grid of per-cell foreground coverage fraction (0..1):
-    // each fine pixel is classified foreground/background first, then averaged per cell, so a cell
-    // straddling a hard edge reads as partial coverage rather than an all-or-nothing average-luminance
-    // threshold would give. Shared by render_grid and compute_stats so they never disagree.
-    void downsample_coverage(int cols,int rows,std::vector<double>& cell) const
+    // downsamples the source into a cols x rows grid, averaging per-pixel `value(x,y)` into each
+    // cell -- shared by render_grid (raw luminance, for display) and compute_stats (foreground
+    // coverage, for bbox/blob detection) so both use the same grid geometry
+    template<typename value_fun_type>
+    void downsample(int cols,int rows,std::vector<double>& cell,value_fun_type&& value) const
     {
         cell.assign(size_t(cols)*size_t(rows),0.0);
         std::vector<int> count(cell.size(),0);
@@ -152,8 +155,7 @@ private:
             {
                 int cx = std::min(cols-1,rx/w);
                 size_t i = row_offset+size_t(cx);
-                if(std::fabs(get_pixel(x,y)-bg) > fg_threshold)
-                    cell[i] += 1.0;
+                cell[i] += value(x,y);
                 ++count[i];
             }
         }
@@ -167,7 +169,7 @@ private:
         constexpr int n = 32;
         int rows = std::max(1,int(double(n)*h/w));
         std::vector<double> cover;
-        downsample_coverage(n,rows,cover);
+        downsample(n,rows,cover,[&](int x,int y){ return std::fabs(get_pixel(x,y)-bg) > fg_threshold ? 1.0 : 0.0; });
 
         double mean_lum = 0.0,min_lum = 255.0,max_lum = 0.0;
         for(int y = 0;y < h;++y)
@@ -238,7 +240,10 @@ private:
             }
         }
     }
-    // shared renderer: a cols x rows digit grid (0-9 = coverage fraction of that cell). Every digit,
+    // shared renderer: a cols x rows digit grid, 0 = black (luminance 0) to 9 = white (luminance
+    // 255) -- a direct, absolute mapping so the same digit always means the same brightness
+    // regardless of what background/foreground split applies elsewhere (e.g. `stats`), and so a
+    // zoomed-in crop reads consistently with the full view it was cropped from. Every digit,
     // including the first in a row, is preceded by exactly one space -- a uniform " D" pattern per
     // cell rather than "D "/"D" for the last one, since tokenizers commonly treat "space+digit" as
     // one dedicated token; a consistent leading space gives every cell the same shot at landing as
@@ -248,21 +253,21 @@ private:
     {
         if(empty())
             return "(empty image)";
-        std::vector<double> cover;
-        downsample_coverage(cols,rows,cover);
+        std::vector<double> lum;
+        downsample(cols,rows,lum,[&](int x,int y){ return get_pixel(x,y); });
         int row_label_width = int(std::to_string(rows-1).size());
         std::ostringstream out;
         for(int y = 0,i = 0;y < rows;++y)
         {
             out << std::string(size_t(row_label_width-int(std::to_string(y).size())),' ') << y << ":";
             for(int x = 0;x < cols;++x,++i)
-                out << ' ' << int(std::min(9.0,cover[i]*10.0));
+                out << ' ' << int(std::min(9.0,lum[i]*10.0/255.0));
             out << '\n';
         }
         return out.str();
     }
 public:
-    // digit coverage grid at ~cols wide, rows chosen from the image's true aspect ratio (no
+    // digit luminance grid at ~cols wide, rows chosen from the image's true aspect ratio (no
     // monospace-font correction -- this is coordinate data meant to line up with the normalized
     // bbox in `stats`, not a picture meant to be visually squinted at). Columns have no index label
     // (unlike rows), so they're the more fragile axis for position-tracking; capped at 20 rather than
@@ -274,7 +279,7 @@ public:
         int rows = empty() ? 1 : std::max(1,int(double(cols)*h/w));
         return render_grid(cols,rows);
     }
-    // fixed n x n coverage grid (default 8x8): same semantics as render_art, just a small size
+    // fixed n x n luminance grid (default 8x8): same semantics as render_art, just a small size
     // that's always cheap to include regardless of what render_art is asked for
     inline std::string render_occupancy(int n = 8) const
     {
