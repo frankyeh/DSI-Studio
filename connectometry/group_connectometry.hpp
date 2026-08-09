@@ -66,6 +66,11 @@ public:
     void load_demographics(void);
     std::string error_msg;
     bool command(std::vector<std::string> cmd,command_source source);
+private:
+    // makes the variable_list checkboxes and foi's dropdown match whichever features are currently
+    // db.feature[i].selected; on_variable_list_clicked already wrote that state from the checkboxes
+    // just before calling this, so re-applying it to the checkboxes here is a harmless no-op there
+    void sync_variable_list(void);
 public slots:
 
     void show_report();
