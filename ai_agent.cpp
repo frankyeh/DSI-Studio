@@ -671,6 +671,28 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     github_pending_result = QJsonObject();
     github_timer.start(500);
     update_send_button();
+
+    // a request can have been executed (side effects already ran) without its result ever being
+    // confirmed published, e.g. DSI Studio exited in between; the durable marker written just before
+    // execution survives that, so report the outcome as unknown here instead of silently re-running it
+    {
+        QSettings settings;
+        auto pending_issue = settings.value("ai/github_pending_issue").toString();
+        auto pending_id = settings.value("ai/github_pending_id",0).toLongLong();
+        if(!pending_issue.isEmpty() && pending_issue == issue_api.toString() && pending_id > last_id)
+        {
+            ai_log("github connect: request "+QString::number(pending_id)+
+                   " was executing when DSI Studio last stopped; publishing an unknown-outcome result instead of re-running it");
+            settings.remove("ai/github_pending_issue");
+            settings.remove("ai/github_pending_id");
+            publish_github_result(QJsonObject{
+                {"id",pending_id},{"last_id",pending_id},{"dsi_session_result",true},{"issue",issue_number},
+                {"state","error"},
+                {"response",QJsonObject{{"status","error"},
+                    {"error","previous execution outcome unknown after a DSI Studio restart; "
+                             "the command may or may not have completed - verify manually before resending"}}}});
+        }
+    }
     return true;
 }
 
@@ -801,6 +823,12 @@ void AIAgent::poll_github_issue()
             info->save_config();
         }
 
+        // durable marker, survives a crash: if DSI Studio exits before the result below is confirmed
+        // published, the next connect_github_issue() sees this and reports the outcome as unknown
+        // instead of re-executing the same request
+        QSettings().setValue("ai/github_pending_issue",github_issue_api.toString());
+        QSettings().setValue("ai/github_pending_id",id);
+
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
         ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
@@ -889,6 +917,14 @@ void AIAgent::send_pending_result()
         bool closed = github_pending_result["state"].toString() == "closed";
         github_last_id = pending_id;
         github_pending_result = QJsonObject();
+        {
+            QSettings settings;
+            if(settings.value("ai/github_pending_id",0).toLongLong() == pending_id)
+            {
+                settings.remove("ai/github_pending_issue");
+                settings.remove("ai/github_pending_id");
+            }
+        }
         if(closed)
             return disconnect_github_issue();
         if(!github_issue_api.isEmpty())
