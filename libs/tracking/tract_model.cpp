@@ -2874,20 +2874,26 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
     {
         tipl::progress p("for each subject");
         std::vector<const float*> old_index_data(handle->dir.index_name_data[0].second);
-        for(unsigned int i = 0;p(i,handle->db.subject_names.size());++i)
+        auto old_index_name = handle->db.index_name;
+        for(unsigned int index_id = 0;index_id < handle->db.index_list.size();++index_id)
         {
-            titles.push_back(handle->db.subject_names[i] + " mean_");
-            if(!tract_data.empty())
+            handle->db.set_current_index(index_id);
+            for(unsigned int i = 0;p(i,handle->db.subject_names.size());++i)
             {
-                auto I = handle->db.get_index_image(i);
-                for(auto& each : handle->dir.index_name_data[0].second)
-                    each = I.data();
-                data.push_back(get_tracts_mean(handle,0));
+                titles.push_back(handle->db.subject_names[i] + " mean_" + handle->db.index_list[index_id]);
+                if(!tract_data.empty())
+                {
+                    auto I = handle->db.get_index_image(i);
+                    for(auto& each : handle->dir.index_name_data[0].second)
+                        each = I.data();
+                    data.push_back(get_tracts_mean(handle,0));
+                }
+                else
+                    data.push_back(0.0f);
             }
-            else
-                data.push_back(0.0f);
         }
         handle->dir.index_name_data[0].second = old_index_data;
+        handle->db.set_current_index(old_index_name);
     }
 }
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
