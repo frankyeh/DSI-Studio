@@ -668,6 +668,45 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         ui->run->setEnabled(selected_count > 2);
         ui->effect_size->setEnabled(selected_count > 2);
         ui->threshold->setEnabled(selected_count > 2);
+        tipl::out() << "n=" << selected_count;
+        return true;
+    }
+
+    if(name == "list_voi")
+    {
+        tipl::out() << "index\tname\tselected";
+        for(size_t i = 0;i < db.feature.size();++i)
+            tipl::out() << i << "\t" << db.feature[i].title << "\t" << (db.feature[i].selected ? "1" : "0");
+        return true;
+    }
+
+    if(name == "set_voi")
+    {
+        if(cmd[2].empty())
+            return fail("usage: set_voi <voi> <variable_list>; names or indices from list_voi, comma-separated");
+        auto foi_str = db.select_voi(param,cmd[2]);
+        if(foi_str.empty())
+            return fail(db.handle->error_msg);
+        sync_variable_list();
+        ui->foi->setCurrentText(QString::fromStdString(foi_str));
+        tipl::out() << "variable of interest: " << foi_str;
+        return true;
+    }
+
+    if(name == "get_demo")
+    {
+        tipl::out() << "subject\t" << tipl::merge(db.titles,'\t');
+        for(size_t row = 0;row < db.subject_names.size();++row)
+        {
+            std::ostringstream out;
+            out << db.subject_names[row];
+            for(size_t col = 0;col < db.titles.size();++col)
+            {
+                auto pos = row*db.titles.size()+col;
+                out << "\t" << (pos < db.items.size() ? db.items[pos] : std::string());
+            }
+            tipl::out() << out.str();
+        }
         return true;
     }
 
@@ -772,10 +811,18 @@ void group_connectometry::add_new_roi(QString name,QString source,
 
 void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 {
+    for(int i = 0;i < ui->variable_list->count();++i)
+        db.feature[uint32_t(i)].selected = (ui->variable_list->item(i)->checkState() == Qt::Checked);
+    sync_variable_list();
+}
+void group_connectometry::sync_variable_list(void)
+{
+    for(int i = 0;i < ui->variable_list->count();++i)
+        ui->variable_list->item(i)->setCheckState(db.feature[uint32_t(i)].selected ? Qt::Checked : Qt::Unchecked);
     auto foi_str = ui->foi->currentText();
     ui->foi->clear();
-    for(int i =0;i < ui->variable_list->count();++i)
-        if((db.feature[uint32_t(i)].selected = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
+    for(int i = 0;i < ui->variable_list->count();++i)
+        if(db.feature[uint32_t(i)].selected)
             ui->foi->addItem(ui->variable_list->item(i)->text());
     if(db.is_longitudinal && db.longitudinal_filter_type == 0)
         ui->foi->addItem(QString("longitudinal change"));
