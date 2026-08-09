@@ -174,10 +174,10 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
     const std::string usage =
         "hub_repo | hub_tags <repo> | hub_files <repo> [tag] [text] [offset] [limit] | "
         "hub_open <repo> <tag> <file> | hub_show <repo> <tag> [file] | hub_download <repo> [tag] <file> <dir> "
-        "([tag] and [text] empty means match all; [tag] and [text] are treated as regular expressions, "
-        "as is hub_download's <file> (matching every file in every matched tag, so one call can "
-        "download many files); hub_open and hub_show take <tag> as an exact, single tag and "
-        "<file> as an exact filename or the row index returned by hub_files)";
+        "([tag] and [text] empty means match all; [tag] and [text] are treated as regular expressions; "
+        "hub_download's <file> is a wildcard pattern (*, ?, [...]), e.g. \"*.qsdr.fz\", matching every "
+        "file in every matched tag, so one call can download many files; hub_open and hub_show take "
+        "<tag> as an exact, single tag and <file> as an exact filename or the row index returned by hub_files)";
 
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     auto arg = [&](size_t i){return QString::fromStdString(cmd[i]);};
@@ -396,8 +396,11 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         ui->download_dir->setText(dir.path());
         ui->download_overwrite->setChecked(false);
 
+        // a wildcard (*, ?, [...]), not a raw regex: far more intuitive for a filename pattern than
+        // regex is, and it anchors to a full-name match, so a plain exact filename still works exactly
+        // as before instead of matching anywhere as a substring
         bool ok = true;
-        auto file_re = make_re(arg(3),"file",ok);
+        auto file_re = make_re(QRegularExpression::wildcardToRegularExpression(arg(3)),"file",ok);
         if(!ok)
             return false;
 
