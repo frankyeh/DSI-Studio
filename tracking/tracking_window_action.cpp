@@ -1037,7 +1037,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed("please specify tract name");
         if(!handle->load_track_atlas(true))
             return run->failed(handle->error_msg);
-        auto param = get_parameter_id();
+        auto param = get_parameter_id(true); // auto_track: TIP must apply here regardless of tract_target_0's state, which this AI path never touches
         if(!cmd[2].empty())
             param += " " + cmd[2];
         if(!tractWidget->command({"run_tracking",cmd[1],param,
@@ -1546,7 +1546,7 @@ bool tracking_window::command(std::vector<std::string> cmd,
     return command(std::move(cmd));
 }
 
-std::string tracking_window::get_parameter_id(void)
+std::string tracking_window::get_parameter_id(bool auto_track)
 {
     TrackingParam param;
     param.threshold = renderWidget->getData("fa_threshold").toFloat();
@@ -1564,10 +1564,9 @@ std::string tracking_window::get_parameter_id(void)
     param.track_voxel_ratio = renderWidget->getData("track_voxel_ratio").toFloat();
     param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     param.tip_iteration =
-            // only used in automatic fiber tracking
-            (ui->tract_target_0->currentIndex() > 0 ||
+            // only used in automatic fiber tracking (auto_track, decided by the caller)
             // or differential tractography
-            renderWidget->getData("dt_index1").toInt() > 0)
+            (auto_track || renderWidget->getData("dt_index1").toInt() > 0)
             ? renderWidget->getData("tip_iteration").toInt() : 0;
     return param.get_code();
 }
