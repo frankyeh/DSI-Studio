@@ -1199,14 +1199,20 @@ bool tracking_window::command(std::vector<std::string> cmd)
     if(cmd[0] == "set_param" || cmd[0] == "set_params")
     {
         if(cmd[0] == "set_param")
+        {
             set_data(cmd[1].c_str(),cmd[2].c_str());
+            renderWidget->reveal(cmd[1].c_str()); // show which parameter this AI call just changed
+        }
         else
             for(auto param : tipl::split(cmd[1],'&'))
             {
                 auto pos = param.find('=');
                 if(pos != std::string::npos)
+                {
                     set_data(param.substr(0,pos).c_str(),
                              param.substr(pos+1).c_str());
+                    renderWidget->reveal(param.substr(0,pos).c_str());
+                }
             }
         glWidget->update();
         slice_need_update |= position_updated;
