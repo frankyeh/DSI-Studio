@@ -17,6 +17,7 @@
 #include <QUuid>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QPointer>
 
 #include <QJsonDocument>
 #include <QMap>
@@ -1190,7 +1191,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     QJsonArray results;
 
-    QWidget* locked_target = nullptr; // releases the locked window (busy) on target switch or batch end
+    QPointer<QWidget> locked_target; // releases the locked window (busy) on target switch or batch end; QPointer so a target destroyed mid-batch (e.g. a local user closing it between commands) auto-nulls instead of dangling
     auto unlock_target = [&]
     {
         if(!locked_target)
