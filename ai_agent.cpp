@@ -264,7 +264,9 @@ AIAgent::AIAgent(MainWindow* parent):
                                    std::pair{ui->ai_claude_login,ai_provider::Claude}})
         connect(button,&QPushButton::clicked,this,[this,provider]
         {
-            if(agent_entries[int(provider)].executable.isEmpty()) // not installed -- nothing to sign into yet
+            if(agent_entries[int(provider)].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
+                refresh_agent_executables();
+            if(agent_entries[int(provider)].executable.isEmpty()) // still not installed -- nothing to sign into yet
                 QDesktopServices::openUrl(agent_install_url(provider));
             else
                 run_agent_login(provider);
@@ -1555,7 +1557,11 @@ void AIAgent::refresh_login_buttons()
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
     if(auto* info = ai_info::find(web_agent_session_id))
-        set_ai_status(info->sessions,session_status::New,
+        // New only for a genuinely never-established chat -- an already-established chat reconnecting stays
+        // "established" (see save_config()) through the attempt, so a save mid-connect can't wrongly persist
+        // established:false over it
+        set_ai_status(info->sessions,info->status == session_status::New ?
+                      session_status::New : session_status::Thinking,
                       "Connecting to "+url);
     update_send_button();
     update_agent_status_label();
@@ -2327,6 +2333,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
     // Resolve agent
     info.launch_name = provider == ai_provider::Codex ? "Codex" : "Claude";
+    if(agent_entries[int(provider)].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
+        refresh_agent_executables();
     info.launch_executable = agent_entries[int(provider)].executable;
     if(info.launch_executable.isEmpty())
     {
@@ -2412,7 +2420,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         process->setProperty("stderr",error.right(8*1024));
     });
 
-    connect(process,&QProcess::started,this,[=]
+    connect(process,&QProcess::started,this,[=,status = info.status]
     {
         if(provider != ai_provider::Claude)
             process->closeWriteChannel();
@@ -2421,12 +2429,14 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             " pid:"+QString::number(process->processId()));
         // the OS process starting proves nothing about the backend conversation itself -- only this provider's
         // own established-session event (configure_codex's "thread.started", configure_claude's "system"/
-        // "init") confirms the session; until then it's still New (whether this is a first launch or a
-        // reconnect -- errorOccurred/finished below use the pre-launch status captured at connect() time,
-        // not this live value, to tell the two apart if the connection fails)
+        // "init") confirms the session, so a genuine first launch stays New until then. A reconnect of an
+        // already-established session (pre-launch status captured above, same as errorOccurred/finished use to
+        // tell the two apart) shows Thinking instead -- staying New here too would let a save mid-reconnect
+        // wrongly persist established:false over it (see save_config())
         if(auto* info = ai_info::find(session))
         {
-            set_ai_status(session,session_status::New,
+            set_ai_status(session,status == session_status::New ?
+                          session_status::New : session_status::Thinking,
                           "Waiting for "+name+" connection");
             show_ai_project(*info);
         }
@@ -2753,7 +2763,11 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         configure_claude(info,text);
     ai_log("start " + info.launch_executable +
            " args: " + args.join(" ").remove("\n"));
-    set_ai_status(info.sessions,session_status::New,
+    // New only for a genuinely never-established launch; an already-established session being resumed (info.status
+    // here is still the pre-launch value -- configure_codex()/configure_claude() above only read it) shows
+    // Thinking instead, so a save mid-reconnect can't wrongly persist established:false over it (see save_config())
+    set_ai_status(info.sessions,info.status == session_status::New ?
+                  session_status::New : session_status::Thinking,
                   "Starting "+info.launch_name);
     info.processes->start(info.launch_executable,args);
 }
