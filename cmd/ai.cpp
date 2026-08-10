@@ -28,7 +28,7 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    if(sessions.startsWith("new:") || !QSettings().value("ai/keep_history",true).toBool())
+    if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
@@ -74,7 +74,7 @@ bool ai_info::save_title(QString title)
         return false;
     if(title == project_titles)
         return true;
-    if(sessions.startsWith("new:"))
+    if(status == session_status::New)
     {
         project_titles = title;
         return true;
@@ -111,7 +111,7 @@ ai_info* ai_info::create(QString session,QString agent)
 static void write_history(const ai_info& info,QIODevice::OpenMode mode,
                    const QList<QJsonObject>& entries)
 {
-    if(info.sessions.startsWith("new:") ||
+    if(info.status == session_status::New ||
        !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(ai_info::history_file(info.sessions));
