@@ -1273,8 +1273,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             // title is whatever window this command's context ends up being (its own destination for
             // set_window), empty for main or when there's no such window
             QString title;
-            if(auto* target = command_window_type(info.current_window) == "main" ? nullptr : find_window(info.current_window))
-                title = QFileInfo(target->windowTitle()).fileName();
+            if(command_window_type(info.current_window) != "main")
+                if(auto* target = find_window(info.current_window))
+                    title = QFileInfo(target->windowTitle()).fileName();
             info.record_request(command_name,title);
 
             QJsonObject result{{"cmd",command_name},{"status",error.isEmpty() ? "success" : "error"}};
