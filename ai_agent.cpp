@@ -1307,9 +1307,12 @@ void AIAgent::update_agent_models(
     if(current_agent_index == index)
     {
         // the current default model's own profile may have just changed (or disappeared) -- refresh its
-        // cached info; an unrecognized name (the model combo is editable) is left exactly as it was
+        // cached info; an unrecognized name is left exactly as it was. profiles.value(), not profiles[] --
+        // operator[] on this non-const profiles would silently insert a spurious entry for a missing key
+        // (e.g. an empty current_model_name inserting a bogus "" profile that then shows up as a blank
+        // entry in the model dropdown) the same way std::map::operator[] does
         if(current_model_name.isEmpty() || profiles.contains(current_model_name))
-            current_model_info = profiles[current_model_name].toObject();
+            current_model_info = profiles.value(current_model_name).toObject();
         update_agent_status_label();
     }
 }
