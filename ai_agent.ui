@@ -435,6 +435,12 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                <height>32</height>
               </size>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>460</width>
+               <height>32</height>
+              </size>
+             </property>
              <property name="text">
               <string>Current task complete.</string>
              </property>
