@@ -114,7 +114,7 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse)
     case session_status::Failed:       color = "#ea4335"; break;
     }
     int intensity = phase <= 12 ? phase : 24-phase;
-    color = color.lighter(100+intensity);
+    color = color.lighter(100+intensity*3);
     dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
     dot->setToolTip(session_status_text(status));
 }
