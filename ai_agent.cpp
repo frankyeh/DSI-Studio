@@ -979,14 +979,17 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
         ai_status_timer->start(500);
     if(selected_info() != &info)
         return;
-    auto text = session_status_text(info.status)+": "+info.status_message;
+    // one line -- a multi-line stderr dump (Failed) must not grow the composer's height
+    auto text = (session_status_text(info.status)+": "+info.status_message).simplified();
     if(running)
     {
         if(!text.endsWith('.'))
             text += ".";
     }
     ui->ai_status->show();
-    ui->ai_status->setText(text);
+    ui->ai_status->setToolTip(text); // full message on hover -- the label itself may show a truncated "..." version
+    ui->ai_status->setText(QFontMetrics(ui->ai_status->font()).elidedText(
+        text,Qt::ElideRight,ui->ai_status->maximumWidth()-30)); // truncate -- an unbounded message here was pushing the whole window wider
     ui->ai_status->repaint();
 }
 
