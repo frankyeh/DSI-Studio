@@ -106,11 +106,10 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse)
 {
     if(!dot)
         return;
+    // purely presentational: pulse means "advance," its absence means "reset to steady" -- whether that's
+    // actually appropriate for this status is the caller's call (see is_running()), not this function's
     int phase = dot->property("pulse").toInt();
-    if(status > session_status::Thinking)
-        phase = 0;
-    else if(pulse)
-        phase = (phase+1)%24;
+    phase = pulse ? (phase+1)%24 : 0;
     dot->setProperty("pulse",phase);
 
     QColor color;
@@ -955,14 +954,14 @@ void AIAgent::set_ai_status(const QString& session,session_status status,QString
 
 void AIAgent::update_ai_status(const ai_info& info,bool pulse)
 {
+    bool running = info.is_running();
     if(info.project_items)
     {
         auto* row = ui->ai_project_list->itemWidget(info.project_items);
         update_status_dot(row ? row->findChild<QLabel*>("ai_project_status_dot") : nullptr,
-                          info.status,pulse);
+                          info.status,pulse && running);
     }
 
-    bool running = info.is_running();
     if(running && !ai_status_timer->isActive())
         ai_status_timer->start(500);
     if(selected_info() != &info)
@@ -1027,14 +1026,16 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     dispatching_info = &info;
     auto result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     dispatching_info = nullptr;
-    // dispatch_cmd() already returned -- nothing is actually in flight anymore, so this is WaitingUser
-    // (idle) either way; only the message differs by whether a live connection remains to report on
-    if((info.processes && info.processes->state() != QProcess::NotRunning) ||
-       github_connected(info))
-        set_ai_status(session,session_status::WaitingUser,
-                      info.provider == ai_provider::ChatGPT ?
-                      "Request completed; monitoring GitHub issue" :
+    // dispatch_cmd() only finished the DSI command itself -- a live local process is still mid-turn (it
+    // dispatched this as one of its own tool calls and is waiting on our reply to continue), so that's
+    // still Thinking, not idle. Only a transport with no ongoing turn of its own (GitHub, or nothing at
+    // all) settles to WaitingUser here
+    if(info.processes && info.processes->state() != QProcess::NotRunning)
+        set_ai_status(session,session_status::Thinking,
                       "Command completed; waiting for agent input");
+    else if(github_connected(info))
+        set_ai_status(session,session_status::WaitingUser,
+                      "Request completed; monitoring GitHub issue");
     else
         set_ai_status(session,session_status::WaitingUser,
                       "Request completed; waiting for next request.");
@@ -1616,7 +1617,9 @@ void AIAgent::set_chat_model(ai_info& info,const QString& name) const // writes 
 ai_info* AIAgent::selected_info() const
 {
     auto* item = ui->ai_project_list->currentItem();
-    return item ? &ai_infos[item->data(Qt::UserRole).toString()] : nullptr;
+    // find(), not ai_infos[id] -- this is meant to resolve an existing chat, never manufacture a blank one
+    // for a stale/unrecognized id
+    return item ? ai_info::find(item->data(Qt::UserRole).toString()) : nullptr;
 }
 
 bool AIAgent::github_connected(const ai_info& info) const
@@ -2358,6 +2361,9 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             info->processes = nullptr;
             set_ai_status(info->sessions,session_status::New,message);
             add_ai_history(*info,"activity",message);
+            info->save_config(); // projects is non-empty now (the recorded messages), so this actually
+                                  // writes -- without it, the .jsonl this just wrote would have no config.json
+                                  // to explain its agent/provider on the next reload
         }
     };
 

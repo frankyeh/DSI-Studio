@@ -1,6 +1,6 @@
 // ai_info's own data-layer implementation: session registry, on-disk history/config persistence, and
-// history-entry recording. No UI/AIAgent dependency -- everything that touches ui->/agent_entries/etc.
-// stays in ai_agent.cpp.
+// history-entry recording. No UI/AIAgent/MainWindow dependency -- everything that touches
+// ui->/agent_entries/etc. stays in ai_agent.cpp, and dispatch_cmd() builds "request" entries itself now.
 #include <QDateTime>
 #include <QFile>
 #include <QJsonDocument>
@@ -8,7 +8,6 @@
 #include <QUrl>
 
 #include "ai_agent.hpp"
-#include "mainwindow.h"
 #include "TIPL/tipl.hpp"
 
 std::unordered_map<QString,ai_info> ai_infos;
@@ -152,12 +151,5 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
     QJsonObject entry{{"type","assistant"},{"text",chat}};
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
-    return record_history(entry);
-}
-QJsonObject ai_info::record_request(const QString& command_name,QString title)
-{
-    QJsonObject entry{{"type","request"},{"text",command_name},{"window",command_window_type(current_window)}};
-    if(!title.isEmpty())
-        entry["title"] = title;
     return record_history(entry);
 }

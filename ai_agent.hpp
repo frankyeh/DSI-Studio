@@ -29,7 +29,7 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class ai_input {User,Pending};
-enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // New and Thinking must stay the first two, in that order: update_status_dot() in ai_agent.cpp uses status > session_status::Thinking to know when to stop pulsing the sidebar dot
+enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declaration order is not meaningful -- ai_info::is_running() classifies by name, not ordinal comparison
 // New: chat created, no launch ever attempted yet, OR a launch/reconnection is currently in flight (the OS
 //   process started, waiting for the agent's own protocol confirmation: Codex "thread.started", Claude
 //   stream-json "system"/"init") -- the only value that means "no confirmed real id yet, use --session-id,
@@ -73,7 +73,6 @@ struct ai_info{
     bool save_title(QString);
     QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" filled in), not the caller's pre-call copy -- written unconditionally, regardless of status
     QJsonObject record_reply(const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
-    QJsonObject record_request(const QString& command_name,QString title = {}); // "window" is derived from current_window; "title" is included only when non-empty -- caller decides whether one applies (e.g. deriving it from a target widget's window title, skipping it for main), record_request has no widget dependency or opinion on when a title makes sense
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     // "waiting on the agent" -- Thinking always is; New only while a launch/reconnect is actually in flight
     // (processes set). An untouched, never-launched New chat has neither and must not count as running

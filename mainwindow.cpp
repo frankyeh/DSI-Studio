@@ -1276,7 +1276,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(command_window_type(info.current_window) != "main")
                 if(auto* target = find_window(info.current_window))
                     title = QFileInfo(target->windowTitle()).fileName();
-            info.record_request(command_name,title);
+            QJsonObject entry{{"type","request"},{"text",command_name},{"window",command_window_type(info.current_window)}};
+            if(!title.isEmpty())
+                entry["title"] = title;
+            info.record_history(entry);
 
             QJsonObject result{{"cmd",command_name},{"status",error.isEmpty() ? "success" : "error"}};
             if(!output.isEmpty())
