@@ -97,10 +97,11 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse)
         return;
     bool running = status == session_status::Initializing ||
                    status == session_status::Thinking;
+    int phase = dot->property("pulse").toInt();
     if(pulse && running)
-        dot->setProperty("pulse",!dot->property("pulse").toBool());
+        dot->setProperty("pulse",phase = (phase+1)%24);
     else if(!running)
-        dot->setProperty("pulse",false);
+        dot->setProperty("pulse",phase = 0);
 
     QColor color;
     switch(status)
@@ -108,12 +109,12 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse)
     case session_status::New:          color = "#9aa0a6"; break;
     case session_status::Initializing: color = "#fbbc04"; break;
     case session_status::WaitingUser:  color = "#34a853"; break;
-    case session_status::Thinking:     color = "#a142f4"; break;
+    case session_status::Thinking:     color = "#4285f4"; break;
     case session_status::Completed:    color = "#9aa0a6"; break;
     case session_status::Failed:       color = "#ea4335"; break;
     }
-    if(dot->property("pulse").toBool())
-        color = color.lighter(125);
+    int intensity = phase <= 12 ? phase : 24-phase;
+    color = color.lighter(100+intensity);
     dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
     dot->setToolTip(session_status_text(status));
 }
@@ -223,14 +224,30 @@ AIAgent::AIAgent(MainWindow* parent):
     ai_status_timer = new QTimer(this);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
     {
-        auto status = ui->ai_status->text();
-        ui->ai_status->setText(
-            status.endsWith("...") ? status.chopped(2) : status+".");
-        if(auto* info = selected_info())
-            if(auto* row = ui->ai_project_list->itemWidget(info->project_items))
-                update_status_dot(row->findChild<QLabel*>("ai_project_status_dot"),
-                                  info->status,true);
-        ui->ai_status->repaint();
+        bool running = false;
+        for(auto& entry : ai_infos)
+        {
+            auto& info = entry.second;
+            if(info.status == session_status::Initializing ||
+               info.status == session_status::Thinking)
+            {
+                running = true;
+                if(auto* row = ui->ai_project_list->itemWidget(info.project_items))
+                    update_status_dot(row->findChild<QLabel*>("ai_project_status_dot"),
+                                      info.status,true);
+            }
+        }
+        if(!running)
+            ai_status_timer->stop();
+        if(auto* info = selected_info();info &&
+           (info->status == session_status::Initializing ||
+            info->status == session_status::Thinking))
+        {
+            auto status = ui->ai_status->text();
+            ui->ai_status->setText(
+                status.endsWith("...") ? status.chopped(2) : status+".");
+            ui->ai_status->repaint();
+        }
     });
     ui->ai_status->hide();
 
@@ -367,7 +384,6 @@ AIAgent::AIAgent(MainWindow* parent):
         {
             ui->ai_chat_history->clear();
             update_send_button();
-            ai_status_timer->stop();
             return ui->ai_status->hide();
         }
 
@@ -904,6 +920,8 @@ void AIAgent::closeEvent(QCloseEvent* event)
         if(auto* process = entry.second.processes)
         {
             entry.second.processes = nullptr;
+            set_ai_status(entry.second.sessions,session_status::Completed,
+                          "Agent stopped when the dialog closed.");
             process->disconnect();
             process->kill();
             process->deleteLater();
@@ -935,15 +953,17 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
                           info.status,pulse);
     }
 
+    bool running = info.status == session_status::Initializing ||
+                   info.status == session_status::Thinking;
+    if(running && !ai_status_timer->isActive())
+        ai_status_timer->start(500);
     if(selected_info() != &info)
         return;
-    ai_status_timer->stop();
     auto text = session_status_text(info.status)+": "+info.status_message;
-    if(info.status == session_status::Initializing || info.status == session_status::Thinking)
+    if(running)
     {
         if(!text.endsWith('.'))
             text += ".";
-        ai_status_timer->start(500);
     }
     ui->ai_status->show();
     ui->ai_status->setText(text);
