@@ -938,6 +938,7 @@ void FiberDataHub::on_github_open_file_clicked()
                 else
                 {
                     auto group_cnt = new group_connectometry(&main_window,database,filePath);
+                    group_cnt->setWindowTitle(filePath);
                     group_cnt->setAttribute(Qt::WA_DeleteOnClose);
                     group_cnt->show();
                 }
