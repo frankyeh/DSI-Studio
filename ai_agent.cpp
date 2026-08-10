@@ -958,7 +958,7 @@ void AIAgent::set_ai_status(const QString& session,session_status status,QString
     info->status = status;
     info->status_message = std::move(message);
     if(ai_debug_level)
-        tipl::out() << "[AI STATUS] " << info->agent_name.toStdString() << "@"
+        tipl::out() << "[DEBUG] " << info->agent_name.toStdString() << "@"
                     << session.toStdString() << " " << session_status_text(status).toStdString()
                     << ": " << info->status_message.toStdString();
     update_ai_status(*info,true);
