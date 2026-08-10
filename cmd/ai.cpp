@@ -22,7 +22,7 @@ QString session_status_text(session_status status)
     {
     case session_status::New:          return "New";
     case session_status::Initializing: return "Initializing";
-    case session_status::Active:       return "Active";
+    case session_status::WaitingUser:  return "Waiting for user";
     case session_status::Thinking:     return "Thinking";
     case session_status::Completed:    return "Completed";
     case session_status::Failed:       return "Failed";
@@ -43,7 +43,7 @@ QString ai_info::config_file(const QString& session)
 void ai_info::save_config() const
 {
     // New is the only status with no real id yet (Codex's placeholder is still about to be renamed) --
-    // everything past that (Initializing/Active/Completed/Failed) has a stable id safe to write under
+    // everything past that has a stable id safe to write under
     if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
