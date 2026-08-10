@@ -896,35 +896,35 @@ void AIAgent::closeEvent(QCloseEvent* event)
 void AIAgent::set_ai_status(QString status,bool temporary)
 {
     ai_status_timer->stop();
-    // reflects only the currently selected chat, not any other chat's background activity -- Active itself
-    // is excluded: it means idle, waiting on the user, not waiting on the agent
+    // reflects only the currently selected chat, not any other chat's background activity
     auto* status_info = selected_info();
-    bool ongoing = status_info && (status_info->status == session_status::Initializing ||
+    // New/Initializing/Thinking are all "waiting on the agent" -- animated; Active ("waiting on the user")/
+    // Completed/Failed show a plain, static status instead
+    bool ongoing = status_info && (status_info->status == session_status::New ||
+                                    status_info->status == session_status::Initializing ||
                                     status_info->status == session_status::Thinking);
-    // a finished chat (Completed/Failed) has nothing further to report -- its own status is the label from
-    // here on, not a message that fades to blank
-    bool settled = status_info && (status_info->status == session_status::Completed ||
-                                    status_info->status == session_status::Failed);
-    if(ongoing && (status.isEmpty() || temporary))
+    // never blank once a chat is selected: with nothing more specific to report (or once a temporary
+    // message's moment has passed), the label falls back to this chat's own current status -- always this
+    // chat's own status, never a cached message, so switching chats can't show a stale, unrelated one
+    if(status.isEmpty())
+        status = status_info ? session_status_text(status_info->status) : QString();
+
+    if(ongoing && !status.isEmpty())
     {
-        // always this chat's own current status, never a cached message -- a per-agent cache would show
-        // whichever chat set it last, even after switching to a different, unrelated chat
-        status = session_status_text(status_info->status);
+        if(!status.endsWith("..."))
+            status += "...";
         ai_status_timer->setSingleShot(false);
         ai_status_timer->start(500);
     }
-    else if(settled && status.isEmpty())
-        status = session_status_text(status_info->status);
-
-    ui->ai_status->setVisible(!status.isEmpty());
-    ui->ai_status->setText(status);
-    ui->ai_status->repaint();
-
-    if(temporary && !ongoing && !settled)
+    else if(temporary && !status.isEmpty())
     {
         ai_status_timer->setSingleShot(true);
         ai_status_timer->start(2000);
     }
+
+    ui->ai_status->setVisible(!status.isEmpty());
+    ui->ai_status->setText(status);
+    ui->ai_status->repaint();
 }
 
 void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
@@ -1954,19 +1954,21 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         auto session = process->objectName();
         ai_log("connecting to "+ name + "@" + session+
             " pid:"+QString::number(process->processId()));
-        if(is_status_target(session))
-            set_ai_status();
         // the OS process starting proves nothing about the backend conversation itself -- only this provider's
         // own established-session event (configure_codex's "thread.started", configure_claude's "system"/
         // "init") flips this on to Active; until then it's just "attempting to connect". Only a genuinely New
         // session moves to Initializing here -- a reconnecting Completed/Failed session stays as-is so the
-        // establishment handler can still tell a first-ever connection from a reconnect by status alone
+        // establishment handler can still tell a first-ever connection from a reconnect by status alone.
+        // Done before set_ai_status() below, so its fallback-to-current-status reflects Initializing, not
+        // whatever this chat's status was a moment ago
         if(auto* info = ai_info::find(session))
         {
             if(info->status == session_status::New)
                 info->status = session_status::Initializing;
             show_ai_project(*info);
         }
+        if(is_status_target(session))
+            set_ai_status();
         update_send_button();
     });
 
