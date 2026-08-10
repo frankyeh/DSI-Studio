@@ -1,6 +1,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QColor>
 #include <QComboBox>
@@ -34,7 +35,6 @@
 #include <QShortcut>
 #include <QShowEvent>
 #include <QSpinBox>
-#include <QStackedLayout>
 #include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTextFrame>
@@ -312,6 +312,7 @@ AIAgent::AIAgent(MainWindow* parent):
     if(codex_path.isEmpty() && !claude_path.isEmpty())
         current_agent_index = int(ai_provider::Claude);
     update_agent_status_label();
+    refresh_login_buttons(); // ai_codex_login/ai_claude_login clicks reach on_ai_codex_login_clicked()/on_ai_claude_login_clicked() via Qt's on_<objectName>_<signal> auto-connect, same as every other button in this window
 
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
@@ -920,6 +921,7 @@ void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     refresh_codex_models();
+    refresh_login_buttons(); // re-checked every time this window is shown, so a login/logout done outside DSI Studio is picked up
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
@@ -1377,19 +1379,38 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
 }
 
-bool AIAgent::agent_logged_in(ai_provider provider)
+QString AIAgent::agent_login_info(ai_provider provider)
 {
     const auto& executable = agent_entries[int(provider)].executable;
     if(executable.isEmpty())
-        return false;
+        return {};
     bool is_codex = provider == ai_provider::Codex;
     QProcess process;
     process.start(executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
     if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
-        return false;
+        return {};
     if(is_codex)
-        return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
-    return QJsonDocument::fromJson(process.readAllStandardOutput()).object()["loggedIn"].toBool();
+    {
+        if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+            return {};
+        // codex login status has no --json/structured output (email/plan aren't exposed), only this
+        // free-text auth-method line -- see https://github.com/openai/codex/issues/19866
+        auto output = QString::fromUtf8(process.readAllStandardOutput());
+        return output.contains("API key",Qt::CaseInsensitive) ? "API key" :
+               output.contains("ChatGPT",Qt::CaseInsensitive) ? "ChatGPT" :
+               output.contains("Agent Identity",Qt::CaseInsensitive) ? "Agent Identity" : "Signed in";
+    }
+    auto object = QJsonDocument::fromJson(process.readAllStandardOutput()).object();
+    if(!object["loggedIn"].toBool())
+        return {};
+    auto email = object["email"].toString();
+    if(!email.isEmpty())
+    {
+        auto tier = object["subscriptionType"].toString();
+        return tier.isEmpty() ? email : email+" · "+tier.left(1).toUpper()+tier.mid(1);
+    }
+    auto api_provider = object["apiProvider"].toString();
+    return api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
 }
 
 bool AIAgent::run_agent_login(ai_provider provider)
@@ -1476,6 +1497,34 @@ bool AIAgent::run_agent_login(ai_provider provider)
     if(!succeeded)
         QMessageBox::warning(this,"AI Agent",(is_codex ? "Codex" : "Claude")+QString(" sign-in was not completed."));
     return succeeded;
+}
+
+void AIAgent::refresh_login_buttons()
+{
+    auto refresh = [this](ai_provider provider,QPushButton* button,const QString& name)
+    {
+        if(agent_entries[int(provider)].executable.isEmpty())
+        {
+            button->setEnabled(false);
+            button->setText(name+" not found");
+            return;
+        }
+        auto info = agent_login_info(provider);
+        button->setEnabled(info.isEmpty()); // clickable only while not signed in
+        button->setText(info.isEmpty() ? "Sign in to "+name+"..." : name+": "+info);
+    };
+    refresh(ai_provider::Codex,ui->ai_codex_login,"Codex");
+    refresh(ai_provider::Claude,ui->ai_claude_login,"Claude");
+}
+void AIAgent::on_ai_codex_login_clicked()
+{
+    run_agent_login(ai_provider::Codex);
+    refresh_login_buttons();
+}
+void AIAgent::on_ai_claude_login_clicked()
+{
+    run_agent_login(ai_provider::Claude);
+    refresh_login_buttons();
 }
 
 bool AIAgent::try_connect_github_issue(const QString& url)
@@ -1616,7 +1665,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     agent.addItem("Codex");
     agent.addItem("Claude");
     agent.addItem("ChatGPT (Web)");
-    bool has_token = !settings.value("ai/github_token").toString().isEmpty();
+    bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
     if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
     {
         auto disable = [&](int index,bool available,const QString& reason)
@@ -1628,31 +1677,61 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         };
         disable(int(ai_provider::Codex),!agent_entries[int(ai_provider::Codex)].executable.isEmpty(),"Codex was not found");
         disable(int(ai_provider::Claude),!agent_entries[int(ai_provider::Claude)].executable.isEmpty(),"Claude was not found");
-        disable(int(ai_provider::ChatGPT),has_token,"Set up a GitHub token in AI Settings first");
     }
     agent.setCurrentIndex(resume ? int(ai_provider::ChatGPT) : current_agent_index);
     agent.setEnabled(!resume);
     layout.addRow("Agent:",&agent);
 
     QWidget field_container; // declared before its would-be children below, so it is destroyed after them (reverse-declaration-order unwind), not before
-    auto* field_stack = new QStackedLayout(&field_container);
+    auto* field_layout = new QVBoxLayout(&field_container);
+    field_layout->setContentsMargins(0,0,0,0);
     QComboBox model;
     model.setEditable(true); // lets the user type a specific model name (e.g. a dated Claude model), not just pick a known alias
+    model.setMaximumHeight(model.sizeHint().height());
     // web_agent_session_id (not sidebar selection) is the reliable way to find which chat is being resumed
     auto* resume_info = resume ? ai_info::find(web_agent_session_id) : nullptr;
     auto resume_issue_path = resume_info ? resume_info->model_settings["github_issue_url"].toString() : QString();
+    QWidget web;
+    QVBoxLayout web_layout(&web);
+    web_layout.setContentsMargins(0,0,0,0);
     QLineEdit issue_url_edit(resume_issue_path.isEmpty() ? QString() : "https://github.com/"+resume_issue_path);
     issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
+    QPushButton paste("Paste"),setup("Set up with ChatGPT"),open_settings("Open AI Settings");
+    QLabel helper;
+    helper.setWordWrap(true);
+    helper.setMinimumWidth(420);
+    auto* issue_row = new QHBoxLayout;
+    issue_row->addWidget(&issue_url_edit,1);
+    issue_row->addWidget(&paste);
+    web_layout.addLayout(issue_row);
+    web_layout.addWidget(&helper);
+    web_layout.addWidget(&setup,0,Qt::AlignLeft);
+    web_layout.addWidget(&open_settings,0,Qt::AlignLeft);
     QLabel field_label;
-    field_stack->addWidget(&model);
-    field_stack->addWidget(&issue_url_edit);
+    field_layout->addWidget(&model);
+    field_layout->addWidget(&web);
     layout.addRow(&field_label,&field_container);
 
+    auto set_helper = [&](const QString& text)
+    {
+        helper.setText(text);
+        helper.updateGeometry();
+        dialog.adjustSize();
+    };
     auto update_field = [&]()
     {
         bool chatgpt = agent.currentIndex() == int(ai_provider::ChatGPT);
         field_label.setText(chatgpt ? "Issue URL:" : "Model:");
-        field_stack->setCurrentWidget(chatgpt ? static_cast<QWidget*>(&issue_url_edit) : static_cast<QWidget*>(&model));
+        model.setVisible(!chatgpt);
+        web.setVisible(chatgpt);
+        for(auto* widget : {static_cast<QWidget*>(&issue_url_edit),static_cast<QWidget*>(&paste),
+                            static_cast<QWidget*>(&setup)})
+            widget->setEnabled(has_token);
+        setup.setVisible(has_token);
+        open_settings.setVisible(!has_token);
+        set_helper(has_token ?
+            "ChatGPT creates the private GitHub issue used to communicate with DSI Studio." :
+            "GitHub access is not configured in DSI Studio.");
         if(!chatgpt)
             set_model_selector(model,agent_entries[agent.currentIndex()].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
@@ -1660,11 +1739,55 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
+    connect(&paste,&QPushButton::clicked,&dialog,[&]
+    {
+        auto match = QRegularExpression(
+            R"(https://github\.com/[^\s/]+/[^\s/]+/issues/\d+)",
+            QRegularExpression::CaseInsensitiveOption).
+            match(QApplication::clipboard()->text());
+        if(match.hasMatch())
+        {
+            issue_url_edit.setText(match.captured());
+            set_helper("Issue URL pasted. Click Start to connect.");
+        }
+        else
+            set_helper("No GitHub issue URL was found in the clipboard.");
+    });
+    connect(&setup,&QPushButton::clicked,&dialog,[&]
+    {
+        QApplication::clipboard()->setText(
+            "I want to connect ChatGPT (Web) to DSI Studio.\n\n"
+            "First read the public GitHub file:\n\n"
+            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GITHUB_ISSUE_SESSION.md\n\n"
+            "Follow its instructions for starting a new ChatGPT (Web) GitHub issue session. "
+            "Use the GitHub tools available in ChatGPT. If GitHub is unavailable, guide me through enabling it first. "
+            "Create or select an appropriate private personal GitHub repository, preferably DSI-Studio-Connect, "
+            "create the required session issue, and clearly give me the complete Issue URL to paste into DSI Studio.\n\n"
+            "Do not send DSI Studio commands until I confirm that DSI Studio is connected to the issue.");
+        QDesktopServices::openUrl(QUrl("https://chatgpt.com/"));
+        set_helper("Setup instructions copied. Paste them into ChatGPT. When ChatGPT gives you an Issue URL, return here and click Paste.");
+    });
+    connect(&open_settings,&QPushButton::clicked,&dialog,[&]
+    {
+        on_ai_quick_settings_clicked();
+        has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
+        update_field();
+    });
 
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
-    buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
+    auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     layout.addRow(&buttons);
-    connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
+    connect(accept,&QPushButton::clicked,&dialog,[&]
+    {
+        if(agent.currentIndex() == int(ai_provider::ChatGPT))
+        {
+            if(!has_token)
+                return open_settings.click();
+            if(issue_url_edit.text().trimmed().isEmpty())
+                return setup.click();
+        }
+        dialog.accept();
+    });
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
 
     if(dialog.exec() != QDialog::Accepted)
@@ -1812,16 +1935,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
-    QWidget login_row;
-    QHBoxLayout login_layout(&login_row);
-    login_layout.setContentsMargins(0,0,0,0);
-    QPushButton codex_login("Sign in to Codex..."),claude_login("Sign in to Claude...");
-    codex_login.setEnabled(!agent_entries[int(ai_provider::Codex)].executable.isEmpty());
-    claude_login.setEnabled(!agent_entries[int(ai_provider::Claude)].executable.isEmpty());
-    login_layout.addWidget(&codex_login);
-    login_layout.addWidget(&claude_login);
-    connect(&codex_login,&QPushButton::clicked,&dialog,[this]{run_agent_login(ai_provider::Codex);});
-    connect(&claude_login,&QPushButton::clicked,&dialog,[this]{run_agent_login(ai_provider::Claude);});
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox show_reasoning("Show reasoning");
@@ -1837,7 +1950,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     github_pat.setPlaceholderText("required to connect a GitHub issue");
     layout.addRow("Ollama host/IP:",&host);
     layout.addRow("Ollama port:",&port);
-    layout.addRow(&login_row);
     layout.addRow(&history);
     layout.addRow(&show_reasoning);
     layout.addRow("Debug mode:",&debug);
@@ -1911,10 +2023,11 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!configured)
             return fail_launch("Set the Ollama host/IP in AI Settings first.");
     }
-    else if(!agent_logged_in(provider))
+    else if(agent_login_info(provider).isEmpty())
     {
         if(!run_agent_login(provider))
             return fail_launch(info.launch_name+" sign-in was not completed.",false);
+        refresh_login_buttons();
     }
     info.save_config(); // model_settings itself is untouched by this launch -- nothing new to persist here, just re-confirming it under the now-current status
 
