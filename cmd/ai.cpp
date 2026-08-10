@@ -38,6 +38,7 @@ void ai_info::save_config() const
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
         file.write(QJsonDocument(QJsonObject{
             {"agent",agent_name},
+            {"provider",int(provider)}, // reload must trust this, not re-guess from agent_name -- that misclassifies an AgentServer session (or fails outright for a name identify_provider() doesn't recognize)
             {"model_settings",model_settings}}).toJson(QJsonDocument::Compact));
 }
 
