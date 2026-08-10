@@ -102,6 +102,11 @@ bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
 }
+static QUrl agent_install_url(ai_provider provider) // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
+{
+    return QUrl(provider == ai_provider::Codex ?
+        "https://chatgpt.com/codex" : "https://claude.com/product/claude-code");
+}
 static void update_status_dot(QLabel* dot,session_status status,bool pulse)
 {
     if(!dot)
@@ -304,8 +309,7 @@ AIAgent::AIAgent(MainWindow* parent):
         connect(button,&QPushButton::clicked,this,[this,provider]
         {
             if(agent_entries[int(provider)].executable.isEmpty()) // not installed -- nothing to sign into yet
-                QDesktopServices::openUrl(QUrl(provider == ai_provider::Codex ?
-                    "https://chatgpt.com/codex" : "https://claude.com/product/claude-code"));
+                QDesktopServices::openUrl(agent_install_url(provider));
             else
                 run_agent_login(provider);
             refresh_login_buttons();
@@ -2302,7 +2306,10 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     info.launch_name = provider == ai_provider::Codex ? "Codex" : "Claude";
     info.launch_executable = agent_entries[int(provider)].executable;
     if(info.launch_executable.isEmpty())
-        return fail_launch(info.launch_name+" executable was not found.");
+    {
+        QDesktopServices::openUrl(agent_install_url(provider)); // same as the sidebar's Install button
+        return fail_launch(info.launch_name+" is not installed. Opening the install page...");
+    }
 
     // Resolve work directory
     auto project_dir = ui->ai_work_dir->text().trimmed();
