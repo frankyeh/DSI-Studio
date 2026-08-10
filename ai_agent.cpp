@@ -1689,10 +1689,6 @@ static QString ai_dialog_style()
         "QComboBox:hover{background-color:#eeeeef;border-color:#c8c8cc;}"
         "QComboBox:focus{border-color:#8a8a8f;}"
         "QComboBox::drop-down{border:0;width:22px;}" // otherwise Qt draws the platform's native (raised/beveled) button here
-        // an editable QComboBox (e.g. the model picker) displays its current text through a nested QLineEdit --
-        // without this override, the blanket QLineEdit rule above stacks its own border/padding/background
-        // inside the QComboBox's, which can push the nested line edit's visible text area to nothing
-        "QComboBox QLineEdit{border:none;background:transparent;padding:0 2px;}"
         "QComboBox QAbstractItemView{background-color:#ffffff;border:1px solid #d9d9dc;outline:0;padding:2px;selection-background-color:#e5e5e7;selection-color:#202124;}"
         "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:6px 14px;}"
         "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
@@ -1875,8 +1871,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     QWidget field_container,local,web; // declared before their would-be children below, so they are destroyed after them
     auto* field_layout = new QVBoxLayout(&field_container);
     field_layout->setContentsMargins(0,0,0,0);
-    QComboBox model;
-    model.setEditable(true); // lets the user type a specific model name (e.g. a dated Claude model), not just pick a known alias
+    QComboBox model; // not editable -- same as the Agent combo above, which never had the popup-visibility problem an editable combo did
     model.setMaximumHeight(model.sizeHint().height());
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
@@ -2026,7 +2021,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         return false;
 
     agent_index = agent.currentIndex();
-    value = (agent_index == int(ai_provider::ChatGPT)) ? issue_url_edit.text().trimmed() : model_combo_key(model);
+    value = (agent_index == int(ai_provider::ChatGPT)) ? issue_url_edit.text().trimmed() :
+            model_combo_key(agent_index == int(ai_provider::Codex) ? codex_model : claude_model);
     return true;
 }
 
