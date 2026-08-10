@@ -68,8 +68,18 @@ static ai_info* assign_ai_session(const QString& from,const QString& to)
     if(node.mapped().project_items)
         node.mapped().project_items->setData(Qt::UserRole,to);
     auto inserted = ai_infos.insert(std::move(node));
+    auto move_file = [](const QString& source,const QString& target)
+    {
+        if(QFile::exists(source) && !QFile::rename(source,target))
+            tipl::warning() << "cannot move " << source.toStdString()
+                            << " to " << target.toStdString();
+    };
+    move_file(ai_info::history_file(from),ai_info::history_file(to));
+    move_file(ai_info::config_file(from),ai_info::config_file(to));
+    QSettings settings;
     if(!inserted.position->second.project_titles.isEmpty())
-        QSettings().setValue("ai/title/"+to,inserted.position->second.project_titles);
+        settings.setValue("ai/title/"+to,inserted.position->second.project_titles);
+    settings.remove("ai/title/"+from);
     return &inserted.position->second;
 }
 QByteArray claude_input(const QString& text)
@@ -2039,7 +2049,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!found || (status == session_status::New &&
                       found->status <= session_status::Initializing))
         {
-            auto message = failed ? error_message :
+            auto message = found && found->status == session_status::New ?
+                           found->status_message : failed ? error_message :
                            "AI agent ended before creating a new chat.";
             restore_new_chat(message,false);
         }
@@ -2202,11 +2213,12 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                     ai_log("invalid thread_id from Codex (not a UUID): "+session);
                     if(auto* info = ai_info::find(old_session))
                     {
-                        set_ai_status(info->sessions,session_status::Failed,
+                        set_ai_status(info->sessions,status == session_status::New ?
+                                      session_status::New : session_status::Failed,
                                       "Codex returned an invalid thread ID.");
                         show_ai_project(*info);
                     }
-                    continue;
+                    return process->kill();
                 }
                 auto* old_info = ai_info::find(old_session);
                 // never established before -- still just DSI Studio's own placeholder, safe to rename in place
