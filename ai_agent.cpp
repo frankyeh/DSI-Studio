@@ -301,7 +301,15 @@ AIAgent::AIAgent(MainWindow* parent):
     // "Sign in to Claude...") are shown only in that brief unshown window, never rendered to the user.
     for(auto [button,provider] : {std::pair{ui->ai_codex_login,ai_provider::Codex},
                                    std::pair{ui->ai_claude_login,ai_provider::Claude}})
-        connect(button,&QPushButton::clicked,this,[this,provider]{run_agent_login(provider);refresh_login_buttons();});
+        connect(button,&QPushButton::clicked,this,[this,provider]
+        {
+            if(agent_entries[int(provider)].executable.isEmpty()) // not installed -- nothing to sign into yet
+                QDesktopServices::openUrl(QUrl(provider == ai_provider::Codex ?
+                    "https://chatgpt.com/codex" : "https://claude.com/product/claude-code"));
+            else
+                run_agent_login(provider);
+            refresh_login_buttons();
+        });
 
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
@@ -1517,8 +1525,8 @@ void AIAgent::refresh_login_buttons()
     {
         if(agent_entries[int(provider)].executable.isEmpty())
         {
-            button->setEnabled(false);
-            button->setText(name+" not found");
+            button->setEnabled(true); // clicking opens the CLI's install page
+            button->setText("Install "+name);
             return;
         }
         auto info = agent_login_info(provider);
