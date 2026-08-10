@@ -2344,30 +2344,27 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
     if(input == ai_input::User)
     {
-        // still New: this provider's own session-established event (Codex "thread.started", Claude
-        // stream-json "system"/"init") is the sole recorder -- recording now would only live in memory
-        // (record_history() skips the file while status is New) and get duplicated once that event fires
-        if(info.status != session_status::New)
-            add_ai_history(info,"user",text);
+        // recorded here, once, unconditionally, the moment it's sent -- not deferred to whichever async
+        // establishment event (Codex "thread.started", Claude stream-json "system"/"init") happens to
+        // confirm the session later. That deferral was the actual bug: it required stashing this text in
+        // the async handler's own closure to "replay" once establishment confirmed, and if the backend ever
+        // sent that one-time event more than once (observed with an Ollama-routed session), the stale
+        // stashed text got replayed again too, duplicating the opening message into the chat history
+        add_ai_history(info,"user",text);
         ui->ai_chat_input->clear();
     }
 
     // this session was never established, so it has no real id worth preserving -- back to New entirely,
-    // as if this attempt never happened, rather than left marked Failed
-    auto restore_new_chat = [=](const QString& message,bool show_history)
+    // as if this attempt never happened, rather than left marked Failed. The message itself stays recorded
+    // (it really was sent) -- this just explains what happened to it, the same as any other failed launch
+    auto restore_new_chat = [=](const QString& message)
     {
         QMessageBox::warning(this,"AI Agent",message);
         if(auto* info = ai_info::find(process->objectName()))
         {
             info->processes = nullptr;
             set_ai_status(info->sessions,session_status::New,message);
-            show_ai_project(*info);
-            if(selected_info() == info)
-            {
-                ui->ai_chat_input->setPlainText(text);
-                if(show_history)
-                    ui->ai_chat_history->setPlainText(message);
-            }
+            add_ai_history(*info,"activity",message);
         }
     };
 
@@ -2412,7 +2409,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         auto* found = ai_info::find(session);
         // A first launch that was never established has no real id to preserve; a reconnect keeps its id.
         if(!found || (status == session_status::New && found->status == session_status::New))
-            restore_new_chat(message,true);
+            restore_new_chat(message);
         else
         {
             auto& info = ai_infos[session];
@@ -2454,7 +2451,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             auto message = found && found->status == session_status::New ?
                            found->status_message : failed ? error_message :
                            "AI agent ended before creating a new chat.";
-            restore_new_chat(message,false);
+            restore_new_chat(message);
         }
         else
         {
@@ -2515,7 +2512,7 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
     process->setProcessEnvironment(env);
 
     connect(process,&QProcess::readyReadStandardOutput,this,
-            [=,status = info.status]
+            [=]
             {
                 while(process->canReadLine())
                 {
@@ -2530,14 +2527,14 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                         {
                             // the session-established event: Claude's own stream-json protocol confirms the
                             // conversation actually initialized, not just that the OS process started -- the
-                            // Codex equivalent is "thread.started" in configure_codex()
+                            // Codex equivalent is "thread.started" in configure_codex(). Status/config only --
+                            // the opening message was already recorded, once, synchronously, when it was sent
+                            // (see prepare_ai()); this event has no content-recording role at all anymore
                             if(auto* info = ai_info::find(process->objectName()))
                             {
                                 set_ai_status(info->sessions,session_status::Thinking,
                                               "Session started; waiting for agent input");
                                 info->save_config();
-                                if(status == session_status::New)
-                                    add_ai_history(*info,"user",text);
                             }
                         }
                         else if(subtype == "thinking_tokens")
@@ -2637,11 +2634,12 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                         info->model_settings = old_info ? old_info->model_settings : QJsonObject();
                     info->save_config();
                 }
+                // status/rename only -- the opening message was already recorded, once, synchronously, when
+                // it was sent (see prepare_ai()); this event has no content-recording role at all anymore
                 if(info && old_session != session)
                 {
                     process->setObjectName(session);
                     info->processes = process;
-                    add_ai_history(*info,"user",text);
                 }
                 continue;
             }
