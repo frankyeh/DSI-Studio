@@ -1238,7 +1238,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     for(const auto& cmd : cmds)
     {
         auto command_name = QString::fromUtf8(cmd[0]);
-        bool hint = true; // false for state/operational errors that reading the manuals won't fix; most such cases are now reported via output instead of error, so this only matters for whatever's left
         auto window_before = info.current_window;
         QString output,error;
         QString* prev_capture; // a reentrant request handled during this command's processEvents() calls also captures; restore instead of clearing
@@ -1252,10 +1251,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         auto base_cwd = session_cwd.isEmpty() ? prev_cwd : session_cwd;
         if(base_cwd != prev_cwd)
             QDir::setCurrent(base_cwd);
-        // reports error/output, whichever applies; caller writes "if(!finish(...)) break; continue;". Also the shared
-        // cleanup for every exit path: stops capturing console output for this command, and releases a stale lock
-        // if the command retargeted (open_fib/open_src/open_image/set_window)
-        auto finish = [&](const QString& output = {})
+        // reports error/output, whichever applies; caller writes "if(!finish()) break;". Also the shared cleanup
+        // for every exit path: stops capturing console output for this command, and releases a stale lock if
+        // the command retargeted (open_fib/open_src/open_image/set_window)
+        auto finish = [&]
         {
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -1274,7 +1273,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(!output.isEmpty())
                 result["output"] = output;
             if(!error.isEmpty())
-                result["error"] = hint ? error+". Read DSI Studio Manuals and retry." : error;
+                result["error"] = error+". Read DSI Studio Manuals and retry.";
             results.append(result);
             return error.isEmpty();
         };
@@ -1435,9 +1434,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         output = strip_ansi(output);
         error = strip_ansi(error);
 
-        if(!finish(output))
+        if(!finish())
             break;
-        continue;
     }
     unlock_target(); // release whatever is still locked when the batch finishes normally
 
