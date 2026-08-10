@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QColor>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDesktopServices>
@@ -89,6 +90,32 @@ static void stop_blink(QWidget* row)
 bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
+}
+static void update_status_dot(QLabel* dot,session_status status,bool pulse)
+{
+    if(!dot)
+        return;
+    bool running = status == session_status::Initializing ||
+                   status == session_status::Thinking;
+    if(pulse && running)
+        dot->setProperty("pulse",!dot->property("pulse").toBool());
+    else if(!running)
+        dot->setProperty("pulse",false);
+
+    QColor color;
+    switch(status)
+    {
+    case session_status::New:          color = "#9aa0a6"; break;
+    case session_status::Initializing: color = "#fbbc04"; break;
+    case session_status::WaitingUser:  color = "#34a853"; break;
+    case session_status::Thinking:     color = "#a142f4"; break;
+    case session_status::Completed:    color = "#9aa0a6"; break;
+    case session_status::Failed:       color = "#ea4335"; break;
+    }
+    if(dot->property("pulse").toBool())
+        color = color.lighter(125);
+    dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
+    dot->setToolTip(session_status_text(status));
 }
 
 void AIAgent::ai_log(QString text)
@@ -199,6 +226,10 @@ AIAgent::AIAgent(MainWindow* parent):
         auto status = ui->ai_status->text();
         ui->ai_status->setText(
             status.endsWith("...") ? status.chopped(2) : status+".");
+        if(auto* info = selected_info())
+            if(auto* row = ui->ai_project_list->itemWidget(info->project_items))
+                update_status_dot(row->findChild<QLabel*>("ai_project_status_dot"),
+                                  info->status,true);
         ui->ai_status->repaint();
     });
     ui->ai_status->hide();
@@ -900,29 +931,8 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
     if(info.project_items)
     {
         auto* row = ui->ai_project_list->itemWidget(info.project_items);
-        auto* dot = row ? row->findChild<QLabel*>("ai_project_status_dot") : nullptr;
-        if(dot)
-        {
-            bool running = info.status == session_status::Initializing ||
-                           info.status == session_status::Thinking;
-            if(pulse && running)
-                dot->setProperty("pulse",!dot->property("pulse").toBool());
-            else if(!running)
-                dot->setProperty("pulse",false);
-            bool light = dot->property("pulse").toBool();
-            QString color;
-            switch(info.status)
-            {
-            case session_status::New:          color = "#9aa0a6"; break;
-            case session_status::Initializing: color = light ? "#fdd663" : "#fbbc04"; break;
-            case session_status::WaitingUser:  color = "#34a853"; break;
-            case session_status::Thinking:     color = light ? "#c58af9" : "#a142f4"; break;
-            case session_status::Completed:    color = "#9aa0a6"; break;
-            case session_status::Failed:       color = "#ea4335"; break;
-            }
-            dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color));
-            dot->setToolTip(session_status_text(info.status));
-        }
+        update_status_dot(row ? row->findChild<QLabel*>("ai_project_status_dot") : nullptr,
+                          info.status,pulse);
     }
 
     if(selected_info() != &info)
@@ -998,8 +1008,12 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     dispatching_info = &info;
     auto result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     dispatching_info = nullptr;
-    if(info.processes && info.processes->state() != QProcess::NotRunning)
+    if((info.processes && info.processes->state() != QProcess::NotRunning) ||
+       (info.provider == ai_provider::ChatGPT && session == web_agent_session_id &&
+        !github_issue_api.isEmpty()))
         set_ai_status(session,session_status::Thinking,
+                      info.provider == ai_provider::ChatGPT ?
+                      "Request completed; monitoring GitHub issue" :
                       "Command completed; waiting for agent input");
     else
         set_ai_status(session,session_status::WaitingUser,
@@ -1456,8 +1470,8 @@ bool AIAgent::try_connect_github_issue(const QString& url)
     }
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
     if(auto* info = ai_info::find(web_agent_session_id))
-        set_ai_status(info->sessions,session_status::WaitingUser,
-                      "Connected; waiting for your request.");
+        set_ai_status(info->sessions,session_status::Thinking,
+                      "Connected; monitoring GitHub issue");
     update_send_button();
     update_agent_status_label();
     return true;
@@ -1480,7 +1494,7 @@ void AIAgent::update_agent_status_label()
     {
         // prefer the live connection's own link: model_settings["github_issue_url"] only updates once a request
         // actually arrives on it, so right after reconnecting to a *different* link it would still show the old one
-        QString path = info->status == session_status::WaitingUser ?
+        QString path = info->sessions == web_agent_session_id && !github_issue_api.isEmpty() ?
             QString(github_issue_api.toString()).remove("https://api.github.com/repos/") :
             info->model_settings["github_issue_url"].toString();
         ui->ai_agent_status->setText(path.isEmpty() ? "ChatGPT(Web)" : "ChatGPT(Web)"+dot+path);
@@ -1532,7 +1546,8 @@ AIAgent::send_action AIAgent::current_send_action() const
     if(!info || info->provider == ai_provider::AgentServer)
         return send_action::Disabled;
     if(info->provider == ai_provider::ChatGPT)
-        return info->status == session_status::WaitingUser ? send_action::StopWeb : send_action::ResumeWeb;
+        return info->sessions == web_agent_session_id && !github_issue_api.isEmpty() ?
+            send_action::StopWeb : send_action::ResumeWeb;
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
     bool running = info->status == session_status::Initializing || info->status == session_status::WaitingUser ||
                    info->status == session_status::Thinking;
