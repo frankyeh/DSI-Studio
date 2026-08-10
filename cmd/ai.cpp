@@ -28,7 +28,11 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
+    // Codex's placeholder id is about to be renamed once "thread.started" reports the real one -- writing now
+    // would just be discarded. Claude's id is stable from the start (pre-declared via --session-id), so it's
+    // always safe to persist regardless of status.
+    if((provider == ai_provider::Codex && status == session_status::New) ||
+       !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
@@ -74,7 +78,7 @@ bool ai_info::save_title(QString title)
         return false;
     if(title == project_titles)
         return true;
-    if(status == session_status::New)
+    if(provider == ai_provider::Codex && status == session_status::New) // sessions is about to be renamed -- see save_config()
     {
         project_titles = title;
         return true;
@@ -108,26 +112,18 @@ ai_info* ai_info::create(QString session,QString agent)
     return &info;
 }
 
-static void write_history(const ai_info& info,QIODevice::OpenMode mode,
-                   const QList<QJsonObject>& entries)
-{
-    if(info.status == session_status::New ||
-       !QSettings().value("ai/keep_history",true).toBool())
-        return;
-    QFile file(ai_info::history_file(info.sessions));
-    bool okay = file.open(QIODevice::WriteOnly|mode);
-    for(const auto& entry : entries)
-        okay = okay && file.write(QJsonDocument(entry).toJson(
-                                      QJsonDocument::Compact)+'\n') >= 0;
-    if(!okay)
-        tipl::warning() << "cannot write ai history : "
-                        << file.errorString().toStdString();
-}
 QJsonObject ai_info::record_history(QJsonObject entry)
 {
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     projects.append(entry);
-    write_history(*this,QIODevice::Append,QList<QJsonObject>{entry});
+    if((provider != ai_provider::Codex || status != session_status::New) && // sessions is about to be renamed -- see save_config()
+       QSettings().value("ai/keep_history",true).toBool())
+    {
+        QFile file(history_file(sessions));
+        if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
+           file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n') < 0)
+            tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
+    }
     return entry;
 }
 QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
