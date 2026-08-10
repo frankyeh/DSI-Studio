@@ -317,7 +317,8 @@ AIAgent::AIAgent(MainWindow* parent):
         if(auto* process = ai_infos[session].processes)
         {
             process->disconnect(); process->kill(); process->deleteLater(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
-            set_ai_status();
+            if(is_status_target(session))
+                set_ai_status();
         }
         if(session == web_agent_session_id)
             disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
@@ -658,7 +659,8 @@ bool AIAgent::handle_github_reply(QNetworkReply* reply,quint64 connection_id,int
             info->status = session_status::Failed;
             show_ai_project(*info);
         }
-        set_ai_status("GitHub issue channel authorization failed.",true);
+        if(is_status_target(web_agent_session_id))
+            set_ai_status("GitHub issue channel authorization failed.",true);
         return false;
     }
     return true;
@@ -901,8 +903,6 @@ void AIAgent::closeEvent(QCloseEvent* event)
 void AIAgent::set_ai_status(QString status,bool temporary)
 {
     ai_status_timer->stop();
-    if(!status.isEmpty())
-        ai_status_activity = status;
     // reflects only the currently selected chat, not any other chat's background activity -- Active itself
     // is excluded: it means idle, waiting on the user, not waiting on the agent
     auto* status_info = selected_info();
@@ -910,10 +910,9 @@ void AIAgent::set_ai_status(QString status,bool temporary)
                                     status_info->status == session_status::Thinking);
     if(ongoing && (status.isEmpty() || temporary))
     {
-        status = ai_status_activity;
-        if(status.endsWith('.'))
-            status.chop(1);
-        status += ", waiting for agent.";
+        // always this chat's own current status, never a cached message -- a per-agent cache would show
+        // whichever chat set it last, even after switching to a different, unrelated chat
+        status = session_status_text(status_info->status);
         ai_status_timer->setSingleShot(false);
         ai_status_timer->start(500);
     }
@@ -1704,7 +1703,7 @@ void AIAgent::new_chat_dialog(bool resume)
     create_new_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
-    set_ai_status();
+    set_ai_status(); // create_new_chat() above already selected it
 }
 
 void AIAgent::on_ai_new_chat_clicked()
@@ -1849,7 +1848,8 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     {
         preserve_pending();
         auto message = launch.name+" executable was not found.";
-        set_ai_status(message,true);
+        if(is_status_target(info.sessions))
+            set_ai_status(message,true);
         QMessageBox::warning(this,"AI Agent",message);
         return launch;
     }
@@ -1869,7 +1869,8 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!configured)
         {
             preserve_pending();
-            set_ai_status("Ollama is not configured.",true);
+            if(is_status_target(info.sessions))
+                set_ai_status("Ollama is not configured.",true);
             QMessageBox::warning(
                 this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
             return launch;
@@ -1877,11 +1878,13 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     }
     else if(!agent_logged_in(provider))
     {
-        set_ai_status(launch.name+" needs sign-in: check your browser.",true);
+        if(is_status_target(info.sessions))
+            set_ai_status(launch.name+" needs sign-in: check your browser.",true);
         if(!run_agent_login(provider))
         {
             preserve_pending();
-            set_ai_status(launch.name+" is not signed in.",true);
+            if(is_status_target(info.sessions))
+                set_ai_status(launch.name+" is not signed in.",true);
             return launch;
         }
     }
@@ -1950,7 +1953,8 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         auto session = process->objectName();
         ai_log("connecting to "+ launch.name + "@" + session+
             " pid:"+QString::number(process->processId()));
-        set_ai_status();
+        if(is_status_target(session))
+            set_ai_status();
         // the OS process starting proves nothing about the backend conversation itself -- only this provider's
         // own established-session event (configure_codex's "thread.started", configure_claude's "system"/
         // "init") flips this on to Active; until then it's just "attempting to connect"
@@ -2270,8 +2274,9 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         else
             info.prompts.append(text);
 
-        set_ai_status(send ? "Message sent to Claude." :
-                             "Message queued for the AI agent.",!send);
+        if(is_status_target(info.sessions))
+            set_ai_status(send ? "Message sent to Claude." :
+                                 "Message queued for the AI agent.",!send);
         return;
     }
 
@@ -2293,7 +2298,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         configure_claude(launch,info,text);
     ai_log("start " + launch.executable +
            " args: " + args.join(" ").remove("\n"));
-    set_ai_status("Starting "+launch.name+"...");
+    if(is_status_target(info.sessions))
+        set_ai_status("Starting "+launch.name+"...");
     launch.process->start(launch.executable,args);
 }
 
