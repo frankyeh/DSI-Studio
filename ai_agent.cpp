@@ -903,10 +903,11 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     ai_status_timer->stop();
     if(!status.isEmpty())
         ai_status_activity = status;
-    // reflects only the currently selected chat, not any other chat's background activity
+    // reflects only the currently selected chat, not any other chat's background activity -- Active itself
+    // is excluded: it means idle, waiting on the user, not waiting on the agent
     auto* status_info = selected_info();
     bool ongoing = status_info && (status_info->status == session_status::Initializing ||
-                                    status_info->status == session_status::Active);
+                                    status_info->status == session_status::Thinking);
     if(ongoing && (status.isEmpty() || temporary))
     {
         status = ai_status_activity;
@@ -1064,6 +1065,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     case session_status::New:          status_color = "#9aa0a6"; break;
     case session_status::Initializing: status_color = "#fbbc04"; break;
     case session_status::Active:       status_color = "#34a853"; break;
+    case session_status::Thinking:     status_color = "#a142f4"; break;
     case session_status::Completed:    status_color = "#4285f4"; break;
     case session_status::Failed:       status_color = "#ea4335"; break;
     }
@@ -1534,7 +1536,8 @@ AIAgent::send_action AIAgent::current_send_action() const
     if(info->provider == ai_provider::ChatGPT)
         return info->status == session_status::Active ? send_action::StopWeb : send_action::ResumeWeb;
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
-    bool running = info->status == session_status::Initializing || info->status == session_status::Active;
+    bool running = info->status == session_status::Initializing || info->status == session_status::Active ||
+                   info->status == session_status::Thinking;
     return (running && !has_input) ? send_action::StopLocal : send_action::Send;
 }
 
@@ -2101,15 +2104,25 @@ QStringList AIAgent::configure_claude(
                                     set_ai_status("Agent session ready.",true);
                             }
                         }
-                        else if(subtype == "thinking_tokens" &&
-                                ai_status_activity != "Thinking" &&
-                                is_status_target(process->objectName()))
-                            set_ai_status("Thinking");
+                        else if(subtype == "thinking_tokens")
+                        {
+                            if(auto* info = ai_info::find(process->objectName());
+                               info && info->status != session_status::Thinking)
+                            {
+                                info->status = session_status::Thinking;
+                                if(is_status_target(process->objectName()))
+                                    set_ai_status("Thinking");
+                            }
+                        }
                         continue;
                     }
 
                     if(event_type != "assistant")
                         continue;
+
+                    if(auto* info = ai_info::find(process->objectName());
+                       info && info->status == session_status::Thinking)
+                        info->status = session_status::Active; // done composing -- back to idle, waiting on the user again
 
                     auto message = event["message"].toObject();
                     QStringList chats,reasonings;
