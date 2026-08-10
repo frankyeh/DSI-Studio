@@ -1909,10 +1909,11 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
 
     if(input == ai_input::User)
     {
-        // a fresh Codex session doesn't have its real id yet: recording now would only live in memory
-        // (write_history() skips the file while status is New) and get duplicated once "thread.started"
-        // renames the session and records the same text again -- let that be the sole recorder instead
-        if(info && !(provider == ai_provider::Codex && info->status == session_status::New))
+        // a still-New session (only possible for Codex here -- Claude was just flipped to Resume above)
+        // doesn't have its real id yet: recording now would only live in memory (write_history() skips
+        // the file while status is New) and get duplicated once "thread.started" records it again under
+        // the real id -- let that be the sole recorder instead
+        if(info && info->status != session_status::New)
             add_ai_history(*info,"user",text);
         ui->ai_chat_input->clear();
     }
