@@ -42,8 +42,8 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    // New is the only status with no real id yet (Codex's placeholder is still about to be renamed) --
-    // everything past that has a stable id safe to write under
+    // New has nothing to persist. Files written under an Initializing Codex placeholder are migrated
+    // to its real thread ID by assign_ai_session().
     if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
@@ -114,7 +114,8 @@ ai_info* ai_info::create(QString session,QString agent,ai_provider provider) // 
 {
     if(provider == ai_provider::Infer)
         provider = identify_provider(agent);
-    if(session.isEmpty() || provider == ai_provider::Unknown)
+    if(session.isEmpty() || provider < ai_provider::Codex ||
+       provider > ai_provider::AgentServer)
         return nullptr;
     if(auto* info = find(session))
         return info;
