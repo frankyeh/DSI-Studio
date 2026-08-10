@@ -200,15 +200,14 @@ AIAgent::AIAgent(MainWindow* parent):
     // the same value run_shell's "cd" updates; also used as --add-dir when launching Codex/Claude
     auto sync_work_dir = [this]
     {
-        auto* item = ui->ai_project_list->currentItem();
-        if(!item)
+        auto* info = selected_info();
+        if(!info)
             return;
-        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
         auto cwd = ui->ai_work_dir->text().trimmed();
-        if(info.model_settings["cwd"].toString() != cwd)
+        if(info->model_settings["cwd"].toString() != cwd)
         {
-            info.model_settings["cwd"] = cwd;
-            info.save_config();
+            info->model_settings["cwd"] = cwd;
+            info->save_config();
         }
     };
     connect(ui->ai_work_dir,&QLineEdit::editingFinished,this,sync_work_dir);
@@ -334,14 +333,15 @@ AIAgent::AIAgent(MainWindow* parent):
         "QMenu::separator{height:1px;background:#dedee1;margin:4px;}");
     connect(ai_project_menu->addAction("Rename"),&QAction::triggered,this,[this]
     {
-        auto* item = ui->ai_project_list->currentItem();
-        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        auto* info = selected_info();
+        if(!info) // menu can only be reached via a row's own "..." button, but guard against it anyway rather than trust that indirectly
+            return;
         bool okay;
         auto title = QInputDialog::getText(
             this,"Rename Chat","Chat name:",QLineEdit::Normal,
-            info.title(),&okay);
-        if(okay && info.save_title(title))
-            show_ai_project(info);
+            info->title(),&okay);
+        if(okay && info->save_title(title))
+            show_ai_project(*info);
         else if(okay)
             QMessageBox::warning(
                 this,"Rename Chat","The chat name could not be saved.");
@@ -349,10 +349,12 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(ai_project_menu->addAction("Details..."),
             &QAction::triggered,this,[this]
     {
-        auto* item = ui->ai_project_list->currentItem();
+        auto* info = selected_info();
+        if(!info)
+            return;
         QMessageBox details(
             QMessageBox::Information,"Chat Details",
-            ai_infos[item->data(Qt::UserRole).toString()].details(),
+            info->details(),
             QMessageBox::Ok,this);
         details.setTextInteractionFlags(
             Qt::TextSelectableByMouse|Qt::TextSelectableByKeyboard);
@@ -365,8 +367,9 @@ AIAgent::AIAgent(MainWindow* parent):
         if(row < 0)
             return;
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
-        if(auto* process = ai_infos[session].processes)
+        if(auto* found = ai_info::find(session);found && found->processes)
         {
+            auto* process = found->processes;
             process->disconnect(); process->kill(); process->deleteLater(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         }
         if(session == web_agent_session_id)
@@ -400,14 +403,16 @@ AIAgent::AIAgent(MainWindow* parent):
         }
 
         stop_blink(ui->ai_project_list->itemWidget(item));
-        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
-        ui->ai_work_dir->setText(info.model_settings.contains("cwd") ?
-            info.model_settings["cwd"].toString() : main_window.work_dir());
+        auto* info = selected_info();
+        if(!info) // item is a real row, but guard anyway rather than trust that indirectly
+            return;
+        ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
+            info->model_settings["cwd"].toString() : main_window.work_dir());
         // no longer copies the selected chat's agent/model into the app-wide default: update_agent_status_label()
         // reads this chat's own model_settings directly, and merely looking at a chat shouldn't change what the
         // next New Chat starts with
         update_agent_status_label();
-        show_ai_project(info);
+        show_ai_project(*info);
         update_send_button();
     });
 
@@ -439,7 +444,13 @@ AIAgent::AIAgent(MainWindow* parent):
             ai_info::create(session,agent,ai_provider::Infer);
         if(!ai)
             continue;
-        set_ai_status(ai->sessions,session_status::Completed,"Previous chat loaded.");
+        // absent "established" means a config predating this field, from back when save_config() itself
+        // only ever wrote for an established session -- so absent defaults to true, same as those old files
+        // always implied. Present-and-false means a real, current record of a session that never got a
+        // backend thread; loading it as Completed/resumable would try to --resume an id nothing ever confirmed
+        bool established = config["established"].toBool(true);
+        set_ai_status(ai->sessions,established ? session_status::Completed : session_status::New,
+                      established ? "Previous chat loaded." : "Previous attempt never connected.");
         ai->model_settings = config.contains("model_settings") ?
             config["model_settings"].toObject() : first["model_settings"].toObject();
         ai->project_titles = settings.value("ai/title/"+session).toString();
@@ -943,6 +954,7 @@ void AIAgent::closeEvent(QCloseEvent* event)
     for(auto& entry : ai_infos)
         if(auto* process = entry.second.processes)
         {
+            entry.second.prompts.clear(); // stop means stop: no auto-continue into a queued message (same as StopLocal) -- otherwise a message queued on a busy session would relaunch that agent right after this window tried to shut everything down
             process->setProperty("user_stopped",true);
             process->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         }
@@ -1563,8 +1575,16 @@ bool AIAgent::try_connect_github_issue(const QString& url)
     }
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
     if(auto* info = ai_info::find(web_agent_session_id))
+    {
+        // bound the moment the connection succeeds, not deferred until a request happens to arrive
+        // (poll_github_issue() also does this for the reactive/resume case) -- the chat's own record is
+        // now always current, so update_agent_status_label() never needs to prefer github_issue_api over it
+        info->model_settings["github_issue_url"] =
+            QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
+        info->save_config();
         set_ai_status(info->sessions,session_status::WaitingUser, // established and idle -- Thinking is reserved for actually processing a request (see poll_github_issue())
                       "Connected; monitoring GitHub issue");
+    }
     update_send_button();
     update_agent_status_label();
     return true;
@@ -1580,30 +1600,27 @@ void AIAgent::update_agent_status_label()
     {
         if(info && info->provider == ai_provider::ChatGPT)
         {
-            // prefer the live connection's own link: model_settings["github_issue_url"] only updates once a
-            // request actually arrives on it, so right after reconnecting to a *different* link it would
-            // still show the old one
-            QString path = github_connected(*info) ?
-                QString(github_issue_api.toString()).remove("https://api.github.com/repos/") :
-                info->model_settings["github_issue_url"].toString();
+            // model_settings["github_issue_url"] is bound the moment a connection succeeds (see
+            // try_connect_github_issue()), so this chat's own record is always current -- no need to prefer
+            // the live github_issue_api over it
+            auto path = info->model_settings["github_issue_url"].toString();
             ui->ai_agent_status->setText(path.isEmpty() ? "ChatGPT(Web)" : "ChatGPT(Web)"+dot+path);
         }
-        else if(info) // a local chat: show its own model, not the app-wide default -- they can differ once a chat's model has been changed
+        else // a local chat (its own model, since it can differ from the app-wide default once changed) or
+             // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
         {
-            auto model_name = info->model_settings["model"].toString();
-            QString text = (info->provider == ai_provider::Codex ? "Codex" : "Claude") +
-                           dot + (model_name.isEmpty() ? QString("default") : model_name);
-            if(info->model_settings["info"].toObject().contains("provider"))
-                text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
-            ui->ai_agent_status->setText(text);
-        }
-        else // nothing selected: the app-wide default that the next New Chat will start with
-        {
-            QString text = (current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude") +
-                           dot + (current_model_name.isEmpty() ? QString("default") : current_model_name);
-            if(current_model_info.contains("provider"))
-                text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
-            ui->ai_agent_status->setText(text);
+            auto format = [&](bool is_codex,const QString& model_name,const QJsonObject& model_info)
+            {
+                QString text = (is_codex ? "Codex" : "Claude") +
+                               dot + (model_name.isEmpty() ? QString("default") : model_name);
+                if(model_info.contains("provider"))
+                    text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
+                return text;
+            };
+            ui->ai_agent_status->setText(info ?
+                format(info->provider == ai_provider::Codex,info->model_settings["model"].toString(),
+                       info->model_settings["info"].toObject()) :
+                format(current_agent_index == int(ai_provider::Codex),current_model_name,current_model_info));
         }
     }
     // the send button's enabled state/label depends on the same selected-chat context above, so it's
@@ -2109,12 +2126,11 @@ void AIAgent::on_ai_new_chat_clicked()
 
 void AIAgent::on_ai_agent_status_clicked()
 {
-    if(auto* item = ui->ai_project_list->currentItem())
+    if(auto* info = selected_info())
     {
-        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
-        if(info.provider == ai_provider::ChatGPT) // change or reconnect using a possibly different issue link
+        if(info->provider == ai_provider::ChatGPT) // change or reconnect using a possibly different issue link
         {
-            web_agent_session_id = info.sessions; // resume must target the selected chat, not whatever session was last active
+            web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
             int agent_index = 0;
             QString value;
             if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",agent_index,value))
@@ -2123,14 +2139,14 @@ void AIAgent::on_ai_agent_status_clicked()
             try_connect_github_issue(value);
             return;
         }
-        if(info.provider == ai_provider::AgentServer) // no local agent/model of its own to change
+        if(info->provider == ai_provider::AgentServer) // no local agent/model of its own to change
             return;
         QDialog dialog(this);
         dialog.setWindowTitle("Change Model");
         QFormLayout layout(&dialog);
-        QLabel agent_label(info.provider == ai_provider::Codex ? "Codex" : "Claude");
+        QLabel agent_label(info->provider == ai_provider::Codex ? "Codex" : "Claude");
         QComboBox model;
-        set_model_selector(model,agent_entries[int(info.provider)].profiles,info.model_settings["model"].toString());
+        set_model_selector(model,agent_entries[int(info->provider)].profiles,info->model_settings["model"].toString());
         layout.addRow("Agent:",&agent_label);
         layout.addRow("Model:",&model);
         QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
@@ -2140,7 +2156,7 @@ void AIAgent::on_ai_agent_status_clicked()
         if(dialog.exec() != QDialog::Accepted)
             return;
 
-        set_chat_model(info,model_combo_key(model)); // this chat's own model, not the app-wide default
+        set_chat_model(*info,model_combo_key(model)); // this chat's own model, not the app-wide default
         update_agent_status_label();
         return;
     }
@@ -2152,6 +2168,10 @@ void AIAgent::on_ai_agent_status_clicked()
 
     if(agent_index == int(ai_provider::ChatGPT))
     {
+        // same ownership setup new_chat_dialog() does for a fresh web chat -- try_connect_github_issue()
+        // assumes web_agent_session_id already names a real chat, which nothing else here would have arranged
+        disconnect_github_issue(); // leave any old channel cleanly before attempting a different one
+        create_new_chat("ChatGPT(Web)");
         try_connect_github_issue(value);
         return;
     }
@@ -2269,8 +2289,8 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/debug",debug.currentIndex());
     ai_debug_level = debug.currentIndex();
     if(reasoning_changed)
-        if(auto* item = ui->ai_project_list->currentItem())
-            show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
+        if(auto* info = selected_info())
+            show_ai_project(*info);
 
     refresh_ollama_models();
 }
@@ -2426,7 +2446,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             restore_new_chat(message);
         else
         {
-            auto& info = ai_infos[session];
+            auto& info = *found;
             info.processes = nullptr;
             set_ai_status(session,session_status::Failed,message);
             if(input == ai_input::Pending)
@@ -2469,7 +2489,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         }
         else
         {
-            auto& info = ai_infos[session];
+            auto& info = *found;
             info.processes = nullptr;
 
             auto pending = info.prompts.join("\n\n");
