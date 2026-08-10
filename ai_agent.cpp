@@ -384,6 +384,7 @@ AIAgent::AIAgent(MainWindow* parent):
             config.contains("agent") ? config["agent"].toString() : first["agent"].toString());
         if(!ai)
             continue;
+        ai->status = session_status::Resume; // loaded from a persisted history file, so it already has a real, established session id
         ai->model_settings = config.contains("model_settings") ?
             config["model_settings"].toObject() : first["model_settings"].toObject();
         ai->project_titles = settings.value("ai/title/"+session).toString();
@@ -728,11 +729,13 @@ void AIAgent::poll_github_issue()
 
         auto session_id = request_obj["session"].toString();
         bool new_session = !ai_info::find(session_id);
-        if(web_agent_session_id.startsWith("new:"))
+        auto* web_info = ai_info::find(web_agent_session_id);
+        if(web_info && web_info->status == session_status::New)
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
         if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub")) // records which issue this session is bound to, so a restart can auto-resume polling it
         {
+            info->status = session_status::Resume;
             // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
             // "https://api.github.com/repos/<owner>/<repo>/issues/<number>", built by DSI Studio itself
             info->model_settings["github_issue_url"] =
@@ -946,6 +949,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         new_info.sessions = session;
         new_info.provider = ai_provider::AgentServer;
         new_info.agent_name = agent;
+        new_info.status = session_status::Resume; // session is the caller's own already-established thread id, never a placeholder needing New-vs-Resume launch logic
         found = &new_info;
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
@@ -1035,7 +1039,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto* row = ui->ai_project_list->itemWidget(item);
     auto* title = row->findChild<QPushButton*>();
     item->setText({});
-    auto chat_title = info.sessions.startsWith("new:") && info.project_titles.isEmpty() ?
+    auto chat_title = info.status == session_status::New && info.project_titles.isEmpty() ?
         "New "+info.agent_name+" Chat" : info.title();
     title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+chat_title);
     title->setToolTip(title->text());
@@ -1629,7 +1633,7 @@ ai_info* AIAgent::create_new_chat(const QString& agent)
 {
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
-        if(it->first.startsWith("new:") && it->second.projects.isEmpty() && !it->second.processes)
+        if(it->second.status == session_status::New && it->second.projects.isEmpty() && !it->second.processes)
         {
             if(auto* item = it->second.project_items)
             {
@@ -1642,7 +1646,7 @@ ai_info* AIAgent::create_new_chat(const QString& agent)
             ++it;
 
     auto* info = ai_info::create(
-        "new:"+QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
+        QUuid::createUuid().toString(QUuid::WithoutBraces),agent); // status defaults to New; no "new:"/other marker on the id itself
     if(info->provider == ai_provider::ChatGPT)
         web_agent_session_id = info->sessions;
     else
@@ -1823,7 +1827,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
     // session so the next successful run picks it up, rather than silently dropping it
     auto preserve_pending = [&]()
     {
-        if(input == ai_input::Pending && !session.isEmpty())
+        if(input == ai_input::Pending)
             ai_infos[session].prompts.append(text);
     };
 
@@ -1844,9 +1848,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
     ui->ai_work_dir->setText(
         project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
-    auto* info = session.isEmpty() ? nullptr : &ai_infos[session];
-    if(info)
-        info->has_error = false; // a new attempt clears the sidebar's error dot
+    auto* info = &ai_infos[session]; // always exists: session is either a fresh placeholder uuid (created by New Chat) or a real established id
+    info->has_error = false; // a new attempt clears the sidebar's error dot
 
     launch.model_setting = model_setting; // resolved by the caller: this chat's own model_settings, or the app-wide default if no chat exists yet
     launch.model = launch.model_setting["model"].toString().trimmed();
@@ -1877,20 +1880,11 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
     if(launch.model.startsWith("default",Qt::CaseInsensitive))
         launch.model.clear();
 
-    if((session.isEmpty() || session.startsWith("new:")) &&
-       provider == ai_provider::Claude)
-    {
-        auto assigned = session.isEmpty() ?
-            QUuid::createUuid().toString(QUuid::WithoutBraces) : session.mid(4);
-        info = session.isEmpty() ? ai_info::create(assigned,launch.name) :
-                                  assign_ai_session(session,assigned);
-        session = assigned;
-    }
-    if(info) // always save once info is known: a brand-new session must persist its agent even if the model happens to match the default
-    {
-        info->model_settings = launch.model_setting;
-        info->save_config();
-    }
+    if(info->status == session_status::New && provider == ai_provider::Claude)
+        // pre-declared via --session-id (configure_claude): the uuid itself never changes, only its status
+        info->status = session_status::Resume;
+    info->model_settings = launch.model_setting; // always save once info is known: a brand-new session must persist its agent even if the model happens to match the default
+    info->save_config();
 
     auto* process = new QProcess(this);
     launch.process = process;
@@ -1949,8 +1943,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
         if(provider != ai_provider::Claude)
             process->closeWriteChannel();
         auto session = process->objectName();
-        ai_log("connecting to "+ launch.name + "@" +
-            (session.isEmpty() ? QString("new") : session)+
+        ai_log("connecting to "+ launch.name + "@" + session+
             " pid:"+QString::number(process->processId()));
         set_ai_status();
         if(auto* info = ai_info::find(session))
@@ -1970,7 +1963,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
         if(is_status_target(session))
             set_ai_status(message,true);
 
-        if(session.isEmpty() || session.startsWith("new:"))
+        auto* found = ai_info::find(session);
+        if(!found || found->status == session_status::New)
             restore_new_chat(message,true);
         else
         {
@@ -2007,7 +2001,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
         if(failed)
             ai_log(error_message);
 
-        if(session.isEmpty() || session.startsWith("new:"))
+        auto* found = ai_info::find(session);
+        if(!found || found->status == session_status::New)
         {
             auto message = failed ? error_message :
                            "AI agent ended before creating a new chat.";
@@ -2037,7 +2032,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
 }
 
 QStringList AIAgent::configure_claude(
-    const ai_launch& launch,QString session,const QString& text,bool new_session)
+    const ai_launch& launch,QString session,const QString& text,session_status status)
 {
     auto* process = launch.process;
     static const char* ollama_model_vars[] = {
@@ -2113,13 +2108,13 @@ QStringList AIAgent::configure_claude(
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
         "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
-        new_session ? "--session-id" : "--resume",session};
+        status == session_status::New ? "--session-id" : "--resume",session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
     return args;
 }
 QStringList AIAgent::configure_codex(
-    const ai_launch& launch,QString session,const QString& text)
+    const ai_launch& launch,QString session,const QString& text,session_status status)
 {
     auto* process = launch.process;
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
@@ -2133,11 +2128,25 @@ QStringList AIAgent::configure_codex(
             {
                 auto old_session = process->objectName();
                 auto session = event["thread_id"].toString();
-                auto* info = old_session.startsWith("new:") ?
+                if(!is_valid_session_id(session))
+                {
+                    // Codex's own protocol contract broke -- do not let a malformed id corrupt ai_infos'
+                    // keying; surface it immediately instead of silently accepting it
+                    ai_log("invalid thread_id from Codex (not a UUID): "+session);
+                    if(auto* info = ai_info::find(old_session))
+                    {
+                        info->has_error = true;
+                        show_ai_project(*info);
+                    }
+                    continue;
+                }
+                auto* old_info = ai_info::find(old_session);
+                auto* info = (old_info && old_info->status == session_status::New) ?
                     assign_ai_session(old_session,session) :
                     ai_info::create(session,launch.name);
                 if(info)
                 {
+                    info->status = session_status::Resume;
                     info->model_settings = launch.model_setting;
                     info->save_config();
                 }
@@ -2187,7 +2196,7 @@ QStringList AIAgent::configure_codex(
            !profile.isEmpty())
             args << "--profile" << profile;
     }
-    if(!session.isEmpty())
+    if(status == session_status::Resume)
         args << "resume" << session;
     args << "--json" << "--skip-git-repo-check";
     args << text;
@@ -2217,24 +2226,24 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
     auto provider = info->provider;
     Q_ASSERT(provider == ai_provider::Codex || provider == ai_provider::Claude); // never ChatGPT: callers must intercept a web chat before reaching here
 
-    bool new_session = session.startsWith("new:");
-    auto launch_session = new_session && provider == ai_provider::Codex ?
-        QString() : session;
-    auto launch = prepare_ai(provider,info->model_settings,launch_session,text,input);
+    // captured before prepare_ai(), which may flip info->status in place once the launch actually proceeds
+    auto status = info->status;
+    auto launch = prepare_ai(provider,info->model_settings,session,text,input);
     if(!launch.process)
     {
         info->has_error = true;
         show_ai_project(*info);
         return;
     }
-    if(session.startsWith("new:") && provider == ai_provider::Codex)
+    if(status == session_status::New && provider == ai_provider::Codex)
     {
+        // session is still DSI Studio's own placeholder id here: Codex assigns its own real id later, reported via "thread.started"
         launch.process->setObjectName(session);
         info->processes = launch.process;
     }
     auto args = provider == ai_provider::Codex ?
-        configure_codex(launch,launch_session,text) :
-        configure_claude(launch,launch_session,text,new_session);
+        configure_codex(launch,session,text,status) :
+        configure_claude(launch,session,text,status);
     ai_log("start " + launch.executable +
            " args: " + args.join(" ").remove("\n"));
     set_ai_status("Starting "+launch.name+"...");
