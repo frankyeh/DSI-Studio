@@ -16,6 +16,19 @@
 std::unordered_map<QString,ai_info> ai_infos;
 extern QString ai_project_dir;
 
+QString session_status_text(session_status status)
+{
+    switch(status)
+    {
+    case session_status::New:          return "New";
+    case session_status::Initializing: return "Connecting...";
+    case session_status::Active:       return "Active";
+    case session_status::Completed:    return "Completed";
+    case session_status::Failed:       return "Failed";
+    }
+    return {};
+}
+
 QString ai_info::history_file(const QString& session)
 {
     return ai_project_dir+"/"+QString::fromLatin1(
@@ -66,7 +79,7 @@ QString ai_info::details() const
     return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
         "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
         "Created: %9<br>Updated: %10")
-        .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),processes ? "Working" : "Idle")
+        .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),session_status_text(status))
         .arg(user+assistant).arg(user).arg(assistant).arg(activity)
         .arg(created,updated);
 }
