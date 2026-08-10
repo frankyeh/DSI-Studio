@@ -2063,10 +2063,14 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
         if(is_curl) // curl's default progress meter redraws one line via \r for an interactive terminal;
             text.insert(program.length()," -s -S"); // captured non-interactively, that just floods the log. -s hides it, -S still shows real errors
-        // every command other than cd is confirmed: checking only the first token (e.g. exempting a
-        // bare "dir"/"ls") is not safe here, since the full text -- including any "&&"/";"/"|"/"$()" a
-        // real shell would chain onto it -- is what actually runs, not just that first token
-        if(source == command_source::AI)
+        // a plain single command (e.g. a bare "dir"/"ls") runs unconfirmed; anything containing a
+        // character a real shell treats specially -- chaining (&&/||/;/&), piping (|), substitution
+        // (`/$()), or redirection (>/<) -- still requires confirmation, since the full text is what
+        // actually runs, not just what the visible command looks like at a glance
+        static const QStringList shell_special{"&","|",";","`","$(",">","<"};
+        bool needs_confirm = std::any_of(shell_special.begin(),shell_special.end(),
+            [&](const QString& token){return text.contains(token);});
+        if(source == command_source::AI && needs_confirm)
         {
             QString message;
             if(!ai_chat_context.isEmpty()) // explains why, using the agent's own accompanying chat message, when one was sent with this request
