@@ -1481,7 +1481,7 @@ void AIAgent::update_agent_status_label()
     }
     // nothing selected: the app-wide default that the next New Chat will start with
     QString text = (current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude") +
-                   dot + current_model_name;
+                   dot + (current_model_name.isEmpty() ? QString("default") : current_model_name);
     if(current_model_info.contains("provider"))
         text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
     ui->ai_agent_status->setText(text);
@@ -1545,9 +1545,8 @@ void AIAgent::update_send_button()
 
 bool AIAgent::is_status_target(const QString& session) const
 {
-    if(auto* item = ui->ai_project_list->currentItem())
-        return item->data(Qt::UserRole).toString() == session;
-    return session.isEmpty(); // nothing selected: only the still-anonymous chat currently being set up counts
+    auto* info = selected_info();
+    return info && info->sessions == session; // nothing selected: no chat is ever the status target -- every session here is a real, already-created chat, never an anonymous one
 }
 
 // resume only ever applies to the web agent: the Agent combo is locked to ChatGPT and disabled, only the issue URL (defaulted to the last one) can still be changed
