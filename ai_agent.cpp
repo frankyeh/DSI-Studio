@@ -55,26 +55,6 @@
 #include "tracking/tracking_window.h"
 #include "TIPL/tipl.hpp"
 
-// defined in cmd/ai.cpp alongside ai_info itself -- not declared in ai_agent.hpp since nothing outside this file calls them
-extern std::unordered_map<QString,ai_info> ai_infos; // session registry: every chat, local or web, is one entry here, keyed by its own ai_info::sessions
-extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, before any window exists
-QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
-ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to
-QUrl agent_install_url(ai_provider provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
-void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
-void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
-QString ai_dialog_style(); // shared stylesheet for the GitHub-setup/new-chat dialogs
-bool github_permanent_failure(int http_status); // true iff retrying this GitHub HTTP status can't ever succeed (bad token/permissions/resource)
-int github_retry_delay(QNetworkReply* reply,const QByteArray& data); // wait time in ms if GitHub signals rate limiting (429, or 403 meaning the same), else 0
-QByteArray github_blocking(QNetworkAccessManager& manager,const QNetworkRequest& request,
-                            const char* verb,const QByteArray& body,bool& ok,QString& error); // blocking GET/POST/PATCH: connect_github_issue() is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
-QByteArray claude_input(const QString& text); // wraps text in Claude's stream-json stdin message format
-QPair<QUrl,bool> ai_ollama_url(const QSettings& settings); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
-QString model_combo_key(const QComboBox& model); // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
-void set_model_selector(QComboBox& model,const QJsonObject& profiles,
-                        QString selected = {},QString fallback = {},
-                        QJsonObject selected_info = {}); // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) -- selected_info backs an unrecognized selected value so it still shows up as a real entry
-
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
 bool is_valid_session_id(const QString& id)
 {
