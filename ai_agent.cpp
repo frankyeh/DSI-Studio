@@ -2174,7 +2174,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     github_body->setWordWrap(true);
     github_layout->addWidget(github_heading);
     github_layout->addWidget(github_body);
-    QPushButton github_button("Set up GitHub token"); // becomes a disabled "token ready" status readout once configured, same pattern as the sidebar's Codex/Claude sign-in buttons
+    QPushButton github_button("Set up GitHub token"); // stays enabled even once configured -- unlike Codex/Claude sign-in, a token can't be re-checked live, so re-opening this is the only way to replace/reset it
     auto* github_button_row = new QHBoxLayout;
     github_button_row->addWidget(&github_button);
     github_button_row->addStretch();
@@ -2184,8 +2184,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     auto update_github_button = [&]
     {
         bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
-        github_button.setEnabled(!has_token);
-        github_button.setText(has_token ? "GitHub token ready ✓" : "Set up GitHub token");
+        github_button.setText(has_token ? "GitHub token ready ✓ · Reset..." : "Set up GitHub token");
     };
     update_github_button();
     connect(&github_button,&QPushButton::clicked,&dialog,[&]
