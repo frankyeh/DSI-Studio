@@ -1909,7 +1909,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
 
     if(input == ai_input::User)
     {
-        if(info)
+        // a fresh Codex session doesn't have its real id yet: recording now would only live in memory
+        // (write_history() skips the file while status is New) and get duplicated once "thread.started"
+        // renames the session and records the same text again -- let that be the sole recorder instead
+        if(info && !(provider == ai_provider::Codex && info->status == session_status::New))
             add_ai_history(*info,"user",text);
         ui->ai_chat_input->clear();
     }
