@@ -516,10 +516,10 @@ static QByteArray github_blocking(QNetworkAccessManager& manager,
 
 bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 {
-    // snapshot now, so a later AI Settings edit can't swap the identity mid-poll (github_request() uses this member for the whole session)
+    // snapshot now, so a later new-chat edit cannot swap the identity mid-poll (github_request() uses this member for the whole session)
     github_token = settings.value("ai/github_token").toString().trimmed();
     if(github_token.isEmpty())
-        return error = "no GitHub token configured; set one in AI Settings first "
+        return error = "no GitHub token configured; set one when starting the ChatGPT Web agent "
                         "(GitHub requires an authenticated request for every write, "
                         "including editing a comment on a public issue)",false;
 
@@ -1653,19 +1653,179 @@ void AIAgent::update_send_button()
     }
 }
 
+// shared look for the GitHub-setup/new-chat dialogs: Google-style cards/fields/buttons, scoped by objectName
+// so it can't bleed into unrelated dialogs. Widgets sharing an objectName (e.g. every step card) all match
+// the same rule -- that's normal Qt stylesheet behavior, not a lookup key.
+static QString ai_dialog_style()
+{
+    return
+        "QLabel#ai_dialog_title{font-size:15px;font-weight:600;color:#202124;}"
+        "QLabel#ai_dialog_subtitle{color:#5f6368;}"
+        "QFrame#ai_step_card{background-color:#f7f7f8;border:1px solid #dddddd;border-radius:10px;}"
+        "QLabel#ai_step_heading{font-weight:600;color:#202124;}"
+        "QLabel#ai_step_body{color:#3c4043;}"
+        "QFrame#ai_field_frame{border:1px solid #d9d9dc;border-radius:10px;background-color:#ffffff;}"
+        "QFrame#ai_field_frame QLineEdit{border:none;background:transparent;padding:6px 4px;}"
+        "QLabel#ai_helper{color:#1a73e8;}"
+        "QLineEdit{border:1px solid #d9d9dc;border-radius:7px;padding:5px 8px;background-color:#f7f7f8;}"
+        "QLineEdit:focus{border-color:#8a8a8f;}"
+        "QComboBox{border:1px solid #d9d9dc;border-radius:7px;padding:4px 24px 4px 8px;background-color:#f7f7f8;min-height:22px;}"
+        "QComboBox:hover{background-color:#eeeeef;border-color:#c8c8cc;}"
+        "QComboBox:focus{border-color:#8a8a8f;}"
+        "QComboBox::drop-down{border:0;width:22px;}" // otherwise Qt draws the platform's native (raised/beveled) button here
+        "QComboBox QAbstractItemView{background-color:#ffffff;border:1px solid #d9d9dc;outline:0;padding:2px;selection-background-color:#e5e5e7;selection-color:#202124;}"
+        "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:6px 14px;}"
+        "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
+        "QPushButton:pressed{background-color:#dddddf;}"
+        "QPushButton:disabled{color:#9aa0a6;background-color:#f1f1f2;border-color:#e4e4e6;}"
+        "QPushButton#ai_primary_button{background-color:#1a73e8;color:#ffffff;border:none;font-weight:600;}"
+        "QPushButton#ai_primary_button:hover{background-color:#1765cc;}"
+        "QPushButton#ai_primary_button:pressed{background-color:#175dc1;}"
+        "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
+}
+// a titled, bordered card with a short body line and a single left-aligned action button below it -- the
+// repeated visual unit for step-by-step setup dialogs (GitHub repo/token, etc.)
+static void ai_add_step_card(QBoxLayout* root,const QString& heading,const QString& body,
+                              QPushButton*& action,const QString& action_text)
+{
+    auto* card = new QFrame;
+    card->setObjectName("ai_step_card");
+    auto* card_layout = new QVBoxLayout(card);
+    card_layout->setContentsMargins(14,12,14,12);
+    card_layout->setSpacing(6);
+    auto* heading_label = new QLabel(heading);
+    heading_label->setObjectName("ai_step_heading");
+    auto* body_label = new QLabel(body);
+    body_label->setObjectName("ai_step_body");
+    body_label->setWordWrap(true);
+    card_layout->addWidget(heading_label);
+    card_layout->addWidget(body_label);
+    action = new QPushButton(action_text);
+    auto* button_row = new QHBoxLayout;
+    button_row->addWidget(action);
+    button_row->addStretch();
+    card_layout->addLayout(button_row);
+    root->addWidget(card);
+}
+
+bool AIAgent::setup_github_token()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("Set Up GitHub Access");
+    dialog.setMinimumWidth(460);
+    dialog.setStyleSheet(ai_dialog_style());
+
+    auto* root = new QVBoxLayout(&dialog);
+    root->setSpacing(12);
+    root->setContentsMargins(20,20,20,16);
+
+    auto* title = new QLabel("Connect a GitHub issue channel");
+    title->setObjectName("ai_dialog_title");
+    auto* subtitle = new QLabel(
+        "DSI Studio sends and receives ChatGPT (Web) requests through a private repository issue. "
+        "Set this up once: a repository, then a token scoped to it.");
+    subtitle->setObjectName("ai_dialog_subtitle");
+    subtitle->setWordWrap(true);
+    root->addWidget(title);
+    root->addWidget(subtitle);
+
+    QPushButton* setup_repo = nullptr;
+    ai_add_step_card(root,"Step 1 &middot; Create a private repository",
+        "Any name works (suggested: <b>DSI-Studio-Connect</b>). Set visibility to <b>Private</b>, then click Create repository.",
+        setup_repo,"Create private repository");
+
+    QPushButton* setup_token = nullptr;
+    ai_add_step_card(root,"Step 2 &middot; Create an access token",
+        "Scope it to the repository above, with <b>Issues &rarr; Read and write</b> permission only, then click Generate token.",
+        setup_token,"Create token");
+
+    auto* token_label = new QLabel("Access token");
+    token_label->setObjectName("ai_dialog_subtitle");
+    root->addWidget(token_label);
+    auto* token_frame = new QFrame;
+    token_frame->setObjectName("ai_field_frame");
+    auto* token_row = new QHBoxLayout(token_frame);
+    token_row->setContentsMargins(10,2,4,2);
+    QLineEdit token(settings.value("ai/github_token").toString()); // declared after dialog/token_frame so it is destroyed before them
+    token.setEchoMode(QLineEdit::Password);
+    token.setPlaceholderText("Paste the token here");
+    QPushButton paste("Paste");
+    token_row->addWidget(&token,1);
+    token_row->addWidget(&paste);
+    root->addWidget(token_frame);
+
+    QLabel helper;
+    helper.setObjectName("ai_helper");
+    helper.setWordWrap(true);
+    root->addWidget(&helper);
+
+    QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
+    buttons.button(QDialogButtonBox::Save)->setObjectName("ai_primary_button");
+    root->addWidget(&buttons);
+
+    auto set_helper = [&](const QString& text)
+    {
+        helper.setText(text);
+        helper.updateGeometry();
+        dialog.adjustSize();
+    };
+    connect(setup_repo,&QPushButton::clicked,&dialog,[&]
+    {
+        QDesktopServices::openUrl(QUrl("https://github.com/new"));
+        set_helper("Create DSI-Studio-Connect as a Private repository, then continue to step 2.");
+    });
+    connect(setup_token,&QPushButton::clicked,&dialog,[&]
+    {
+        QApplication::clipboard()->setText(
+            "Create a fine-grained GitHub personal access token for DSI Studio:\n"
+            "1. Token name*: enter any name.\n"
+            "2. Expiration: select an appropriate duration.\n"
+            "3. Repository access: choose Only select repositories, then select the private repository created for DSI Studio.\n"
+            "4. Permissions: choose Add permissions, then Issues.\n"
+            "5. Issues access: choose Read and write.\n"
+            "6. Click Generate token.\n"
+            "7. Copy the token and click Paste in the DSI Studio dialog.\n"
+            "Never paste the token into ChatGPT or a GitHub issue.");
+        QDesktopServices::openUrl(QUrl("https://github.com/settings/personal-access-tokens/new"));
+        set_helper("Instructions copied. Create and copy the token in GitHub, then return here and click Paste.");
+    });
+    connect(&paste,&QPushButton::clicked,&dialog,[&]
+    {
+        auto match = QRegularExpression(
+            R"((github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9]+))").
+            match(QApplication::clipboard()->text());
+        if(match.hasMatch())
+            token.setText(match.captured()),set_helper("Token pasted. Click Save to continue.");
+        else
+            set_helper("No GitHub token was found in the clipboard.");
+    });
+    connect(&buttons,&QDialogButtonBox::accepted,&dialog,[&]
+    {
+        if(token.text().trimmed().isEmpty())
+            return set_helper("Create or paste a GitHub token before saving.");
+        settings.setValue("ai/github_token",token.text().trimmed());
+        dialog.accept();
+    });
+    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+    return dialog.exec() == QDialog::Accepted;
+}
+
 // resume only ever applies to the web agent: the Agent combo is locked to ChatGPT and disabled, only the issue URL (defaulted to the last one) can still be changed
 bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                                    int& agent_index,QString& value)
 {
     QDialog dialog(this);
     dialog.setWindowTitle(title);
+    dialog.setMinimumWidth(440);
+    dialog.setStyleSheet(ai_dialog_style());
     QFormLayout layout(&dialog);
+    layout.setSpacing(10);
+    layout.setContentsMargins(20,18,20,16);
 
     QComboBox agent;
     agent.addItem("Codex");
     agent.addItem("Claude");
     agent.addItem("ChatGPT (Web)");
-    bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
     if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
     {
         auto disable = [&](int index,bool available,const QString& reason)
@@ -1682,35 +1842,68 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     agent.setEnabled(!resume);
     layout.addRow("Agent:",&agent);
 
-    QWidget field_container; // declared before its would-be children below, so it is destroyed after them (reverse-declaration-order unwind), not before
+    QWidget field_container,local,web; // declared before their would-be children below, so they are destroyed after them
     auto* field_layout = new QVBoxLayout(&field_container);
     field_layout->setContentsMargins(0,0,0,0);
     QComboBox model;
     model.setEditable(true); // lets the user type a specific model name (e.g. a dated Claude model), not just pick a known alias
     model.setMaximumHeight(model.sizeHint().height());
+    auto* local_layout = new QFormLayout(&local);
+    local_layout->setContentsMargins(0,0,0,0);
+    local_layout->addRow("Model:",&model);
     // web_agent_session_id (not sidebar selection) is the reliable way to find which chat is being resumed
     auto* resume_info = resume ? ai_info::find(web_agent_session_id) : nullptr;
     auto resume_issue_path = resume_info ? resume_info->model_settings["github_issue_url"].toString() : QString();
-    QWidget web;
-    QVBoxLayout web_layout(&web);
-    web_layout.setContentsMargins(0,0,0,0);
+    auto* web_layout = new QVBoxLayout(&web);
+    web_layout->setContentsMargins(0,0,0,0);
+    web_layout->setSpacing(10);
+
+    QPushButton setup_token("Set up GitHub token"); // becomes a disabled "GitHub token ready" status readout once configured -- see update_web()
+    auto* token_row = new QHBoxLayout;
+    token_row->addWidget(&setup_token);
+    token_row->addStretch();
+    web_layout->addLayout(token_row);
+
+    auto* issue_card = new QFrame;
+    issue_card->setObjectName("ai_step_card");
+    auto* issue_card_layout = new QVBoxLayout(issue_card);
+    issue_card_layout->setContentsMargins(14,12,14,12);
+    issue_card_layout->setSpacing(8);
+    auto* issue_heading = new QLabel("Session issue");
+    issue_heading->setObjectName("ai_step_heading");
+    auto* issue_body = new QLabel("Ask ChatGPT to create the issue, then paste its URL below.");
+    issue_body->setObjectName("ai_step_body");
+    issue_body->setWordWrap(true);
+    issue_card_layout->addWidget(issue_heading);
+    issue_card_layout->addWidget(issue_body);
+
+    auto* issue_field_frame = new QFrame;
+    issue_field_frame->setObjectName("ai_field_frame");
+    auto* issue_row = new QHBoxLayout(issue_field_frame);
+    issue_row->setContentsMargins(10,2,4,2);
     QLineEdit issue_url_edit(resume_issue_path.isEmpty() ? QString() : "https://github.com/"+resume_issue_path);
     issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
-    QPushButton paste("Paste"),setup("Set up with ChatGPT"),open_settings("Open AI Settings");
-    QLabel helper;
-    helper.setWordWrap(true);
-    helper.setMinimumWidth(420);
-    auto* issue_row = new QHBoxLayout;
+    QPushButton paste_issue("Paste");
     issue_row->addWidget(&issue_url_edit,1);
-    issue_row->addWidget(&paste);
-    web_layout.addLayout(issue_row);
-    web_layout.addWidget(&helper);
-    web_layout.addWidget(&setup,0,Qt::AlignLeft);
-    web_layout.addWidget(&open_settings,0,Qt::AlignLeft);
-    QLabel field_label;
-    field_layout->addWidget(&model);
+    issue_row->addWidget(&paste_issue);
+    issue_card_layout->addWidget(issue_field_frame);
+
+    QPushButton setup_issue("Ask ChatGPT...");
+    auto* issue_button_row = new QHBoxLayout;
+    issue_button_row->addWidget(&setup_issue);
+    issue_button_row->addStretch();
+    issue_card_layout->addLayout(issue_button_row);
+    web_layout->addWidget(issue_card);
+
+    QLabel helper;
+    helper.setObjectName("ai_helper");
+    helper.setWordWrap(true);
+    helper.setMinimumWidth(380);
+    web_layout->addWidget(&helper);
+
+    field_layout->addWidget(&local);
     field_layout->addWidget(&web);
-    layout.addRow(&field_label,&field_container);
+    layout.addRow(&field_container);
 
     auto set_helper = [&](const QString& text)
     {
@@ -1718,20 +1911,30 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         helper.updateGeometry();
         dialog.adjustSize();
     };
-    auto update_field = [&]()
+    auto update_web = [&]
+    {
+        bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
+        setup_token.setEnabled(!has_token);
+        setup_token.setText(has_token ? "GitHub token ready ✓" : "Set up GitHub token");
+        for(auto* widget : {static_cast<QWidget*>(&issue_url_edit),
+                            static_cast<QWidget*>(&paste_issue),
+                            static_cast<QWidget*>(&setup_issue)})
+            widget->setEnabled(has_token);
+        set_helper(has_token ?
+            "GitHub access is ready. Create or paste the session issue URL." :
+            "A GitHub token is required. Click Set up GitHub token.");
+    };
+    auto update_field = [&]
     {
         bool chatgpt = agent.currentIndex() == int(ai_provider::ChatGPT);
-        field_label.setText(chatgpt ? "Issue URL:" : "Model:");
-        model.setVisible(!chatgpt);
+        local.setVisible(!chatgpt);
         web.setVisible(chatgpt);
-        for(auto* widget : {static_cast<QWidget*>(&issue_url_edit),static_cast<QWidget*>(&paste),
-                            static_cast<QWidget*>(&setup)})
-            widget->setEnabled(has_token);
-        setup.setVisible(has_token);
-        open_settings.setVisible(!has_token);
-        set_helper(has_token ?
-            "ChatGPT creates the private GitHub issue used to communicate with DSI Studio." :
-            "GitHub access is not configured in DSI Studio.");
+        if(chatgpt)
+        {
+            if(settings.value("ai/github_token").toString().trimmed().isEmpty())
+                setup_github_token();
+            update_web();
+        }
         if(!chatgpt)
             set_model_selector(model,agent_entries[agent.currentIndex()].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
@@ -1739,7 +1942,12 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
-    connect(&paste,&QPushButton::clicked,&dialog,[&]
+    connect(&setup_token,&QPushButton::clicked,&dialog,[&]
+    {
+        setup_github_token();
+        update_web();
+    });
+    connect(&paste_issue,&QPushButton::clicked,&dialog,[&]
     {
         auto match = QRegularExpression(
             R"(https://github\.com/[^\s/]+/[^\s/]+/issues/\d+)",
@@ -1753,7 +1961,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         else
             set_helper("No GitHub issue URL was found in the clipboard.");
     });
-    connect(&setup,&QPushButton::clicked,&dialog,[&]
+    connect(&setup_issue,&QPushButton::clicked,&dialog,[&]
     {
         QApplication::clipboard()->setText(
             "I want to connect ChatGPT (Web) to DSI Studio.\n\n"
@@ -1767,24 +1975,18 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         QDesktopServices::openUrl(QUrl("https://chatgpt.com/"));
         set_helper("Setup instructions copied. Paste them into ChatGPT. When ChatGPT gives you an Issue URL, return here and click Paste.");
     });
-    connect(&open_settings,&QPushButton::clicked,&dialog,[&]
-    {
-        on_ai_quick_settings_clicked();
-        has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
-        update_field();
-    });
-
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
+    accept->setObjectName("ai_primary_button");
     layout.addRow(&buttons);
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
         if(agent.currentIndex() == int(ai_provider::ChatGPT))
         {
-            if(!has_token)
-                return open_settings.click();
+            if(settings.value("ai/github_token").toString().trimmed().isEmpty())
+                return setup_token.click();
             if(issue_url_edit.text().trimmed().isEmpty())
-                return setup.click();
+                return setup_issue.click();
         }
         dialog.accept();
     });
@@ -1930,32 +2132,98 @@ void AIAgent::on_ai_quick_settings_clicked()
 {
     QDialog dialog(this);
     dialog.setWindowTitle("AI Settings");
-    QFormLayout layout(&dialog);
+    dialog.setMinimumWidth(420);
+    dialog.setStyleSheet(ai_dialog_style());
+
+    auto* root = new QVBoxLayout(&dialog);
+    root->setSpacing(14);
+    root->setContentsMargins(20,20,20,16);
+
+    auto* title = new QLabel("AI Settings");
+    title->setObjectName("ai_dialog_title");
+    root->addWidget(title);
+
+    auto* ollama_card = new QFrame;
+    ollama_card->setObjectName("ai_step_card");
+    auto* ollama_layout = new QVBoxLayout(ollama_card);
+    ollama_layout->setContentsMargins(14,12,14,12);
+    ollama_layout->setSpacing(8);
+    auto* ollama_heading = new QLabel("Ollama connection");
+    ollama_heading->setObjectName("ai_step_heading");
+    ollama_layout->addWidget(ollama_heading);
+    auto* ollama_form = new QFormLayout;
+    ollama_form->setContentsMargins(0,0,0,0);
     QLineEdit host(settings.value("ai/ollama_host","localhost").toString());
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
+    ollama_form->addRow("Host/IP:",&host);
+    ollama_form->addRow("Port:",&port);
+    ollama_layout->addLayout(ollama_form);
+    root->addWidget(ollama_card);
+
+    auto* github_card = new QFrame;
+    github_card->setObjectName("ai_step_card");
+    auto* github_layout = new QVBoxLayout(github_card);
+    github_layout->setContentsMargins(14,12,14,12);
+    github_layout->setSpacing(8);
+    auto* github_heading = new QLabel("GitHub access");
+    github_heading->setObjectName("ai_step_heading");
+    auto* github_body = new QLabel("Required to connect a ChatGPT (Web) session through a GitHub issue.");
+    github_body->setObjectName("ai_step_body");
+    github_body->setWordWrap(true);
+    github_layout->addWidget(github_heading);
+    github_layout->addWidget(github_body);
+    QPushButton github_button("Set up GitHub token"); // becomes a disabled "token ready" status readout once configured, same pattern as the sidebar's Codex/Claude sign-in buttons
+    auto* github_button_row = new QHBoxLayout;
+    github_button_row->addWidget(&github_button);
+    github_button_row->addStretch();
+    github_layout->addLayout(github_button_row);
+    root->addWidget(github_card);
+
+    auto update_github_button = [&]
+    {
+        bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
+        github_button.setEnabled(!has_token);
+        github_button.setText(has_token ? "GitHub token ready ✓" : "Set up GitHub token");
+    };
+    update_github_button();
+    connect(&github_button,&QPushButton::clicked,&dialog,[&]
+    {
+        setup_github_token();
+        update_github_button();
+    });
+
+    auto* chat_card = new QFrame;
+    chat_card->setObjectName("ai_step_card");
+    auto* chat_layout = new QVBoxLayout(chat_card);
+    chat_layout->setContentsMargins(14,12,14,12);
+    chat_layout->setSpacing(8);
+    auto* chat_heading = new QLabel("Chat behavior");
+    chat_heading->setObjectName("ai_step_heading");
+    chat_layout->addWidget(chat_heading);
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox show_reasoning("Show reasoning");
     show_reasoning.setToolTip("Show AI reasoning messages in chat history");
     show_reasoning.setChecked(settings.value("ai/show_reasoning",false).toBool());
+    chat_layout->addWidget(&history);
+    chat_layout->addWidget(&show_reasoning);
+    auto* debug_row = new QHBoxLayout;
+    auto* debug_label = new QLabel("Debug mode:");
     QComboBox debug;
     debug.addItem("Disabled");
     debug.addItem("Enabled (truncated)");
     debug.addItem("Enabled (complete)");
     debug.setCurrentIndex(settings.value("ai/debug",0).toInt());
-    QLineEdit github_pat(settings.value("ai/github_token").toString());
-    github_pat.setEchoMode(QLineEdit::Password);
-    github_pat.setPlaceholderText("required to connect a GitHub issue");
-    layout.addRow("Ollama host/IP:",&host);
-    layout.addRow("Ollama port:",&port);
-    layout.addRow(&history);
-    layout.addRow(&show_reasoning);
-    layout.addRow("Debug mode:",&debug);
-    layout.addRow("GitHub token (issue channel):",&github_pat);
+    debug_row->addWidget(debug_label);
+    debug_row->addWidget(&debug,1);
+    chat_layout->addLayout(debug_row);
+    root->addWidget(chat_card);
+
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
-    layout.addRow(&buttons);
+    buttons.button(QDialogButtonBox::Save)->setObjectName("ai_primary_button");
+    root->addWidget(&buttons);
     connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
     if(dialog.exec() != QDialog::Accepted)
@@ -1967,7 +2235,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     bool reasoning_changed = show_reasoning.isChecked() != settings.value("ai/show_reasoning",false).toBool();
     settings.setValue("ai/show_reasoning",show_reasoning.isChecked());
     settings.setValue("ai/debug",debug.currentIndex());
-    settings.setValue("ai/github_token",github_pat.text().trimmed());
     ai_debug_level = debug.currentIndex();
     if(reasoning_changed)
         if(auto* item = ui->ai_project_list->currentItem())
