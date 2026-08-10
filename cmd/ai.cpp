@@ -21,7 +21,6 @@ QString session_status_text(session_status status)
     switch(status)
     {
     case session_status::New:          return "New";
-    case session_status::Initializing: return "Initializing";
     case session_status::WaitingUser:  return "Waiting for user";
     case session_status::Thinking:     return "Thinking";
     case session_status::Completed:    return "Completed";
@@ -42,7 +41,7 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    // New has nothing to persist. Files written under an Initializing Codex placeholder are migrated
+    // New has nothing to persist. Files written under a still-New Codex placeholder are migrated
     // to its real thread ID by assign_ai_session().
     if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
         return;
