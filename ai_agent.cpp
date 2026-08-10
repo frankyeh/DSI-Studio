@@ -2123,7 +2123,7 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                             {
                                 info->status = session_status::Thinking;
                                 if(is_status_target(process->objectName()))
-                                    set_ai_status("Thinking");
+                                    set_ai_status(); // falls back to this chat's own current status ("Thinking...", animated)
                             }
                         }
                         continue;
