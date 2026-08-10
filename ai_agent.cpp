@@ -55,34 +55,18 @@
 #include "tracking/tracking_window.h"
 #include "TIPL/tipl.hpp"
 
+// defined in cmd/ai.cpp alongside ai_info itself -- not declared in ai_agent.hpp since nothing outside this file calls them
+ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to
+QUrl agent_install_url(ai_provider provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
+void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
+void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
+QString ai_dialog_style(); // shared stylesheet for the GitHub-setup/new-chat dialogs
+bool github_permanent_failure(int http_status); // true iff retrying this GitHub HTTP status can't ever succeed (bad token/permissions/resource)
+int github_retry_delay(QNetworkReply* reply,const QByteArray& data); // wait time in ms if GitHub signals rate limiting (429, or 403 meaning the same), else 0
+QByteArray github_blocking(QNetworkAccessManager& manager,const QNetworkRequest& request,
+                            const char* verb,const QByteArray& body,bool& ok,QString& error); // blocking GET/POST/PATCH: connect_github_issue() is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
+
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
-static ai_info* assign_ai_session(const QString& from,const QString& to)
-{
-    if(from == to)
-        return ai_info::find(to);
-    auto node = ai_infos.extract(from);
-    if(node.empty())
-        return ai_info::find(to);
-    Q_ASSERT(!ai_info::find(to));
-    node.key() = to;
-    node.mapped().sessions = to;
-    if(node.mapped().project_items)
-        node.mapped().project_items->setData(Qt::UserRole,to);
-    auto inserted = ai_infos.insert(std::move(node));
-    auto move_file = [](const QString& source,const QString& target)
-    {
-        if(QFile::exists(source) && !QFile::rename(source,target))
-            tipl::warning() << "cannot move " << source.toStdString()
-                            << " to " << target.toStdString();
-    };
-    move_file(ai_info::history_file(from),ai_info::history_file(to));
-    move_file(ai_info::config_file(from),ai_info::config_file(to));
-    QSettings settings;
-    if(!inserted.position->second.project_titles.isEmpty())
-        settings.setValue("ai/title/"+to,inserted.position->second.project_titles);
-    settings.remove("ai/title/"+from);
-    return &inserted.position->second;
-}
 QByteArray claude_input(const QString& text)
 {
     return QJsonDocument(QJsonObject{
@@ -91,45 +75,9 @@ QByteArray claude_input(const QString& text)
                 {"type","text"},{"text",text}}}}}}}).
         toJson(QJsonDocument::Compact)+'\n';
 }
-static void stop_blink(QWidget* row)
-{
-    if(!row)
-        return;
-    row->findChild<QTimer*>()->stop();
-    row->setStyleSheet({});
-}
 bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
-}
-static QUrl agent_install_url(ai_provider provider) // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
-{
-    return QUrl(provider == ai_provider::Codex ?
-        "https://chatgpt.com/codex" : "https://claude.com/product/claude-code");
-}
-static void update_status_dot(QLabel* dot,session_status status,bool pulse)
-{
-    if(!dot)
-        return;
-    // purely presentational: pulse means "advance," its absence means "reset to steady" -- whether that's
-    // actually appropriate for this status is the caller's call (see is_running()), not this function's
-    int phase = dot->property("pulse").toInt();
-    phase = pulse ? (phase+1)%24 : 0;
-    dot->setProperty("pulse",phase);
-
-    QColor color;
-    switch(status)
-    {
-    case session_status::New:          color = "#9aa0a6"; break;
-    case session_status::WaitingUser:  color = "#34a853"; break;
-    case session_status::Thinking:     color = "#4285f4"; break;
-    case session_status::Completed:    color = "#9aa0a6"; break;
-    case session_status::Failed:       color = "#ea4335"; break;
-    }
-    int intensity = phase <= 12 ? phase : 24-phase;
-    color = color.lighter(100+intensity*3);
-    dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
-    dot->setToolTip(session_status_text(status));
 }
 
 void AIAgent::ai_log(QString text)
@@ -438,52 +386,6 @@ QNetworkRequest AIAgent::github_request(const QUrl& url) const
     return request;
 }
 
-// 401/403/404/410/422 mean the token/permissions/resource is wrong (retrying can't fix it); checked after github_retry_delay() since 403 can also mean rate limiting
-static bool github_permanent_failure(int status)
-{
-    return status == 401 || status == 403 || status == 404 ||
-           status == 410 || status == 422;
-}
-
-// returns the wait time in ms if GitHub signals rate limiting (429, or 403 meaning the same), else 0
-static int github_retry_delay(QNetworkReply* reply,const QByteArray& data)
-{
-    bool ok = false;
-    int seconds = reply->rawHeader("Retry-After").toInt(&ok);
-    if(ok && seconds > 0)
-        return seconds*1000;
-    if(reply->rawHeader("X-RateLimit-Remaining") == "0")
-    {
-        qint64 reset = reply->rawHeader("X-RateLimit-Reset").toLongLong(&ok);
-        if(ok)
-            return int(std::max<qint64>(1000,reset*1000-QDateTime::currentMSecsSinceEpoch()));
-    }
-    auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if(status == 429 || (status == 403 && data.contains("rate limit")))
-        return 60000;
-    return 0;
-}
-
-// blocking helper: connect_github_issue is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
-static QByteArray github_blocking(QNetworkAccessManager& manager,
-                                  const QNetworkRequest& request,
-                                  const char* verb,const QByteArray& body,
-                                  bool& ok,QString& error)
-{
-    QEventLoop loop;
-    QNetworkReply* reply =
-        !strcmp(verb,"POST") ? manager.post(request,body) :
-        !strcmp(verb,"PATCH") ? manager.sendCustomRequest(request,"PATCH",body) :
-        manager.get(request);
-    QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
-    loop.exec();
-    ok = reply->error() == QNetworkReply::NoError;
-    auto data = reply->readAll();
-    if(!ok)
-        error = reply->errorString();
-    reply->deleteLater();
-    return data;
-}
 
 bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
 {
@@ -1703,36 +1605,6 @@ void AIAgent::update_send_button()
     }
 }
 
-// shared look for the GitHub-setup/new-chat dialogs: Google-style cards/fields/buttons, scoped by objectName
-// so it can't bleed into unrelated dialogs. Widgets sharing an objectName (e.g. every step card) all match
-// the same rule -- that's normal Qt stylesheet behavior, not a lookup key.
-static QString ai_dialog_style()
-{
-    return
-        "QLabel#ai_dialog_title{font-size:15px;font-weight:600;color:#202124;}"
-        "QLabel#ai_dialog_subtitle{color:#5f6368;}"
-        "QFrame#ai_step_card{background-color:#f7f7f8;border:1px solid #dddddd;border-radius:10px;}"
-        "QLabel#ai_step_heading{font-weight:600;color:#202124;}"
-        "QLabel#ai_step_body{color:#3c4043;}"
-        "QFrame#ai_field_frame{border:1px solid #d9d9dc;border-radius:10px;background-color:#ffffff;}"
-        "QFrame#ai_field_frame QLineEdit{border:none;background:transparent;padding:6px 4px;}"
-        "QLabel#ai_helper{color:#1a73e8;}"
-        "QLineEdit{border:1px solid #d9d9dc;border-radius:7px;padding:5px 8px;background-color:#f7f7f8;}"
-        "QLineEdit:focus{border-color:#8a8a8f;}"
-        "QComboBox{border:1px solid #d9d9dc;border-radius:7px;padding:4px 24px 4px 8px;background-color:#f7f7f8;min-height:22px;}"
-        "QComboBox:hover{background-color:#eeeeef;border-color:#c8c8cc;}"
-        "QComboBox:focus{border-color:#8a8a8f;}"
-        "QComboBox::drop-down{border:0;width:22px;}" // otherwise Qt draws the platform's native (raised/beveled) button here
-        "QComboBox QAbstractItemView{background-color:#ffffff;border:1px solid #d9d9dc;outline:0;padding:2px;selection-background-color:#e5e5e7;selection-color:#202124;}"
-        "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:6px 14px;}"
-        "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
-        "QPushButton:pressed{background-color:#dddddf;}"
-        "QPushButton:disabled{color:#9aa0a6;background-color:#f1f1f2;border-color:#e4e4e6;}"
-        "QPushButton#ai_primary_button{background-color:#1a73e8;color:#ffffff;border:none;font-weight:600;}"
-        "QPushButton#ai_primary_button:hover{background-color:#1765cc;}"
-        "QPushButton#ai_primary_button:pressed{background-color:#175dc1;}"
-        "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
-}
 bool AIAgent::setup_github_token()
 {
     QDialog dialog(this);
