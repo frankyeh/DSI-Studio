@@ -117,9 +117,10 @@ QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
     url.setPort(settings.value("ai/ollama_port",11434).toInt());
     return {url,configured};
 }
-QString model_combo_key(const QComboBox& model) // strips the " (Ollama@host)" suffix off an Ollama model's display text
+QString model_combo_key(const QComboBox& model) // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
 {
-    return model.currentText().section(" (Ollama@",0,0);
+    auto key = model.currentText().section(" (Ollama@",0,0);
+    return key == "default" ? QString() : key;
 }
 void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QString selected = {},QString fallback = {},
@@ -160,11 +161,11 @@ QPair<QString,QJsonObject> resolve_model(const QJsonObject& profiles,
                                          const QJsonObject& selected_info)
 {
     auto search = selected.isEmpty() ? fallback : selected;
-    if(search == "default" || (!search.isEmpty() && profiles.contains(search)))
-        return {search,search == "default" ? QJsonObject() : profiles[search].toObject()};
+    if(search.isEmpty() || profiles.contains(search))
+        return {search,profiles[search].toObject()};
     if(!selected.isEmpty())
         return {selected,selected_info};
-    return {"default",QJsonObject()};
+    return {QString(),QJsonObject()};
 }
 AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
@@ -250,10 +251,11 @@ AIAgent::AIAgent(MainWindow* parent):
         ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
     }
 
+    if(!codex_path.isEmpty())
+        update_agent_models(int(ai_provider::Codex),{"default"},false);
     if(!claude_path.isEmpty())
     {
-        // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
-        static const QStringList claude_models{"fable","opus","sonnet","haiku"};
+        static const QStringList claude_models{"sonnet","fable","opus","haiku"};
         update_agent_models(int(ai_provider::Claude),claude_models,false);
         ai_log("Claude models: "+claude_models.join(", "));
     }
@@ -1250,7 +1252,7 @@ void AIAgent::refresh_codex_models()
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
             this,[=]
     {
-        QStringList models;
+        QStringList models{"default"}; // update_agent_models() replaces the whole native list -- keep Codex's own code-assigned entry alongside whatever's discovered
         auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
         auto list = doc.isArray() ? doc.array() :
                         doc.object()["models"].toArray();
@@ -1490,12 +1492,6 @@ void AIAgent::try_set_current_model(const QString& name) // writes the app-wide 
 {
     if(name.isEmpty())
         return;
-    if(name == "default")
-    {
-        current_model_name = "default";
-        current_model_info = QJsonObject();
-        return;
-    }
     const auto& profiles = agent_entries[current_agent_index].profiles;
     current_model_name = name;
     current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
@@ -1507,7 +1503,7 @@ void AIAgent::set_chat_model(ai_info& info,const QString& name) const // writes 
         return;
     const auto& profiles = agent_entries[int(info.provider)].profiles;
     info.model_settings["model"] = name;
-    info.model_settings["info"] = (name == "default" || !profiles.contains(name)) ? QJsonObject() : profiles[name].toObject();
+    info.model_settings["info"] = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
     info.save_config();
 }
 
@@ -1877,9 +1873,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
             return launch;
         }
     }
-    if(launch.model.startsWith("default",Qt::CaseInsensitive))
-        launch.model.clear();
-
     if(info->status == session_status::New && provider == ai_provider::Claude)
         // pre-declared via --session-id (configure_claude): the uuid itself never changes, only its status
         info->status = session_status::Resume;
@@ -2193,7 +2186,7 @@ QStringList AIAgent::configure_codex(
 
         args << "--oss" << "--local-provider=ollama";
     }
-    if(!launch.model.isEmpty())
+    if(!launch.model.isEmpty() && launch.model != "default") // Codex's own code-assigned alias for "no explicit choice" -- its CLI has no --model value named this, omit the flag instead
     {
         args << "--model" << launch.model;
         if(auto profile = launch.model_setting["info"].toObject()["profile"].toString();
