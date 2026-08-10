@@ -117,8 +117,8 @@ class AIAgent : public QMainWindow
     void publish_github_result(QJsonObject);
     void send_pending_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
-    enum class send_action {Send,StopLocal,StopWeb,ResumeWeb};
-    send_action current_send_action() const; // single source of truth for what the Send/Stop/Resume button means right now; update_send_button() only turns this into a label, on_ai_send_message_clicked() only executes it. Send (disabled/no-op) whenever no chat is selected -- every other action requires an existing chat
+    enum class send_action {Disabled,Send,StopLocal,StopWeb,ResumeWeb};
+    send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
     bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
