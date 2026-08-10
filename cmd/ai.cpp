@@ -28,9 +28,8 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    // New means the backend session isn't established yet for either provider (Codex: before "thread.started",
-    // Claude: before "system"/"init") -- writing now would either be discarded (Codex's id is about to be
-    // renamed) or premature (Claude's isn't confirmed yet), so both wait for the same instant.
+    // New is the only status with no real id yet (Codex's placeholder is still about to be renamed) --
+    // everything past that (Initializing/Active/Completed/Failed) has a stable id safe to write under
     if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
