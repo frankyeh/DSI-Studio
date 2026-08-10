@@ -251,10 +251,9 @@ AIAgent::AIAgent(MainWindow* parent):
         ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
     }
 
-    if(!codex_path.isEmpty())
-        update_agent_models(int(ai_provider::Codex),{"default"},false);
     if(!claude_path.isEmpty())
     {
+        // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
         static const QStringList claude_models{"sonnet","fable","opus","haiku"};
         update_agent_models(int(ai_provider::Claude),claude_models,false);
         ai_log("Claude models: "+claude_models.join(", "));
@@ -1252,7 +1251,7 @@ void AIAgent::refresh_codex_models()
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
             this,[=]
     {
-        QStringList models{"default"}; // update_agent_models() replaces the whole native list -- keep Codex's own code-assigned entry alongside whatever's discovered
+        QStringList models;
         auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
         auto list = doc.isArray() ? doc.array() :
                         doc.object()["models"].toArray();
@@ -1488,10 +1487,8 @@ void AIAgent::update_agent_status_label()
     ui->ai_agent_status->setText(text);
 }
 
-void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); accepts any non-empty name since the New Chat model field is editable
+void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); name is empty for "default" (model_combo_key()'s data value, not the "default" UI label) or a specific model name -- both are always meaningful, never a no-op
 {
-    if(name.isEmpty())
-        return;
     const auto& profiles = agent_entries[current_agent_index].profiles;
     current_model_name = name;
     current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
@@ -1499,8 +1496,6 @@ void AIAgent::try_set_current_model(const QString& name) // writes the app-wide 
 
 void AIAgent::set_chat_model(ai_info& info,const QString& name) const // writes directly into this chat's own model_settings; same name resolution as try_set_current_model()
 {
-    if(name.isEmpty())
-        return;
     const auto& profiles = agent_entries[int(info.provider)].profiles;
     info.model_settings["model"] = name;
     info.model_settings["info"] = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
@@ -2106,8 +2101,8 @@ QStringList AIAgent::configure_claude(
         "--add-dir",ui->ai_work_dir->text(),
         "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
         status == session_status::New ? "--session-id" : "--resume",session};
-    if(!launch.model.isEmpty())
-        args << "--model" << launch.model;
+    // an absent --model falls back to whatever the Claude CLI last remembered from an unrelated session, not a real default
+    args << "--model" << (launch.model.isEmpty() ? "sonnet" : launch.model);
     return args;
 }
 QStringList AIAgent::configure_codex(
