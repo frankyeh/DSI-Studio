@@ -3,11 +3,9 @@
 // stays in ai_agent.cpp.
 #include <QDateTime>
 #include <QFile>
-#include <QFileInfo>
 #include <QJsonDocument>
 #include <QSettings>
 #include <QUrl>
-#include <QWidget>
 
 #include "ai_agent.hpp"
 #include "mainwindow.h"
@@ -152,11 +150,10 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
         entry["reasoning"] = reasoning;
     return record_history(entry);
 }
-QJsonObject ai_info::record_request(const QString& command_name,QWidget* target)
+QJsonObject ai_info::record_request(const QString& command_name,QString title)
 {
-    auto window_type = command_window_type(current_window);
-    QJsonObject entry{{"type","request"},{"text",command_name},{"window",window_type}};
-    if(target && window_type != "main")
-        entry["title"] = QFileInfo(target->windowTitle()).fileName();
+    QJsonObject entry{{"type","request"},{"text",command_name},{"window",command_window_type(current_window)}};
+    if(!title.isEmpty())
+        entry["title"] = title;
     return record_history(entry);
 }
