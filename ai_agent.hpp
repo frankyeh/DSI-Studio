@@ -159,6 +159,7 @@ class AIAgent : public QMainWindow
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself (show_ai_history()) only when this chat is the one currently selected
     void show_ai_history(ai_info&,QJsonObject added_entry); // markdown->HTML transcript rendering: a full rebuild, or just appending added_entry when that alone is enough
     void update_agent_models(int,const QStringList&,bool);
+    void refresh_agent_executables(); // re-runs codex/claude executable discovery into agent_entries[...].executable; called from the constructor and showEvent() so an install completed mid-session is picked up without a restart
     void refresh_ollama_models();
     void refresh_codex_models();
     void start_ai(ai_info&,const QString&,ai_input);
