@@ -2,10 +2,13 @@
 // history-entry recording, plus free helpers with no AIAgent/MainWindow dependency (they take/return plain
 // Qt types like QWidget*/QLabel*, never Ui::AIAgent or an AIAgent member) -- everything that actually touches
 // ui->/agent_entries/etc. stays in ai_agent.cpp, and dispatch_cmd() builds "request" entries itself now.
+// Global (free) functions first, ai_info's own member functions at the back.
 #include <QColor>
+#include <QComboBox>
 #include <QDateTime>
 #include <QEventLoop>
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QListWidgetItem>
@@ -38,137 +41,6 @@ QString session_status_text(session_status status)
     case session_status::Failed:       return "Failed";
     }
     return {};
-}
-
-QString ai_info::history_file(const QString& session)
-{
-    return ai_project_dir+"/"+QString::fromLatin1(
-               QUrl::toPercentEncoding(session))+".jsonl";
-}
-QString ai_info::config_file(const QString& session)
-{
-    return ai_project_dir+"/"+QString::fromLatin1(
-               QUrl::toPercentEncoding(session))+".json";
-}
-void ai_info::save_config() const
-{
-    // gated on real content (projects), not live status -- status alone can't tell "never touched, nothing
-    // to persist" apart from "was established, currently New again while reconnecting" (see session_status),
-    // and skipping the latter meant edits made mid-reconnect (rename, cwd change) silently didn't persist,
-    // and a first message that failed before establishing left a history file config.json couldn't explain
-    // on reload. Files written under a still-New Codex placeholder are migrated to its real thread ID by
-    // assign_ai_session(), so writing early under the placeholder id is safe
-    if(projects.isEmpty() || !QSettings().value("ai/keep_history",true).toBool())
-        return;
-    QFile file(config_file(sessions));
-    if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
-        file.write(QJsonDocument(QJsonObject{
-            {"agent",agent_name},
-            {"provider",int(provider)}, // reload must trust this, not re-guess from agent_name -- that misclassifies an AgentServer session (or fails outright for a name identify_provider() doesn't recognize)
-            {"model_settings",model_settings},
-            // never reverts to false once true (New is the only live status this ever sees) -- reload trusts
-            // this instead of assuming Completed for a session id that never actually got a real backend thread
-            {"established",status != session_status::New}}).toJson(QJsonDocument::Compact));
-}
-
-ai_provider ai_info::identify_provider(const QString& name)
-{
-    // "chatgpt" checked first: the web agent's name is "Codex/ChatGPT-GitHub", which also contains "codex"
-    return name.contains("chatgpt",Qt::CaseInsensitive) ? ai_provider::ChatGPT :
-           name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
-           name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
-           ai_provider::Unknown;
-}
-QString ai_info::details() const
-{
-    int user = 0,assistant = 0,activity = 0;
-    for(const auto& value : projects)
-    {
-        auto type = value["type"].toString();
-        user += type == "user";
-        assistant += type == "assistant";
-        activity += type == "request" || type == "activity";
-    }
-    auto time = [](const QJsonValue& value) {
-        return QDateTime::fromString(value.toString(),Qt::ISODate).toString(
-                   "yyyy-MM-dd HH:mm:ss");};
-    auto created = projects.isEmpty() ? QString() : time(projects.first()["time"]);
-    auto updated = projects.isEmpty() ? QString() : time(projects.last()["time"]);
-    return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
-        "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
-        "Created: %9<br>Updated: %10")
-        .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),session_status_text(status))
-        .arg(user+assistant).arg(user).arg(assistant).arg(activity)
-        .arg(created,updated);
-}
-bool ai_info::save_title(QString title)
-{
-    title = title.simplified();
-    if(title.isEmpty())
-        return false;
-    if(title == project_titles)
-        return true;
-    if(projects.isEmpty()) // see save_config()
-    {
-        project_titles = title;
-        return true;
-    }
-    QSettings settings;
-    settings.setValue("ai/title/"+sessions,title);
-    settings.sync();
-    if(settings.status() != QSettings::NoError)
-        return false;
-    project_titles = title;
-    return true;
-}
-
-ai_info* ai_info::find(const QString& session)
-{
-    auto found = ai_infos.find(session);
-    return found == ai_infos.end() ? nullptr : &found->second;
-}
-ai_info* ai_info::create(QString session,QString agent,ai_provider provider) // the one constructor for the whole registry
-{
-    if(provider == ai_provider::Infer)
-        provider = identify_provider(agent);
-    if(session.isEmpty() || provider < ai_provider::Codex ||
-       provider > ai_provider::AgentServer)
-        return nullptr;
-    if(auto* info = find(session))
-        return info;
-    auto& info = ai_infos[session];
-    info.sessions = std::move(session);
-    info.provider = provider;
-    info.agent_name = std::move(agent);
-    return &info;
-}
-
-QJsonObject ai_info::record_history(QJsonObject entry)
-{
-    // written immediately regardless of status -- a message that's actually been recorded is real content,
-    // not provisional. A New session's id is never reused for anything else even before it's confirmed
-    // established (Codex's own placeholder gets renamed, not discarded, and assign_ai_session() already
-    // migrates this exact file to the new name when that happens), so there's no "wrong file" risk to guard
-    // against by waiting
-    entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    projects.append(entry);
-    if(QSettings().value("ai/keep_history",true).toBool())
-    {
-        QFile file(history_file(sessions));
-        if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
-           file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n') < 0)
-            tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
-    }
-    return entry;
-}
-QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
-{
-    if(chat.isEmpty() && reasoning.isEmpty())
-        return {};
-    QJsonObject entry{{"type","assistant"},{"text",chat}};
-    if(!reasoning.isEmpty())
-        entry["reasoning"] = reasoning;
-    return record_history(entry);
 }
 
 ai_info* assign_ai_session(const QString& from,const QString& to)
@@ -314,4 +186,195 @@ QByteArray github_blocking(QNetworkAccessManager& manager,
         error = reply->errorString();
     reply->deleteLater();
     return data;
+}
+
+QByteArray claude_input(const QString& text)
+{
+    return QJsonDocument(QJsonObject{
+        {"type","user"},{"message",QJsonObject{
+            {"role","user"},{"content",QJsonArray{QJsonObject{
+                {"type","text"},{"text",text}}}}}}}).
+        toJson(QJsonDocument::Compact)+'\n';
+}
+
+QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
+{
+    auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
+    bool configured = !host.isEmpty();
+    if(!host.contains("://"))
+        host.prepend("http://");
+    QUrl url(host);
+    url.setPort(settings.value("ai/ollama_port",11434).toInt());
+    return {url,configured};
+}
+
+QString model_combo_key(const QComboBox& model) // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
+{
+    auto key = model.currentText().section(" (Ollama@",0,0);
+    return key == "default" ? QString() : key;
+}
+
+void set_model_selector(QComboBox& model,const QJsonObject& profiles,
+                        QString selected,QString fallback,
+                        QJsonObject selected_info)
+{
+    // grouped, not one alphabetical sort: native models first, then Ollama models together as their own block
+    QStringList native_names,ollama_names;
+    for(const auto& name : profiles.keys())
+        (profiles[name].toObject().contains("provider") ? ollama_names : native_names) << name;
+    native_names.sort(Qt::CaseInsensitive);
+    ollama_names.sort(Qt::CaseInsensitive);
+
+    auto ollama_host = ai_ollama_url(QSettings()).first.host();
+    auto display_text = [&](const QString& name,const QJsonObject& info)
+    {
+        return info.contains("provider") ? name+" (Ollama@"+ollama_host+")" : name;
+    };
+    model.clear();
+    model.addItem("default");
+    for(const auto& name : native_names+ollama_names)
+        model.addItem(display_text(name,profiles[name].toObject()),profiles[name].toObject());
+
+    auto target = selected.isEmpty() ? fallback : selected;
+    int selected_index = -1;
+    for(int i = 0;i < model.count() && selected_index < 0;++i)
+        if(model.itemText(i) == target || model.itemText(i).startsWith(target+" ("))
+            selected_index = i;
+    if(selected_index < 0 && !selected.isEmpty())
+    {
+        model.addItem(display_text(selected,selected_info),selected_info);
+        selected_index = model.count()-1;
+    }
+    model.setCurrentIndex(std::max(0,selected_index));
+}
+
+QString ai_info::history_file(const QString& session)
+{
+    return ai_project_dir+"/"+QString::fromLatin1(
+               QUrl::toPercentEncoding(session))+".jsonl";
+}
+QString ai_info::config_file(const QString& session)
+{
+    return ai_project_dir+"/"+QString::fromLatin1(
+               QUrl::toPercentEncoding(session))+".json";
+}
+void ai_info::save_config() const
+{
+    // gated on real content (projects), not live status -- status alone can't tell "never touched, nothing
+    // to persist" apart from "was established, currently New again while reconnecting" (see session_status),
+    // and skipping the latter meant edits made mid-reconnect (rename, cwd change) silently didn't persist,
+    // and a first message that failed before establishing left a history file config.json couldn't explain
+    // on reload. Files written under a still-New Codex placeholder are migrated to its real thread ID by
+    // assign_ai_session(), so writing early under the placeholder id is safe
+    if(projects.isEmpty() || !QSettings().value("ai/keep_history",true).toBool())
+        return;
+    QFile file(config_file(sessions));
+    if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
+        file.write(QJsonDocument(QJsonObject{
+            {"agent",agent_name},
+            {"provider",int(provider)}, // reload must trust this, not re-guess from agent_name -- that misclassifies an AgentServer session (or fails outright for a name identify_provider() doesn't recognize)
+            {"model_settings",model_settings},
+            // never reverts to false once true (New is the only live status this ever sees) -- reload trusts
+            // this instead of assuming Completed for a session id that never actually got a real backend thread
+            {"established",status != session_status::New}}).toJson(QJsonDocument::Compact));
+}
+
+ai_provider ai_info::identify_provider(const QString& name)
+{
+    // "chatgpt" checked first: the web agent's name is "Codex/ChatGPT-GitHub", which also contains "codex"
+    return name.contains("chatgpt",Qt::CaseInsensitive) ? ai_provider::ChatGPT :
+           name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
+           name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
+           ai_provider::Unknown;
+}
+QString ai_info::details() const
+{
+    int user = 0,assistant = 0,activity = 0;
+    for(const auto& value : projects)
+    {
+        auto type = value["type"].toString();
+        user += type == "user";
+        assistant += type == "assistant";
+        activity += type == "request" || type == "activity";
+    }
+    auto time = [](const QJsonValue& value) {
+        return QDateTime::fromString(value.toString(),Qt::ISODate).toString(
+                   "yyyy-MM-dd HH:mm:ss");};
+    auto created = projects.isEmpty() ? QString() : time(projects.first()["time"]);
+    auto updated = projects.isEmpty() ? QString() : time(projects.last()["time"]);
+    return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
+        "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
+        "Created: %9<br>Updated: %10")
+        .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),session_status_text(status))
+        .arg(user+assistant).arg(user).arg(assistant).arg(activity)
+        .arg(created,updated);
+}
+bool ai_info::save_title(QString title)
+{
+    title = title.simplified();
+    if(title.isEmpty())
+        return false;
+    if(title == project_titles)
+        return true;
+    if(projects.isEmpty()) // see save_config()
+    {
+        project_titles = title;
+        return true;
+    }
+    QSettings settings;
+    settings.setValue("ai/title/"+sessions,title);
+    settings.sync();
+    if(settings.status() != QSettings::NoError)
+        return false;
+    project_titles = title;
+    return true;
+}
+
+ai_info* ai_info::find(const QString& session)
+{
+    auto found = ai_infos.find(session);
+    return found == ai_infos.end() ? nullptr : &found->second;
+}
+ai_info* ai_info::create(QString session,QString agent,ai_provider provider) // the one constructor for the whole registry
+{
+    if(provider == ai_provider::Infer)
+        provider = identify_provider(agent);
+    if(session.isEmpty() || provider < ai_provider::Codex ||
+       provider > ai_provider::AgentServer)
+        return nullptr;
+    if(auto* info = find(session))
+        return info;
+    auto& info = ai_infos[session];
+    info.sessions = std::move(session);
+    info.provider = provider;
+    info.agent_name = std::move(agent);
+    return &info;
+}
+
+QJsonObject ai_info::record_history(QJsonObject entry)
+{
+    // written immediately regardless of status -- a message that's actually been recorded is real content,
+    // not provisional. A New session's id is never reused for anything else even before it's confirmed
+    // established (Codex's own placeholder gets renamed, not discarded, and assign_ai_session() already
+    // migrates this exact file to the new name when that happens), so there's no "wrong file" risk to guard
+    // against by waiting
+    entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    projects.append(entry);
+    if(QSettings().value("ai/keep_history",true).toBool())
+    {
+        QFile file(history_file(sessions));
+        if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
+           file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n') < 0)
+            tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
+    }
+    return entry;
+}
+QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
+{
+    if(chat.isEmpty() && reasoning.isEmpty())
+        return {};
+    QJsonObject entry{{"type","assistant"},{"text",chat}};
+    if(!reasoning.isEmpty())
+        entry["reasoning"] = reasoning;
+    return record_history(entry);
 }

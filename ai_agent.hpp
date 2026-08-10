@@ -12,7 +12,6 @@
 #include <QUrl>
 
 #include <array>
-#include <unordered_map>
 
 class MainWindow;
 class QListWidgetItem;
@@ -42,8 +41,6 @@ enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declar
 //   (still resumable with --resume), it only tells the user something went wrong on the last run.
 // A chat that fails before ever reaching Thinking/WaitingUser (FailedToStart, or a crash while still
 // connecting) never becomes Failed -- it has no real id to preserve, so it reverts all the way back to New.
-bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
-QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
 
 struct ai_info{
     QString sessions,agent_name,project_titles;
@@ -79,11 +76,6 @@ struct ai_info{
     bool is_running() const {return status == session_status::Thinking || (status == session_status::New && processes);}
     QString details() const;
 };
-
-// session registry: defined in cmd/ai.cpp alongside ai_info's own member implementations; every chat,
-// local or web, is one entry here, keyed by its own ai_info::sessions
-extern std::unordered_map<QString,ai_info> ai_infos;
-extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, before any window exists
 
 // one entry per ai_provider (Codex/Claude): resolved executable path (empty if not found) and the discovered model profiles (name -> info)
 struct ai_agent_entry
