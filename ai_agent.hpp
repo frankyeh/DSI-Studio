@@ -29,7 +29,7 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class ai_input {User,Pending};
-enum class session_status {New,Initializing,Active,Thinking,Completed,Failed};
+enum class session_status {New,Initializing,Active,Thinking,Completed,Failed}; // New and Initializing must stay the first two, in this order -- "never reached Active" checks elsewhere compare status <= Initializing
 // New: chat created, no launch ever attempted -- the only value that means "no real id yet, use --session-id".
 // Initializing: a launch is in flight -- the OS process started, waiting for the agent's own protocol
 //   confirmation (Codex: "thread.started", Claude: stream-json "system"/"init").
