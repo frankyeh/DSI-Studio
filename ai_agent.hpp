@@ -51,8 +51,7 @@ struct ai_info{
     QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "github_issue_url": bound issue, web (ChatGPT) sessions only
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
-    bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
-    session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity
+    session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString,ai_provider); // the one constructor for the whole registry; pass ai_provider::Infer to derive it from a trusted agent name (Codex/Claude/ChatGPT/...), or a known value directly (AgentServer, a persisted reload) -- never a default, every call site states its intent
