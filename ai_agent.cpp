@@ -2184,7 +2184,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     auto update_github_button = [&]
     {
         bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
-        github_button.setText(has_token ? "GitHub token ready ✓ · Reset..." : "Set up GitHub token");
+        github_button.setText(has_token ? "GitHub token ready ✓ · Configure..." : "Set up GitHub token");
     };
     update_github_button();
     connect(&github_button,&QPushButton::clicked,&dialog,[&]
