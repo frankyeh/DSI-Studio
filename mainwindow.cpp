@@ -1417,7 +1417,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 else
                 {
-                    info.record_request(command_name,locked_target);
+                    info.record_request(command_name,command_window_type(info.current_window) == "main" ?
+                                         QString() : QFileInfo(locked_target->windowTitle()).fileName());
                     if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
                         error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
                 }
