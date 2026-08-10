@@ -137,10 +137,10 @@ class AIAgent : public QMainWindow
     void update_agent_models(int,const QStringList&,bool);
     void refresh_ollama_models();
     void refresh_codex_models();
-    void start_ai(QString,const QString&,ai_input);
-    QStringList configure_codex(const ai_launch&,QString,const QString&,session_status);
-    QStringList configure_claude(const ai_launch&,QString,const QString&,session_status);
-    ai_launch prepare_ai(ai_provider,const QJsonObject& model_setting,QString&,const QString&,ai_input); // model_setting: resolved by the caller (the chat's own info.model_settings, or the app-wide default if no chat exists yet) -- prepare_ai no longer re-resolves or reconciles it. session is never empty on entry (always a placeholder or a real established id); its ai_info's status may flip from New to Resume in place (Claude: the same uuid is pre-declared via --session-id, so no rename is needed)
+    void start_ai(ai_info&,const QString&,ai_input);
+    QStringList configure_codex(const ai_launch&,const ai_info&,const QString&); // reads info.sessions/info.status as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
+    QStringList configure_claude(const ai_launch&,const ai_info&,const QString&); // same contract as configure_codex
+    ai_launch prepare_ai(ai_info&,const QString&,ai_input); // info.status is New until this provider's own session-established event fires (Codex: "thread.started", Claude: stream-json "system"/"init") -- prepare_ai itself never changes it
 
 public:
     explicit AIAgent(MainWindow*);
