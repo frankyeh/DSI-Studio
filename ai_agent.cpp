@@ -186,18 +186,6 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
     }
     model.setCurrentIndex(std::max(0,selected_index));
 }
-// headless equivalent of set_model_selector's findText-then-fallback-then-default logic, without building a list
-QPair<QString,QJsonObject> resolve_model(const QJsonObject& profiles,
-                                         const QString& selected,const QString& fallback,
-                                         const QJsonObject& selected_info)
-{
-    auto search = selected.isEmpty() ? fallback : selected;
-    if(search.isEmpty() || profiles.contains(search))
-        return {search,profiles[search].toObject()};
-    if(!selected.isEmpty())
-        return {selected,selected_info};
-    return {QString(),QJsonObject()};
-}
 AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
@@ -237,7 +225,7 @@ AIAgent::AIAgent(MainWindow* parent):
         for(auto& entry : ai_infos)
         {
             auto& info = entry.second;
-            if(info.status <= session_status::Thinking)
+            if(info.is_running())
             {
                 running = true;
                 if(auto* row = ui->ai_project_list->itemWidget(info.project_items))
@@ -247,7 +235,7 @@ AIAgent::AIAgent(MainWindow* parent):
         }
         if(!running)
             ai_status_timer->stop();
-        if(auto* info = selected_info();info && info->status <= session_status::Thinking)
+        if(auto* info = selected_info();info && info->is_running())
         {
             auto status = ui->ai_status->text();
             ui->ai_status->setText(
@@ -974,7 +962,7 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
                           info.status,pulse);
     }
 
-    bool running = info.status <= session_status::Thinking;
+    bool running = info.is_running();
     if(running && !ai_status_timer->isActive())
         ai_status_timer->start(500);
     if(selected_info() != &info)
@@ -1122,7 +1110,9 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto* row = ui->ai_project_list->itemWidget(item);
     auto* title = row->findChild<QPushButton*>();
     item->setText({});
-    auto chat_title = info.status == session_status::New && info.project_titles.isEmpty() ?
+    // never touched (no content, no title) -- not "currently New", which a reconnecting, previously-used
+    // chat also transiently is (see session_status), and shouldn't flash back to this placeholder label for
+    auto chat_title = info.projects.isEmpty() && info.project_titles.isEmpty() ?
         "New "+info.agent_name+" Chat" : info.title();
     title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+chat_title);
     title->setToolTip(title->text());
@@ -1316,9 +1306,10 @@ void AIAgent::update_agent_models(
 
     if(current_agent_index == index)
     {
-        auto resolved = resolve_model(profiles,current_model_name,{},current_model_info);
-        current_model_name = resolved.first;
-        current_model_info = resolved.second;
+        // the current default model's own profile may have just changed (or disappeared) -- refresh its
+        // cached info; an unrecognized name (the model combo is editable) is left exactly as it was
+        if(current_model_name.isEmpty() || profiles.contains(current_model_name))
+            current_model_info = profiles[current_model_name].toObject();
         update_agent_status_label();
     }
 }
@@ -1698,31 +1689,6 @@ static QString ai_dialog_style()
         "QPushButton#ai_primary_button:pressed{background-color:#175dc1;}"
         "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
 }
-// a titled, bordered card with a short body line and a single left-aligned action button below it -- the
-// repeated visual unit for step-by-step setup dialogs (GitHub repo/token, etc.)
-static void ai_add_step_card(QBoxLayout* root,const QString& heading,const QString& body,
-                              QPushButton*& action,const QString& action_text)
-{
-    auto* card = new QFrame;
-    card->setObjectName("ai_step_card");
-    auto* card_layout = new QVBoxLayout(card);
-    card_layout->setContentsMargins(14,12,14,12);
-    card_layout->setSpacing(6);
-    auto* heading_label = new QLabel(heading);
-    heading_label->setObjectName("ai_step_heading");
-    auto* body_label = new QLabel(body);
-    body_label->setObjectName("ai_step_body");
-    body_label->setWordWrap(true);
-    card_layout->addWidget(heading_label);
-    card_layout->addWidget(body_label);
-    action = new QPushButton(action_text);
-    auto* button_row = new QHBoxLayout;
-    button_row->addWidget(action);
-    button_row->addStretch();
-    card_layout->addLayout(button_row);
-    root->addWidget(card);
-}
-
 bool AIAgent::setup_github_token()
 {
     QDialog dialog(this);
@@ -1744,8 +1710,33 @@ bool AIAgent::setup_github_token()
     root->addWidget(title);
     root->addWidget(subtitle);
 
+    // a titled, bordered card with a short body line and a single left-aligned action button below it --
+    // used only here, for this dialog's two setup steps
+    auto add_step_card = [root](const QString& heading,const QString& body,
+                                 QPushButton*& action,const QString& action_text)
+    {
+        auto* card = new QFrame;
+        card->setObjectName("ai_step_card");
+        auto* card_layout = new QVBoxLayout(card);
+        card_layout->setContentsMargins(14,12,14,12);
+        card_layout->setSpacing(6);
+        auto* heading_label = new QLabel(heading);
+        heading_label->setObjectName("ai_step_heading");
+        auto* body_label = new QLabel(body);
+        body_label->setObjectName("ai_step_body");
+        body_label->setWordWrap(true);
+        card_layout->addWidget(heading_label);
+        card_layout->addWidget(body_label);
+        action = new QPushButton(action_text);
+        auto* button_row = new QHBoxLayout;
+        button_row->addWidget(action);
+        button_row->addStretch();
+        card_layout->addLayout(button_row);
+        root->addWidget(card);
+    };
+
     QPushButton* setup_repo = nullptr;
-    ai_add_step_card(root,"Step 1 · Create a private repository",
+    add_step_card("Step 1 · Create a private repository",
         "<ol style='margin-left:-20px;'>"
         "<li><b>Repository name*</b> = <i>[any name]</i>, e.g. DSI-Studio-Connect</li>"
         "<li>Choose visibility &rarr; <b>Private</b></li>"
@@ -1753,7 +1744,7 @@ bool AIAgent::setup_github_token()
         setup_repo,"Create private repository");
 
     QPushButton* setup_token = nullptr;
-    ai_add_step_card(root,"Step 2 · Create an access token",
+    add_step_card("Step 2 · Create an access token",
         "<ol style='margin-left:-20px;'>"
         "<li><b>Token name*</b> = <i>[any name]</i></li>"
         "<li>Expiration &rarr; select an appropriate duration</li>"
