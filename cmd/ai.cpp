@@ -28,11 +28,10 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    // Codex's placeholder id is about to be renamed once "thread.started" reports the real one -- writing now
-    // would just be discarded. Claude's id is stable from the start (pre-declared via --session-id), so it's
-    // always safe to persist regardless of status.
-    if((provider == ai_provider::Codex && status == session_status::New) ||
-       !QSettings().value("ai/keep_history",true).toBool())
+    // New means the backend session isn't established yet for either provider (Codex: before "thread.started",
+    // Claude: before "system"/"init") -- writing now would either be discarded (Codex's id is about to be
+    // renamed) or premature (Claude's isn't confirmed yet), so both wait for the same instant.
+    if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
@@ -79,7 +78,7 @@ bool ai_info::save_title(QString title)
         return false;
     if(title == project_titles)
         return true;
-    if(provider == ai_provider::Codex && status == session_status::New) // sessions is about to be renamed -- see save_config()
+    if(status == session_status::New) // see save_config()
     {
         project_titles = title;
         return true;
@@ -117,7 +116,7 @@ QJsonObject ai_info::record_history(QJsonObject entry)
 {
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     projects.append(entry);
-    if((provider != ai_provider::Codex || status != session_status::New) && // sessions is about to be renamed -- see save_config()
+    if(status != session_status::New && // see save_config()
        QSettings().value("ai/keep_history",true).toBool())
     {
         QFile file(history_file(sessions));
