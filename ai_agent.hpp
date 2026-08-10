@@ -40,6 +40,7 @@ enum class session_status {New,Initializing,Active,Completed,Failed};
 // A chat that fails before ever reaching Active (FailedToStart, or a crash while still Initializing) never
 // becomes Failed -- it has no real id to preserve, so it reverts all the way back to New instead.
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
+QString session_status_text(session_status); // human-readable label, shared by the sidebar dot's tooltip and ai_info::details() -- the one place this mapping is written
 
 struct ai_info{
     QString sessions,agent_name,project_titles;
