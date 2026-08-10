@@ -1058,17 +1058,17 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     item->setSizeHint(QSize(0,row->sizeHint().height()));
 
     auto* status_dot = row->findChild<QLabel*>("ai_project_status_dot");
-    QString status_color,status_text;
+    QString status_color;
     switch(info.status)
     {
-    case session_status::New:          status_color = "#9aa0a6"; status_text = "New";          break;
-    case session_status::Initializing: status_color = "#fbbc04"; status_text = "Connecting...";  break;
-    case session_status::Active:       status_color = "#34a853"; status_text = "Active";        break;
-    case session_status::Completed:    status_color = "#4285f4"; status_text = "Completed";     break;
-    case session_status::Failed:       status_color = "#ea4335"; status_text = "Failed";        break;
+    case session_status::New:          status_color = "#9aa0a6"; break;
+    case session_status::Initializing: status_color = "#fbbc04"; break;
+    case session_status::Active:       status_color = "#34a853"; break;
+    case session_status::Completed:    status_color = "#4285f4"; break;
+    case session_status::Failed:       status_color = "#ea4335"; break;
     }
     status_dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(status_color));
-    status_dot->setToolTip(status_text);
+    status_dot->setToolTip(session_status_text(info.status));
 
     auto* current = ui->ai_project_list->currentItem();
     const auto added_type = added_entry["type"].toString();
@@ -1447,7 +1447,6 @@ bool AIAgent::try_connect_github_issue(const QString& url)
         if(auto* info = ai_info::find(web_agent_session_id))
         {
             info->status = session_status::Failed;
-            info->has_error = true;
             show_ai_project(*info);
         }
         return false;
@@ -1857,8 +1856,6 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     ui->ai_work_dir->setText(
         project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
-    info.has_error = false; // a new attempt clears the sidebar's error dot
-
     launch.model_setting = info.model_settings;
     launch.model = launch.model_setting["model"].toString().trimmed();
     if(launch.model_setting["info"].toObject().contains("provider"))
@@ -1926,7 +1923,6 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         {
             info->status = session_status::New;
             info->processes = nullptr;
-            info->has_error = true;
             show_ai_project(*info);
         }
         if(is_status_target(process->objectName()))
@@ -1986,7 +1982,6 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             auto& info = ai_infos[session];
             info.status = session_status::Failed; // still resumable -- just flags trouble on the last attempt
             info.processes = nullptr;
-            info.has_error = true;
             if(input == ai_input::Pending)
                 info.prompts.append(text);
             else if(auto* item = ui->ai_project_list->currentItem();
@@ -2031,7 +2026,6 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             auto& info = ai_infos[session];
             info.status = failed ? session_status::Failed : session_status::Completed;
             info.processes = nullptr;
-            info.has_error = failed;
 
             auto pending = info.prompts.join("\n\n");
             info.prompts.clear();
@@ -2179,7 +2173,7 @@ QStringList AIAgent::configure_codex(
                     ai_log("invalid thread_id from Codex (not a UUID): "+session);
                     if(auto* info = ai_info::find(old_session))
                     {
-                        info->has_error = true;
+                        info->status = session_status::Failed;
                         show_ai_project(*info);
                     }
                     continue;
@@ -2273,7 +2267,11 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
     auto launch = prepare_ai(info,text,input);
     if(!launch.process)
     {
-        info.has_error = true;
+        // a config problem (missing executable, not signed in, Ollama unset), already reported via its own
+        // QMessageBox inside prepare_ai() -- New has nothing real to flag as failed; an already-established
+        // session's id is still good, just this local attempt couldn't proceed
+        if(info.status != session_status::New)
+            info.status = session_status::Failed;
         show_ai_project(info);
         return;
     }
