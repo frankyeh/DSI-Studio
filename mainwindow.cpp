@@ -1269,6 +1269,14 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(info.current_window != window_before)
                 unlock_target();
 
+            // recorded once, here, for every command regardless of outcome (including unknown/failed ones) --
+            // title is whatever window this command's context ends up being (its own destination for
+            // set_window), empty for main or when there's no such window
+            QString title;
+            if(auto* target = command_window_type(info.current_window) == "main" ? nullptr : find_window(info.current_window))
+                title = QFileInfo(target->windowTitle()).fileName();
+            info.record_request(command_name,title);
+
             QJsonObject result{{"cmd",command_name},{"status",error.isEmpty() ? "success" : "error"}};
             if(!output.isEmpty())
                 result["output"] = output;
@@ -1406,8 +1414,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
-            else if(command(cmd,command_source::AI)) // handled by MainWindow directly: nothing more to do beyond recording the attempt
-                info.record_request(command_name);
+            else if(command(cmd,command_source::AI)) {} // handled by MainWindow directly: nothing more to do
             else if(error_msg == "unknown command: "+cmd[0])
             {
                 if(!resolve_target(error))
@@ -1415,19 +1422,11 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     output = error; // busy-elsewhere / window-not-found: a status report, not an agent mistake
                     error.clear();
                 }
-                else
-                {
-                    info.record_request(command_name,command_window_type(info.current_window) == "main" ?
-                                         QString() : QFileInfo(locked_target->windowTitle()).fileName());
-                    if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
-                        error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
-                }
+                else if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
+                    error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
             }
-            else // recognized by MainWindow but failed for a real reason (not "unknown command") -- still record the attempt
-            {
-                info.record_request(command_name);
+            else // recognized by MainWindow but failed for a real reason
                 error = QString::fromStdString(error_msg);
-            }
         }
         catch(const std::exception& e){error = e.what();}
         catch(...){error = "unknown error";}
