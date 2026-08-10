@@ -74,8 +74,7 @@ static ai_info* assign_ai_session(const QString& from,const QString& to)
 struct ai_launch{
     QString name,executable,model;
     QUrl model_url;
-    QJsonObject model_setting;
-    QProcess* process = nullptr;
+    QJsonObject model_setting; // a value snapshot, not just a convenience copy of info.model_settings -- Codex's thread.started handler may need to seed a brand-new ai_info it just created, which has nothing of its own yet
     bool was_new = false; // status was New right before this launch began -- Claude's own establishment handler needs this to record the opening message exactly once: prepare_ai() already recorded (and persisted) it immediately for a reconnect (Completed/Failed), so only a genuinely first-ever session still needs recording once establishment confirms it
 };
 QByteArray claude_input(const QString& text)
@@ -1891,7 +1890,6 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     info.save_config(); // model_setting above is already info.model_settings -- nothing to write back
 
     auto* process = new QProcess(this);
-    launch.process = process;
     process->setObjectName(session);
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
     auto env = QProcessEnvironment::systemEnvironment();
@@ -2054,7 +2052,7 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 QStringList AIAgent::configure_claude(
     const ai_launch& launch,const ai_info& info,const QString& text)
 {
-    auto* process = launch.process;
+    auto* process = info.processes;
     auto session = info.sessions; // captured by value into the async handlers below -- never info itself
     auto status = info.status;
     auto was_new = launch.was_new; // whether prepare_ai() already recorded+persisted the opening message (Completed/Failed reconnect) or is still waiting on establishment to do it (New)
@@ -2169,7 +2167,7 @@ QStringList AIAgent::configure_claude(
 QStringList AIAgent::configure_codex(
     const ai_launch& launch,const ai_info& info,const QString& text)
 {
-    auto* process = launch.process;
+    auto* process = info.processes;
     auto session = info.sessions; // captured by value into the async handler below -- never info itself (Codex renames/rekeys the session there)
     auto status = info.status;
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
@@ -2241,9 +2239,9 @@ QStringList AIAgent::configure_codex(
         auto url = launch.model_url;
         url.setPath("/v1");
 
-        auto env = launch.process->processEnvironment();
+        auto env = process->processEnvironment();
         env.insert("CODEX_OSS_BASE_URL",url.toString());
-        launch.process->setProcessEnvironment(env);
+        process->setProcessEnvironment(env);
 
         args << "--oss" << "--local-provider=ollama";
     }
@@ -2283,7 +2281,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
     Q_ASSERT(info.provider == ai_provider::Codex || info.provider == ai_provider::Claude); // never ChatGPT: callers must intercept a web chat before reaching here
 
     auto launch = prepare_ai(info,text,input);
-    if(!launch.process)
+    if(!info.processes) // prepare_ai() failed before ever creating a process
     {
         // a config problem (missing executable, not signed in, Ollama unset), already reported via its own
         // QMessageBox inside prepare_ai() -- New has nothing real to flag as failed; an already-established
@@ -2300,7 +2298,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
            " args: " + args.join(" ").remove("\n"));
     if(is_status_target(info.sessions))
         set_ai_status("Starting "+launch.name+"...");
-    launch.process->start(launch.executable,args);
+    info.processes->start(launch.executable,args);
 }
 
 void AIAgent::on_ai_send_message_clicked()
