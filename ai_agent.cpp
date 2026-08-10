@@ -251,52 +251,9 @@ AIAgent::AIAgent(MainWindow* parent):
     github_timer.setSingleShot(true);
     connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
 
-    QString codex_path,claude_path;
-    {
-        // Find Codex executable
-        codex_path = QStandardPaths::findExecutable("codex");
-        if(codex_path.isEmpty())
-        {
-            QDir dir(QStandardPaths::writableLocation(
-                         QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
-            for(const auto& name : dir.entryList(
-                    QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
-                if(QFileInfo::exists(codex_path = dir.filePath(name+"/codex.exe")))
-                    break;
-        }
-        if(!QFileInfo::exists(codex_path))
-            codex_path.clear();
-    }
-    {
-        // Find Claude executable
-        claude_path = QStandardPaths::findExecutable("claude");
-#ifdef Q_OS_WIN
-        if(claude_path.isEmpty())
-            claude_path = QDir::homePath()+"/.local/bin/claude.exe";
-#endif
-        if(!QFileInfo::exists(claude_path))
-            claude_path.clear();
-    }
-    static const char* agent_names[] = {"Codex","Claude"};
-    for(auto provider : {ai_provider::Codex,ai_provider::Claude})
-    {
-        auto index = int(provider);
-        const auto& path =
-            provider == ai_provider::Codex ? codex_path : claude_path;
-        QString agent = agent_names[index];
-        agent_entries[index].executable = path;
-        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
-    }
-
-    if(!claude_path.isEmpty())
-    {
-        // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
-        static const QStringList claude_models{"sonnet","fable","opus","haiku"};
-        update_agent_models(int(ai_provider::Claude),claude_models,false);
-        ai_log("Claude models: "+claude_models.join(", "));
-    }
-
-    if(codex_path.isEmpty() && !claude_path.isEmpty())
+    refresh_agent_executables();
+    if(agent_entries[int(ai_provider::Codex)].executable.isEmpty() &&
+       !agent_entries[int(ai_provider::Claude)].executable.isEmpty())
         current_agent_index = int(ai_provider::Claude);
     update_agent_status_label();
     // not refreshed here: agent_login_info() runs a blocking CLI subprocess per provider, and AIAgent is
@@ -938,6 +895,7 @@ void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reas
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
+    refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the two refreshes below read agent_entries[...].executable
     refresh_codex_models();
     refresh_login_buttons(); // re-checked every time this window is shown, so a login/logout done outside DSI Studio is picked up
     auto* item = ui->ai_project_list->currentItem();
@@ -954,8 +912,7 @@ void AIAgent::closeEvent(QCloseEvent* event)
     for(auto& entry : ai_infos)
         if(auto* process = entry.second.processes)
         {
-            entry.second.prompts.clear(); // stop means stop: no auto-continue into a queued message (same as StopLocal) -- otherwise a message queued on a busy session would relaunch that agent right after this window tried to shut everything down
-            process->setProperty("user_stopped",true);
+            process->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message right after this window tried to shut everything down
             process->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         }
     disconnect_github_issue();
@@ -1341,6 +1298,48 @@ void AIAgent::update_agent_models(
         update_agent_status_label();
     }
 }
+void AIAgent::refresh_agent_executables() // re-run discovery so an install completed after DSI Studio was already running (e.g. via the sidebar's Install button) is picked up without a restart -- called from the constructor and showEvent()
+{
+    QString codex_path = QStandardPaths::findExecutable("codex");
+    if(codex_path.isEmpty())
+    {
+        QDir dir(QStandardPaths::writableLocation(
+                     QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
+        for(const auto& name : dir.entryList(
+                QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
+            if(QFileInfo::exists(codex_path = dir.filePath(name+"/codex.exe")))
+                break;
+    }
+    if(!QFileInfo::exists(codex_path))
+        codex_path.clear();
+
+    QString claude_path = QStandardPaths::findExecutable("claude");
+#ifdef Q_OS_WIN
+    if(claude_path.isEmpty())
+        claude_path = QDir::homePath()+"/.local/bin/claude.exe";
+#endif
+    if(!QFileInfo::exists(claude_path))
+        claude_path.clear();
+
+    static const char* agent_names[] = {"Codex","Claude"};
+    for(auto provider : {ai_provider::Codex,ai_provider::Claude})
+    {
+        auto index = int(provider);
+        const auto& path =
+            provider == ai_provider::Codex ? codex_path : claude_path;
+        QString agent = agent_names[index];
+        agent_entries[index].executable = path;
+        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
+    }
+
+    if(!claude_path.isEmpty())
+    {
+        // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
+        static const QStringList claude_models{"sonnet","fable","opus","haiku"};
+        update_agent_models(int(ai_provider::Claude),claude_models,false);
+        ai_log("Claude models: "+claude_models.join(", "));
+    }
+}
 void AIAgent::refresh_codex_models()
 {
     auto path = agent_entries[int(ai_provider::Codex)].executable;
@@ -1576,14 +1575,18 @@ bool AIAgent::try_connect_github_issue(const QString& url)
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
     if(auto* info = ai_info::find(web_agent_session_id))
     {
+        // status flips to WaitingUser (established) BEFORE save_config() -- save_config()'s "established"
+        // field reads status at the moment it's called, and this chat may be an already-established one just
+        // reconnecting (status still New here from the "Connecting..." update above); saving while still New
+        // would wrongly persist established:false over a genuinely established chat
+        set_ai_status(info->sessions,session_status::WaitingUser, // established and idle -- Thinking is reserved for actually processing a request (see poll_github_issue())
+                      "Connected; monitoring GitHub issue");
         // bound the moment the connection succeeds, not deferred until a request happens to arrive
         // (poll_github_issue() also does this for the reactive/resume case) -- the chat's own record is
         // now always current, so update_agent_status_label() never needs to prefer github_issue_api over it
         info->model_settings["github_issue_url"] =
             QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
         info->save_config();
-        set_ai_status(info->sessions,session_status::WaitingUser, // established and idle -- Thinking is reserved for actually processing a request (see poll_github_issue())
-                      "Connected; monitoring GitHub issue");
     }
     update_send_button();
     update_agent_status_label();
@@ -2492,6 +2495,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             auto& info = *found;
             info.processes = nullptr;
 
+            if(user_stopped) // stop means stop: no auto-continue into a queued message -- caller only marks
+                info.prompts.clear(); // the process user_stopped and kills it, this is the one place that decides what that implies for queued prompts
             auto pending = info.prompts.join("\n\n");
             info.prompts.clear();
             if(!pending.isEmpty())
@@ -2771,8 +2776,7 @@ void AIAgent::on_ai_send_message_clicked()
         new_chat_dialog(true);
         return;
     case send_action::StopLocal: // only reachable when info && info->processes, see current_send_action()
-        info->prompts.clear(); // stop means stop: no auto-continue into a queued message
-        info->processes->setProperty("user_stopped",true);
+        info->processes->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message
         info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         return;
     case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
