@@ -29,7 +29,16 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class ai_input {User,Pending};
-enum class session_status {New,Init,Completed,Failed}; // New: chat created, no launch attempted yet. Init: a launch is in flight -- the OS process started, waiting for the agent's own confirmation (Codex: "thread.started", Claude: stream-json "system"/"init"). Completed: the agent confirmed establishment -- this session now has a real, resumable id. Failed: an establishment attempt ended (FailedToStart, or the process exited) without ever reaching Completed. Only Completed unlocks persistence and the CLI's own resume flag; every other value means "start fresh" on the next attempt -- "Resume" is an action a caller takes, not a state this field holds
+enum class session_status {New,Initializing,Active,Completed,Failed};
+// New: chat created, no launch ever attempted -- the only value that means "no real id yet, use --session-id".
+// Initializing: a launch is in flight -- the OS process started, waiting for the agent's own protocol
+//   confirmation (Codex: "thread.started", Claude: stream-json "system"/"init").
+// Active: confirmed and connected -- more messages can be written straight to this running process.
+// Completed: the process ended normally after having been Active -- the session id remains valid/resumable.
+// Failed: the process ended abnormally after having been Active -- functionally the same as Completed
+//   (still resumable with --resume), it only tells the user something went wrong on the last run.
+// A chat that fails before ever reaching Active (FailedToStart, or a crash while still Initializing) never
+// becomes Failed -- it has no real id to preserve, so it reverts all the way back to New instead.
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 
 struct ai_info{
