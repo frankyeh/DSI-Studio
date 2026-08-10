@@ -71,12 +71,6 @@ static ai_info* assign_ai_session(const QString& from,const QString& to)
         QSettings().setValue("ai/title/"+to,inserted.position->second.project_titles);
     return &inserted.position->second;
 }
-struct ai_launch{
-    QString name,executable,model;
-    QUrl model_url;
-    QJsonObject model_setting; // a value snapshot, not just a convenience copy of info.model_settings -- Codex's thread.started handler may need to seed a brand-new ai_info it just created, which has nothing of its own yet
-    bool was_new = false; // status was New right before this launch began -- Claude's own establishment handler needs this to record the opening message exactly once: prepare_ai() already recorded (and persisted) it immediately for a reconnect (Completed/Failed), so only a genuinely first-ever session still needs recording once establishment confirms it
-};
 QByteArray claude_input(const QString& text)
 {
     return QJsonDocument(QJsonObject{
@@ -907,6 +901,10 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     auto* status_info = selected_info();
     bool ongoing = status_info && (status_info->status == session_status::Initializing ||
                                     status_info->status == session_status::Thinking);
+    // a finished chat (Completed/Failed) has nothing further to report -- its own status is the label from
+    // here on, not a message that fades to blank
+    bool settled = status_info && (status_info->status == session_status::Completed ||
+                                    status_info->status == session_status::Failed);
     if(ongoing && (status.isEmpty() || temporary))
     {
         // always this chat's own current status, never a cached message -- a per-agent cache would show
@@ -915,12 +913,14 @@ void AIAgent::set_ai_status(QString status,bool temporary)
         ai_status_timer->setSingleShot(false);
         ai_status_timer->start(500);
     }
+    else if(settled && status.isEmpty())
+        status = session_status_text(status_info->status);
 
     ui->ai_status->setVisible(!status.isEmpty());
     ui->ai_status->setText(status);
     ui->ai_status->repaint();
 
-    if(temporary && !ongoing)
+    if(temporary && !ongoing && !settled)
     {
         ai_status_timer->setSingleShot(true);
         ai_status_timer->start(2000);
@@ -1064,7 +1064,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     case session_status::Initializing: status_color = "#fbbc04"; break;
     case session_status::Active:       status_color = "#34a853"; break;
     case session_status::Thinking:     status_color = "#a142f4"; break;
-    case session_status::Completed:    status_color = "#4285f4"; break;
+    case session_status::Completed:    status_color = "#9aa0a6"; break;
     case session_status::Failed:       status_color = "#ea4335"; break;
     }
     status_dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(status_color));
@@ -1825,10 +1825,13 @@ void AIAgent::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
+void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 {
-    ai_launch launch;
-    launch.was_new = info.status == session_status::New;
+    // fresh state each attempt -- a field this attempt doesn't set (e.g. launch_model_url when not using Ollama) must not carry over a stale value from the last one
+    info.launch_name.clear();
+    info.launch_executable.clear();
+    info.launch_model.clear();
+    info.launch_model_url.clear();
     auto provider = info.provider;
     auto session = info.sessions; // captured by value below for every async handler -- info itself must never be captured across them (Codex can still rename/rekey the session)
 
@@ -1841,16 +1844,16 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     };
 
     // Resolve agent
-    launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
-    launch.executable = agent_entries[int(provider)].executable;
-    if(launch.executable.isEmpty())
+    info.launch_name = provider == ai_provider::Codex ? "Codex" : "Claude";
+    info.launch_executable = agent_entries[int(provider)].executable;
+    if(info.launch_executable.isEmpty())
     {
         preserve_pending();
-        auto message = launch.name+" executable was not found.";
+        auto message = info.launch_name+" executable was not found.";
         if(is_status_target(info.sessions))
             set_ai_status(message,true);
         QMessageBox::warning(this,"AI Agent",message);
-        return launch;
+        return;
     }
 
     // Resolve work directory
@@ -1858,13 +1861,12 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     ui->ai_work_dir->setText(
         project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
-    launch.model_setting = info.model_settings;
-    launch.model = launch.model_setting["model"].toString().trimmed();
-    if(launch.model_setting["info"].toObject().contains("provider"))
+    info.launch_model = info.model_settings["model"].toString().trimmed();
+    if(info.model_settings["info"].toObject().contains("provider"))
     {
         auto [url,configured] = ai_ollama_url(settings);
-        launch.model_url = url;
-        launch.name += "/Ollama("+launch.model_url.host()+")";
+        info.launch_model_url = url;
+        info.launch_name += "/Ollama("+info.launch_model_url.host()+")";
         if(!configured)
         {
             preserve_pending();
@@ -1872,22 +1874,22 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
                 set_ai_status("Ollama is not configured.",true);
             QMessageBox::warning(
                 this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
-            return launch;
+            return;
         }
     }
     else if(!agent_logged_in(provider))
     {
         if(is_status_target(info.sessions))
-            set_ai_status(launch.name+" needs sign-in: check your browser.",true);
+            set_ai_status(info.launch_name+" needs sign-in: check your browser.",true);
         if(!run_agent_login(provider))
         {
             preserve_pending();
             if(is_status_target(info.sessions))
-                set_ai_status(launch.name+" is not signed in.",true);
-            return launch;
+                set_ai_status(info.launch_name+" is not signed in.",true);
+            return;
         }
     }
-    info.save_config(); // model_setting above is already info.model_settings -- nothing to write back
+    info.save_config(); // model_settings itself is untouched by this launch -- nothing new to persist here, just re-confirming it under the now-current status
 
     auto* process = new QProcess(this);
     process->setObjectName(session);
@@ -1907,6 +1909,7 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     process->setProcessEnvironment(env);
 
     info.processes = process;
+    auto name = info.launch_name; // a plain value copy for the async handlers below -- never info itself
 
     if(input == ai_input::User)
     {
@@ -1949,16 +1952,19 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(provider != ai_provider::Claude)
             process->closeWriteChannel();
         auto session = process->objectName();
-        ai_log("connecting to "+ launch.name + "@" + session+
+        ai_log("connecting to "+ name + "@" + session+
             " pid:"+QString::number(process->processId()));
         if(is_status_target(session))
             set_ai_status();
         // the OS process starting proves nothing about the backend conversation itself -- only this provider's
         // own established-session event (configure_codex's "thread.started", configure_claude's "system"/
-        // "init") flips this on to Active; until then it's just "attempting to connect"
+        // "init") flips this on to Active; until then it's just "attempting to connect". Only a genuinely New
+        // session moves to Initializing here -- a reconnecting Completed/Failed session stays as-is so the
+        // establishment handler can still tell a first-ever connection from a reconnect by status alone
         if(auto* info = ai_info::find(session))
         {
-            info->status = session_status::Initializing;
+            if(info->status == session_status::New)
+                info->status = session_status::Initializing;
             show_ai_project(*info);
         }
         update_send_button();
@@ -1971,16 +1977,17 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             return;
 
         auto session = process->objectName();
-        auto message = "Cannot start "+launch.name+": "+process->errorString();
+        auto message = "Cannot start "+name+": "+process->errorString();
         ai_log(message);
         if(is_status_target(session))
             set_ai_status(message,true);
 
         auto* found = ai_info::find(session);
         // FailedToStart fires before "started", so status here still reflects the state from before this
-        // attempt -- New/Initializing means it never reached Active (no real id to preserve, full reset);
-        // Completed/Failed means it was already established before (id still good, just this reconnect failed)
-        if(!found || found->status == session_status::New || found->status == session_status::Initializing)
+        // attempt -- New/Initializing (declared first, in that order) means it never reached Active (no real
+        // id to preserve, full reset); Completed/Failed means it was already established (id still good, just
+        // this reconnect failed)
+        if(!found || found->status <= session_status::Initializing)
             restore_new_chat(message,true);
         else
         {
@@ -2006,8 +2013,8 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         bool user_stopped = process->property("user_stopped").toBool();
         auto session = process->objectName();
         if(is_status_target(session))
-            set_ai_status((user_stopped ? launch.name+" stopped." : launch.name+" finished."),true);
-        ai_log(launch.name + " finished session ");
+            set_ai_status((user_stopped ? name+" stopped." : name+" finished."),true);
+        ai_log(name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
         bool failed = !user_stopped && (exit_code || exit_status == QProcess::CrashExit);
@@ -2020,7 +2027,7 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         auto* found = ai_info::find(session);
         // same reasoning as errorOccurred: never reached Active means no real id to preserve (full reset);
         // already established means the id survives regardless of how this particular run ended
-        if(!found || found->status == session_status::New || found->status == session_status::Initializing)
+        if(!found || found->status <= session_status::Initializing)
         {
             auto message = failed ? error_message :
                            "AI agent ended before creating a new chat.";
@@ -2046,29 +2053,26 @@ ai_launch AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         update_send_button();
         process->deleteLater();
     });
-    return launch;
 }
 
-QStringList AIAgent::configure_claude(
-    const ai_launch& launch,const ai_info& info,const QString& text)
+QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
 {
     auto* process = info.processes;
     auto session = info.sessions; // captured by value into the async handlers below -- never info itself
     auto status = info.status;
-    auto was_new = launch.was_new; // whether prepare_ai() already recorded+persisted the opening message (Completed/Failed reconnect) or is still waiting on establishment to do it (New)
     static const char* ollama_model_vars[] = {
         "ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
         "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"};
     auto env = process->processEnvironment();
-    if(!launch.model_url.isEmpty())
+    if(!info.launch_model_url.isEmpty())
     {
-        env.insert("ANTHROPIC_BASE_URL",launch.model_url.toString());
+        env.insert("ANTHROPIC_BASE_URL",info.launch_model_url.toString());
         env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
         env.insert("ANTHROPIC_API_KEY","");
         env.insert("CLAUDE_CODE_USE_POWERSHELL_TOOL","1");
-        if(!launch.model.isEmpty())
+        if(!info.launch_model.isEmpty())
             for(auto name : ollama_model_vars)
-                env.insert(name,launch.model);
+                env.insert(name,info.launch_model);
     }
     else // real Anthropic model: strip any Ollama redirect inherited from the system environment
     {
@@ -2098,9 +2102,13 @@ QStringList AIAgent::configure_claude(
                             if(auto* info = ai_info::find(process->objectName());
                                info && info->status != session_status::Active)
                             {
+                                // Initializing means a genuinely first-ever connection (see the "started" handler);
+                                // anything else (a reconnecting Completed/Failed) was already recorded+persisted
+                                // synchronously in prepare_ai, so only Initializing still needs it here
+                                bool first_time = info->status == session_status::Initializing;
                                 info->status = session_status::Active;
                                 info->save_config();
-                                if(was_new) // a reconnect (Completed/Failed) was already recorded+persisted synchronously in prepare_ai -- only a genuinely first-ever session still needs it here
+                                if(first_time)
                                     add_ai_history(*info,"user",text);
                                 if(is_status_target(process->objectName()))
                                     set_ai_status("Agent session ready.",true);
@@ -2161,15 +2169,15 @@ QStringList AIAgent::configure_claude(
         "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
         status == session_status::New ? "--session-id" : "--resume",session};
     // an absent --model falls back to whatever the Claude CLI last remembered from an unrelated session, not a real default
-    args << "--model" << (launch.model.isEmpty() ? "sonnet" : launch.model);
+    args << "--model" << (info.launch_model.isEmpty() ? "sonnet" : info.launch_model);
     return args;
 }
-QStringList AIAgent::configure_codex(
-    const ai_launch& launch,const ai_info& info,const QString& text)
+QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 {
     auto* process = info.processes;
     auto session = info.sessions; // captured by value into the async handler below -- never info itself (Codex renames/rekeys the session there)
     auto status = info.status;
+    auto name = info.launch_name;
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
         while(process->canReadLine())
@@ -2195,15 +2203,15 @@ QStringList AIAgent::configure_codex(
                 }
                 auto* old_info = ai_info::find(old_session);
                 // never reached Active before -- still just DSI Studio's own placeholder, safe to rename in place
-                bool still_placeholder = old_info && (old_info->status == session_status::New ||
-                                                       old_info->status == session_status::Initializing);
+                bool still_placeholder = old_info && old_info->status <= session_status::Initializing;
                 auto* info = still_placeholder ?
                     assign_ai_session(old_session,session) :
-                    ai_info::create(session,launch.name,ai_provider::Codex); // already known, not inferred: this whole handler is Codex-specific
+                    ai_info::create(session,name,ai_provider::Codex); // already known, not inferred: this whole handler is Codex-specific
                 if(info)
                 {
                     info->status = session_status::Active;
-                    info->model_settings = launch.model_setting;
+                    if(!still_placeholder) // a genuinely different/new entry -- old_info (still alive, just not renamed) is the only place its settings still exist
+                        info->model_settings = old_info ? old_info->model_settings : QJsonObject();
                     info->save_config();
                 }
                 if(info && old_session != session)
@@ -2234,9 +2242,9 @@ QStringList AIAgent::configure_codex(
     });
 
     QStringList args{"exec","--add-dir",ui->ai_work_dir->text()};
-    if(!launch.model_url.isEmpty())
+    if(!info.launch_model_url.isEmpty())
     {
-        auto url = launch.model_url;
+        auto url = info.launch_model_url;
         url.setPath("/v1");
 
         auto env = process->processEnvironment();
@@ -2245,10 +2253,10 @@ QStringList AIAgent::configure_codex(
 
         args << "--oss" << "--local-provider=ollama";
     }
-    if(!launch.model.isEmpty() && launch.model != "default") // Codex's own code-assigned alias for "no explicit choice" -- its CLI has no --model value named this, omit the flag instead
+    if(!info.launch_model.isEmpty() && info.launch_model != "default") // Codex's own code-assigned alias for "no explicit choice" -- its CLI has no --model value named this, omit the flag instead
     {
-        args << "--model" << launch.model;
-        if(auto profile = launch.model_setting["info"].toObject()["profile"].toString();
+        args << "--model" << info.launch_model;
+        if(auto profile = info.model_settings["info"].toObject()["profile"].toString();
            !profile.isEmpty())
             args << "--profile" << profile;
     }
@@ -2280,7 +2288,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
 
     Q_ASSERT(info.provider == ai_provider::Codex || info.provider == ai_provider::Claude); // never ChatGPT: callers must intercept a web chat before reaching here
 
-    auto launch = prepare_ai(info,text,input);
+    prepare_ai(info,text,input);
     if(!info.processes) // prepare_ai() failed before ever creating a process
     {
         // a config problem (missing executable, not signed in, Ollama unset), already reported via its own
@@ -2292,13 +2300,13 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         return;
     }
     auto args = info.provider == ai_provider::Codex ?
-        configure_codex(launch,info,text) :
-        configure_claude(launch,info,text);
-    ai_log("start " + launch.executable +
+        configure_codex(info,text) :
+        configure_claude(info,text);
+    ai_log("start " + info.launch_executable +
            " args: " + args.join(" ").remove("\n"));
     if(is_status_target(info.sessions))
-        set_ai_status("Starting "+launch.name+"...");
-    info.processes->start(launch.executable,args);
+        set_ai_status("Starting "+info.launch_name+"...");
+    info.processes->start(info.launch_executable,args);
 }
 
 void AIAgent::on_ai_send_message_clicked()
