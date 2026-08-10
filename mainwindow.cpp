@@ -31,6 +31,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "ai_agent.hpp"
+#include "cmd/ai.hpp"
 #include "regtoolbox.h"
 #include "reconstruction/reconstruction_window.h"
 #include "tracking/tracking_window.h"
