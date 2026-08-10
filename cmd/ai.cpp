@@ -39,9 +39,13 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    // New has nothing to persist. Files written under a still-New Codex placeholder are migrated
-    // to its real thread ID by assign_ai_session().
-    if(status == session_status::New || !QSettings().value("ai/keep_history",true).toBool())
+    // gated on real content (projects), not live status -- status alone can't tell "never touched, nothing
+    // to persist" apart from "was established, currently New again while reconnecting" (see session_status),
+    // and skipping the latter meant edits made mid-reconnect (rename, cwd change) silently didn't persist,
+    // and a first message that failed before establishing left a history file config.json couldn't explain
+    // on reload. Files written under a still-New Codex placeholder are migrated to its real thread ID by
+    // assign_ai_session(), so writing early under the placeholder id is safe
+    if(projects.isEmpty() || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
@@ -88,7 +92,7 @@ bool ai_info::save_title(QString title)
         return false;
     if(title == project_titles)
         return true;
-    if(status == session_status::New) // see save_config()
+    if(projects.isEmpty()) // see save_config()
     {
         project_titles = title;
         return true;
