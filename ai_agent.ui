@@ -264,6 +264,24 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
           </property>
          </widget>
         </item>
+        <item>
+         <layout class="QHBoxLayout" name="ai_login_layout">
+          <item>
+           <widget class="QPushButton" name="ai_codex_login">
+            <property name="text">
+             <string>Sign in to Codex...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="ai_claude_login">
+            <property name="text">
+             <string>Sign in to Claude...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="ai_conversation_panel" native="true">
