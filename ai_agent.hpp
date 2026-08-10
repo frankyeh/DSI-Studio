@@ -56,6 +56,13 @@ struct ai_info{
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
+    // the most recent (or in-flight) local launch attempt -- meaningful only while prepare_ai()/configure_*()
+    // are actively using it; an idle chat just carries the last attempt's resolved values, always fully
+    // overwritten before the next launch reads them. Kept on ai_info itself (not a separate parameter) so
+    // configure_codex()/configure_claude() can read it straight off the chat, and so a not-yet-renamed old
+    // placeholder's launch data stays reachable via ai_info::find() alone
+    QString launch_name,launch_executable,launch_model;
+    QUrl launch_model_url;
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString,ai_provider); // the one constructor for the whole registry; pass ai_provider::Infer to derive it from a trusted agent name (Codex/Claude/ChatGPT/...), or a known value directly (AgentServer, a persisted reload) -- never a default, every call site states its intent
@@ -82,7 +89,6 @@ struct ai_agent_entry
     QJsonObject profiles;
 };
 
-struct ai_launch;
 class AIAgent : public QMainWindow
 {
     Q_OBJECT
@@ -149,9 +155,9 @@ class AIAgent : public QMainWindow
     void refresh_ollama_models();
     void refresh_codex_models();
     void start_ai(ai_info&,const QString&,ai_input);
-    QStringList configure_codex(const ai_launch&,const ai_info&,const QString&); // reads info.sessions/info.status as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
-    QStringList configure_claude(const ai_launch&,const ai_info&,const QString&); // same contract as configure_codex
-    ai_launch prepare_ai(ai_info&,const QString&,ai_input); // info.status is New until this provider's own session-established event fires (Codex: "thread.started", Claude: stream-json "system"/"init") -- prepare_ai itself never changes it
+    QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
+    QStringList configure_claude(const ai_info&,const QString&); // same contract as configure_codex
+    void prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes -- check info.processes to see whether it succeeded. info.status is New until this provider's own session-established event fires (Codex: "thread.started", Claude: stream-json "system"/"init") -- prepare_ai itself never changes it
 
 public:
     explicit AIAgent(MainWindow*);
