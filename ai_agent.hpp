@@ -90,7 +90,6 @@ class AIAgent : public QMainWindow
     ai_info* dispatching_info = nullptr; // set around dispatch_cmd() in ai_request(); lets open_fib/open_src/open_image report their new window via update_current_window()
     Ui::AIAgent* ui;
     QSettings settings;
-    QString ai_status_activity;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
     int ai_debug_level = 0; // "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete); read from QSettings in the constructor, kept in sync by AI Settings' own setValue+assign
@@ -144,7 +143,7 @@ class AIAgent : public QMainWindow
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(ai_provider provider);
     bool agent_logged_in(ai_provider provider);
-    void set_ai_status(QString = {},bool = false);
+    void set_ai_status(QString = {},bool = false); // only ever call this when the update is about the currently-viewed chat (or about no specific chat at all) -- callers reporting on a specific, possibly-background session must guard with is_status_target() first
     void show_ai_project(ai_info&,QJsonObject = {});
     void update_agent_models(int,const QStringList&,bool);
     void refresh_ollama_models();
