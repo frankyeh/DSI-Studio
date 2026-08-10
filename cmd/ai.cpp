@@ -51,7 +51,10 @@ void ai_info::save_config() const
         file.write(QJsonDocument(QJsonObject{
             {"agent",agent_name},
             {"provider",int(provider)}, // reload must trust this, not re-guess from agent_name -- that misclassifies an AgentServer session (or fails outright for a name identify_provider() doesn't recognize)
-            {"model_settings",model_settings}}).toJson(QJsonDocument::Compact));
+            {"model_settings",model_settings},
+            // never reverts to false once true (New is the only live status this ever sees) -- reload trusts
+            // this instead of assuming Completed for a session id that never actually got a real backend thread
+            {"established",status != session_status::New}}).toJson(QJsonDocument::Compact));
 }
 
 ai_provider ai_info::identify_provider(const QString& name)
