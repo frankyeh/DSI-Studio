@@ -464,19 +464,6 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget)
 
 bool TractTableWidget::command(std::vector<std::string> cmd)
 {
-    if(cmd[0] == "run_tracking" &&
-        (cmd.size() == 2 ||
-         (cmd.size() == 3 &&
-          (cmd[2].empty() ||
-           cmd[2].find(':') != std::string::npos))))
-    {
-        auto roi = cmd.size() == 3 ? " " + cmd[2] : "";
-        cmd.resize(3);
-        cmd[2] = cur_tracking_window.get_parameter_id(
-                     cur_tracking_window.ui->tract_target_0->currentIndex() > 0) + roi;
-    }
-
-
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     if(cmd.size() < 3)
         cmd.resize(3);
@@ -600,6 +587,12 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1]: new tract-bundle name
         // cmd[2]: internal parameter ID [space] optional region settings
         // cmd[3]: internal auto-track tolerance
+        if(cmd.size() == 3 && (cmd[2].empty() || cmd[2].find(':') != std::string::npos))
+        {
+            auto roi = " " + cmd[2];
+            cmd[2] = cur_tracking_window.get_parameter_id(
+                         cur_tracking_window.ui->tract_target_0->currentIndex() > 0) + roi;
+        }
         if(!cur_tracking_window.handle->trackable)
             return run->failed("the data are not trackable");
         if(cmd[1].empty())
