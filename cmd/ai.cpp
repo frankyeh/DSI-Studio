@@ -23,6 +23,7 @@ QString session_status_text(session_status status)
     case session_status::New:          return "New";
     case session_status::Initializing: return "Connecting...";
     case session_status::Active:       return "Active";
+    case session_status::Thinking:     return "Thinking...";
     case session_status::Completed:    return "Completed";
     case session_status::Failed:       return "Failed";
     }
