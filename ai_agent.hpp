@@ -27,7 +27,7 @@ namespace Ui {
 class AIAgent;
 }
 
-enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model
+enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class ai_input {User,Pending};
 enum class session_status {New,Resume}; // New: no real backend-assigned id yet (still DSI Studio's own placeholder uuid); Resume: session already has a real, established id to continue
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
@@ -46,7 +46,7 @@ struct ai_info{
     session_status status = session_status::New; // New until the first launch actually starts (Claude: flips in place; Codex: flips together with the placeholder->real-id rename, since Codex assigns its own id); sessions carry no prefix/marker of their own -- this field is the only source of truth
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
-    static ai_info* create(QString,QString);
+    static ai_info* create(QString,QString,ai_provider); // the one constructor for the whole registry; pass ai_provider::Infer to derive it from a trusted agent name (Codex/Claude/ChatGPT/...), or a known value directly (AgentServer, a persisted reload) -- never a default, every call site states its intent
     static QString history_file(const QString&);
     static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;
