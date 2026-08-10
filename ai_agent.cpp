@@ -1868,9 +1868,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
             return launch;
         }
     }
-    if(info->status == session_status::New && provider == ai_provider::Claude)
-        // pre-declared via --session-id (configure_claude): the uuid itself never changes, only its status
-        info->status = session_status::Resume;
     info->model_settings = launch.model_setting; // always save once info is known: a brand-new session must persist its agent even if the model happens to match the default
     info->save_config();
 
@@ -1892,16 +1889,15 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
 #endif
     process->setProcessEnvironment(env);
 
-    if(info)
-        info->processes = process; // a fresh Codex session has no info yet (assigned on "thread.started"); nothing gets disabled meanwhile
+    info->processes = process;
 
     if(input == ai_input::User)
     {
-        // a still-New session (only possible for Codex here -- Claude was just flipped to Resume above)
-        // doesn't have its real id yet: recording now would only live in memory (write_history() skips
-        // the file while status is New) and get duplicated once "thread.started" records it again under
-        // the real id -- let that be the sole recorder instead
-        if(info && info->status != session_status::New)
+        // a still-New Codex session doesn't have its real id yet: recording now would only live in memory
+        // (record_history() skips the file while its id is about to be renamed) and get duplicated once
+        // "thread.started" records it again under the real id -- let that be the sole recorder instead.
+        // Claude's id is stable from the start, so it always records immediately, New or not.
+        if(!(provider == ai_provider::Codex && info->status == session_status::New))
             add_ai_history(*info,"user",text);
         ui->ai_chat_input->clear();
     }
@@ -1939,7 +1935,13 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,const QJsonObject& model_sett
             " pid:"+QString::number(process->processId()));
         set_ai_status();
         if(auto* info = ai_info::find(session))
+        {
+            if(provider == ai_provider::Claude)
+                // only now, not before: a FailedToStart before this point must still be retried with
+                // --session-id, not --resume -- Claude never actually created a session to resume
+                info->status = session_status::Resume;
             show_ai_project(*info);
+        }
         update_send_button();
     });
 
@@ -2226,12 +2228,6 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
         info->has_error = true;
         show_ai_project(*info);
         return;
-    }
-    if(status == session_status::New && provider == ai_provider::Codex)
-    {
-        // session is still DSI Studio's own placeholder id here: Codex assigns its own real id later, reported via "thread.started"
-        launch.process->setObjectName(session);
-        info->processes = launch.process;
     }
     auto args = provider == ai_provider::Codex ?
         configure_codex(launch,session,text,status) :
