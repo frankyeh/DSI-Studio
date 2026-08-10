@@ -2021,8 +2021,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         return false;
 
     agent_index = agent.currentIndex();
-    value = (agent_index == int(ai_provider::ChatGPT)) ? issue_url_edit.text().trimmed() :
-            model_combo_key(agent_index == int(ai_provider::Codex) ? codex_model : claude_model);
+    value = (agent_index == int(ai_provider::ChatGPT)) ? issue_url_edit.text().trimmed() : model_combo_key(model);
     return true;
 }
 
