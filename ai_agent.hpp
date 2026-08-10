@@ -29,21 +29,20 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class ai_input {User,Pending};
-enum class session_status {New,Initializing,Active,Thinking,Completed,Failed}; // New and Initializing must stay the first two, in this order -- "never reached Active" checks elsewhere compare status <= Initializing
+enum class session_status {New,Initializing,WaitingUser,Thinking,Completed,Failed}; // New and Initializing must stay first: launch-failure checks use <= Initializing
 // New: chat created, no launch ever attempted -- the only value that means "no real id yet, use --session-id".
-// Initializing: a launch is in flight -- the OS process started, waiting for the agent's own protocol
+// Initializing: a launch or reconnection is in flight -- the OS process started, waiting for the agent's own protocol
 //   confirmation (Codex: "thread.started", Claude: stream-json "system"/"init").
-// Active: confirmed and connected -- more messages can be written straight to this running process.
-// Thinking: Active's own sub-state while Claude is composing a reply (stream-json "system"/"thinking_tokens")
-//   -- Codex has no equivalent event, so its sessions are never Thinking. Both Initializing and Thinking mean
-//   "waiting on the agent" for set_ai_status()'s animated status text.
-// Completed: the process ended normally after having been Active/Thinking -- the session id remains resumable.
-// Failed: the process ended abnormally after having been Active/Thinking -- functionally the same as Completed
+// WaitingUser: the agent finished its response and is waiting for the user's next message.
+// Thinking: the session is established and the agent is preparing a response.
+// Both Initializing and Thinking mean "waiting on the agent" for set_ai_status()'s animated status text.
+// Completed: the process ended normally after having been WaitingUser/Thinking -- the session id remains resumable.
+// Failed: the process ended abnormally after having been WaitingUser/Thinking -- functionally the same as Completed
 //   (still resumable with --resume), it only tells the user something went wrong on the last run.
-// A chat that fails before ever reaching Active (FailedToStart, or a crash while still Initializing) never
+// A chat that fails before establishing its session (FailedToStart, or a crash while still Initializing) never
 // becomes Failed -- it has no real id to preserve, so it reverts all the way back to New instead.
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
-QString session_status_text(session_status); // human-readable label, shared by the sidebar dot's tooltip and ai_info::details() -- the one place this mapping is written
+QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
 
 struct ai_info{
     QString sessions,agent_name,project_titles;
@@ -56,6 +55,7 @@ struct ai_info{
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
+    QString status_message;
     // the most recent (or in-flight) local launch attempt -- meaningful only while prepare_ai()/configure_*()
     // are actively using it; an idle chat just carries the last attempt's resolved values, always fully
     // overwritten before the next launch reads them. Kept on ai_info itself (not a separate parameter) so
@@ -137,7 +137,6 @@ class AIAgent : public QMainWindow
     enum class send_action {Disabled,Send,StopLocal,StopWeb,ResumeWeb};
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
-    bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
     ai_info* create_new_chat(const QString& agent); // drops any abandoned empty placeholder first, then creates+selects a fresh chat (status New, a bare uuid) for the given agent name ("Codex"/"Claude"/"ChatGPT(Web)"); for web, this exists even before a connection is attempted, so a failed connection is just this chat's own Error state rather than needing separate anonymous-session tracking
@@ -149,7 +148,8 @@ class AIAgent : public QMainWindow
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(ai_provider provider);
     bool agent_logged_in(ai_provider provider);
-    void set_ai_status(QString = {},bool = false); // only ever call this when the update is about the currently-viewed chat (or about no specific chat at all) -- callers reporting on a specific, possibly-background session must guard with is_status_target() first
+    void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
+    void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {});
     void update_agent_models(int,const QStringList&,bool);
     void refresh_ollama_models();
@@ -157,7 +157,7 @@ class AIAgent : public QMainWindow
     void start_ai(ai_info&,const QString&,ai_input);
     QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
     QStringList configure_claude(const ai_info&,const QString&); // same contract as configure_codex
-    void prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes -- check info.processes to see whether it succeeded. info.status is New until this provider's own session-established event fires (Codex: "thread.started", Claude: stream-json "system"/"init") -- prepare_ai itself never changes it
+    void prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes -- check info.processes to see whether it succeeded; the process callbacks advance info.status
 
 public:
     explicit AIAgent(MainWindow*);
