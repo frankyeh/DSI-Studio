@@ -1,7 +1,8 @@
-// ai_info's own data-layer implementation: session registry, on-disk history/config persistence, and
-// history-entry recording, plus free helpers with no AIAgent/MainWindow dependency (they take/return plain
-// Qt types like QWidget*/QLabel*, never Ui::AIAgent or an AIAgent member) -- everything that actually touches
-// ui->/agent_entries/etc. stays in ai_agent.cpp, and dispatch_cmd() builds "request" entries itself now.
+// ai_info's own data-layer implementation (declared in ai.hpp): session registry, on-disk history/config
+// persistence, and history-entry recording, plus free helpers with no AIAgent/MainWindow dependency (they
+// take/return plain Qt types like QWidget*/QLabel*, never Ui::AIAgent or an AIAgent member) -- everything that
+// actually touches ui->/agent_entries/etc. stays in ai_agent.cpp (which includes ai_agent.hpp, not this file),
+// and dispatch_cmd() builds "request" entries itself now.
 // Global (free) functions first, ai_info's own member functions at the back.
 #include <QColor>
 #include <QComboBox>
@@ -24,7 +25,7 @@
 #include <cstring>
 #include <utility>
 
-#include "ai_agent.hpp"
+#include "ai.hpp"
 #include "TIPL/tipl.hpp"
 
 std::unordered_map<QString,ai_info> ai_infos;
