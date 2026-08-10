@@ -98,18 +98,18 @@ ai_info* ai_info::find(const QString& session)
     auto found = ai_infos.find(session);
     return found == ai_infos.end() ? nullptr : &found->second;
 }
-ai_info* ai_info::create(QString session,QString agent)
+ai_info* ai_info::create(QString session,QString agent,ai_provider provider) // the one constructor for the whole registry
 {
-    if(session.isEmpty())
+    if(provider == ai_provider::Infer)
+        provider = identify_provider(agent);
+    if(session.isEmpty() || provider == ai_provider::Unknown)
         return nullptr;
     if(auto* info = find(session))
         return info;
-    auto provider = ai_info::identify_provider(agent);
-    if(provider == ai_provider::Unknown)
-        return nullptr;
     auto& info = ai_infos[session];
     info.sessions = std::move(session);
-    info.provider = provider; info.agent_name = agent;
+    info.provider = provider;
+    info.agent_name = std::move(agent);
     return &info;
 }
 
