@@ -29,7 +29,7 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class ai_input {User,Pending};
-enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // New and Thinking must stay the first two, in that order: several checks in ai_agent.cpp use status <= session_status::Thinking for "still waiting on the agent"
+enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // New and Thinking must stay the first two, in that order: update_status_dot() in ai_agent.cpp uses status > session_status::Thinking to know when to stop pulsing the sidebar dot
 // New: chat created, no launch ever attempted yet, OR a launch/reconnection is currently in flight (the OS
 //   process started, waiting for the agent's own protocol confirmation: Codex "thread.started", Claude
 //   stream-json "system"/"init") -- the only value that means "no confirmed real id yet, use --session-id,
@@ -71,10 +71,13 @@ struct ai_info{
     static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;
     bool save_title(QString);
-    QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" and, for the first entry, "agent"/"model_settings" filled in), not the caller's pre-call copy
+    QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" filled in), not the caller's pre-call copy -- written unconditionally, regardless of status
     QJsonObject record_reply(const QString&,const QString&); // returns the recorded entry so callers can pass it on to show_ai_project() for blink/visibility handling
-    QJsonObject record_request(const QString& command_name,QString title = {}); // "window" is derived from current_window; "title" is included only when non-empty and current_window isn't main -- caller derives it (e.g. from a target widget's window title), record_request has no widget dependency
+    QJsonObject record_request(const QString& command_name,QString title = {}); // "window" is derived from current_window; "title" is included only when non-empty -- caller decides whether one applies (e.g. deriving it from a target widget's window title, skipping it for main), record_request has no widget dependency or opinion on when a title makes sense
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
+    // "waiting on the agent" -- Thinking always is; New only while a launch/reconnect is actually in flight
+    // (processes set). An untouched, never-launched New chat has neither and must not count as running
+    bool is_running() const {return status == session_status::Thinking || (status == session_status::New && processes);}
     QString details() const;
 };
 
@@ -110,7 +113,7 @@ class AIAgent : public QMainWindow
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
     void update_agent_status_label();
-    void try_set_current_model(const QString& name); // no-op if name is unknown, matching non-editable QComboBox::setCurrentText; writes the app-wide default above, not any chat's own model
+    void try_set_current_model(const QString& name); // name is always written as-is, even if unknown to profiles (the model combo is editable, so a typed name is meaningful, not a mistake); writes the app-wide default above, not any chat's own model
     void set_chat_model(ai_info& info,const QString& name) const; // same resolution as try_set_current_model(), but writes directly into this chat's own model_settings and persists it
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
