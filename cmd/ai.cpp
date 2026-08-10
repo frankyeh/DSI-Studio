@@ -127,10 +127,14 @@ ai_info* ai_info::create(QString session,QString agent,ai_provider provider) // 
 
 QJsonObject ai_info::record_history(QJsonObject entry)
 {
+    // written immediately regardless of status -- a message that's actually been recorded is real content,
+    // not provisional. A New session's id is never reused for anything else even before it's confirmed
+    // established (Codex's own placeholder gets renamed, not discarded, and assign_ai_session() already
+    // migrates this exact file to the new name when that happens), so there's no "wrong file" risk to guard
+    // against by waiting
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     projects.append(entry);
-    if(status != session_status::New && // see save_config()
-       QSettings().value("ai/keep_history",true).toBool())
+    if(QSettings().value("ai/keep_history",true).toBool())
     {
         QFile file(history_file(sessions));
         if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
