@@ -50,6 +50,7 @@
 #include <unordered_map>
 
 #include "ai_agent.hpp"
+#include "cmd/ai.hpp"
 #include "ui_ai_agent.h"
 #include "mainwindow.h"
 #include "tracking/tracking_window.h"
