@@ -382,17 +382,12 @@ AIAgent::AIAgent(MainWindow* parent):
         // config_file() is the current source of truth; fall back to the legacy fields once
         // embedded in the first history entry, for chats saved before this file existed
         auto agent = config.contains("agent") ? config["agent"].toString() : first["agent"].toString();
-        ai_info* ai;
-        if(config.contains("provider")) // never re-guess the provider from the name once it's been persisted -- that's exactly what misclassifies an AgentServer session
-        {
-            ai = &ai_infos[session];
-            ai->sessions = session;
-            ai->provider = ai_provider(config["provider"].toInt());
-            ai->agent_name = agent;
-        }
-        else
-            ai = ai_info::create(session,agent); // legacy config written before provider persistence -- best-effort guess from the name
-        if(!ai || ai->provider == ai_provider::Unknown)
+        // never re-guess the provider from the name once it's been persisted -- that's exactly what
+        // misclassifies an AgentServer session; only a legacy config predating persistence falls back to a guess
+        auto* ai = config.contains("provider") ?
+            ai_info::create(session,agent,ai_provider(config["provider"].toInt())) :
+            ai_info::create(session,agent,ai_provider::Infer);
+        if(!ai)
             continue;
         ai->status = session_status::Resume; // loaded from a persisted history file, so it already has a real, established session id
         ai->model_settings = config.contains("model_settings") ?
@@ -743,7 +738,7 @@ void AIAgent::poll_github_issue()
         if(web_info && web_info->status == session_status::New)
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
-        if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub")) // records which issue this session is bound to, so a restart can auto-resume polling it
+        if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub",ai_provider::Infer)) // records which issue this session is bound to, so a restart can auto-resume polling it
         {
             info->status = session_status::Resume;
             // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
@@ -951,16 +946,12 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         auto agent = request["agent"].toString().trimmed();
         if(agent.isEmpty())
             return void(reply = status_reply("error","missing agent for new session"));
-        // built directly rather than via ai_info::create(): a pipe-dispatched session is always a log/routing
-        // record for this dispatcher, never a real local Codex/Claude subprocess, regardless of what the
-        // calling agent names itself -- it can't send a live chat message or have its model changed from the
-        // GUI (see current_send_action()/on_ai_agent_status_clicked())
-        auto& new_info = ai_infos[session];
-        new_info.sessions = session;
-        new_info.provider = ai_provider::AgentServer;
-        new_info.agent_name = agent;
-        new_info.status = session_status::Resume; // session is the caller's own already-established thread id, never a placeholder needing New-vs-Resume launch logic
-        found = &new_info;
+        // AgentServer, never derived from the calling agent's own name: a pipe-dispatched session is always a
+        // log/routing record for this dispatcher, never a real local Codex/Claude subprocess, regardless of
+        // what the caller names itself -- it can't send a live chat message or have its model changed from
+        // the GUI (see current_send_action()/on_ai_agent_status_clicked())
+        found = ai_info::create(session,agent,ai_provider::AgentServer);
+        found->status = session_status::Resume; // session is the caller's own already-established thread id, never a placeholder needing New-vs-Resume launch logic
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
         found->save_config();
@@ -1647,7 +1638,7 @@ ai_info* AIAgent::create_new_chat(const QString& agent)
             ++it;
 
     auto* info = ai_info::create(
-        QUuid::createUuid().toString(QUuid::WithoutBraces),agent); // status defaults to New; no "new:"/other marker on the id itself
+        QUuid::createUuid().toString(QUuid::WithoutBraces),agent,ai_provider::Infer); // status defaults to New; no "new:"/other marker on the id itself
     if(info->provider == ai_provider::ChatGPT)
         web_agent_session_id = info->sessions;
     else
@@ -2147,7 +2138,7 @@ QStringList AIAgent::configure_codex(
                 auto* old_info = ai_info::find(old_session);
                 auto* info = (old_info && old_info->status == session_status::New) ?
                     assign_ai_session(old_session,session) :
-                    ai_info::create(session,launch.name);
+                    ai_info::create(session,launch.name,ai_provider::Codex); // already known, not inferred: this whole handler is Codex-specific
                 if(info)
                 {
                     info->status = session_status::Resume;
