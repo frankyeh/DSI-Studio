@@ -1685,6 +1685,10 @@ static QString ai_dialog_style()
         "QComboBox:hover{background-color:#eeeeef;border-color:#c8c8cc;}"
         "QComboBox:focus{border-color:#8a8a8f;}"
         "QComboBox::drop-down{border:0;width:22px;}" // otherwise Qt draws the platform's native (raised/beveled) button here
+        // an editable QComboBox (e.g. the model picker) displays its current text through a nested QLineEdit --
+        // without this override, the blanket QLineEdit rule above stacks its own border/padding/background
+        // inside the QComboBox's, which can push the nested line edit's visible text area to nothing
+        "QComboBox QLineEdit{border:none;background:transparent;padding:0 2px;}"
         "QComboBox QAbstractItemView{background-color:#ffffff;border:1px solid #d9d9dc;outline:0;padding:2px;selection-background-color:#e5e5e7;selection-color:#202124;}"
         "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:6px 14px;}"
         "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
