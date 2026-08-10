@@ -381,9 +381,18 @@ AIAgent::AIAgent(MainWindow* parent):
             config = QJsonDocument::fromJson(config_file.readAll()).object();
         // config_file() is the current source of truth; fall back to the legacy fields once
         // embedded in the first history entry, for chats saved before this file existed
-        auto* ai = ai_info::create(session,
-            config.contains("agent") ? config["agent"].toString() : first["agent"].toString());
-        if(!ai)
+        auto agent = config.contains("agent") ? config["agent"].toString() : first["agent"].toString();
+        ai_info* ai;
+        if(config.contains("provider")) // never re-guess the provider from the name once it's been persisted -- that's exactly what misclassifies an AgentServer session
+        {
+            ai = &ai_infos[session];
+            ai->sessions = session;
+            ai->provider = ai_provider(config["provider"].toInt());
+            ai->agent_name = agent;
+        }
+        else
+            ai = ai_info::create(session,agent); // legacy config written before provider persistence -- best-effort guess from the name
+        if(!ai || ai->provider == ai_provider::Unknown)
             continue;
         ai->status = session_status::Resume; // loaded from a persisted history file, so it already has a real, established session id
         ai->model_settings = config.contains("model_settings") ?
