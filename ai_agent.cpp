@@ -1730,13 +1730,23 @@ bool AIAgent::setup_github_token()
     root->addWidget(subtitle);
 
     QPushButton* setup_repo = nullptr;
-    ai_add_step_card(root,"Step 1 &middot; Create a private repository",
-        "Any name works (suggested: <b>DSI-Studio-Connect</b>). Set visibility to <b>Private</b>, then click Create repository.",
+    ai_add_step_card(root,"Step 1 · Create a private repository",
+        "<ol style='margin-left:-20px;'>"
+        "<li><b>Repository name*</b> = <i>[any name]</i>, e.g. DSI-Studio-Connect</li>"
+        "<li>Choose visibility &rarr; <b>Private</b></li>"
+        "<li>Click <b>Create repository</b></li></ol>",
         setup_repo,"Create private repository");
 
     QPushButton* setup_token = nullptr;
-    ai_add_step_card(root,"Step 2 &middot; Create an access token",
-        "Scope it to the repository above, with <b>Issues &rarr; Read and write</b> permission only, then click Generate token.",
+    ai_add_step_card(root,"Step 2 · Create an access token",
+        "<ol style='margin-left:-20px;'>"
+        "<li><b>Token name*</b> = <i>[any name]</i></li>"
+        "<li>Expiration &rarr; select an appropriate duration</li>"
+        "<li>Repository access &rarr; <b>Only select repositories</b> &rarr; the repository you just created</li>"
+        "<li>Permissions &rarr; Add permissions &rarr; check <b>Issues</b></li>"
+        "<li>Issues access &rarr; <b>Read and write</b></li>"
+        "<li>Click <b>Generate token</b></li>"
+        "<li>Copy the token, then click <b>Paste</b> below</li></ol>",
         setup_token,"Create token");
 
     auto* token_label = new QLabel("Access token");
