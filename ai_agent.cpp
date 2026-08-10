@@ -905,10 +905,8 @@ void AIAgent::set_ai_status(QString status,bool temporary)
         ai_status_activity = status;
     // reflects only the currently selected chat, not any other chat's background activity
     auto* status_info = selected_info();
-    bool ongoing = status_info &&
-        (status_info->provider == ai_provider::ChatGPT ?
-            (!github_issue_api.isEmpty() && status_info->sessions == web_agent_session_id) :
-            bool(status_info->processes));
+    bool ongoing = status_info && (status_info->status == session_status::Initializing ||
+                                    status_info->status == session_status::Active);
     if(ongoing && (status.isEmpty() || temporary))
     {
         status = ai_status_activity;
@@ -988,8 +986,10 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
             set_ai_status("Agent request completed.",true);
     };
     dispatching_info = &info;
-    reply_object(main_window.dispatch_cmd(info,request)); // MainWindow's command center handles everything
+    auto result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     dispatching_info = nullptr;
+    info.status = session_status::Completed; // the call has been fully processed -- about to send the reply back
+    reply_object(result);
 }
 
 void AIAgent::update_current_window(QWidget* window)
@@ -1481,7 +1481,7 @@ void AIAgent::update_agent_status_label()
     {
         // prefer the live connection's own link: model_settings["github_issue_url"] only updates once a request
         // actually arrives on it, so right after reconnecting to a *different* link it would still show the old one
-        QString path = (!github_issue_api.isEmpty() && info->sessions == web_agent_session_id) ?
+        QString path = info->status == session_status::Active ?
             QString(github_issue_api.toString()).remove("https://api.github.com/repos/") :
             info->model_settings["github_issue_url"].toString();
         ui->ai_agent_status->setText(path.isEmpty() ? "ChatGPT(Web)" : "ChatGPT(Web)"+dot+path);
@@ -1533,12 +1533,10 @@ AIAgent::send_action AIAgent::current_send_action() const
     if(!info || info->provider == ai_provider::AgentServer)
         return send_action::Disabled;
     if(info->provider == ai_provider::ChatGPT)
-    {
-        bool connected = !github_issue_api.isEmpty() && info->sessions == web_agent_session_id;
-        return connected ? send_action::StopWeb : send_action::ResumeWeb;
-    }
+        return info->status == session_status::Active ? send_action::StopWeb : send_action::ResumeWeb;
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
-    return (info->processes && !has_input) ? send_action::StopLocal : send_action::Send;
+    bool running = info->status == session_status::Initializing || info->status == session_status::Active;
+    return (running && !has_input) ? send_action::StopLocal : send_action::Send;
 }
 
 void AIAgent::update_send_button()
