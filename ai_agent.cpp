@@ -1036,18 +1036,6 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     ai_log("received: "+QString::fromUtf8(data));
     auto chat = request["chat"].toString().trimmed();
     auto reasoning = request["reasoning"].toString().trimmed();
-    auto reply_object = [&](QJsonObject result)
-    {
-        auto entry = info.record_reply(chat,reasoning);
-        if(!info.prompts.isEmpty())
-            result["prompt"] = QJsonArray::fromStringList(info.prompts);
-        reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
-        ai_log(QString("reply for %1@%2: %3 ...")
-                   .arg(info.agent_name,session,
-                        QString::fromUtf8(reply).left(32)));
-        info.prompts.clear();
-        show_ai_project(info,entry);
-    };
     dispatching_info = &info;
     auto result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     dispatching_info = nullptr;
@@ -1062,7 +1050,18 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     else
         set_ai_status(session,session_status::WaitingUser,
                       "Request completed; waiting for next request.");
-    reply_object(result);
+
+    {
+        auto entry = info.record_reply(chat,reasoning);
+        if(!info.prompts.isEmpty())
+            result["prompt"] = QJsonArray::fromStringList(info.prompts);
+        reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
+        ai_log(QString("reply for %1@%2: %3 ...")
+                   .arg(info.agent_name,session,
+                        QString::fromUtf8(reply).left(32)));
+        info.prompts.clear();
+        show_ai_project(info,entry);
+    }
 }
 
 void AIAgent::update_current_window(QWidget* window)
