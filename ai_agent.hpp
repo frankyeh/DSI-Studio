@@ -147,7 +147,8 @@ class AIAgent : public QMainWindow
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(ai_provider provider);
-    bool agent_logged_in(ai_provider provider);
+    QString agent_login_info(ai_provider provider); // "" means not signed in (or executable missing); otherwise a short human-readable account/plan summary straight from the CLI's own status query -- never cached, so an external login/logout is always reflected
+    void refresh_login_buttons(); // shows/hides ai_codex_login/ai_claude_login (bottom of the chat list) based on agent_login_info()
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {});
@@ -174,6 +175,8 @@ private slots:
     void on_ai_new_chat_clicked();
     void on_ai_send_message_clicked();
     void on_ai_agent_status_clicked();
+    void on_ai_codex_login_clicked();
+    void on_ai_claude_login_clicked();
 };
 
 #endif
