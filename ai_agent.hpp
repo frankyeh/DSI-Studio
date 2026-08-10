@@ -29,7 +29,7 @@ class AIAgent;
 
 enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model
 enum class ai_input {User,Pending};
-enum class session_status {New,Resume}; // New: no real backend-assigned id yet (still "new:<uuid>"); Resume: session already has a real, established id to continue
+enum class session_status {New,Resume}; // New: no real backend-assigned id yet (still DSI Studio's own placeholder uuid); Resume: session already has a real, established id to continue
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 
 struct ai_info{
@@ -43,6 +43,7 @@ struct ai_info{
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
     bool has_error = false; // true once a run fails, cleared on the next run; sidebar dot: green (running), red (has_error), gray (otherwise)
+    session_status status = session_status::New; // New until the first launch actually starts (Claude: flips in place; Codex: flips together with the placeholder->real-id rename, since Codex assigns its own id); sessions carry no prefix/marker of their own -- this field is the only source of truth
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
@@ -122,7 +123,7 @@ class AIAgent : public QMainWindow
     bool is_status_target(const QString& session) const; // true if session is the currently selected chat (or, if none is, the still-anonymous chat being set up) -- gates set_ai_status() calls from a background process so a chat the user isn't looking at can't hijack the status label
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
-    ai_info* create_new_chat(const QString& agent); // drops any abandoned empty placeholder first, then creates+selects a fresh "new:<uuid>" chat for the given agent name ("Codex"/"Claude"/"ChatGPT(Web)"); for web, this exists even before a connection is attempted, so a failed connection is just this chat's own Error state rather than needing separate anonymous-session tracking
+    ai_info* create_new_chat(const QString& agent); // drops any abandoned empty placeholder first, then creates+selects a fresh chat (status New, a bare uuid) for the given agent name ("Codex"/"Claude"/"ChatGPT(Web)"); for web, this exists even before a connection is attempted, so a failed connection is just this chat's own Error state rather than needing separate anonymous-session tracking
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               int& agent_index,QString& value); // value: model name for a local agent, issue URL for ChatGPT (web) -- mutually exclusive, caller checks agent_index == ai_provider::ChatGPT
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
@@ -137,9 +138,9 @@ class AIAgent : public QMainWindow
     void refresh_ollama_models();
     void refresh_codex_models();
     void start_ai(QString,const QString&,ai_input);
-    QStringList configure_codex(const ai_launch&,QString,const QString&);
-    QStringList configure_claude(const ai_launch&,QString,const QString&,bool);
-    ai_launch prepare_ai(ai_provider,const QJsonObject& model_setting,QString&,const QString&,ai_input); // model_setting: resolved by the caller (the chat's own info.model_settings, or the app-wide default if no chat exists yet) -- prepare_ai no longer re-resolves or reconciles it
+    QStringList configure_codex(const ai_launch&,QString,const QString&,session_status);
+    QStringList configure_claude(const ai_launch&,QString,const QString&,session_status);
+    ai_launch prepare_ai(ai_provider,const QJsonObject& model_setting,QString&,const QString&,ai_input); // model_setting: resolved by the caller (the chat's own info.model_settings, or the app-wide default if no chat exists yet) -- prepare_ai no longer re-resolves or reconciles it. session is never empty on entry (always a placeholder or a real established id); its ai_info's status may flip from New to Resume in place (Claude: the same uuid is pre-declared via --session-id, so no rename is needed)
 
 public:
     explicit AIAgent(MainWindow*);
