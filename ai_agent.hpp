@@ -89,7 +89,7 @@ class AIAgent : public QMainWindow
     // authoritative for that chat once created, never reconciled against these
     std::array<ai_agent_entry,2> agent_entries; // indexed by ai_provider
     int current_agent_index = 0;
-    QString current_model_name = "default";
+    QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
     void update_agent_status_label();
     void try_set_current_model(const QString& name); // no-op if name is unknown, matching non-editable QComboBox::setCurrentText; writes the app-wide default above, not any chat's own model
