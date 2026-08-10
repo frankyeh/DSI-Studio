@@ -1520,8 +1520,9 @@ ai_info* AIAgent::selected_info() const
 AIAgent::send_action AIAgent::current_send_action() const
 {
     auto* info = selected_info();
-    if(!info) // nothing to act on yet -- New Chat creates the first real chat
-        return send_action::Send;
+    // nothing to act on yet (New Chat creates the first real chat), or AgentServer (a log/routing record, no local subprocess to send to)
+    if(!info || info->provider == ai_provider::AgentServer)
+        return send_action::Disabled;
     if(info->provider == ai_provider::ChatGPT)
     {
         bool connected = !github_issue_api.isEmpty() && info->sessions == web_agent_session_id;
@@ -1533,20 +1534,20 @@ AIAgent::send_action AIAgent::current_send_action() const
 
 void AIAgent::update_send_button()
 {
-    auto* info = selected_info();
-    // disabled with no chat selected, and for AgentServer (a log/routing record, no local subprocess to send to)
-    ui->ai_send_message->setEnabled(info && info->provider != ai_provider::AgentServer);
-    switch(current_send_action())
+    auto action = current_send_action();
+    ui->ai_send_message->setEnabled(action != send_action::Disabled);
+    switch(action)
     {
+    case send_action::Disabled:
+    case send_action::Send:
+        ui->ai_send_message->setText("Send");
+        break;
     case send_action::StopWeb:
     case send_action::StopLocal:
         ui->ai_send_message->setText("Stop");
         break;
     case send_action::ResumeWeb:
         ui->ai_send_message->setText("Resume");
-        break;
-    case send_action::Send:
-        ui->ai_send_message->setText("Send");
         break;
     }
 }
@@ -2255,6 +2256,8 @@ void AIAgent::on_ai_send_message_clicked()
     // executes whatever current_send_action() reports, so the click always does what the label says
     switch(current_send_action())
     {
+    case send_action::Disabled:
+        return;
     case send_action::StopWeb:
         disconnect_github_issue();
         set_ai_status("GitHub issue channel stopped.",true);
@@ -2268,9 +2271,8 @@ void AIAgent::on_ai_send_message_clicked()
         info->processes->setProperty("user_stopped",true);
         info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         return;
-    case send_action::Send:
-        // AgentServer: no local subprocess -- Send is disabled (see update_send_button()), this is just the safety net
-        if(!info || info->provider == ai_provider::AgentServer || text.isEmpty())
+    case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
+        if(text.isEmpty())
             return;
         start_ai(info->sessions,text,ai_input::User);
         update_send_button();
