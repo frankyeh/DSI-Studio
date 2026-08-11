@@ -1045,6 +1045,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(tractWidget->error_msg);
         return run->succeed();
     }
+    if(cmd[0] == "run_dif_tracking")
+    {
+        // cmd[1]: new tract-bundle name
+        // cmd[2]: optional region settings
+        if(!(*this)["dt_index1"].toInt() && !(*this)["dt_index2"].toInt())
+            return run->failed("dt_index1/dt_index2 not set");
+        if(!tractWidget->command({"set_dt_index",
+                     dt_list[(*this)["dt_index1"].toInt()].toStdString() + '&' +
+                     dt_list[(*this)["dt_index2"].toInt()].toStdString(),
+                     std::to_string(renderWidget->getData("dt_threshold_type").toInt())}))
+            return run->failed(tractWidget->error_msg);
+        if(!tractWidget->command({"run_tracking",cmd[1],cmd[2]}))
+            return run->failed(tractWidget->error_msg);
+        return run->succeed();
+    }
     // the following must has cmd[1]
     if(cmd[0] == "set_roi_view")
     {
