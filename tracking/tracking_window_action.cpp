@@ -1070,7 +1070,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     if(cmd[0] == "run_command_history")
     {
         // cmd[1]: folder to search using the recorded load step's extension, or an "&"-joined explicit file list
-        // cmd[2]: optional "from:to" 0-based inclusive index range into list_history; omit to use every recorded command
+        // cmd[2]: optional 0-based inclusive index selection into list_history, "&"-joined "from:to"/single-index pieces (e.g. "0:1&12:15&16"); omit to use every recorded command
         if(cmd[1].empty())
             return run->failed("missing folder or file path");
         if(history.commands.empty())
@@ -1078,15 +1078,19 @@ bool tracking_window::command(std::vector<std::string> cmd)
         auto selected = history.commands;
         if(!cmd[2].empty())
         {
-            auto range = tipl::split(cmd[2],':');
-            bool okay = true;
-            int from = QString(range[0].c_str()).toInt(&okay);
-            int to = from;
-            if(okay && range.size() > 1)
-                to = QString(range[1].c_str()).toInt(&okay);
-            if(!okay || from < 0 || to < from || size_t(to) >= history.commands.size())
-                return run->failed("invalid command range: " + cmd[2]);
-            selected = std::vector<std::string>(history.commands.begin()+from,history.commands.begin()+to+1);
+            selected.clear();
+            for(const auto& piece : tipl::split(cmd[2],'&'))
+            {
+                auto range = tipl::split(piece,':');
+                bool okay = true;
+                int from = QString(range[0].c_str()).toInt(&okay);
+                int to = from;
+                if(okay && range.size() > 1)
+                    to = QString(range[1].c_str()).toInt(&okay);
+                if(!okay || from < 0 || to < from || size_t(to) >= history.commands.size())
+                    return run->failed("invalid command range: " + piece);
+                selected.insert(selected.end(),history.commands.begin()+from,history.commands.begin()+to+1);
+            }
         }
         std::string batch_error;
         if(!history.run(this,selected,cmd[1],batch_error))
