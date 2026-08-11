@@ -1343,7 +1343,10 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
     if(dir.dt_fa.empty())
     {
         dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),dif.data());
-        slices.push_back(std::make_shared<slice_model>("dT_metrics",dif.data(),dim));
+        // dir.dt_fa can be cleared and re-populated within the same session (a plain run_tracking clears it,
+        // switching dt_index1's metric mid-session also clears it) -- don't add a second "dT_metrics" entry
+        if(get_name_index("dT_metrics") == slices.size())
+            slices.push_back(std::make_shared<slice_model>("dT_metrics",dif.data(),dim));
     }
     return true;
 }
