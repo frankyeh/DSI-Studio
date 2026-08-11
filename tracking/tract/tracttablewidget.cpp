@@ -220,34 +220,19 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 }
 void TractTableWidget::start_tracking(void)
 {
-
-    QString tract_name = cur_tracking_window.regionWidget->getROIname();
-    std::vector<std::string> tracking_param({std::string("run_tracking"),
-                                             tract_name.toStdString(),
-                                             cur_tracking_window.get_parameter_id(
-                                                 cur_tracking_window.ui->tract_target_0->currentIndex() > 0)});
-
-    {
-        auto roi_setting = cur_tracking_window.regionWidget->get_roi_settings();
-        if(!roi_setting.empty())
-            tracking_param[2] += " " + roi_setting;
-    }
+    auto roi_setting = cur_tracking_window.regionWidget->get_roi_settings();
 
     if(cur_tracking_window["dt_index1"].toInt() || cur_tracking_window["dt_index2"].toInt())
     {
-        if(!command({std::string("set_dt_index"),
-                     cur_tracking_window.dt_list[cur_tracking_window["dt_index1"].toInt()].toStdString() + '&' +
-                     cur_tracking_window.dt_list[cur_tracking_window["dt_index2"].toInt()].toStdString(),
-                     std::to_string(cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt())}))
-        {
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-            return;
-        }
+        if(!cur_tracking_window.command({"run_dif_tracking",
+                     cur_tracking_window.regionWidget->getROIname().toStdString(),roi_setting}))
+            QMessageBox::critical(this,"ERROR",cur_tracking_window.error_msg.c_str());
+        return;
     }
-    else
-    if(cur_tracking_window.ui->tract_target_0->currentIndex() > 0) // auto track
+
+    if(cur_tracking_window.ui->tract_target_0->currentIndex() > 0)
     {
-        tract_name = cur_tracking_window.ui->tract_target_1->currentText();
+        QString tract_name = cur_tracking_window.ui->tract_target_1->currentText();
         if(cur_tracking_window.ui->tract_target_2->isVisible() &&
            cur_tracking_window.ui->tract_target_2->currentText() != "All")
         {
@@ -260,10 +245,12 @@ void TractTableWidget::start_tracking(void)
                 QMessageBox::critical(this,"ERROR",error_msg.c_str());
             return;
         }
-        tracking_param[1] = tract_name.toStdString();
-        tracking_param.push_back(std::to_string(cur_tracking_window["tolerance"].toFloat()));
+        if(!cur_tracking_window.command({"run_auto_track",tract_name.toStdString(),roi_setting}))
+            QMessageBox::critical(this,"ERROR",cur_tracking_window.error_msg.c_str());
+        return;
     }
-    if(!command(tracking_param))
+
+    if(!command({"run_tracking",cur_tracking_window.regionWidget->getROIname().toStdString(),roi_setting}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -593,6 +580,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             cmd[2] = cur_tracking_window.get_parameter_id(
                          cur_tracking_window.ui->tract_target_0->currentIndex() > 0) + roi;
         }
+
+        if(!cur_tracking_window["dt_index1"].toInt() && !cur_tracking_window["dt_index2"].toInt())
+            cur_tracking_window.handle->dir.dt_fa.clear();
+
         if(!cur_tracking_window.handle->trackable)
             return run->failed("the data are not trackable");
         if(cmd[1].empty())
