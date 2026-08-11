@@ -190,40 +190,72 @@ QStringList search_files(QString dir,QString filter);
 bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd,char type)
 {
     QStringList file_list;
+    if(type)
+    {
+        auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
+        if(first_load != cmd.end())
+        {
+            auto param = tipl::split(*first_load,',');
+            auto original_file = param[1];
+            if(type == 1) // select files
+            {
+                QMessageBox::information(parent,QApplication::applicationName(),
+                    "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
+                file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),original_file.c_str(),
+                    QString("files (*%1);;all files (*)").arg(tipl::complete_suffix(original_file).c_str()));
+            }
+            else
+            // select folder
+            {
+                QMessageBox::information(parent,QApplication::applicationName(),
+                    "select a folder for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
+
+                QString dir = QFileDialog::getExistingDirectory(parent,"Browse Directory",original_file.c_str());
+                if(dir.isEmpty())
+                    return false;
+                QString search_filter = "*"+QFileInfo(original_file.c_str()).completeSuffix();
+                tipl::out() << "search " << search_filter.toStdString() << " at " << dir.toStdString();
+                file_list = search_files(dir,search_filter);
+                tipl::out() << "A total of " << file_list.size() << " file(s) found";
+            }
+            if(file_list.isEmpty())
+                return false;
+        }
+    }
+    return run(parent,cmd,file_list);
+}
+bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd,const std::string& path,std::string& error_msg)
+{
+    auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
+    if(first_load == cmd.end())
+        return error_msg = "no recorded load command to substitute a file into",false;
+    QStringList file_list;
+    if(std::filesystem::is_directory(path))
+    {
+        auto original_file = tipl::split(*first_load,',')[1];
+        file_list = search_files(path.c_str(),"*"+QFileInfo(original_file.c_str()).completeSuffix());
+    }
+    else
+        for(const auto& each : tipl::split(path,'&'))
+            file_list << each.c_str();
+    if(file_list.isEmpty())
+        return error_msg = "no matching files found at " + path,false;
+    if(!run(parent,cmd,file_list))
+        return error_msg = "batch execution failed or aborted, see console log",false;
+    return true;
+}
+bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd,QStringList file_list)
+{
     std::string original_file;
     int loading_index = -1;
-
     auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
-    if(first_load != cmd.end() && type)
+    if(first_load != cmd.end() && !file_list.isEmpty())
     {
         loading_index = static_cast<int>(first_load-cmd.begin());
-        auto param = tipl::split(*first_load,',');
-        original_file = param[1];
-        if(type == 1) // select files
-        {
-            QMessageBox::information(parent,QApplication::applicationName(),
-                "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
-            file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),original_file.c_str(),
-                QString("files (*%1);;all files (*)").arg(tipl::complete_suffix(original_file).c_str()));
-        }
-        else
-        // select folder
-        {
-            QMessageBox::information(parent,QApplication::applicationName(),
-                "select a folder for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
-
-            QString dir = QFileDialog::getExistingDirectory(parent,"Browse Directory",original_file.c_str());
-            if(dir.isEmpty())
-                return false;
-            QString search_filter = "*"+QFileInfo(original_file.c_str()).completeSuffix();
-            tipl::out() << "search " << search_filter.toStdString() << " at " << dir.toStdString();
-            file_list = search_files(dir,search_filter);
-            tipl::out() << "A total of " << file_list.size() << " file(s) found";
-        }
-        if(file_list.isEmpty())
-            return false;
+        original_file = tipl::split(*first_load,',')[1];
     }
 
+    bool silent = console.capture != nullptr; // an AI dispatch is in progress: no blocking dialogs, just log and keep going/failing
     tipl::progress p("running commands",true);
     running_commands = true;
     size_t total_steps = std::max<int>(1,file_list.size())*cmd.size();
@@ -271,13 +303,15 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                         }
                         if(is_loading(cmd[j]) && !std::filesystem::exists(new_file_name))
                         {
-                            if(QMessageBox::question(parent, QApplication::applicationName(),
-                                            QString("cannot find %1 at %2.\nCancel?\n").
-                                                   arg(QFileInfo(new_file_name.c_str()).fileName()).
-                                                   arg(QFileInfo(new_file_name.c_str()).absolutePath()),
-                                            QMessageBox::No | QMessageBox::Yes) == QMessageBox::Yes)
-
-                                file_list.clear();
+                            if(silent)
+                                tipl::warning() << "cannot find " << new_file_name << ", skipping this file";
+                            else
+                                if(QMessageBox::question(parent, QApplication::applicationName(),
+                                                QString("cannot find %1 at %2.\nCancel?\n").
+                                                       arg(QFileInfo(new_file_name.c_str()).fileName()).
+                                                       arg(QFileInfo(new_file_name.c_str()).absolutePath()),
+                                                QMessageBox::No | QMessageBox::Yes) == QMessageBox::Yes)
+                                    file_list.clear();
                             break;
                         }
                         param[1] = new_file_name;
@@ -290,7 +324,10 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             tipl::out() << "run " << tipl::merge(param,',');
             if(!parent->command(param))
             {
-                QMessageBox::critical(parent,"ERROR",(param.front() + " failed due to " + parent->error_msg).c_str());
+                if(silent)
+                    tipl::error() << param.front() << " failed due to " << parent->error_msg;
+                else
+                    QMessageBox::critical(parent,"ERROR",(param.front() + " failed due to " + parent->error_msg).c_str());
                 running_commands = false;
                 return false;
             }

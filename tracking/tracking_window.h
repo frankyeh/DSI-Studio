@@ -41,6 +41,9 @@ public:
                 pending_command,pending_report;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd,char type);
+    bool run(tracking_window *parent,const std::vector<std::string>& cmd,const std::string& path,std::string& error_msg); // AI-facing: path is a folder (searched using the recorded load step's extension) or an "&"-joined explicit file list, no dialog involved
+private:
+    bool run(tracking_window *parent,const std::vector<std::string>& cmd,QStringList file_list); // shared replay core; by value since it's mutated (cleared) internally to abort remaining iteration
 public:
     struct surrogate {
         command_history& owner;
