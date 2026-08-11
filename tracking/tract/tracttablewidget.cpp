@@ -559,8 +559,21 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         bool first_time = cur_tracking_window.handle->dir.dt_fa_data.empty();
         if(!cur_tracking_window.handle->set_dt_index(std::make_pair(cmd[1].substr(0, pos), cmd[1].substr(pos + 1)),QString(cmd[2].c_str()).toInt()))
             return run->failed(cur_tracking_window.handle->error_msg);
-        // turn off auto_tracks
         cur_tracking_window.ui->tract_target_0->setCurrentIndex(0);
+        // keep dt_index1/dt_index2 in sync so run_tracking's stale-dt_fa guard (dt_index1/dt_index2 == 0) sees a real dt selection regardless of whether it was set by name here or by index via set_param
+        auto find_dt_index = [&](const std::string& name)->int
+        {
+            auto qname = QString::fromStdString(name);
+            for(int i = 0;i < cur_tracking_window.dt_list.size();++i)
+                if(cur_tracking_window.dt_list[i] == qname)
+                    return i;
+            for(int i = 0;i < cur_tracking_window.dt_list.size();++i)
+                if(cur_tracking_window.dt_list[i].contains(qname) || qname.contains(cur_tracking_window.dt_list[i]))
+                    return i;
+            return 0;
+        };
+        cur_tracking_window.set_data("dt_index1",find_dt_index(cmd[1].substr(0,pos)));
+        cur_tracking_window.set_data("dt_index2",find_dt_index(cmd[1].substr(pos+1)));
         if(first_time)
         {
             for(auto& each : cur_tracking_window.handle->slices)
@@ -583,6 +596,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
         if(!cur_tracking_window["dt_index1"].toInt() && !cur_tracking_window["dt_index2"].toInt())
             cur_tracking_window.handle->dir.dt_fa.clear();
+        else
+            if(cur_tracking_window.handle->dir.dt_fa.empty())
+                return run->failed("dt_index1/dt_index2 is set but not applied; use run_dif_tracking");
 
         if(!cur_tracking_window.handle->trackable)
             return run->failed("the data are not trackable");
