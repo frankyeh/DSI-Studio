@@ -1506,8 +1506,11 @@ bool AIAgent::github_connected(const ai_info& info) const
 AIAgent::send_action AIAgent::current_send_action() const
 {
     auto* info = selected_info();
-    // nothing to act on yet (New Chat creates the first real chat), or AgentServer (a log/routing record, no local subprocess to send to)
-    if(!info || info->provider == ai_provider::AgentServer)
+    // nothing selected: still lets a typed message start a chat directly (same process as New Chat, minus the
+    // dialog -- current_agent_index/current_model_name, the app-wide default, pick the agent/model)
+    if(!info)
+        return ui->ai_chat_input->toPlainText().trimmed().isEmpty() ? send_action::Disabled : send_action::Send;
+    if(info->provider == ai_provider::AgentServer) // a log/routing record, no local subprocess to send to
         return send_action::Disabled;
     if(info->provider == ai_provider::ChatGPT)
         return github_connected(*info) ? send_action::StopWeb : send_action::ResumeWeb;
@@ -1923,15 +1926,20 @@ void AIAgent::new_chat_dialog(bool resume)
         return;
     }
 
-    disconnect_github_issue(); // leaving web-agent mode for a local chat
-    update_send_button();
-
     current_agent_index = agent_index;
     try_set_current_model(value);
+    start_new_local_chat();
+}
+
+ai_info* AIAgent::start_new_local_chat() // shared by new_chat_dialog() and Send-with-nothing-selected: creates a fresh chat with the current default agent/model and prepares the compose box for it
+{
+    disconnect_github_issue(); // leaving web-agent mode for a local chat
+    update_send_button();
     update_agent_status_label();
-    create_new_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
+    auto* info = create_new_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
+    return info;
 }
 
 void AIAgent::on_ai_new_chat_clicked()
@@ -2599,10 +2607,10 @@ void AIAgent::on_ai_send_message_clicked()
         info->processes->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message
         info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         return;
-    case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
+    case send_action::Send: // reachable when info exists and isn't AgentServer, or when nothing is selected but there's text to send, see current_send_action()
         if(text.isEmpty())
             return;
-        start_ai(*info,text,ai_input::User);
+        start_ai(*(info ? info : start_new_local_chat()),text,ai_input::User);
         update_send_button();
         return;
     }
