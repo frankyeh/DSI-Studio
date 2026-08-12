@@ -158,8 +158,13 @@ AIAgent::AIAgent(MainWindow* parent):
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
-    connect(send,&QShortcut::activated,
-            ui->ai_send_message,&QPushButton::click);
+    connect(send,&QShortcut::activated,this,[this]
+    {
+        // a fixed "submit" shortcut, never Stop/Resume regardless of what the button currently shows
+        auto action = current_send_action();
+        if(action == send_action::Send || action == send_action::Queue)
+            ui->ai_send_message->click();
+    });
     connect(ui->ai_chat_input,&QPlainTextEdit::textChanged,
             this,&AIAgent::update_send_button);
 
@@ -1506,40 +1511,33 @@ bool AIAgent::github_connected(const ai_info& info) const
 AIAgent::send_action AIAgent::current_send_action() const
 {
     auto* info = selected_info();
+    bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
     // nothing selected: still lets a typed message start a chat directly (same process as New Chat, minus the
     // dialog -- current_agent_index/current_model_name, the app-wide default, pick the agent/model)
     if(!info)
-        return ui->ai_chat_input->toPlainText().trimmed().isEmpty() ? send_action::Disabled : send_action::Send;
+        return has_input ? send_action::Send : send_action::Disabled;
     if(info->provider == ai_provider::AgentServer) // a log/routing record, no local subprocess to send to
         return send_action::Disabled;
     if(info->provider == ai_provider::ChatGPT)
-        return github_connected(*info) ? send_action::StopWeb : send_action::ResumeWeb;
-    bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
-    // status alone can no longer tell a connecting launch (status New, but info->processes already exists)
-    // apart from a genuinely untouched New chat (no process at all, nothing to stop) -- processes is the
-    // one thing that's actually true throughout connecting/WaitingUser/Thinking and only those
-    bool running = info->processes != nullptr;
-    return (running && !has_input) ? send_action::StopLocal : send_action::Send;
+        return github_connected(*info) ? send_action::Stop : send_action::Resume;
+    if(!info->processes) // never launched (or a prior attempt cleanly ended): a fresh launch, always a real send
+        return has_input ? send_action::Send : send_action::Disabled;
+    if(!has_input)
+        return send_action::Stop;
+    // start_ai()'s own real distinction: only a live Claude process gets a stdin write; Codex (never mid-turn
+    // writable) and a still-connecting Claude both actually queue -- match that here so the label is never a lie
+    return (info->provider == ai_provider::Claude && info->processes->state() == QProcess::Running) ?
+                send_action::Send : send_action::Queue;
 }
 
 void AIAgent::update_send_button()
 {
     auto action = current_send_action();
     ui->ai_send_message->setEnabled(action != send_action::Disabled);
-    switch(action)
-    {
-    case send_action::Disabled:
-    case send_action::Send:
-        ui->ai_send_message->setText("Send");
-        break;
-    case send_action::StopWeb:
-    case send_action::StopLocal:
-        ui->ai_send_message->setText("Stop");
-        break;
-    case send_action::ResumeWeb:
-        ui->ai_send_message->setText("Resume");
-        break;
-    }
+    ui->ai_send_message->setText(
+        action == send_action::Queue ? "Queue" :
+        action == send_action::Stop ? "Stop" :
+        action == send_action::Resume ? "Resume" : "Send");
 }
 
 bool AIAgent::setup_github_token()
@@ -1914,8 +1912,10 @@ void AIAgent::new_chat_dialog(bool resume)
                              agent_index,value))
         return;
     bool web = agent_index == int(ai_provider::ChatGPT);
-    if(!resume)
-        web_agent_session_id.clear(); // starting fresh: no longer tied to whatever chat the old web session was
+    // no early web_agent_session_id.clear() here: disconnect_github_issue() (below, and inside
+    // start_new_local_chat()) needs it to still name the old chat so that chat gets marked Completed;
+    // create_new_chat("ChatGPT(Web)") already reassigns it for a fresh (non-resume) web chat, and
+    // start_new_local_chat() clears it itself once the old channel is actually disconnected
 
     if(web)
     {
@@ -1933,9 +1933,10 @@ void AIAgent::new_chat_dialog(bool resume)
 
 ai_info* AIAgent::start_new_local_chat() // shared by new_chat_dialog() and Send-with-nothing-selected: creates a fresh chat with the current default agent/model and prepares the compose box for it
 {
-    disconnect_github_issue(); // leaving web-agent mode for a local chat
-    update_send_button();
-    update_agent_status_label();
+    disconnect_github_issue(); // leaving web-agent mode for a local chat -- marks the old web chat Completed via web_agent_session_id, so clear that only after
+    web_agent_session_id.clear();
+    // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
+    // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
     auto* info = create_new_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
@@ -2596,20 +2597,21 @@ void AIAgent::on_ai_send_message_clicked()
     {
     case send_action::Disabled:
         return;
-    case send_action::StopWeb:
-        disconnect_github_issue();
-        return;
-    case send_action::ResumeWeb: // only reachable when info exists, see current_send_action()
+    case send_action::Resume: // only reachable when info exists, see current_send_action()
         web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
         new_chat_dialog(true);
         return;
-    case send_action::StopLocal: // only reachable when info && info->processes, see current_send_action()
-        info->processes->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message
-        info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+    case send_action::Stop: // only reachable when info exists, see current_send_action()
+        if(info->provider == ai_provider::ChatGPT)
+            disconnect_github_issue();
+        else
+        {
+            info->processes->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message
+            info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+        }
         return;
     case send_action::Send: // reachable when info exists and isn't AgentServer, or when nothing is selected but there's text to send, see current_send_action()
-        if(text.isEmpty())
-            return;
+    case send_action::Queue: // start_ai() itself decides send-vs-queue (only a live Claude process gets a real write); this case just gets it there
         start_ai(*(info ? info : start_new_local_chat()),text,ai_input::User);
         update_send_button();
         return;
