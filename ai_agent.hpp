@@ -81,7 +81,7 @@ class AIAgent : public QMainWindow
     void send_pending_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool github_connected(const ai_info&) const; // true iff this specific chat is the one the live GitHub issue channel is currently bound to (web_agent_session_id + a non-empty github_issue_api) -- a chat can be ChatGPT-provider without being the connection's current owner (e.g. a different/older web chat)
-    enum class send_action {Disabled,Send,StopLocal,StopWeb,ResumeWeb};
+    enum class send_action {Disabled,Send,Queue,Stop,Resume}; // Send vs Queue mirrors start_ai()'s own real distinction (Claude actually running gets a live stdin write, everything else queues) so the button's label is never a lie
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
