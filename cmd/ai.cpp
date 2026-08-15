@@ -214,6 +214,13 @@ QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,cons
         toJson(QJsonDocument::Compact)+'\n';
 }
 
+QByteArray codex_turn_interrupt(const QString& thread_id,const QString& turn_id)
+{
+    return QJsonDocument(QJsonObject{{"id","turn_interrupt"},{"method","turn/interrupt"},
+        {"params",QJsonObject{{"threadId",thread_id},{"turnId",turn_id}}}}).
+        toJson(QJsonDocument::Compact)+'\n';
+}
+
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
 {
     auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
