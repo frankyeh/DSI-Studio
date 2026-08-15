@@ -22,7 +22,8 @@ class QWidget;
 enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declaration order is not meaningful -- ai_info::is_running() classifies by name, not ordinal comparison
 // New: chat created, no launch ever attempted yet, OR a launch/reconnection is currently in flight (the OS
-//   process started, waiting for the agent's own protocol confirmation: Codex "thread.started", Claude
+//   process started, waiting for the agent's own protocol confirmation: Codex app-server "thread/start"/
+//   "thread/resume" response, Claude
 //   stream-json "system"/"init") -- the only value that means "no confirmed real id yet, use --session-id,
 //   not --resume". Animated the same as Thinking (both mean "waiting on the agent"), since a fresh chat is
 //   just as much "nothing to show yet" as one actively connecting.
@@ -88,6 +89,7 @@ QByteArray github_blocking(QNetworkAccessManager& manager,const QNetworkRequest&
 QByteArray claude_input(const QString& text); // wraps text in Claude's stream-json stdin message format
 QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text); // wraps text as a Codex app-server "turn/start" request on an idle thread
 QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text); // wraps text as a Codex app-server "turn/steer" request into the thread's currently active turn
+QByteArray codex_turn_interrupt(const QString& thread_id,const QString& turn_id); // a Codex app-server "turn/interrupt" request -- stops the active turn without ending the process/session, unlike QProcess::kill()
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
 QString model_combo_key(const QComboBox& model); // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
 void set_model_selector(QComboBox& model,const QJsonObject& profiles,
