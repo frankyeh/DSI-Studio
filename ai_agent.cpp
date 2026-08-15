@@ -161,8 +161,7 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(send,&QShortcut::activated,this,[this]
     {
         // a fixed "submit" shortcut, never Stop/Resume regardless of what the button currently shows
-        auto action = current_send_action();
-        if(action == send_action::Send || action == send_action::Queue)
+        if(current_send_action() == send_action::Send)
             ui->ai_send_message->click();
     });
     connect(ui->ai_chat_input,&QPlainTextEdit::textChanged,
@@ -1524,11 +1523,10 @@ AIAgent::send_action AIAgent::current_send_action() const
         return has_input ? send_action::Send : send_action::Disabled;
     if(!has_input)
         return send_action::Stop;
-    // start_ai()'s own real distinction: a live process (Claude stdin write, Codex turn/start|turn/steer) gets
-    // sent immediately; a still-starting process of either provider actually queues -- match that here so the
-    // label is never a lie
-    return info->processes->state() == QProcess::Running ?
-                send_action::Send : send_action::Queue;
+    // a process exists (either provider): always Send from the user's point of view -- start_ai() itself buffers
+    // the message internally if the process hasn't finished starting yet, same as it always has, but that's no
+    // longer a distinct state worth surfacing on the button
+    return send_action::Send;
 }
 
 void AIAgent::update_send_button()
@@ -1536,7 +1534,6 @@ void AIAgent::update_send_button()
     auto action = current_send_action();
     ui->ai_send_message->setEnabled(action != send_action::Disabled);
     ui->ai_send_message->setText(
-        action == send_action::Queue ? "Queue" :
         action == send_action::Stop ? "Stop" :
         action == send_action::Resume ? "Resume" : "Send");
 }
@@ -2203,7 +2200,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     if(input == ai_input::User)
     {
         // recorded here, once, unconditionally, the moment it's sent -- not deferred to whichever async
-        // establishment event (Codex "thread.started", Claude stream-json "system"/"init") happens to
+        // establishment event (Codex app-server "thread/start"/"thread/resume", Claude stream-json "system"/"init") happens to
         // confirm the session later. That deferral was the actual bug: it required stashing this text in
         // the async handler's own closure to "replay" once establishment confirmed, and if the backend ever
         // sent that one-time event more than once (observed with an Ollama-routed session), the stale
@@ -2244,8 +2241,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         ai_log("connecting to "+ name + "@" + session+
             " pid:"+QString::number(process->processId()));
         // the OS process starting proves nothing about the backend conversation itself -- only this provider's
-        // own established-session event (configure_codex's "thread.started", configure_claude's "system"/
-        // "init") confirms the session, so a genuine first launch stays New until then. A reconnect of an
+        // own established-session event (configure_codex's "thread/start"/"thread/resume" response, configure_claude's
+        // "system"/"init") confirms the session, so a genuine first launch stays New until then. A reconnect of an
         // already-established session (pre-launch status captured above, same as errorOccurred/finished use to
         // tell the two apart) shows Thinking instead -- staying New here too would let a save mid-reconnect
         // wrongly persist established:false over it (see save_config())
@@ -2392,7 +2389,7 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                         {
                             // the session-established event: Claude's own stream-json protocol confirms the
                             // conversation actually initialized, not just that the OS process started -- the
-                            // Codex equivalent is "thread.started" in configure_codex(). Status/config only --
+                            // Codex equivalent is the "thread/start"/"thread/resume" response in configure_codex(). Status/config only --
                             // the opening message was already recorded, once, synchronously, when it was sent
                             // (see prepare_ai()); this event has no content-recording role at all anymore
                             if(auto* info = ai_info::find(process->objectName()))
@@ -2588,11 +2585,14 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                 if(auto* info = ai_info::find(process->objectName()))
                 {
                     auto turn = msg["params"].toObject()["turn"].toObject();
-                    if(turn["status"].toString() == "failed")
+                    auto turn_status = turn["status"].toString();
+                    if(turn_status == "failed")
                     {
                         auto err = turn["error"].toObject()["message"].toString();
                         set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
                     }
+                    else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
+                        set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
                     else
                         set_ai_status(info->sessions,session_status::WaitingUser,"Waiting for user");
                 }
@@ -2676,6 +2676,10 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Stop: // only reachable when info exists, see current_send_action()
         if(info->provider == ai_provider::ChatGPT)
             disconnect_github_issue();
+        else if(auto turn_id = info->provider == ai_provider::Codex ?
+                info->processes->property("turn_id").toString() : QString();
+                !turn_id.isEmpty()) // Codex mid-turn: interrupt it in place rather than ending the whole session
+            info->processes->write(codex_turn_interrupt(info->processes->objectName(),turn_id));
         else
         {
             info->processes->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message
@@ -2683,7 +2687,6 @@ void AIAgent::on_ai_send_message_clicked()
         }
         return;
     case send_action::Send: // reachable when info exists and isn't AgentServer, or when nothing is selected but there's text to send, see current_send_action()
-    case send_action::Queue: // start_ai() itself decides send-vs-queue (only a live Claude process gets a real write); this case just gets it there
         start_ai(*(info ? info : start_new_local_chat()),text,ai_input::User);
         update_send_button();
         return;
