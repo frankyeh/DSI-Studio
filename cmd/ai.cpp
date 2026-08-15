@@ -198,6 +198,22 @@ QByteArray claude_input(const QString& text)
         toJson(QJsonDocument::Compact)+'\n';
 }
 
+QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text)
+{
+    return QJsonDocument(QJsonObject{{"id",id},{"method","turn/start"},
+        {"params",QJsonObject{{"threadId",thread_id},
+            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).
+        toJson(QJsonDocument::Compact)+'\n';
+}
+
+QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text)
+{
+    return QJsonDocument(QJsonObject{{"id","turn_steer"},{"method","turn/steer"},
+        {"params",QJsonObject{{"threadId",thread_id},{"expectedTurnId",turn_id},
+            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).
+        toJson(QJsonDocument::Compact)+'\n';
+}
+
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
 {
     auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
