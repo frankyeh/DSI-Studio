@@ -2462,7 +2462,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
     auto session = info.sessions; // captured by value into the async handler below -- never info itself (Codex renames/rekeys the session there)
     auto name = info.launch_name;
     auto model = info.launch_model;
-    auto cwd = ui->ai_work_dir->text();
+    auto work_dir = ui->ai_work_dir->text(); // NOT the thread's cwd (that stays prepare_ai()'s applicationDirPath()+"/ai", where AGENTS.md lives) -- granted as extra sandbox access instead, same role "--add-dir" played for the old codex exec launch
     bool resuming = info.status != session_status::New; // pre-launch status: New means never established (open a fresh thread), anything else means session already names a real Codex thread id to resume
     if(!info.launch_model_url.isEmpty()) // Ollama routing (CODEX_OSS_BASE_URL/--oss) has no app-server equivalent yet -- not part of this first migration step
         ai_log("Codex/Ollama routing is not yet supported over app-server; connecting to the default model instead.");
@@ -2489,8 +2489,12 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                     write_message({{"method","initialized"}});
                     // "never": matches codex exec's own non-interactive default -- app-server's own default
                     // ("on-request") would otherwise send an approval request DSI Studio doesn't answer,
-                    // hanging the turn forever
-                    QJsonObject params{{"approvalPolicy","never"},{"cwd",cwd}};
+                    // hanging the turn forever. No "cwd" here -- leave it at the thread's real working directory
+                    // (applicationDirPath()+"/ai", set in prepare_ai()) so Codex finds AGENTS.md there, same as
+                    // the old codex exec launch; work_dir is granted as additional sandbox access instead
+                    QJsonObject params{{"approvalPolicy","never"},
+                        {"sandboxPolicy",QJsonObject{{"type","workspaceWrite"},
+                            {"writableRoots",QJsonArray{work_dir}}}}};
                     if(!model.isEmpty() && model != "default") // Codex's own code-assigned alias for "no explicit choice" -- omit the field instead
                         params["model"] = model;
                     if(resuming)
