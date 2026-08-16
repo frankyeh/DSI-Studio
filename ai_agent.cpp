@@ -72,6 +72,12 @@ void AIAgent::ai_log(QString text)
     tipl::out() << (prefix+text.remove('\r').
                     replace('\n',"\n"+prefix)).toStdString();
 }
+QJsonObject AIAgent::next_json_line(QProcess* process)
+{
+    auto line = process->readLine();
+    ai_log("stdout:"+QString::fromUtf8(line).trimmed());
+    return QJsonDocument::fromJson(line).object();
+}
 AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
@@ -79,7 +85,8 @@ AIAgent::AIAgent(MainWindow* parent):
     ai_debug_level = settings.value("ai/debug",0).toInt();
     ui->ai_work_dir->setText(main_window.work_dir());
     // keeps the field in sync with the selected chat's own dispatch directory (model_settings["cwd"]),
-    // the same value run_shell's "cd" updates; also used as --add-dir when launching Codex/Claude
+    // the same value run_shell's "cd" updates; also granted as extra sandbox/write access when launching
+    // Codex (sandboxPolicy.writableRoots) or Claude (--add-dir)
     auto sync_work_dir = [this]
     {
         auto* info = selected_info();
@@ -1215,11 +1222,13 @@ void AIAgent::refresh_codex_models()
 }
 void AIAgent::refresh_ollama_models()
 {
+    // Claude only: configure_codex() has no app-server equivalent yet for routing a turn through Ollama (the
+    // old codex exec launch used --oss/--local-provider=ollama), so offering these in Codex's own model
+    // selector would let a user pick a selection that's silently ignored at connect time
     auto set_models = [this](const QStringList& models)
     {
-        for(auto index : {int(ai_provider::Codex),int(ai_provider::Claude)})
-            if(!agent_entries[index].executable.isEmpty())
-                update_agent_models(index,models,true);
+        if(!agent_entries[int(ai_provider::Claude)].executable.isEmpty())
+            update_agent_models(int(ai_provider::Claude),models,true);
     };
 
     auto ollama = ai_ollama_url(settings);
@@ -2378,9 +2387,7 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
             {
                 while(process->canReadLine())
                 {
-                    auto line = process->readLine();
-                    ai_log("stdout:"+QString::fromUtf8(line).trimmed());
-                    auto event = QJsonDocument::fromJson(line).object();
+                    auto event = next_json_line(process);
                     auto event_type = event["type"].toString();
                     if(event_type == "system")
                     {
@@ -2472,137 +2479,140 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
         process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
     };
 
-    connect(process,&QProcess::readyReadStandardOutput,this,
-            [=,status = info.status]
+    // funnels agentMessage/reasoning item text into the shared history/status path (same destination as
+    // Claude's own parser) -- a no-op for an empty item (e.g. a reasoning item with no summary/content yet)
+    auto emit_reply = [process,this](const QString& chat,const QString& reasoning)
+    {
+        if(chat.isEmpty() && reasoning.isEmpty())
+            return;
+        process->setProperty("had_reply",true);
+        if(auto* info = ai_info::find(process->objectName()))
+            add_ai_reply(*info,chat,reasoning);
+    };
+
+    // our own request's reply: {"id":...,"result":...}, never has "method"
+    auto handle_response = [=,status = info.status](const QJsonObject& msg)
+    {
+        auto id = msg["id"].toString();
+        if(id == "initialize")
+        {
+            write_message({{"method","initialized"}});
+            // "never": matches codex exec's own non-interactive default -- app-server's own default
+            // ("on-request") would otherwise send an approval request DSI Studio doesn't answer,
+            // hanging the turn forever. No "cwd" here -- leave it at the thread's real working directory
+            // (applicationDirPath()+"/ai", set in prepare_ai()) so Codex finds AGENTS.md there, same as
+            // the old codex exec launch; work_dir is granted as additional sandbox access instead
+            QJsonObject params{{"approvalPolicy","never"},
+                {"sandboxPolicy",QJsonObject{{"type","workspaceWrite"},
+                    {"writableRoots",QJsonArray{work_dir}}}}};
+            if(!model.isEmpty() && model != "default") // Codex's own code-assigned alias for "no explicit choice" -- omit the field instead
+                params["model"] = model;
+            if(resuming)
+            {
+                params["threadId"] = session;
+                write_message({{"id","thread_resume"},{"method","thread/resume"},{"params",params}});
+            }
+            else
+                write_message({{"id","thread_start"},{"method","thread/start"},{"params",params}});
+            return;
+        }
+        if(id != "thread_start" && id != "thread_resume")
+            return;
+
+        auto old_session = process->objectName();
+        auto new_session = msg["result"].toObject()["thread"].toObject()["id"].toString();
+        if(!is_valid_session_id(new_session))
+        {
+            // Codex's own protocol contract broke -- do not let a malformed id corrupt ai_infos'
+            // keying; surface it immediately instead of silently accepting it
+            ai_log("invalid thread id from Codex app-server (not a UUID): "+new_session);
+            if(auto* info = ai_info::find(old_session))
+            {
+                set_ai_status(info->sessions,status == session_status::New ?
+                              session_status::New : session_status::Failed,
+                              "Codex returned an invalid thread ID.");
+                show_ai_project(*info);
+            }
+            return process->kill();
+        }
+        auto* old_info = ai_info::find(old_session);
+        // never established before -- still just DSI Studio's own placeholder, safe to rename in place
+        bool still_placeholder = status == session_status::New && old_info &&
+                                 old_info->status == session_status::New;
+        auto* info = still_placeholder ?
+            assign_ai_session(old_session,new_session) :
+            ai_info::create(new_session,name,ai_provider::Codex); // already known, not inferred: this whole handler is Codex-specific
+        if(info)
+        {
+            set_ai_status(info->sessions,session_status::Thinking,
+                          "Session started; waiting for agent input");
+            if(!still_placeholder) // a genuinely different/new entry -- old_info (still alive, just not renamed) is the only place its settings still exist
+                info->model_settings = old_info ? old_info->model_settings : QJsonObject();
+            info->save_config();
+        }
+        // status/rename only -- the opening message was already recorded, once, synchronously, when
+        // it was sent (see prepare_ai()); this event has no content-recording role at all anymore
+        if(info && old_session != new_session)
+        {
+            process->setObjectName(new_session);
+            info->processes = process;
+        }
+        process->write(codex_turn_start("turn_start",new_session,text));
+    };
+
+    // a server-initiated notification: {"method":...,"params":...}, no "id", no reply expected
+    auto handle_notification = [=](const QJsonObject& msg)
+    {
+        auto method = msg["method"].toString();
+        if(method == "turn/started") // tracks the active turn id -- start_ai()'s Codex send path needs it to steer into a running turn instead of starting a conflicting one
+            process->setProperty("turn_id",msg["params"].toObject()["turn"].toObject()["id"].toString());
+        else if(method == "item/completed")
+        {
+            auto item = msg["params"].toObject()["item"].toObject();
+            auto type = item["type"].toString();
+            if(type == "agentMessage")
+                emit_reply(item["text"].toString().trimmed(),QString());
+            else if(type == "reasoning")
+            {
+                QStringList lines;
+                for(auto v : item["summary"].toArray())
+                    lines << v.toString();
+                for(auto v : item["content"].toArray())
+                    lines << v.toString();
+                emit_reply(QString(),lines.join('\n').trimmed());
+            }
+        }
+        else if(method == "turn/completed")
+        {
+            process->setProperty("turn_id",QString()); // idle again -- start_ai()'s next Codex send should start a fresh turn, not steer into this one
+            if(auto* info = ai_info::find(process->objectName()))
+            {
+                auto turn = msg["params"].toObject()["turn"].toObject();
+                auto turn_status = turn["status"].toString();
+                if(turn_status == "failed")
+                {
+                    auto err = turn["error"].toObject()["message"].toString();
+                    set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
+                }
+                else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
+                    set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
+                else
+                    set_ai_status(info->sessions,session_status::WaitingUser,"Waiting for user");
+            }
+        }
+        else if(method == "error")
+            ai_log("Codex app-server error: "+msg["params"].toObject()["error"].toObject()["message"].toString());
+    };
+
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
         while(process->canReadLine())
         {
-            auto line = process->readLine();
-            ai_log("stdout:"+QString::fromUtf8(line).trimmed());
-            auto msg = QJsonDocument::fromJson(line).object();
-
-            if(msg.contains("result")) // our own request's reply: {"id":...,"result":...}, never has "method"
-            {
-                auto id = msg["id"].toString();
-                if(id == "initialize")
-                {
-                    write_message({{"method","initialized"}});
-                    // "never": matches codex exec's own non-interactive default -- app-server's own default
-                    // ("on-request") would otherwise send an approval request DSI Studio doesn't answer,
-                    // hanging the turn forever. No "cwd" here -- leave it at the thread's real working directory
-                    // (applicationDirPath()+"/ai", set in prepare_ai()) so Codex finds AGENTS.md there, same as
-                    // the old codex exec launch; work_dir is granted as additional sandbox access instead
-                    QJsonObject params{{"approvalPolicy","never"},
-                        {"sandboxPolicy",QJsonObject{{"type","workspaceWrite"},
-                            {"writableRoots",QJsonArray{work_dir}}}}};
-                    if(!model.isEmpty() && model != "default") // Codex's own code-assigned alias for "no explicit choice" -- omit the field instead
-                        params["model"] = model;
-                    if(resuming)
-                    {
-                        params["threadId"] = session;
-                        write_message({{"id","thread_resume"},{"method","thread/resume"},{"params",params}});
-                    }
-                    else
-                        write_message({{"id","thread_start"},{"method","thread/start"},{"params",params}});
-                }
-                else if(id == "thread_start" || id == "thread_resume")
-                {
-                    auto old_session = process->objectName();
-                    auto new_session = msg["result"].toObject()["thread"].toObject()["id"].toString();
-                    if(!is_valid_session_id(new_session))
-                    {
-                        // Codex's own protocol contract broke -- do not let a malformed id corrupt ai_infos'
-                        // keying; surface it immediately instead of silently accepting it
-                        ai_log("invalid thread id from Codex app-server (not a UUID): "+new_session);
-                        if(auto* info = ai_info::find(old_session))
-                        {
-                            set_ai_status(info->sessions,status == session_status::New ?
-                                          session_status::New : session_status::Failed,
-                                          "Codex returned an invalid thread ID.");
-                            show_ai_project(*info);
-                        }
-                        return process->kill();
-                    }
-                    auto* old_info = ai_info::find(old_session);
-                    // never established before -- still just DSI Studio's own placeholder, safe to rename in place
-                    bool still_placeholder = status == session_status::New && old_info &&
-                                             old_info->status == session_status::New;
-                    auto* info = still_placeholder ?
-                        assign_ai_session(old_session,new_session) :
-                        ai_info::create(new_session,name,ai_provider::Codex); // already known, not inferred: this whole handler is Codex-specific
-                    if(info)
-                    {
-                        set_ai_status(info->sessions,session_status::Thinking,
-                                      "Session started; waiting for agent input");
-                        if(!still_placeholder) // a genuinely different/new entry -- old_info (still alive, just not renamed) is the only place its settings still exist
-                            info->model_settings = old_info ? old_info->model_settings : QJsonObject();
-                        info->save_config();
-                    }
-                    // status/rename only -- the opening message was already recorded, once, synchronously, when
-                    // it was sent (see prepare_ai()); this event has no content-recording role at all anymore
-                    if(info && old_session != new_session)
-                    {
-                        process->setObjectName(new_session);
-                        info->processes = process;
-                    }
-                    process->write(codex_turn_start("turn_start",new_session,text));
-                }
-                continue;
-            }
-
-            auto method = msg["method"].toString();
-            if(method == "turn/started") // tracks the active turn id -- start_ai()'s Codex send path needs it to steer into a running turn instead of starting a conflicting one
-                process->setProperty("turn_id",msg["params"].toObject()["turn"].toObject()["id"].toString());
-            else if(method == "item/completed")
-            {
-                auto item = msg["params"].toObject()["item"].toObject();
-                auto type = item["type"].toString();
-                if(type == "agentMessage")
-                {
-                    auto reply = item["text"].toString().trimmed();
-                    if(!reply.isEmpty())
-                    {
-                        process->setProperty("had_reply",true);
-                        if(auto* info = ai_info::find(process->objectName()))
-                            add_ai_reply(*info,reply,QString());
-                    }
-                }
-                else if(type == "reasoning")
-                {
-                    QStringList lines;
-                    for(auto v : item["summary"].toArray())
-                        lines << v.toString();
-                    for(auto v : item["content"].toArray())
-                        lines << v.toString();
-                    auto reasoning = lines.join('\n').trimmed();
-                    if(!reasoning.isEmpty())
-                    {
-                        process->setProperty("had_reply",true);
-                        if(auto* info = ai_info::find(process->objectName()))
-                            add_ai_reply(*info,QString(),reasoning);
-                    }
-                }
-            }
-            else if(method == "turn/completed")
-            {
-                process->setProperty("turn_id",QString()); // idle again -- start_ai()'s next Codex send should start a fresh turn, not steer into this one
-                if(auto* info = ai_info::find(process->objectName()))
-                {
-                    auto turn = msg["params"].toObject()["turn"].toObject();
-                    auto turn_status = turn["status"].toString();
-                    if(turn_status == "failed")
-                    {
-                        auto err = turn["error"].toObject()["message"].toString();
-                        set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
-                    }
-                    else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
-                        set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
-                    else
-                        set_ai_status(info->sessions,session_status::WaitingUser,"Waiting for user");
-                }
-            }
-            else if(method == "error")
-                ai_log("Codex app-server error: "+msg["params"].toObject()["error"].toObject()["message"].toString());
+            auto msg = next_json_line(process);
+            if(msg.contains("result"))
+                handle_response(msg);
+            else
+                handle_notification(msg);
         }
     });
 

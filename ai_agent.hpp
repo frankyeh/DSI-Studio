@@ -16,6 +16,7 @@ class MainWindow;
 class QMenu;
 class QNetworkReply;
 class QNetworkRequest;
+class QProcess;
 class QShowEvent;
 class QCloseEvent;
 struct ai_info; // full definition: cmd/ai.hpp -- every use here is by pointer/reference, so a forward declaration is enough; .cpp files that need member access include cmd/ai.hpp directly
@@ -46,6 +47,7 @@ class AIAgent : public QMainWindow
     QTimer* ai_status_timer = nullptr;
     int ai_debug_level = 0; // "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete); read from QSettings in the constructor, kept in sync by AI Settings' own setValue+assign
     void ai_log(QString text);
+    QJsonObject next_json_line(QProcess*); // reads one already-available line via QProcess::readLine(), logs it, parses it as JSON -- shared by configure_claude()/configure_codex()'s stdout handlers; caller loops while(process->canReadLine())
 
     // app-wide default agent/model: only consulted for a chat that doesn't exist yet (New Chat's pre-fill, and
     // "Change Agent/Model" with nothing selected) -- an existing chat's own ai_info::model_settings is always
