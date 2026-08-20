@@ -5111,7 +5111,7 @@ Tracking</string>
     <string>Cut R/A/I End Portion</string>
    </property>
    <property name="toolTip">
-    <string>run cut_tract_RAI_end</string>
+    <string>run cut_tract_rai_end</string>
    </property>
   </action>
   <action name="actionRefine_Label">

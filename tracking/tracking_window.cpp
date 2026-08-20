@@ -730,7 +730,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(new QShortcut(QKeySequence(tr("S", "X+")),this),&QShortcut::activated,this,[this](void){ui->glCorSlider->setValue(ui->glCorSlider->value()-1);});
         connect(new QShortcut(QKeySequence(tr("E", "X+")),this),&QShortcut::activated,this,[this](void){ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);});
         connect(new QShortcut(QKeySequence(tr("D", "X+")),this),&QShortcut::activated,this,[this](void){ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);});
-
+#ifdef __APPLE__
+        for(auto* action : ui->menuTracts->actions())
+            if(!action->shortcut().isEmpty())
+                connect(new QShortcut(action->shortcut(),this),&QShortcut::activated,action,&QAction::trigger);
+#endif
     }
 
     {
