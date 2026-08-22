@@ -610,10 +610,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->failed("invalid parameter id");
         if(cmd.size() >= 4) // has auto track
             new_thread->roi_mgr->set_auto_track(bundle_name,QString(cmd[3].c_str()).toFloat());
-        addNewTracts(bundle_name.c_str(),false);
-        thread_data.back() = new_thread;
         if(!cur_tracking_window.regionWidget->set_roi(roi_settings,new_thread->roi_mgr))
             return run->failed(cur_tracking_window.regionWidget->error_msg);
+        addNewTracts(bundle_name.c_str(),false);
+        thread_data.back() = new_thread;
         tipl::progress prog("initiating fiber tracking");
         new_thread->run(cur_tracking_window.ui->thread_count->value(),false);
         tract_models.back()->report = cur_tracking_window.handle->report;
@@ -632,7 +632,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!cmd[1].empty())
         {
             bool is_mni_space = (cmd[0] == "open_mni_tract");
-            if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
+            if(is_mni_space && !cur_tracking_window.handle->map_to_mni(false))
                 return run->failed(cur_tracking_window.handle->error_msg);
 
             auto models = TractModel::load_from_file(cmd[1],cur_tracking_window.handle,is_mni_space);
@@ -745,7 +745,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
         if(cmd[0] == "save_template_tract" || cmd[0] == "save_mni_tract")
         {
-            if(!cur_tracking_window.handle->map_to_mni())
+            if(!cur_tracking_window.handle->map_to_mni(false))
                 return run->failed(cur_tracking_window.handle->error_msg);
             if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1],cmd[0] == "save_mni_tract"))
                 return run->failed("cannot write to file at " + cmd[1]);
@@ -774,40 +774,38 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                     cur_tracking_window.current_slice->trans_to_mni,
                     cur_tracking_window.current_slice->to_slice,true))
                 return run->failed("cannot write to file at " + cmd[1]);
+            return true;
         }
-        else
         if(cmd[0] == "save_mni_tract_endpoint")
         {
-            if(!cur_tracking_window.handle->map_to_mni())
+            if(!cur_tracking_window.handle->map_to_mni(false))
                 return run->failed(cur_tracking_window.handle->error_msg);
-            std::vector<tipl::vector<3,short> > points1,points2;
-            tract_models[cur_row]->to_end_point_voxels(points1,points2);
-            points1.insert(points1.end(),points2.begin(),points2.end());
-
-            std::vector<tipl::vector<3> > points(points1.begin(),points1.end());
             std::vector<float> buffer;
-            for(unsigned int index = 0;index < points.size();++index)
+            buffer.reserve(tract_models[cur_row]->get_visible_track_count()*6);
+            for(const auto& tract : tract_models[cur_row]->get_tracts())
             {
-                cur_tracking_window.handle->sub2mni(points[index]);
-                buffer.push_back(points1[index][0]);
-                buffer.push_back(points1[index][1]);
-                buffer.push_back(points1[index][2]);
+                tipl::vector<3> p1(tract.data()),p2(tract.data()+tract.size()-3);
+                cur_tracking_window.handle->sub2mni(p1);
+                cur_tracking_window.handle->sub2mni(p2);
+                buffer.insert(buffer.end(),p1.begin(),p1.end());
+                buffer.insert(buffer.end(),p2.begin(),p2.end());
             }
 
             if(tipl::ends_with(cmd[1],".txt") &&
                !tipl::write_text_file(cmd[1],buffer.empty() ?
                     std::string() : tipl::merge(buffer,' ')+" ",tipl::error()))
                 return run->failed("cannot write to file at " + cmd[1]);
-            if (tipl::ends_with(cmd[1],".mat"))
+            if(tipl::ends_with(cmd[1],".mat"))
             {
                 tipl::io::mat_write out(cmd[1].c_str());
                 if(!out)
                     return run->failed("cannot write to file at " + cmd[1]);
                 out.write("end_points",buffer,3);
             }
+            return true;
         }
-            if(!tract_models[cur_row]->save_end_points(cmd[1]))
-                return run->failed("cannot write to file at " + cmd[1]);
+        if(!tract_models[cur_row]->save_end_points(cmd[1]))
+            return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
 
