@@ -536,19 +536,18 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(tipl::begins_with(cmd[0],"cut_tract_by_"))
     {
-        // cmd [1] : slice number
+        // cmd[1] : slice number
+        // cmd[2] : optional tract index
         bool other_side = cmd[0].back() == '2';
         if(other_side)
             cmd[0].pop_back();
         auto dim = cmd[0].back()-'x';
         unsigned int slice_pos = run->from_cmd(1,cur_tracking_window.current_slice->slice_pos[dim]);
-        for_each_bundle([&](unsigned int index)
+        return for_each_bundle([&](unsigned int index)
         {
-            tract_models[index]->cut_by_slice(dim,slice_pos,!other_side,
+            return tract_models[index]->cut_by_slice(dim,slice_pos,!other_side,
                 (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
-            return true;
-        },cmd[1]);
-        return true;
+        },cmd[2]);
     }
 
     if(cmd[0] == "set_dt_index")
@@ -916,15 +915,15 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "filter_tract")
     {
         // cmd[1] : roi settings
+        // cmd[2] : optional tract index
         std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(cur_tracking_window.handle));
         if(!cur_tracking_window.regionWidget->set_roi(run->from_cmd(1,
                     cur_tracking_window.regionWidget->get_roi_settings()),roi_mgr))
             return run->failed(cur_tracking_window.regionWidget->error_msg);
-        for_each_bundle([&](unsigned int index)
+        return for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->filter_by_roi(roi_mgr);
-        },cmd[1]);
-        return true;
+        },cmd[2]);
     }
     if(cmd[0] == "copy_tract")
     {
