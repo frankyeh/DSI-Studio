@@ -632,7 +632,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!cmd[1].empty())
         {
             bool is_mni_space = (cmd[0] == "open_mni_tract");
-            if(is_mni_space && !cur_tracking_window.handle->map_to_mni(false))
+            if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
                 return run->failed(cur_tracking_window.handle->error_msg);
 
             auto models = TractModel::load_from_file(cmd[1],cur_tracking_window.handle,is_mni_space);
@@ -745,7 +745,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
         if(cmd[0] == "save_template_tract" || cmd[0] == "save_mni_tract")
         {
-            if(!cur_tracking_window.handle->map_to_mni(false))
+            if(!cur_tracking_window.handle->map_to_mni())
                 return run->failed(cur_tracking_window.handle->error_msg);
             if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1],cmd[0] == "save_mni_tract"))
                 return run->failed("cannot write to file at " + cmd[1]);
@@ -778,7 +778,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         }
         if(cmd[0] == "save_mni_tract_endpoint")
         {
-            if(!cur_tracking_window.handle->map_to_mni(false))
+            if(!cur_tracking_window.handle->map_to_mni())
                 return run->failed(cur_tracking_window.handle->error_msg);
             std::vector<float> buffer;
             buffer.reserve(tract_models[cur_row]->get_visible_track_count()*6);

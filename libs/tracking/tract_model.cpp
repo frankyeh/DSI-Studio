@@ -742,7 +742,7 @@ bool TractModel::load_tracts_from_file(const std::filesystem::path& file_name,fi
         if(!is_mni && tract_is_mni)
         {
             tipl::out() << "applying nonlinear transform, condition: loading template-space tract to subject space";
-            if(!handle->map_to_mni(false))
+            if(!handle->map_to_mni(tipl::show_prog))
             {
                 tipl::out() << "cannot run normalization" << std::endl;;
                 return false;
@@ -854,7 +854,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const std::f
 // Native space FIB save tracts to the template space
 bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const std::filesystem::path& file_name,bool output_mni)
 {
-    if(!handle->map_to_mni(false))
+    if(!handle->map_to_mni(tipl::show_prog))
         return false;
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
