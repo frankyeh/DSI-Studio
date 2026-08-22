@@ -880,8 +880,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(prog.aborted())
             return run->canceled();
         regions[merge_list[0]]->from_mask(mask);
+        std::sort(merge_list.begin()+1,merge_list.end(),std::greater<size_t>());
         cur_tracking_window.setUpdatesEnabled(false);
-        for(int index = merge_list.size()-1;index >= 1;--index)
+        for(size_t index = 1;index < merge_list.size();++index)
         {
             regions.erase(regions.begin()+merge_list[index]);
             removeRow(merge_list[index]);
