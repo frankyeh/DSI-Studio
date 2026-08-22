@@ -1396,8 +1396,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "skull_strip_slice")
     {
-        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(
-                    slices[run->from_cmd(1,ui->SliceModality->currentIndex())]);
+        int slice_index = run->from_cmd(1,ui->SliceModality->currentIndex());
+        if(slice_index < 0 || slice_index >= slices.size())
+            return run->failed("invalid slice index " + cmd[1]);
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
         if(!reg_slice.get())
             return run->canceled();
         tipl::image<3,unsigned char> mask;
@@ -1449,6 +1451,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         // cmd[1] : slice index
         int slice_index = run->from_cmd(1,ui->SliceModality->currentIndex());
+        if(slice_index < 0 || slice_index >= slices.size())
+            return run->failed("invalid slice index " + cmd[1]);
         auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
         if(!reg_slice.get())
             return run->failed("cannot delete built-in slices.");

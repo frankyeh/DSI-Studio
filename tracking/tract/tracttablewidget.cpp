@@ -1387,7 +1387,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for(int i= 0;i < rowCount()-1;++i)
         {
             auto lock1 = tract_rendering[i]->start_writing();
-            for(int j= i+1;j < rowCount()-1;)
+            for(int j= i+1;j < rowCount();)
                 if(item(i,0)->text() == item(j,0)->text())
                 {
                     {
