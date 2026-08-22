@@ -587,8 +587,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(cmd.size() == 3 && (cmd[2].empty() || cmd[2].find(':') != std::string::npos))
         {
             auto roi = " " + cmd[2];
-            cmd[2] = cur_tracking_window.get_parameter_id(
-                         cur_tracking_window.ui->tract_target_0->currentIndex() > 0) + roi;
+            cmd[2] = cur_tracking_window.get_parameter_id(false) + roi;
         }
 
         if(!cur_tracking_window["dt_index1"].toInt() && !cur_tracking_window["dt_index2"].toInt())
@@ -981,7 +980,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(cmd[0] == "save_tract_color")
         {
             auto lock = tract_rendering[cur_row]->start_reading();
-            tract_models[cur_row]->save_tracts_color_to_file(cmd[1]);
+            if(!tract_models[cur_row]->save_tracts_color_to_file(cmd[1]))
+                return run->failed("cannot write to " + cmd[1]);
             return true;
         }
 

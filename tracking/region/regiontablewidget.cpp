@@ -644,6 +644,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             return run->canceled();
 
         std::ofstream out(cmd[1]);
+        if(!out)
+            return run->failed("cannot write to " + cmd[1]);
         out << "x\ty\tz";
         for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
