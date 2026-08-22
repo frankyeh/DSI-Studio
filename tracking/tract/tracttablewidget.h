@@ -46,9 +46,8 @@ public:
 
     QString output_format(void);
     template<typename fun_type>
-    bool for_current_bundle(fun_type&& fun)
+    bool for_current_bundle(int cur_row,fun_type&& fun)
     {
-        int cur_row = currentRow();
         if(cur_row < 0 || item(cur_row,0)->checkState() != Qt::Checked)
             return false;
         {

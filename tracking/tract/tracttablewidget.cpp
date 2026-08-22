@@ -521,7 +521,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return false;
         float f = cmd[0] == "cut_tract_rai_end" ? 0.0f : 0.25f;
         float t = cmd[0] == "cut_tract_lps_end" ? 1.0f : 0.75f;
-        if(for_current_bundle([&](void){tract_models[cur_row]->cut_end_portion(f,t);}))
+        if(for_current_bundle(cur_row,[&](void){tract_models[cur_row]->cut_end_portion(f,t);}))
             emit tract_changed();
         return true;
     }
@@ -530,7 +530,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
             return false;
-        if(for_current_bundle([&](void){tract_models[cur_row]->flip(cmd[0].back()-'x');}))
+        if(for_current_bundle(cur_row,[&](void){tract_models[cur_row]->flip(cmd[0].back()-'x');}))
             emit tract_changed();
         return true;
     }
@@ -539,9 +539,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : slice number
         // cmd[2] : optional tract index
         bool other_side = cmd[0].back() == '2';
-        if(other_side)
-            cmd[0].pop_back();
-        auto dim = cmd[0].back()-'x';
+        auto dim = cmd[0][cmd[0].size()-(other_side ? 2:1)]-'x';
         unsigned int slice_pos = run->from_cmd(1,cur_tracking_window.current_slice->slice_pos[dim]);
         return for_each_bundle([&](unsigned int index)
         {
@@ -1186,7 +1184,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         }
 
         std::vector<std::vector<float> > tracts;
-        tract_models[cur_row]->release_tracts(tracts);
+        auto source = tract_models[cur_row];
+        source->release_tracts(tracts);
         tract_rendering[cur_row]->need_update = true;
         delete_row(cur_row);
         unsigned int cluster_count = uint32_t(names.empty() ? int(1+tipl::max_value(labels)):int(names.size()));
@@ -1208,10 +1207,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             else
                 addNewTracts(QString("cluster")+QString::number(cluster_index),true);
             tract_models.back()->add_tracts(add_tracts);
-            tract_models.back()->report = tract_models[cur_row]->report;
-            tract_models.back()->geo = tract_models[cur_row]->geo;
-            tract_models.back()->vs = tract_models[cur_row]->vs;
-            tract_models.back()->trans_to_mni = tract_models[cur_row]->trans_to_mni;
+            tract_models.back()->report = source->report;
+            tract_models.back()->geo = source->geo;
+            tract_models.back()->vs = source->vs;
+            tract_models.back()->trans_to_mni = source->trans_to_mni;
             item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         }
         if(cmd[0] == "cluster_tract_by_hy")
@@ -1243,11 +1242,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             distance = QString::fromStdString(cmd[1]).toFloat();
 
-        for_each_bundle([&](unsigned int index)
+        return for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_repeated(distance);
         },cmd[2]); // emits tract_changed() itself, only if something was actually removed
-        return true;
     }
 
     if(cmd[0] == "resample_tract")
@@ -1266,12 +1264,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             new_step = QString::fromStdString(cmd[1]).toFloat();
 
-        for_each_bundle([&](unsigned int index)
+        return for_each_bundle([&](unsigned int index)
         {
             tract_models[index]->resample(new_step);
             return true;
         },cmd[2]); // emits tract_changed() itself, only if something was actually resampled
-        return true;
     }
 
     if(cmd[0] == "delete_tract_by_length")
@@ -1290,11 +1287,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             threshold = QString::fromStdString(cmd[1]).toFloat();
 
-        for_each_bundle([&](unsigned int index)
+        return for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_by_length(threshold);
         },cmd[2]); // emits tract_changed() itself, only if something was actually removed
-        return true;
     }
     if(cmd[0] == "separate_deleted_tract")
     {
