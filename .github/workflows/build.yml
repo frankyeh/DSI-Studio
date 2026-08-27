@@ -25,7 +25,7 @@ on:
         type: boolean
         description: 'Build Linux Universal CPU'
         required: false
-        default: 'false'
+        default: 'true'
       build_linux_arm:
         type: boolean
         description: 'Build Linux (Arm64)'
