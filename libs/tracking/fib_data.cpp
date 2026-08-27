@@ -913,10 +913,6 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
         if(mat_reader[index].size() == matfile.mask_cols*matfile.mask_rows && mat_reader[index].name != "mask")
         {
             tipl::out() << "convert " << name << " data into masked format";
-            if(mat_reader[index].is_type<double>())
-                matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<double>(index),
-                                                       matfile.mask_rows,matfile.mask_cols);
-            else
             if(mat_reader[index].is_type<float>())
                 matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<float>(index),
                                                        matfile.mask_rows,matfile.mask_cols);
