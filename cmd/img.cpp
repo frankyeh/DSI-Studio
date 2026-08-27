@@ -150,11 +150,10 @@ void variant_image::write_mat_image(size_t index,
                     tipl::io::gz_mat_read& mat)
 {
     auto& m = mat[index];
+    m.set_row_col(shape.plane_size(),shape.depth());
     apply([&](const auto& data)
     {
         using value_type = typename std::decay_t<decltype(data)>::value_type;
-        m.convert_to<value_type>();
-        m.set_row_col(shape.plane_size(),shape.depth());
         std::copy(data.begin(),data.end(),m.get_data<value_type>());
     });
 }

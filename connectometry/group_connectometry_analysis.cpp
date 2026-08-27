@@ -6,6 +6,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
 #include "tracking/region/regiontablewidget.h"
+#include <algorithm>
 #include <filesystem>
 
 
@@ -21,6 +22,13 @@ bool group_connectometry_analysis::load_database(const char* database_name)
     if(!handle->db.has_db())
     {
         error_msg = "not a database file ";
+        return false;
+    }
+    if(handle->dir.fa.empty() ||
+       std::none_of(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size(),
+                    [](float value){return value > 0.0f;}))
+    {
+        error_msg = "invalid database: empty fiber directions";
         return false;
     }
     fiber_threshold = 0.6f*handle->dir.fa_otsu;
