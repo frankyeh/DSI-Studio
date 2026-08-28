@@ -309,10 +309,10 @@ jobs:
             family: apt
           - name: Debian 9
             image: debian:9
-            family: apt-legacy
+            family: debian-archive
           - name: Debian 10
             image: debian:10
-            family: apt-legacy
+            family: debian-archive
           - name: Debian 11
             image: debian:11
             family: apt
@@ -394,12 +394,19 @@ jobs:
                 sed -i \
                   -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
                   -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' \
-                  -e 's|http://security.debian.org/debian-security|http://archive.debian.org/debian-security|g' \
-                  -e 's|http://security.debian.org/debian|http://archive.debian.org/debian-security|g' \
                   /etc/apt/sources.list 2>/dev/null || true
                 apt-get -o Acquire::Check-Valid-Until=false update
               fi
+              apt-get install -y --no-install-recommends libgl1-mesa-glx libegl1-mesa libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
+              ;;
+            debian-archive)
+              export DEBIAN_FRONTEND=noninteractive
+              . /etc/os-release
+              cat > /etc/apt/sources.list <<EOF
+          deb [trusted=yes] http://archive.debian.org/debian $VERSION_CODENAME main
+          deb [trusted=yes] http://archive.debian.org/debian-security $VERSION_CODENAME/updates main
+          EOF
+              apt-get -o Acquire::Check-Valid-Until=false update
               apt-get install -y --no-install-recommends libgl1-mesa-glx libegl1-mesa libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
               ;;
             centos7)
