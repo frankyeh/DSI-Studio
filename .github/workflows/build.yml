@@ -48,7 +48,15 @@ jobs:
     if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu2404,ubuntu2204,ubuntu2004]
+        include:
+          - os: ubuntu2404
+            cuda: true
+          - os: ubuntu2204
+            cuda: true
+          - os: ubuntu2004
+            cuda: true
+          - os: ubuntu1804
+            cuda: false
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -71,7 +79,8 @@ jobs:
         file: build_packages/${{ matrix.os }}/Dockerfile
         push: false
         outputs: dsi-studio-cpu
-    - name: Build and push
+    - name: Build and push CUDA
+      if: ${{ matrix.cuda }}
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
@@ -83,7 +92,9 @@ jobs:
     - name: Packaging
       run: |
         zip -r dsi_studio_${{ matrix.os }}_cpu.zip dsi-studio-cpu
-        zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
+        if [ "${{ matrix.cuda }}" = "true" ]; then
+          zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
+        fi
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
