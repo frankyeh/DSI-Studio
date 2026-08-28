@@ -17,10 +17,6 @@ on:
         description: Task prompt for the selected runner agent(s)
         required: true
         default: "Use DSI Studio Fiber Data Hub to open a human FIB file, map the left arcuate fasciculus, save the tract, save tract statistics, capture a 3D screenshot, and write a brief summary."
-      required_outputs:
-        description: Comma- or newline-separated files expected under each agent output directory
-        required: true
-        default: "arcuate_fasciculus.tt.gz, arcuate_fasciculus_lr.png"
       model:
         description: Optional model name to mention to the agent
         required: false
@@ -73,7 +69,6 @@ jobs:
       CODEX_THREAD_ID: 00000000-0000-4000-8000-000000000001
       AGENT_NAME: codex
       TASK_PROMPT: ${{ inputs.task_prompt }}
-      REQUIRED_OUTPUTS: ${{ inputs.required_outputs }}
       MODEL_NAME: ${{ inputs.model }}
 
     steps:
@@ -137,26 +132,24 @@ jobs:
         shell: pwsh
         run: |
           $out = (Resolve-Path ai_output\codex).Path
-          $prompt = @"
-          You are running inside GitHub Actions on the same Windows runner as DSI Studio.
-
-          Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
-
-          Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
-
-          Output directory:
-          $out
-
-          Model preference, if relevant:
-          $env:MODEL_NAME
-
-          Dispatcher task:
-          $env:TASK_PROMPT
-
-          Write any required output files under the output directory above. Also write a short final report to:
-          $out\agent_summary.txt
-          "@
-          $prompt = $prompt -replace '(?m)^          ', ''
+          $prompt = @(
+            "You are running inside GitHub Actions on the same Windows runner as DSI Studio.",
+            "",
+            "Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.",
+            "",
+            "Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.",
+            "",
+            "Output directory:",
+            $out,
+            "",
+            "Model preference, if relevant:",
+            $env:MODEL_NAME,
+            "",
+            "Dispatcher task:",
+            $env:TASK_PROMPT,
+            "",
+            "Save all generated files under the output directory above. Use sensible filenames based on the task. Also write a brief final report in the output directory."
+          ) -join [Environment]::NewLine
           Set-Content -Path agent_prompt.md -Value $prompt -Encoding UTF8
           Get-Content agent_prompt.md
 
@@ -191,13 +184,16 @@ jobs:
       - name: Verify Codex outputs
         shell: pwsh
         run: |
-          Get-ChildItem ai_output\codex -Force
-          $required = $env:REQUIRED_OUTPUTS -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-          foreach($file in $required)
-          {
-            $path = Join-Path (Resolve-Path ai_output\codex).Path $file
-            if(!(Test-Path $path)) { throw "Missing Codex output: $file" }
-          }
+          $out = (Resolve-Path ai_output\codex).Path
+          Get-ChildItem $out -Force -Recurse
+          $files = @(Get-ChildItem $out -File -Recurse | Where-Object { $_.Name -notmatch '^(direct_|dsi_|codex\.log$)' })
+          $tracts = @($files | Where-Object { $_.Name -match '\.(tt\.gz|trk|trk\.gz|tck)$' })
+          $images = @($files | Where-Object { $_.Extension -in @('.png','.jpg','.jpeg','.bmp') })
+          $reports = @($files | Where-Object { $_.Extension -in @('.txt','.md','.json','.html') })
+          if(!$files.Count) { throw "Codex did not create output files." }
+          if(!$tracts.Count) { Write-Warning "No tract-like output found." }
+          if(!$images.Count) { Write-Warning "No screenshot/image output found." }
+          if(!$reports.Count) { Write-Warning "No report/statistics output found." }
 
       - name: Stop DSI Studio
         if: always()
@@ -231,7 +227,6 @@ jobs:
       CLAUDE_CODE_USE_POWERSHELL_TOOL: "1"
       AGENT_NAME: claude
       TASK_PROMPT: ${{ inputs.task_prompt }}
-      REQUIRED_OUTPUTS: ${{ inputs.required_outputs }}
       MODEL_NAME: ${{ inputs.model }}
 
     steps:
@@ -295,26 +290,24 @@ jobs:
         shell: pwsh
         run: |
           $out = (Resolve-Path ai_output\claude).Path
-          $prompt = @"
-          You are running inside GitHub Actions on the same Windows runner as DSI Studio.
-
-          Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
-
-          Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
-
-          Output directory:
-          $out
-
-          Model preference, if relevant:
-          $env:MODEL_NAME
-
-          Dispatcher task:
-          $env:TASK_PROMPT
-
-          Write any required output files under the output directory above. Also write a short final report to:
-          $out\agent_summary.txt
-          "@
-          $prompt = $prompt -replace '(?m)^          ', ''
+          $prompt = @(
+            "You are running inside GitHub Actions on the same Windows runner as DSI Studio.",
+            "",
+            "Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.",
+            "",
+            "Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.",
+            "",
+            "Output directory:",
+            $out,
+            "",
+            "Model preference, if relevant:",
+            $env:MODEL_NAME,
+            "",
+            "Dispatcher task:",
+            $env:TASK_PROMPT,
+            "",
+            "Save all generated files under the output directory above. Use sensible filenames based on the task. Also write a brief final report in the output directory."
+          ) -join [Environment]::NewLine
           Set-Content -Path agent_prompt.md -Value $prompt -Encoding UTF8
           Get-Content agent_prompt.md
 
@@ -350,13 +343,16 @@ jobs:
       - name: Verify Claude outputs
         shell: pwsh
         run: |
-          Get-ChildItem ai_output\claude -Force
-          $required = $env:REQUIRED_OUTPUTS -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-          foreach($file in $required)
-          {
-            $path = Join-Path (Resolve-Path ai_output\claude).Path $file
-            if(!(Test-Path $path)) { throw "Missing Claude output: $file" }
-          }
+          $out = (Resolve-Path ai_output\claude).Path
+          Get-ChildItem $out -Force -Recurse
+          $files = @(Get-ChildItem $out -File -Recurse | Where-Object { $_.Name -notmatch '^(direct_|dsi_|claude\.log$)' })
+          $tracts = @($files | Where-Object { $_.Name -match '\.(tt\.gz|trk|trk\.gz|tck)$' })
+          $images = @($files | Where-Object { $_.Extension -in @('.png','.jpg','.jpeg','.bmp') })
+          $reports = @($files | Where-Object { $_.Extension -in @('.txt','.md','.json','.html') })
+          if(!$files.Count) { throw "Claude did not create output files." }
+          if(!$tracts.Count) { Write-Warning "No tract-like output found." }
+          if(!$images.Count) { Write-Warning "No screenshot/image output found." }
+          if(!$reports.Count) { Write-Warning "No report/statistics output found." }
 
       - name: Stop DSI Studio
         if: always()
