@@ -28,7 +28,7 @@ on:
         default: 'true'
       build_linux_universal:
         type: boolean
-        description: 'Build Linux Universal CPU/CUDA/ARM64/Legacy'
+        description: 'Build Linux Universal CPU/CUDA/ARM64 CPU+CUDA/Legacy'
         required: false
         default: 'true'
       build_linux_arm:
@@ -172,38 +172,53 @@ jobs:
       with:
         context: .
         platforms: linux/arm64
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=universal-arm-cpu
+        cache-to: type=gha,mode=max,scope=universal-arm-cpu
         build-args: |
           DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
         file: build_packages/universal/Dockerfile_arm
         push: false
         outputs: dsi-studio-linux-universal-cpu-arm64
-    - name: Verify ARM64 package
+    - name: Build universal Linux ARM64 CUDA package
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        platforms: linux/arm64
+        cache-from: type=gha,scope=universal-arm-cuda
+        cache-to: type=gha,mode=max,scope=universal-arm-cuda
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
+        file: build_packages/universal/Dockerfile_cuda_arm
+        push: false
+        outputs: dsi-studio-linux-universal-cuda-arm64
+    - name: Verify ARM64 packages
       run: |
-        test -x dsi-studio-linux-universal-cpu-arm64/dsi_studio
-        file dsi-studio-linux-universal-cpu-arm64/dsi_studio | grep -q 'ARM aarch64'
-        if find dsi-studio-linux-universal-cpu-arm64 \( \
-          -name 'libc.so*' -o \
-          -name 'ld-linux*.so*' -o \
-          -name 'libpthread.so*' -o \
-          -name 'libm.so*' -o \
-          -name 'libdl.so*' -o \
-          -name 'librt.so*' -o \
-          -name 'libresolv.so*' -o \
-          -name 'libutil.so*' -o \
-          -name 'libnss_*.so*' -o \
-          -name 'libanl.so*' \
-        \) -print -quit | grep -q .; then
-          echo "Error: universal ARM64 package includes glibc/core runtime libraries"
-          exit 1
-        fi
+        set -e
+        for pkg in dsi-studio-linux-universal-cpu-arm64 dsi-studio-linux-universal-cuda-arm64; do
+          test -x "$pkg/dsi_studio"
+          file "$pkg/dsi_studio" | grep -q 'ARM aarch64'
+          if find "$pkg" \( \
+            -name 'libc.so*' -o -name 'ld-linux*.so*' -o -name 'libpthread.so*' -o \
+            -name 'libm.so*' -o -name 'libdl.so*' -o -name 'librt.so*' -o \
+            -name 'libresolv.so*' -o -name 'libutil.so*' -o -name 'libnss_*.so*' -o \
+            -name 'libanl.so*' -o -name 'libcuda.so*' -o -name 'libnvidia*.so*' \
+          \) -print -quit | grep -q .; then
+            echo "Error: $pkg includes a core runtime or NVIDIA driver library"
+            exit 1
+          fi
+          ldd "$pkg/dsi_studio" | tee "/tmp/${pkg}.ldd"
+          ! grep -q 'not found' "/tmp/${pkg}.ldd"
+        done
         zip -r dsi_studio_linux_universal_cpu_arm64.zip dsi-studio-linux-universal-cpu-arm64
+        zip -r dsi_studio_linux_universal_cuda_arm64.zip dsi-studio-linux-universal-cuda-arm64
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_linux_universal_cpu_arm64.zip --clobber --repo frankyeh/DSI-Studio
+        gh release upload ${{ github.event.inputs.tag }} \
+          dsi_studio_linux_universal_cpu_arm64.zip \
+          dsi_studio_linux_universal_cuda_arm64.zip \
+          --clobber --repo frankyeh/DSI-Studio
 
   linux-universal-legacy-build:
     if: ${{ github.event.inputs.build_linux_universal == 'true' }}
