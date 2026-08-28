@@ -11,6 +11,11 @@ on:
         description: 'Build Windows'
         required: false
         default: 'true'
+      build_windows_arm:
+        type: boolean
+        description: 'Build Windows ARM64 CPU'
+        required: false
+        default: 'true'
       build_windows_debug:
         type: boolean
         description: 'Build Windows CPU Debug'
@@ -23,7 +28,7 @@ on:
         default: 'true'
       build_linux_universal:
         type: boolean
-        description: 'Build Linux Universal CPU'
+        description: 'Build Linux Universal CPU/CUDA'
         required: false
         default: 'true'
       build_linux_arm:
@@ -38,11 +43,11 @@ on:
         default: 'true'
       build_docker:
         type: boolean
-        description: 'Build Docker'
+        description: 'Build Docker CPU/CUDA'
         required: false
         default: 'true'
- 
-jobs:    
+
+jobs:
 
   linux-build:
     if: ${{ github.event.inputs.build_linux == 'true' }}
@@ -54,29 +59,29 @@ jobs:
     steps:
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3.0.0
-    - name: Build and push
+    - name: Build CPU
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
         file: build_packages/${{ matrix.os }}/Dockerfile
         push: false
         outputs: dsi-studio-cpu
-    - name: Build and push CUDA
+    - name: Build CUDA
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
         build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
         file: build_packages/${{ matrix.os }}/Dockerfile_cuda
         push: false
         outputs: dsi-studio
@@ -106,49 +111,51 @@ jobs:
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=universal-cpu
+        cache-to: type=gha,mode=max,scope=universal-cpu
         build-args: |
           DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
         file: build_packages/universal/Dockerfile
         push: false
         outputs: dsi-studio-linux-universal-cpu
-    - name: Verify package
+    - name: Build universal Linux CUDA package
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        cache-from: type=gha,scope=universal-cuda
+        cache-to: type=gha,mode=max,scope=universal-cuda
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
+        file: build_packages/universal/Dockerfile_cuda
+        push: false
+        outputs: dsi-studio-linux-universal-cuda
+    - name: Verify and package universal Linux builds
       run: |
-        test -x dsi-studio-linux-universal-cpu/dsi_studio
-        if find dsi-studio-linux-universal-cpu \( \
-          -name 'libc.so*' -o \
-          -name 'ld-linux*.so*' -o \
-          -name 'libpthread.so*' -o \
-          -name 'libm.so*' -o \
-          -name 'libdl.so*' -o \
-          -name 'librt.so*' -o \
-          -name 'libresolv.so*' -o \
-          -name 'libutil.so*' -o \
-          -name 'libnss_*.so*' -o \
-          -name 'libanl.so*' \
-        \) -print -quit | grep -q .; then
-          echo "Error: universal package includes glibc/core runtime libraries"
-          find dsi-studio-linux-universal-cpu \( \
-            -name 'libc.so*' -o \
-            -name 'ld-linux*.so*' -o \
-            -name 'libpthread.so*' -o \
-            -name 'libm.so*' -o \
-            -name 'libdl.so*' -o \
-            -name 'librt.so*' -o \
-            -name 'libresolv.so*' -o \
-            -name 'libutil.so*' -o \
-            -name 'libnss_*.so*' -o \
-            -name 'libanl.so*' \
-          \) -print
-          exit 1
-        fi
+        set -e
+        for pkg in dsi-studio-linux-universal-cpu dsi-studio-linux-universal-cuda; do
+          test -x "$pkg/dsi_studio"
+          if find "$pkg" \( \
+            -name 'libc.so*' -o -name 'ld-linux*.so*' -o -name 'libpthread.so*' -o \
+            -name 'libm.so*' -o -name 'libdl.so*' -o -name 'librt.so*' -o \
+            -name 'libresolv.so*' -o -name 'libutil.so*' -o -name 'libnss_*.so*' -o \
+            -name 'libanl.so*' -o -name 'libcuda.so*' -o -name 'libnvidia*.so*' \
+          \) -print -quit | grep -q .; then
+            echo "Error: $pkg includes a core runtime or NVIDIA driver library"
+            exit 1
+          fi
+          LD_LIBRARY_PATH="$PWD/$pkg/lib:$PWD/$pkg" ldd "$pkg/dsi_studio" | tee "/tmp/${pkg}.ldd"
+          ! grep -q 'not found' "/tmp/${pkg}.ldd"
+        done
         zip -r dsi_studio_linux_universal_cpu.zip dsi-studio-linux-universal-cpu
+        zip -r dsi_studio_linux_universal_cuda.zip dsi-studio-linux-universal-cuda
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_linux_universal_cpu.zip --clobber --repo frankyeh/DSI-Studio
+        gh release upload ${{ github.event.inputs.tag }} \
+          dsi_studio_linux_universal_cpu.zip \
+          dsi_studio_linux_universal_cuda.zip \
+          --clobber --repo frankyeh/DSI-Studio
 
   linux-universal-arm-build:
     if: ${{ github.event.inputs.build_linux_universal == 'true' }}
@@ -189,18 +196,6 @@ jobs:
           -name 'libanl.so*' \
         \) -print -quit | grep -q .; then
           echo "Error: universal ARM64 package includes glibc/core runtime libraries"
-          find dsi-studio-linux-universal-cpu-arm64 \( \
-            -name 'libc.so*' -o \
-            -name 'ld-linux*.so*' -o \
-            -name 'libpthread.so*' -o \
-            -name 'libm.so*' -o \
-            -name 'libdl.so*' -o \
-            -name 'librt.so*' -o \
-            -name 'libresolv.so*' -o \
-            -name 'libutil.so*' -o \
-            -name 'libnss_*.so*' -o \
-            -name 'libanl.so*' \
-          \) -print
           exit 1
         fi
         zip -r dsi_studio_linux_universal_cpu_arm64.zip dsi-studio-linux-universal-cpu-arm64
@@ -220,52 +215,41 @@ jobs:
     steps:
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
     - name: Prepare Dockerfile for ARM build (CPU)
       run: |
         DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile"
-        echo "Modifying Dockerfile: $DOCKERFILE_PATH"
-        # 1. Modify the FROM line to use the _arm base image
         sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
-        # 2. Modify the linuxdeployqt download URL to use the aarch64 version
-        # This replaces 'x86_64.AppImage' with 'aarch64.AppImage' in the download URL.
         sed -i 's|linuxdeployqt-continuous-x86_64.AppImage|linuxdeployqt-continuous-aarch64.AppImage|' "$DOCKERFILE_PATH"
-        echo "Modified Dockerfile content:"
         cat "$DOCKERFILE_PATH"
     - name: Prepare Dockerfile for ARM build (CUDA)
       run: |
         DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile_cuda"
-        echo "Modifying Dockerfile: $DOCKERFILE_PATH"
-        # 1. Modify the FROM line to use the _arm base image
         sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
-        # 2. Modify the linuxdeployqt download URL to use the aarch64 version
-        # This replaces 'x86_64.AppImage' with 'aarch64.AppImage' in the download URL.
         sed -i 's|linuxdeployqt-continuous-x86_64.AppImage|linuxdeployqt-continuous-aarch64.AppImage|' "$DOCKERFILE_PATH"
-        echo "Modified Dockerfile content:"
         cat "$DOCKERFILE_PATH"
-
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3.0.0
-    - name: Build and push (CPU)
+    - name: Build CPU
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
         file: build_packages/${{ matrix.os }}/Dockerfile
         push: false
         outputs: dsi-studio-cpu
-    - name: Build and push (CUDA)
+    - name: Build CUDA
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
         build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
         file: build_packages/${{ matrix.os }}/Dockerfile_cuda
         push: false
         outputs: dsi-studio
@@ -288,37 +272,31 @@ jobs:
             name: macos-14-arm64
             tiny_fsl: macos-15
             jobs: 3
-  
           - runner: macos-15-intel
             name: macos-15-intel
             tiny_fsl: macos-13
             jobs: 4
       fail-fast: false
-  
     runs-on: ${{ matrix.runner }}
-  
     steps:
       - uses: actions/checkout@v4
-  
       - name: Download Build
         run: |
           git clone --depth 1 https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
           mv DSI-Studio-Build/*.txt .
           mv DSI-Studio-Build/build_packages/build_mac.sh .
-  
+          mv DSI-Studio-Build/build_packages/sign_mac.sh .
       - name: Check tools
         run: |
           cmake --version
           ninja --version || brew install ninja
           ccache --version || brew install ccache
-  
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.8
           modules: qtcharts
           cache: true
-  
       - name: Cache ccache
         uses: actions/cache@v4
         with:
@@ -326,68 +304,80 @@ jobs:
           key: macos-ccache-${{ matrix.name }}-${{ github.ref_name }}
           restore-keys: |
             macos-ccache-${{ matrix.name }}-
-  
       - name: Build DSI Studio
         run: |
           sh build_mac.sh "${{ matrix.tiny_fsl }}" "${{ matrix.jobs }}"
           file dsi_studio.app/Contents/MacOS/dsi_studio
-          ditto -c -k --sequesterRsrc --keepParent dsi_studio.app dsi_studio_${{ matrix.name }}_qt6.zip
-  
+      - name: Sign and notarize macOS app
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: sh sign_mac.sh dsi_studio.app
+      - name: Package macOS app
+        run: ditto -c -k --sequesterRsrc --keepParent dsi_studio.app dsi_studio_${{ matrix.name }}_qt6.zip
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.inputs.tag }} *.zip --clobber
-
+        run: gh release upload ${{ github.event.inputs.tag }} *.zip --clobber
 
   docker_build:
     if: ${{ github.event.inputs.build_docker == 'true' }}
     runs-on: ubuntu-latest
     steps:
-  
       - name: Download Build
         run: |
           git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
           mv DSI-Studio-Build/build_packages .
-  
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-  
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-  
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-  
       - name: Current Time
         run: echo "DATE_TAG=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
-  
-      - name: Build and push
+      - name: Build and push CPU image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: build_packages/docker/Dockerfile
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=docker-cpu
+          cache-to: type=gha,mode=max,scope=docker-cpu
           build-args: |
             DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
             CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
           tags: |
             dsistudio/dsistudio:hou-${{ env.DATE_TAG }}
             dsistudio/dsistudio:latest
+      - name: Build and push CUDA image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build_packages/docker/Dockerfile_cuda
+          push: true
+          cache-from: type=gha,scope=docker-cuda
+          cache-to: type=gha,mode=max,scope=docker-cuda
+          build-args: |
+            DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
+          tags: |
+            dsistudio/dsistudio:hou-cuda-${{ env.DATE_TAG }}
+            dsistudio/dsistudio:cuda
 
   windows_build_cpu:
     if: ${{ github.event.inputs.build_windows == 'true' }}
-    runs-on:  windows-2022
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
     - name: Install Qt
@@ -396,21 +386,24 @@ jobs:
         modules: qtcharts
         cache: true
     - name: Build
+      shell: cmd
       run: |
         call .\build_packages\build_win.bat
-        if exist "dsi_studio_win\dsi_studio.exe" (
-          echo "dsi_studio.exe exists!"
-        ) else (
-          echo "Error: dsi_studio.exe not found!" >&2
-          exit /b 1
-        )
-        move dsi_studio_win.zip dsi_studio_win_cpu.zip
+        if not exist "dsi_studio_win\dsi_studio.exe" exit /b 1
+        if exist dsi_studio_win.zip del /q dsi_studio_win.zip
+    - name: Sign Windows executable
+      shell: pwsh
+      env:
+        WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+        WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      run: .\build_packages\sign_windows.ps1 -File dsi_studio_win\dsi_studio.exe
+    - name: Package
       shell: cmd
+      run: 7z a -tzip dsi_studio_win_cpu.zip dsi_studio_win
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-      run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --clobber
+      run: gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --clobber
 
   windows_build_cpu_debug:
     if: ${{ github.event.inputs.build_windows_debug == 'true' }}
@@ -428,9 +421,10 @@ jobs:
         modules: qtcharts
         cache: true
     - name: Build debug CPU package
+      shell: cmd
       run: |
         git clone --depth 1 https://github.com/frankyeh/TIPL.git
-        choco install ninja cmake
+        choco install ninja cmake -y
         call .\build_packages\install_zlib.bat
         del "C:/Program Files/zlib/lib/zlib.lib"
         del "C:/Program Files/zlib/bin/zlib.dll"
@@ -455,16 +449,22 @@ jobs:
         move tract dsi_studio_win_cpu_debug
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
         7z e tiny_fsl_win.zip -odsi_studio_win_cpu_debug\plugin
-        rm dsi_studio_win_cpu_debug\plugin\cublas*
-        rd dsi_studio_win_cpu_debug\plugin\tiny_fsl
-        del *.zip
-        7z a -tzip dsi_studio_win_cpu_debug.zip dsi_studio_win_cpu_debug
+        del /q dsi_studio_win_cpu_debug\plugin\cublas*
+        if exist dsi_studio_win_cpu_debug\plugin\tiny_fsl rd /s /q dsi_studio_win_cpu_debug\plugin\tiny_fsl
+        del /q tiny_fsl_win.zip
+    - name: Sign Windows debug executable
+      shell: pwsh
+      env:
+        WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+        WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      run: .\build_packages\sign_windows.ps1 -File dsi_studio_win_cpu_debug\dsi_studio.exe
+    - name: Package
       shell: cmd
+      run: 7z a -tzip dsi_studio_win_cpu_debug.zip dsi_studio_win_cpu_debug
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-      run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu_debug.zip --clobber
+      run: gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu_debug.zip --clobber
 
   windows_build:
     if: ${{ github.event.inputs.build_windows == 'true' }}
@@ -473,7 +473,7 @@ jobs:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
     - name: Install Cuda
@@ -484,20 +484,66 @@ jobs:
         modules: qtcharts
         cache: true
     - name: Build
+      shell: cmd
       run: |
         call .\build_packages\build_win.bat
-        if exist "dsi_studio_win\dsi_studio.exe" (
-          echo "dsi_studio.exe exists!"
-        ) else (
-          echo "Error: dsi_studio.exe not found!" >&2
-          exit /b 1
-        )
-        move dsi_studio_win.zip dsi_studio_win.zip
+        if not exist "dsi_studio_win\dsi_studio.exe" exit /b 1
+        if exist dsi_studio_win.zip del /q dsi_studio_win.zip
+    - name: Sign Windows executable
+      shell: pwsh
+      env:
+        WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+        WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      run: .\build_packages\sign_windows.ps1 -File dsi_studio_win\dsi_studio.exe
+    - name: Package
       shell: cmd
+      run: 7z a -tzip dsi_studio_win.zip dsi_studio_win
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: gh release upload ${{ github.event.inputs.tag }} dsi_studio_win.zip --clobber
+
+  windows_build_arm64:
+    if: ${{ github.event.inputs.build_windows_arm == 'true' }}
+    runs-on: windows-11-arm
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Download Build
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win.zip --clobber        
-        
-          
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+        move DSI-Studio-Build/*.txt .
+        move DSI-Studio-Build/build_packages .
+    - name: Install Qt ARM64
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.8.*'
+        host: windows_arm64
+        target: desktop
+        arch: win64_msvc2022_arm64
+        modules: qtcharts
+        cache: true
+    - name: Build Windows ARM64
+      shell: cmd
+      run: |
+        call .\build_packages\build_win_arm64.bat
+        if not exist "dsi_studio_win_arm64\dsi_studio.exe" exit /b 1
+    - name: Verify ARM64 executable
+      shell: pwsh
+      run: |
+        $bytes = [IO.File]::ReadAllBytes('dsi_studio_win_arm64\dsi_studio.exe')
+        $pe = [BitConverter]::ToInt32($bytes, 0x3c)
+        $machine = [BitConverter]::ToUInt16($bytes, $pe + 4)
+        if ($machine -ne 0xAA64) { throw ('Expected ARM64 PE machine 0xAA64, got 0x{0:X4}' -f $machine) }
+    - name: Sign Windows ARM64 executable
+      shell: pwsh
+      env:
+        WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+        WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      run: .\build_packages\sign_windows.ps1 -File dsi_studio_win_arm64\dsi_studio.exe
+    - name: Package
+      shell: cmd
+      run: 7z a -tzip dsi_studio_win_arm64.zip dsi_studio_win_arm64
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_arm64.zip --clobber
