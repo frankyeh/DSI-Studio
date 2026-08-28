@@ -72,7 +72,7 @@ jobs:
             image: rockylinux:9
             family: rhel
           - name: Rocky Linux 10
-            image: rockylinux:10
+            image: rockylinux/rockylinux:10
             family: rhel
           - name: AlmaLinux 8
             image: almalinux:8
@@ -209,7 +209,7 @@ jobs:
             image: rockylinux:9
             family: rhel
           - name: Rocky Linux 10
-            image: rockylinux:10
+            image: rockylinux/rockylinux:10
             family: rhel
           - name: AlmaLinux 8
             image: almalinux:8
@@ -353,7 +353,7 @@ jobs:
             image: rockylinux:9
             family: rhel
           - name: Rocky Linux 10
-            image: rockylinux:10
+            image: rockylinux/rockylinux:10
             family: rhel
           - name: AlmaLinux 8
             image: almalinux:8
