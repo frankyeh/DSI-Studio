@@ -113,6 +113,9 @@ jobs:
           mv extracted/dsi-studio-linux-universal-legacy-cpu dsi
           test -x dsi/dsi_studio
           file dsi/dsi_studio | grep -q 'x86-64'
+          test -s dsi/lib/libOpenGL.so.0
+          test -s dsi/lib/libGLX.so.0
+          test -s dsi/lib/libGLdispatch.so.0
 
       - name: Test runtime compatibility
         env:
@@ -202,7 +205,10 @@ jobs:
               ;;
           esac
 
-          export LD_LIBRARY_PATH=/dsi/lib:/dsi
+          test -s /dsi/lib/libOpenGL.so.0
+          test -s /dsi/lib/libGLX.so.0
+          test -s /dsi/lib/libGLdispatch.so.0
+
           failures=0
           check_binary() {
             local file=$1 output
@@ -210,6 +216,10 @@ jobs:
             if output=$(ldd "$file" 2>&1); then echo "$output"; else echo "$output"; failures=1; fi
             grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output" && failures=1 || true
           }
+
+          main_ldd="$(ldd /dsi/dsi_studio 2>&1 || true)"
+          echo "$main_ldd"
+          grep -Fq 'libOpenGL.so.0 => /dsi/lib/libOpenGL.so.0' <<<"$main_ldd" || failures=1
 
           check_binary /dsi/dsi_studio
           while IFS= read -r file; do check_binary "$file"; done < <(find /dsi -type f \( -name '*.so' -o -name '*.so.*' \) -print | sort)
