@@ -16,11 +16,11 @@ on:
       task_prompt:
         description: Task prompt for the selected runner agent(s)
         required: true
-        default: Use DSI Studio Fiber Data Hub to open a human FIB file, map the left arcuate fasciculus, save the tract, save tract statistics, capture a 3D screenshot, and write a brief summary.
+        default: "Use DSI Studio Fiber Data Hub to open a human FIB file, map the left arcuate fasciculus, save the tract, save tract statistics, capture a 3D screenshot, and write a brief summary."
       required_outputs:
         description: Comma- or newline-separated files expected under each agent output directory
         required: true
-        default: arcuate_fasciculus.tt.gz, arcuate_fasciculus_lr.png
+        default: "arcuate_fasciculus.tt.gz, arcuate_fasciculus_lr.png"
       model:
         description: Optional model name to mention to the agent
         required: false
@@ -72,6 +72,9 @@ jobs:
       QT_OPENGL: software
       CODEX_THREAD_ID: 00000000-0000-4000-8000-000000000001
       AGENT_NAME: codex
+      TASK_PROMPT: ${{ inputs.task_prompt }}
+      REQUIRED_OUTPUTS: ${{ inputs.required_outputs }}
+      MODEL_NAME: ${{ inputs.model }}
 
     steps:
       - name: Download DSI Studio
@@ -134,29 +137,27 @@ jobs:
         shell: pwsh
         run: |
           $out = (Resolve-Path ai_output\codex).Path
-          $model = "${{ inputs.model }}"
-          $task = @'
-${{ inputs.task_prompt }}
-'@
-          @"
-You are running inside GitHub Actions on the same Windows runner as DSI Studio.
+          $prompt = @"
+          You are running inside GitHub Actions on the same Windows runner as DSI Studio.
 
-Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
+          Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
 
-Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
+          Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
 
-Output directory:
-$out
+          Output directory:
+          $out
 
-Model preference, if relevant:
-$model
+          Model preference, if relevant:
+          $env:MODEL_NAME
 
-Dispatcher task:
-$task
+          Dispatcher task:
+          $env:TASK_PROMPT
 
-Write any required output files under the output directory above. Also write a short final report to:
-$out\agent_summary.txt
-"@ | Set-Content -Path agent_prompt.md -Encoding UTF8
+          Write any required output files under the output directory above. Also write a short final report to:
+          $out\agent_summary.txt
+          "@
+          $prompt = $prompt -replace '(?m)^          ', ''
+          Set-Content -Path agent_prompt.md -Value $prompt -Encoding UTF8
           Get-Content agent_prompt.md
 
       - name: Install Codex
@@ -191,9 +192,7 @@ $out\agent_summary.txt
         shell: pwsh
         run: |
           Get-ChildItem ai_output\codex -Force
-          $required = @'
-${{ inputs.required_outputs }}
-'@ -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          $required = $env:REQUIRED_OUTPUTS -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
           foreach($file in $required)
           {
             $path = Join-Path (Resolve-Path ai_output\codex).Path $file
@@ -231,6 +230,9 @@ ${{ inputs.required_outputs }}
       CLAUDE_CODE_SESSION_ID: 00000000-0000-4000-8000-000000000002
       CLAUDE_CODE_USE_POWERSHELL_TOOL: "1"
       AGENT_NAME: claude
+      TASK_PROMPT: ${{ inputs.task_prompt }}
+      REQUIRED_OUTPUTS: ${{ inputs.required_outputs }}
+      MODEL_NAME: ${{ inputs.model }}
 
     steps:
       - name: Download DSI Studio
@@ -293,29 +295,27 @@ ${{ inputs.required_outputs }}
         shell: pwsh
         run: |
           $out = (Resolve-Path ai_output\claude).Path
-          $model = "${{ inputs.model }}"
-          $task = @'
-${{ inputs.task_prompt }}
-'@
-          @"
-You are running inside GitHub Actions on the same Windows runner as DSI Studio.
+          $prompt = @"
+          You are running inside GitHub Actions on the same Windows runner as DSI Studio.
 
-Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
+          Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
 
-Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
+          Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
 
-Output directory:
-$out
+          Output directory:
+          $out
 
-Model preference, if relevant:
-$model
+          Model preference, if relevant:
+          $env:MODEL_NAME
 
-Dispatcher task:
-$task
+          Dispatcher task:
+          $env:TASK_PROMPT
 
-Write any required output files under the output directory above. Also write a short final report to:
-$out\agent_summary.txt
-"@ | Set-Content -Path agent_prompt.md -Encoding UTF8
+          Write any required output files under the output directory above. Also write a short final report to:
+          $out\agent_summary.txt
+          "@
+          $prompt = $prompt -replace '(?m)^          ', ''
+          Set-Content -Path agent_prompt.md -Value $prompt -Encoding UTF8
           Get-Content agent_prompt.md
 
       - name: Install Claude
@@ -351,9 +351,7 @@ $out\agent_summary.txt
         shell: pwsh
         run: |
           Get-ChildItem ai_output\claude -Force
-          $required = @'
-${{ inputs.required_outputs }}
-'@ -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          $required = $env:REQUIRED_OUTPUTS -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
           foreach($file in $required)
           {
             $path = Join-Path (Resolve-Path ai_output\claude).Path $file
