@@ -104,7 +104,7 @@ check_binary() {
     echo "$output"
     failures=1
   fi
-  grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output" && failures=1 || true
+  grep -qE 'not found|version .* not found' <<<"$output" && failures=1 || true
 }
 
 main_ldd="$(ldd /dsi/dsi_studio 2>&1 || true)"
