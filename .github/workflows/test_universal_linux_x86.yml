@@ -1,0 +1,178 @@
+name: Test Universal Linux x86_64
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag containing the universal Linux x86_64 package (leave blank for latest)
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download universal Linux x86_64 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          if [ -n "$RELEASE_TAG" ]; then
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_cpu.zip' --dir release
+          else
+            gh release download --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_cpu.zip' --dir release
+          fi
+          test -s release/dsi_studio_linux_universal_cpu.zip
+          sha256sum release/dsi_studio_linux_universal_cpu.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: universal-linux-x86-release
+          path: release/dsi_studio_linux_universal_cpu.zip
+          if-no-files-found: error
+
+  compatibility:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 18.04 x86_64
+            image: ubuntu:18.04
+            family: apt
+          - name: Ubuntu 20.04 x86_64
+            image: ubuntu:20.04
+            family: apt
+          - name: Ubuntu 22.04 x86_64
+            image: ubuntu:22.04
+            family: apt
+          - name: Ubuntu 24.04 x86_64
+            image: ubuntu:24.04
+            family: apt
+          - name: Debian 11 x86_64
+            image: debian:11
+            family: apt
+          - name: Debian 12 x86_64
+            image: debian:12
+            family: apt
+          - name: CentOS 8 x86_64
+            image: quay.io/centos/centos:8
+            family: centos8
+          - name: Rocky Linux 8 x86_64
+            image: rockylinux:8
+            family: rhel
+          - name: Rocky Linux 9 x86_64
+            image: rockylinux:9
+            family: rhel
+          - name: AlmaLinux 8 x86_64
+            image: almalinux:8
+            family: rhel
+          - name: AlmaLinux 9 x86_64
+            image: almalinux:9
+            family: rhel
+          - name: openSUSE Leap 15.6 x86_64
+            image: opensuse/leap:15.6
+            family: suse
+
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: universal-linux-x86-release
+          path: release
+
+      - name: Extract package
+        run: |
+          set -euo pipefail
+          unzip -q release/dsi_studio_linux_universal_cpu.zip -d extracted
+          mv extracted/dsi-studio-linux-universal-cpu dsi
+          test -x dsi/dsi_studio
+
+      - name: Test runtime compatibility
+        env:
+          IMAGE: ${{ matrix.image }}
+          FAMILY: ${{ matrix.family }}
+          DISTRO_NAME: ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/test-universal-linux.sh <<'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          cat /etc/os-release || true
+          getconf GNU_LIBC_VERSION || true
+          test "$(uname -m)" = "x86_64"
+
+          case "$FAMILY" in
+            apt)
+              export DEBIAN_FRONTEND=noninteractive
+              if ! apt-get update; then
+                sed -i \
+                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+                  /etc/apt/sources.list 2>/dev/null || true
+                apt-get update
+              fi
+              apt-get install -y --no-install-recommends libgl1 libglx0 libegl1 libopengl0 libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
+              ;;
+            centos8)
+              rm -f /etc/yum.repos.d/*.repo
+              cat > /etc/yum.repos.d/vault.repo <<'REPO'
+          [baseos]
+          baseurl=http://vault.centos.org/8.5.2111/BaseOS/$basearch/os/
+          enabled=1
+          gpgcheck=0
+          [appstream]
+          baseurl=http://vault.centos.org/8.5.2111/AppStream/$basearch/os/
+          enabled=1
+          gpgcheck=0
+          REPO
+              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
+              ;;
+            rhel)
+              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
+              ;;
+            suse)
+              zypper --non-interactive refresh
+              zypper --non-interactive install --no-recommends libglvnd Mesa-libGL1 Mesa-libEGL1 libGLU1 libdrm2 libgbm1 Mesa-libglapi0 libz1
+              ;;
+          esac
+
+          export LD_LIBRARY_PATH=/dsi/lib:/dsi
+          failures=0
+          check_binary() {
+            local file=$1 output
+            echo "== ldd: $file =="
+            if output=$(ldd "$file" 2>&1); then echo "$output"; else echo "$output"; failures=1; fi
+            grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output" && failures=1 || true
+          }
+
+          check_binary /dsi/dsi_studio
+          while IFS= read -r file; do check_binary "$file"; done < <(find /dsi -type f \( -name '*.so' -o -name '*.so.*' \) -print | sort)
+          /dsi/dsi_studio --version || failures=1
+          test "$failures" -eq 0
+          SCRIPT
+
+          chmod +x /tmp/test-universal-linux.sh
+          set +e
+          docker run --rm --platform linux/amd64 \
+            -e FAMILY="$FAMILY" \
+            -v "$PWD/dsi:/dsi:ro" \
+            -v /tmp/test-universal-linux.sh:/test-universal-linux.sh:ro \
+            "$IMAGE" /bin/bash /test-universal-linux.sh
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "## $DISTRO_NAME: PASS" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## $DISTRO_NAME: FAIL" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
