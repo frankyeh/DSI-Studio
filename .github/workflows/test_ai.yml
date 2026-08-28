@@ -153,12 +153,18 @@ jobs:
           Set-Content -Path agent_prompt.md -Value $prompt -Encoding UTF8
           Get-Content agent_prompt.md
 
-      - name: Install Codex
+      - name: Install and authenticate Codex
         shell: pwsh
         run: |
-          if([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) { throw "OPENAI_API_KEY secret is required for Codex." }
+          if([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
+            throw "OPENAI_API_KEY secret is required for Codex in a non-interactive GitHub runner."
+          }
           npm install -g @openai/codex
           codex --version
+          codex login status
+          if($LASTEXITCODE -ne 0) {
+            throw "Codex auth check failed. Set the OPENAI_API_KEY repository secret, or use a self-hosted runner that is already logged in."
+          }
 
       - name: Run Codex against DSI Studio
         shell: pwsh
@@ -311,12 +317,19 @@ jobs:
           Set-Content -Path agent_prompt.md -Value $prompt -Encoding UTF8
           Get-Content agent_prompt.md
 
-      - name: Install Claude
+      - name: Install and authenticate Claude
         shell: pwsh
         run: |
-          if([string]::IsNullOrWhiteSpace($env:ANTHROPIC_API_KEY)) { throw "ANTHROPIC_API_KEY secret is required for Claude." }
+          if([string]::IsNullOrWhiteSpace($env:ANTHROPIC_API_KEY)) {
+            throw "ANTHROPIC_API_KEY secret is required for Claude in a non-interactive GitHub runner."
+          }
           npm install -g @anthropic-ai/claude-code
           claude --version
+          $authStatus = & claude auth status 2>&1
+          $authStatus | Write-Host
+          if($LASTEXITCODE -ne 0) {
+            Write-Host "Claude did not find stored interactive credentials; continuing with ANTHROPIC_API_KEY for non-interactive API authentication."
+          }
 
       - name: Run Claude against DSI Studio
         shell: pwsh
