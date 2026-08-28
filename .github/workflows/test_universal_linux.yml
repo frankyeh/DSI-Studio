@@ -1,0 +1,236 @@
+name: Test Universal Linux CPU
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag containing dsi_studio_linux_universal_cpu.zip (leave blank for latest)
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download universal Linux CPU release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          if [ -n "$RELEASE_TAG" ]; then
+            gh release download "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern dsi_studio_linux_universal_cpu.zip \
+              --dir release
+          else
+            gh release download \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern dsi_studio_linux_universal_cpu.zip \
+              --dir release
+          fi
+          test -s release/dsi_studio_linux_universal_cpu.zip
+          sha256sum release/dsi_studio_linux_universal_cpu.zip
+
+      - name: Save release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-linux-cpu-release
+          path: release/dsi_studio_linux_universal_cpu.zip
+          if-no-files-found: error
+
+  compatibility:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 18.04
+            image: ubuntu:18.04
+            family: ubuntu
+          - name: Ubuntu 20.04
+            image: ubuntu:20.04
+            family: ubuntu
+          - name: Ubuntu 22.04
+            image: ubuntu:22.04
+            family: ubuntu
+          - name: CentOS 7
+            image: centos:7
+            family: centos7
+          - name: CentOS 8
+            image: quay.io/centos/centos:8
+            family: centos8
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Download release package
+        uses: actions/download-artifact@v4
+        with:
+          name: universal-linux-cpu-release
+          path: release
+
+      - name: Extract package
+        run: |
+          set -euo pipefail
+          mkdir -p package
+          unzip -q release/dsi_studio_linux_universal_cpu.zip -d package
+          test -x package/dsi-studio-linux-universal-cpu/dsi_studio
+
+      - name: Test runtime compatibility
+        env:
+          IMAGE: ${{ matrix.image }}
+          FAMILY: ${{ matrix.family }}
+          DISTRO_NAME: ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/test-universal-linux.sh <<'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          echo "== System =="
+          cat /etc/os-release || true
+          getconf GNU_LIBC_VERSION || true
+
+          case "$FAMILY" in
+            ubuntu)
+              export DEBIAN_FRONTEND=noninteractive
+              if ! apt-get update; then
+                sed -i \
+                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+                  /etc/apt/sources.list
+                apt-get update
+              fi
+              apt-get install -y --no-install-recommends \
+                libgl1 \
+                libglx0 \
+                libegl1 \
+                libopengl0 \
+                libglu1-mesa \
+                libdrm2 \
+                libgbm1 \
+                libglapi-mesa \
+                zlib1g
+              ;;
+
+            centos7)
+              rm -f /etc/yum.repos.d/*.repo
+              cat > /etc/yum.repos.d/vault.repo <<'REPO'
+          [base]
+          name=CentOS 7 Base
+          baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
+          enabled=1
+          gpgcheck=0
+
+          [updates]
+          name=CentOS 7 Updates
+          baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
+          enabled=1
+          gpgcheck=0
+
+          [extras]
+          name=CentOS 7 Extras
+          baseurl=http://vault.centos.org/7.9.2009/extras/$basearch/
+          enabled=1
+          gpgcheck=0
+          REPO
+              yum -y install \
+                mesa-libGL \
+                mesa-libEGL \
+                mesa-libGLU \
+                libdrm \
+                mesa-libgbm \
+                mesa-libglapi \
+                zlib
+              ;;
+
+            centos8)
+              rm -f /etc/yum.repos.d/*.repo
+              cat > /etc/yum.repos.d/vault.repo <<'REPO'
+          [baseos]
+          name=CentOS 8 BaseOS
+          baseurl=http://vault.centos.org/8.5.2111/BaseOS/$basearch/os/
+          enabled=1
+          gpgcheck=0
+
+          [appstream]
+          name=CentOS 8 AppStream
+          baseurl=http://vault.centos.org/8.5.2111/AppStream/$basearch/os/
+          enabled=1
+          gpgcheck=0
+          REPO
+              dnf -y install \
+                libglvnd-opengl \
+                libglvnd-glx \
+                libglvnd-egl \
+                mesa-libGLU \
+                libdrm \
+                mesa-libgbm \
+                mesa-libglapi \
+                zlib
+              ;;
+          esac
+
+          export LD_LIBRARY_PATH=/dsi/lib:/dsi
+          failures=0
+
+          check_binary() {
+            local file=$1 output
+            echo "== ldd: $file =="
+            if output=$(ldd "$file" 2>&1); then
+              echo "$output"
+            else
+              echo "$output"
+              failures=1
+            fi
+            if grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output"; then
+              failures=1
+            fi
+          }
+
+          check_binary /dsi/dsi_studio
+
+          echo "== Bundled library/plugin dependencies =="
+          while IFS= read -r file; do
+            check_binary "$file"
+          done < <(find /dsi -type f \( -name '*.so' -o -name '*.so.*' \) -print | sort)
+
+          echo "== Runtime smoke test =="
+          if ! /dsi/dsi_studio --version; then
+            failures=1
+          fi
+
+          if [ "$failures" -ne 0 ]; then
+            echo "FAIL: runtime compatibility problems detected"
+            exit 1
+          fi
+
+          echo "PASS: DSI Studio universal Linux CPU package loads successfully"
+          SCRIPT
+
+          chmod +x /tmp/test-universal-linux.sh
+
+          set +e
+          docker run --rm \
+            -e FAMILY="$FAMILY" \
+            -v "$PWD/package/dsi-studio-linux-universal-cpu:/dsi:ro" \
+            -v /tmp/test-universal-linux.sh:/test-universal-linux.sh:ro \
+            "$IMAGE" \
+            /bin/bash /test-universal-linux.sh
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "## $DISTRO_NAME: PASS" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## $DISTRO_NAME: FAIL" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit "$status"
