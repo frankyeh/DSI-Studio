@@ -28,7 +28,7 @@ on:
         default: 'true'
       build_linux_universal:
         type: boolean
-        description: 'Build Linux Universal CPU/CUDA'
+        description: 'Build Linux Universal CPU/CUDA/ARM64/Legacy'
         required: false
         default: 'true'
       build_linux_arm:
@@ -204,6 +204,57 @@ jobs:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} dsi_studio_linux_universal_cpu_arm64.zip --clobber --repo frankyeh/DSI-Studio
+
+  linux-universal-legacy-build:
+    if: ${{ github.event.inputs.build_linux_universal == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+        mv DSI-Studio-Build/build_packages .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3.0.0
+    - name: Build legacy universal Linux CPU package
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        cache-from: type=gha,scope=universal-legacy
+        cache-to: type=gha,mode=max,scope=universal-legacy
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
+        file: build_packages/universal/Dockerfile_legacy
+        push: false
+        outputs: dsi-studio-linux-universal-legacy-cpu
+    - name: Verify legacy package
+      run: |
+        set -e
+        pkg=dsi-studio-linux-universal-legacy-cpu
+        test -x "$pkg/dsi_studio"
+        file "$pkg/dsi_studio" | grep -q 'x86-64'
+        if find "$pkg" \( \
+          -name 'libc.so*' -o -name 'ld-linux*.so*' -o -name 'libpthread.so*' -o \
+          -name 'libm.so*' -o -name 'libdl.so*' -o -name 'librt.so*' -o \
+          -name 'libresolv.so*' -o -name 'libutil.so*' -o -name 'libnss_*.so*' -o \
+          -name 'libanl.so*' \
+        \) -print -quit | grep -q .; then
+          echo "Error: legacy universal package includes glibc/core runtime libraries"
+          exit 1
+        fi
+        LD_LIBRARY_PATH="$PWD/$pkg/lib:$PWD/$pkg" ldd "$pkg/dsi_studio" | tee /tmp/legacy-ldd.log
+        ! grep -q 'not found' /tmp/legacy-ldd.log
+        while IFS= read -r elf; do
+          if readelf --version-info "$elf" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|[2-9][0-9])'; then
+            echo "Error: $elf requires GLIBC newer than 2.17"
+            exit 1
+          fi
+        done < <(find "$pkg" -type f -exec sh -c 'file "$1" | grep -q ELF && printf "%s\n" "$1"' _ {} \;)
+        zip -r dsi_studio_linux_universal_legacy_cpu.zip "$pkg"
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_linux_universal_legacy_cpu.zip --clobber --repo frankyeh/DSI-Studio
 
   linux-build-arm:
     if: ${{ github.event.inputs.build_linux_arm == 'true' }}
