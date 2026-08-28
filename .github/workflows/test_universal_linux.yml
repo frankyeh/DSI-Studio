@@ -61,27 +61,118 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Legacy x86_64 targets use the glibc 2.17 universal legacy package.
-          - name: Ubuntu 16.04 legacy x86_64
-            arch: amd64
-            package: legacy
-            runner: ubuntu-22.04
-            image: ubuntu:16.04
-            family: apt-legacy
-          - name: Debian 9 legacy x86_64
-            arch: amd64
-            package: legacy
-            runner: ubuntu-22.04
-            image: debian:9
-            family: apt-legacy
+          # Legacy x86_64: prove upward compatibility from the glibc 2.17 floor.
           - name: CentOS 7 legacy x86_64
             arch: amd64
             package: legacy
             runner: ubuntu-22.04
             image: centos:7
             family: centos7
+          - name: Amazon Linux 2 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: amazonlinux:2
+            family: amazon2
+          - name: Ubuntu 16.04 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: ubuntu:16.04
+            family: apt-legacy
+          - name: Ubuntu 18.04 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: ubuntu:18.04
+            family: apt
+          - name: Ubuntu 20.04 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: ubuntu:20.04
+            family: apt
+          - name: Ubuntu 22.04 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: ubuntu:22.04
+            family: apt
+          - name: Ubuntu 24.04 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: ubuntu:24.04
+            family: apt
+          - name: Debian 9 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: debian:9
+            family: apt-legacy
+          - name: Debian 10 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: debian:10
+            family: apt-legacy
+          - name: Debian 11 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: debian:11
+            family: apt
+          - name: Debian 12 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: debian:12
+            family: apt
+          - name: CentOS 8 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: quay.io/centos/centos:8
+            family: centos8
+          - name: Rocky Linux 8 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: rockylinux:8
+            family: rhel
+          - name: Rocky Linux 9 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: rockylinux:9
+            family: rhel
+          - name: AlmaLinux 8 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: almalinux:8
+            family: rhel
+          - name: AlmaLinux 9 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: almalinux:9
+            family: rhel
+          - name: openSUSE Leap 15.6 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: opensuse/leap:15.6
+            family: suse
+          - name: Amazon Linux 2023 legacy x86_64
+            arch: amd64
+            package: legacy
+            runner: ubuntu-22.04
+            image: amazonlinux:2023
+            family: amazon
 
-          # Standard x86_64 universal package.
+          # Standard x86_64 universal package: glibc 2.27+ target set.
+          # CentOS 7 is intentionally excluded; it belongs only to the legacy matrix.
           - name: Ubuntu 18.04 x86_64
             arch: amd64
             runner: ubuntu-22.04
@@ -365,6 +456,17 @@ jobs:
                 libglvnd-opengl \
                 libglvnd-glx \
                 libglvnd-egl \
+                mesa-libGLU \
+                libdrm \
+                mesa-libgbm \
+                mesa-libglapi \
+                zlib
+              ;;
+
+            amazon2)
+              yum -y install \
+                mesa-libGL \
+                mesa-libEGL \
                 mesa-libGLU \
                 libdrm \
                 mesa-libgbm \
