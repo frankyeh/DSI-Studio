@@ -14,11 +14,29 @@ permissions:
 
 jobs:
   x86_64:
-    name: x86_64 / ${{ matrix.name }}
+    name: x86_64 ${{ matrix.variant }} / ${{ matrix.name }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
+        variant: [CPU, CUDA]
+        name:
+          - Ubuntu 18.04
+          - Ubuntu 20.04
+          - Ubuntu 22.04
+          - Ubuntu 24.04
+          - Ubuntu 26.04
+          - Debian 11
+          - Debian 12
+          - Debian 13
+          - CentOS 8
+          - Rocky Linux 8
+          - Rocky Linux 9
+          - Rocky Linux 10
+          - AlmaLinux 8
+          - AlmaLinux 9
+          - AlmaLinux 10
+          - openSUSE Leap 15.6
         include:
           - name: Ubuntu 18.04
             image: ubuntu:18.04
@@ -32,11 +50,17 @@ jobs:
           - name: Ubuntu 24.04
             image: ubuntu:24.04
             family: apt
+          - name: Ubuntu 26.04
+            image: ubuntu:26.04
+            family: apt
           - name: Debian 11
             image: debian:11
             family: apt
           - name: Debian 12
             image: debian:12
+            family: apt
+          - name: Debian 13
+            image: debian:13
             family: apt
           - name: CentOS 8
             image: quay.io/centos/centos:8
@@ -47,119 +71,112 @@ jobs:
           - name: Rocky Linux 9
             image: rockylinux:9
             family: rhel
+          - name: Rocky Linux 10
+            image: rockylinux:10
+            family: rhel
           - name: AlmaLinux 8
             image: almalinux:8
             family: rhel
           - name: AlmaLinux 9
             image: almalinux:9
             family: rhel
+          - name: AlmaLinux 10
+            image: almalinux:10
+            family: rhel
           - name: openSUSE Leap 15.6
             image: opensuse/leap:15.6
             family: suse
     steps:
+      - uses: actions/checkout@v4
       - name: Download package
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
+          VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
+          if [ "$VARIANT" = CUDA ]; then
+            asset=dsi_studio_linux_universal_cuda.zip
+            package_dir=dsi-studio-linux-universal-cuda
+          else
+            asset=dsi_studio_linux_universal_cpu.zip
+            package_dir=dsi-studio-linux-universal-cpu
+          fi
           mkdir -p release
           if [ -n "$RELEASE_TAG" ]; then
-            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_cpu.zip' --dir release
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir release
           else
-            gh release download --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_cpu.zip' --dir release
+            gh release download --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir release
           fi
-          unzip -q release/dsi_studio_linux_universal_cpu.zip -d extracted
-          mv extracted/dsi-studio-linux-universal-cpu dsi
+          unzip -q "release/$asset" -d extracted
+          mv "extracted/$package_dir" dsi
           test -x dsi/dsi_studio
-
+          file dsi/dsi_studio | grep -q 'x86-64'
       - name: Test runtime compatibility
         env:
           IMAGE: ${{ matrix.image }}
           FAMILY: ${{ matrix.family }}
           DISTRO_NAME: ${{ matrix.name }}
+          VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
-          cat > /tmp/test-universal-linux.sh <<'SCRIPT'
-          #!/usr/bin/env bash
-          set -euo pipefail
-
-          cat /etc/os-release || true
-          getconf GNU_LIBC_VERSION || true
-          test "$(uname -m)" = "x86_64"
-
-          case "$FAMILY" in
-            apt)
-              export DEBIAN_FRONTEND=noninteractive
-              if ! apt-get update; then
-                sed -i \
-                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  /etc/apt/sources.list 2>/dev/null || true
-                apt-get update
-              fi
-              apt-get install -y --no-install-recommends libgl1 libglx0 libegl1 libopengl0 libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
-              ;;
-            centos8)
-              rm -f /etc/yum.repos.d/*.repo
-              cat > /etc/yum.repos.d/vault.repo <<'REPO'
-          [baseos]
-          baseurl=http://vault.centos.org/8.5.2111/BaseOS/$basearch/os/
-          enabled=1
-          gpgcheck=0
-          [appstream]
-          baseurl=http://vault.centos.org/8.5.2111/AppStream/$basearch/os/
-          enabled=1
-          gpgcheck=0
-          REPO
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            rhel)
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            suse)
-              zypper --non-interactive refresh
-              zypper --non-interactive install --no-recommends libglvnd Mesa-libGL1 Mesa-libEGL1 libGLU1 libdrm2 libgbm1 Mesa-libglapi0 libz1
-              ;;
-          esac
-
-          export LD_LIBRARY_PATH=/dsi/lib:/dsi
-          failures=0
-          check_binary() {
-            local file=$1 output
-            echo "== ldd: $file =="
-            if output=$(ldd "$file" 2>&1); then echo "$output"; else echo "$output"; failures=1; fi
-            grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output" && failures=1 || true
-          }
-
-          check_binary /dsi/dsi_studio
-          while IFS= read -r file; do check_binary "$file"; done < <(find /dsi -type f \( -name '*.so' -o -name '*.so.*' \) -print | sort)
-          /dsi/dsi_studio --version || failures=1
-          test "$failures" -eq 0
-          SCRIPT
-
-          chmod +x /tmp/test-universal-linux.sh
+          chmod +x .github/scripts/test_universal_linux.sh
           set +e
           docker run --rm --platform linux/amd64 \
             -e FAMILY="$FAMILY" \
+            -e EXPECT_ARCH=x86_64 \
             -v "$PWD/dsi:/dsi:ro" \
-            -v /tmp/test-universal-linux.sh:/test-universal-linux.sh:ro \
+            -v "$PWD/.github/scripts/test_universal_linux.sh:/test-universal-linux.sh:ro" \
             "$IMAGE" /bin/bash /test-universal-linux.sh
           status=$?
           set -e
           if [ "$status" -eq 0 ]; then
-            echo "## x86_64 / $DISTRO_NAME: PASS" >> "$GITHUB_STEP_SUMMARY"
+            echo "## x86_64 $VARIANT / $DISTRO_NAME: PASS" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## x86_64 / $DISTRO_NAME: FAIL" >> "$GITHUB_STEP_SUMMARY"
+            echo "## x86_64 $VARIANT / $DISTRO_NAME: FAIL" >> "$GITHUB_STEP_SUMMARY"
           fi
           exit "$status"
 
   arm64:
-    name: ARM64 / ${{ matrix.name }}
+    name: ARM64 ${{ matrix.variant }} / ${{ matrix.name }}
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
+        variant: [CPU, CUDA]
+        name:
+          - Ubuntu 18.04
+          - Ubuntu 20.04
+          - Ubuntu 22.04
+          - Ubuntu 24.04
+          - Ubuntu 26.04
+          - Debian 11
+          - Debian 12
+          - Debian 13
+          - Rocky Linux 8
+          - Rocky Linux 9
+          - Rocky Linux 10
+          - AlmaLinux 8
+          - AlmaLinux 9
+          - AlmaLinux 10
+          - Amazon Linux 2023
+        exclude:
+          - variant: CUDA
+            name: Ubuntu 18.04
+          - variant: CUDA
+            name: Ubuntu 20.04
+          - variant: CUDA
+            name: Debian 11
+          - variant: CUDA
+            name: Rocky Linux 8
+          - variant: CUDA
+            name: Rocky Linux 9
+          - variant: CUDA
+            name: AlmaLinux 8
+          - variant: CUDA
+            name: AlmaLinux 9
+          - variant: CUDA
+            name: Amazon Linux 2023
         include:
           - name: Ubuntu 18.04
             image: ubuntu:18.04
@@ -173,11 +190,17 @@ jobs:
           - name: Ubuntu 24.04
             image: ubuntu:24.04
             family: apt
+          - name: Ubuntu 26.04
+            image: ubuntu:26.04
+            family: apt
           - name: Debian 11
             image: debian:11
             family: apt
           - name: Debian 12
             image: debian:12
+            family: apt
+          - name: Debian 13
+            image: debian:13
             family: apt
           - name: Rocky Linux 8
             image: rockylinux:8
@@ -185,97 +208,69 @@ jobs:
           - name: Rocky Linux 9
             image: rockylinux:9
             family: rhel
+          - name: Rocky Linux 10
+            image: rockylinux:10
+            family: rhel
           - name: AlmaLinux 8
             image: almalinux:8
             family: rhel
           - name: AlmaLinux 9
             image: almalinux:9
             family: rhel
+          - name: AlmaLinux 10
+            image: almalinux:10
+            family: rhel
           - name: Amazon Linux 2023
             image: amazonlinux:2023
             family: amazon
     steps:
+      - uses: actions/checkout@v4
       - name: Download package
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
+          VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
+          if [ "$VARIANT" = CUDA ]; then
+            asset=dsi_studio_linux_universal_cuda_arm64.zip
+            package_dir=dsi-studio-linux-universal-cuda-arm64
+          else
+            asset=dsi_studio_linux_universal_cpu_arm64.zip
+            package_dir=dsi-studio-linux-universal-cpu-arm64
+          fi
           mkdir -p release
           if [ -n "$RELEASE_TAG" ]; then
-            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_cpu_arm64.zip' --dir release
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir release
           else
-            gh release download --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_cpu_arm64.zip' --dir release
+            gh release download --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir release
           fi
-          unzip -q release/dsi_studio_linux_universal_cpu_arm64.zip -d extracted
-          mv extracted/dsi-studio-linux-universal-cpu-arm64 dsi
+          unzip -q "release/$asset" -d extracted
+          mv "extracted/$package_dir" dsi
           test -x dsi/dsi_studio
           file dsi/dsi_studio | grep -q 'ARM aarch64'
-
       - name: Test runtime compatibility
         env:
           IMAGE: ${{ matrix.image }}
           FAMILY: ${{ matrix.family }}
           DISTRO_NAME: ${{ matrix.name }}
+          VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
-          cat > /tmp/test-universal-linux.sh <<'SCRIPT'
-          #!/usr/bin/env bash
-          set -euo pipefail
-
-          cat /etc/os-release || true
-          getconf GNU_LIBC_VERSION || true
-          test "$(uname -m)" = "aarch64"
-
-          case "$FAMILY" in
-            apt)
-              export DEBIAN_FRONTEND=noninteractive
-              if ! apt-get update; then
-                sed -i \
-                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://ports.ubuntu.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' \
-                  /etc/apt/sources.list 2>/dev/null || true
-                apt-get update
-              fi
-              apt-get install -y --no-install-recommends libgl1 libglx0 libegl1 libopengl0 libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
-              ;;
-            rhel)
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            amazon)
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-          esac
-
-          export LD_LIBRARY_PATH=/dsi/lib:/dsi
-          failures=0
-          check_binary() {
-            local file=$1 output
-            echo "== ldd: $file =="
-            if output=$(ldd "$file" 2>&1); then echo "$output"; else echo "$output"; failures=1; fi
-            grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output" && failures=1 || true
-          }
-
-          check_binary /dsi/dsi_studio
-          while IFS= read -r file; do check_binary "$file"; done < <(find /dsi -type f \( -name '*.so' -o -name '*.so.*' \) -print | sort)
-          /dsi/dsi_studio --version || failures=1
-          test "$failures" -eq 0
-          SCRIPT
-
-          chmod +x /tmp/test-universal-linux.sh
+          chmod +x .github/scripts/test_universal_linux.sh
           set +e
           docker run --rm --platform linux/arm64 \
             -e FAMILY="$FAMILY" \
+            -e EXPECT_ARCH=aarch64 \
             -v "$PWD/dsi:/dsi:ro" \
-            -v /tmp/test-universal-linux.sh:/test-universal-linux.sh:ro \
+            -v "$PWD/.github/scripts/test_universal_linux.sh:/test-universal-linux.sh:ro" \
             "$IMAGE" /bin/bash /test-universal-linux.sh
           status=$?
           set -e
           if [ "$status" -eq 0 ]; then
-            echo "## ARM64 / $DISTRO_NAME: PASS" >> "$GITHUB_STEP_SUMMARY"
+            echo "## ARM64 $VARIANT / $DISTRO_NAME: PASS" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ARM64 / $DISTRO_NAME: FAIL" >> "$GITHUB_STEP_SUMMARY"
+            echo "## ARM64 $VARIANT / $DISTRO_NAME: FAIL" >> "$GITHUB_STEP_SUMMARY"
           fi
           exit "$status"
 
@@ -285,6 +280,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        name:
+          - CentOS 7
+          - Amazon Linux 2
+          - Ubuntu 16.04
+          - Ubuntu 18.04
+          - Ubuntu 20.04
+          - Ubuntu 22.04
+          - Ubuntu 24.04
+          - Ubuntu 26.04
+          - Debian 9
+          - Debian 10
+          - Debian 11
+          - Debian 12
+          - Debian 13
+          - CentOS 8
+          - Rocky Linux 8
+          - Rocky Linux 9
+          - Rocky Linux 10
+          - AlmaLinux 8
+          - AlmaLinux 9
+          - AlmaLinux 10
+          - openSUSE Leap 15.6
+          - Amazon Linux 2023
         include:
           - name: CentOS 7
             image: centos:7
@@ -307,6 +325,9 @@ jobs:
           - name: Ubuntu 24.04
             image: ubuntu:24.04
             family: apt
+          - name: Ubuntu 26.04
+            image: ubuntu:26.04
+            family: apt
           - name: Debian 9
             image: debian:9
             family: debian-archive
@@ -319,6 +340,9 @@ jobs:
           - name: Debian 12
             image: debian:12
             family: apt
+          - name: Debian 13
+            image: debian:13
+            family: apt
           - name: CentOS 8
             image: quay.io/centos/centos:8
             family: centos8
@@ -328,11 +352,17 @@ jobs:
           - name: Rocky Linux 9
             image: rockylinux:9
             family: rhel
+          - name: Rocky Linux 10
+            image: rockylinux:10
+            family: rhel
           - name: AlmaLinux 8
             image: almalinux:8
             family: rhel
           - name: AlmaLinux 9
             image: almalinux:9
+            family: rhel
+          - name: AlmaLinux 10
+            image: almalinux:10
             family: rhel
           - name: openSUSE Leap 15.6
             image: opensuse/leap:15.6
@@ -341,26 +371,25 @@ jobs:
             image: amazonlinux:2023
             family: amazon
     steps:
+      - uses: actions/checkout@v4
       - name: Download package
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          asset=dsi_studio_linux_universal_legacy_cpu.zip
+          package_dir=dsi-studio-linux-universal-legacy-cpu
           mkdir -p release
           if [ -n "$RELEASE_TAG" ]; then
-            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_legacy_cpu.zip' --dir release
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir release
           else
-            gh release download --repo "$GITHUB_REPOSITORY" --pattern 'dsi_studio_linux_universal_legacy_cpu.zip' --dir release
+            gh release download --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir release
           fi
-          unzip -q release/dsi_studio_linux_universal_legacy_cpu.zip -d extracted
-          mv extracted/dsi-studio-linux-universal-legacy-cpu dsi
+          unzip -q "release/$asset" -d extracted
+          mv "extracted/$package_dir" dsi
           test -x dsi/dsi_studio
           file dsi/dsi_studio | grep -q 'x86-64'
-          test -s dsi/lib/libOpenGL.so.0
-          test -s dsi/lib/libGLX.so.0
-          test -s dsi/lib/libGLdispatch.so.0
-
       - name: Test runtime compatibility
         env:
           IMAGE: ${{ matrix.image }}
@@ -368,121 +397,13 @@ jobs:
           DISTRO_NAME: ${{ matrix.name }}
         run: |
           set -euo pipefail
-          cat > /tmp/test-universal-linux.sh <<'SCRIPT'
-          #!/usr/bin/env bash
-          set -euo pipefail
-
-          cat /etc/os-release || true
-          getconf GNU_LIBC_VERSION || true
-          test "$(uname -m)" = "x86_64"
-
-          case "$FAMILY" in
-            apt)
-              export DEBIAN_FRONTEND=noninteractive
-              if ! apt-get update; then
-                sed -i \
-                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  /etc/apt/sources.list 2>/dev/null || true
-                apt-get update
-              fi
-              apt-get install -y --no-install-recommends libgl1 libglx0 libegl1 libopengl0 libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
-              ;;
-            apt-legacy)
-              export DEBIAN_FRONTEND=noninteractive
-              if ! apt-get update; then
-                sed -i \
-                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  /etc/apt/sources.list 2>/dev/null || true
-                apt-get -o Acquire::Check-Valid-Until=false update
-              fi
-              apt-get install -y --no-install-recommends libgl1-mesa-glx libegl1-mesa libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
-              ;;
-            debian-archive)
-              export DEBIAN_FRONTEND=noninteractive
-              . /etc/os-release
-              cat > /etc/apt/sources.list <<EOF
-          deb [trusted=yes] http://archive.debian.org/debian $VERSION_CODENAME main
-          deb [trusted=yes] http://archive.debian.org/debian-security $VERSION_CODENAME/updates main
-          EOF
-              apt-get -o Acquire::Check-Valid-Until=false update
-              apt-get install -y --no-install-recommends libgl1-mesa-glx libegl1-mesa libglu1-mesa libdrm2 libgbm1 libglapi-mesa zlib1g
-              ;;
-            centos7)
-              rm -f /etc/yum.repos.d/*.repo
-              cat > /etc/yum.repos.d/vault.repo <<'REPO'
-          [base]
-          baseurl=http://vault.centos.org/7.9.2009/os/$basearch/
-          enabled=1
-          gpgcheck=0
-          [updates]
-          baseurl=http://vault.centos.org/7.9.2009/updates/$basearch/
-          enabled=1
-          gpgcheck=0
-          [extras]
-          baseurl=http://vault.centos.org/7.9.2009/extras/$basearch/
-          enabled=1
-          gpgcheck=0
-          REPO
-              yum -y install mesa-libGL mesa-libEGL mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            centos8)
-              rm -f /etc/yum.repos.d/*.repo
-              cat > /etc/yum.repos.d/vault.repo <<'REPO'
-          [baseos]
-          baseurl=http://vault.centos.org/8.5.2111/BaseOS/$basearch/os/
-          enabled=1
-          gpgcheck=0
-          [appstream]
-          baseurl=http://vault.centos.org/8.5.2111/AppStream/$basearch/os/
-          enabled=1
-          gpgcheck=0
-          REPO
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            rhel)
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            amazon2)
-              yum -y install mesa-libGL mesa-libEGL mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            amazon)
-              dnf -y install libglvnd-opengl libglvnd-glx libglvnd-egl mesa-libGLU libdrm mesa-libgbm mesa-libglapi zlib
-              ;;
-            suse)
-              zypper --non-interactive refresh
-              zypper --non-interactive install --no-recommends libglvnd Mesa-libGL1 Mesa-libEGL1 libGLU1 libdrm2 libgbm1 Mesa-libglapi0 libz1
-              ;;
-          esac
-
-          test -s /dsi/lib/libOpenGL.so.0
-          test -s /dsi/lib/libGLX.so.0
-          test -s /dsi/lib/libGLdispatch.so.0
-
-          failures=0
-          check_binary() {
-            local file=$1 output
-            echo "== ldd: $file =="
-            if output=$(ldd "$file" 2>&1); then echo "$output"; else echo "$output"; failures=1; fi
-            grep -qE 'not found|version [`'"'"'][^`'"'"']+[`'"'"'] not found' <<<"$output" && failures=1 || true
-          }
-
-          main_ldd="$(ldd /dsi/dsi_studio 2>&1 || true)"
-          echo "$main_ldd"
-          grep -Fq 'libOpenGL.so.0 => /dsi/lib/libOpenGL.so.0' <<<"$main_ldd" || failures=1
-          check_binary /dsi/dsi_studio
-          while IFS= read -r file; do check_binary "$file"; done < <(find /dsi -type f \( -name '*.so' -o -name '*.so.*' \) -print | sort)
-          /dsi/dsi_studio --version || failures=1
-          test "$failures" -eq 0
-          SCRIPT
-
-          chmod +x /tmp/test-universal-linux.sh
+          chmod +x .github/scripts/test_universal_linux.sh
           set +e
           docker run --rm --platform linux/amd64 \
             -e FAMILY="$FAMILY" \
+            -e EXPECT_ARCH=x86_64 \
             -v "$PWD/dsi:/dsi:ro" \
-            -v /tmp/test-universal-linux.sh:/test-universal-linux.sh:ro \
+            -v "$PWD/.github/scripts/test_universal_linux.sh:/test-universal-linux.sh:ro" \
             "$IMAGE" /bin/bash /test-universal-linux.sh
           status=$?
           set -e
