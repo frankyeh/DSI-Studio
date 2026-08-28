@@ -53,19 +53,43 @@ jobs:
         include:
           - name: Ubuntu 18.04
             image: ubuntu:18.04
-            family: ubuntu
+            family: apt
           - name: Ubuntu 20.04
             image: ubuntu:20.04
-            family: ubuntu
+            family: apt
           - name: Ubuntu 22.04
             image: ubuntu:22.04
-            family: ubuntu
+            family: apt
+          - name: Ubuntu 24.04
+            image: ubuntu:24.04
+            family: apt
+          - name: Debian 11
+            image: debian:11
+            family: apt
+          - name: Debian 12
+            image: debian:12
+            family: apt
           - name: CentOS 7
             image: centos:7
             family: centos7
           - name: CentOS 8
             image: quay.io/centos/centos:8
             family: centos8
+          - name: Rocky Linux 8
+            image: rockylinux:8
+            family: rhel
+          - name: Rocky Linux 9
+            image: rockylinux:9
+            family: rhel
+          - name: AlmaLinux 8
+            image: almalinux:8
+            family: rhel
+          - name: AlmaLinux 9
+            image: almalinux:9
+            family: rhel
+          - name: openSUSE Leap 15.6
+            image: opensuse/leap:15.6
+            family: suse
 
     name: ${{ matrix.name }}
     steps:
@@ -99,13 +123,15 @@ jobs:
           getconf GNU_LIBC_VERSION || true
 
           case "$FAMILY" in
-            ubuntu)
+            apt)
               export DEBIAN_FRONTEND=noninteractive
               if ! apt-get update; then
-                sed -i \
-                  -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
-                  /etc/apt/sources.list
+                if [ -f /etc/apt/sources.list ]; then
+                  sed -i \
+                    -e 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+                    -e 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' \
+                    /etc/apt/sources.list
+                fi
                 apt-get update
               fi
               apt-get install -y --no-install-recommends \
@@ -175,6 +201,31 @@ jobs:
                 mesa-libgbm \
                 mesa-libglapi \
                 zlib
+              ;;
+
+            rhel)
+              dnf -y install \
+                libglvnd-opengl \
+                libglvnd-glx \
+                libglvnd-egl \
+                mesa-libGLU \
+                libdrm \
+                mesa-libgbm \
+                mesa-libglapi \
+                zlib
+              ;;
+
+            suse)
+              zypper --non-interactive refresh
+              zypper --non-interactive install --no-recommends \
+                libglvnd \
+                Mesa-libGL1 \
+                Mesa-libEGL1 \
+                libGLU1 \
+                libdrm2 \
+                libgbm1 \
+                Mesa-libglapi0 \
+                libz1
               ;;
           esac
 
