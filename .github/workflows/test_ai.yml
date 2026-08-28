@@ -3,16 +3,26 @@ name: DSI Studio AI Test
 on:
   workflow_dispatch:
     inputs:
-      agent:
-        description: AI agent to run after the direct pipe smoke test
+      test_codex:
+        description: Test Codex on the GitHub runner
         required: true
-        type: choice
-        default: codex
-        options:
-          - codex
-          - claude
+        type: boolean
+        default: true
+      test_claude:
+        description: Test Claude on the GitHub runner
+        required: true
+        type: boolean
+        default: false
+      task_prompt:
+        description: Task prompt for the selected runner agent(s)
+        required: true
+        default: Use DSI Studio Fiber Data Hub to open a human FIB file, map the left arcuate fasciculus, save the tract, save tract statistics, capture a 3D screenshot, and write a brief summary.
+      required_outputs:
+        description: Comma- or newline-separated files expected under each agent output directory
+        required: true
+        default: arcuate_fasciculus.tt.gz, arcuate_fasciculus_lr.png
       model:
-        description: Optional agent model name
+        description: Optional model name to mention to the agent
         required: false
         default: ""
 
@@ -50,16 +60,18 @@ jobs:
           name: dsi_studio_win_ai_test
           path: dsi_studio_win
 
-  ai-test:
-    name: AI pipe / ${{ inputs.agent }}
+  codex-test:
+    name: AI pipe / Codex
+    if: ${{ inputs.test_codex }}
     needs: windows-build
     runs-on: windows-2022
     timeout-minutes: 90
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       QT_OPENGL: software
+      CODEX_THREAD_ID: 00000000-0000-4000-8000-000000000001
+      AGENT_NAME: codex
 
     steps:
       - name: Download DSI Studio
@@ -77,16 +89,16 @@ jobs:
       - name: Prepare output directory
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force ai_output | Out-Null
-          Get-Item ai_output
+          New-Item -ItemType Directory -Force ai_output\codex | Out-Null
+          Get-Item ai_output\codex
 
       - name: Start DSI Studio GUI local server
         shell: pwsh
         run: |
           $exe = (Resolve-Path .\dsi_studio_win\dsi_studio.exe).Path
           $work = Split-Path $exe
-          $stdout = Join-Path (Resolve-Path ai_output).Path "dsi_stdout.txt"
-          $stderr = Join-Path (Resolve-Path ai_output).Path "dsi_stderr.txt"
+          $stdout = Join-Path (Resolve-Path ai_output\codex).Path "dsi_stdout.txt"
+          $stderr = Join-Path (Resolve-Path ai_output\codex).Path "dsi_stderr.txt"
           $process = Start-Process -FilePath $exe -WorkingDirectory $work -PassThru `
             -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           "DSI_PID=$($process.Id)" >> $env:GITHUB_ENV
@@ -112,81 +124,54 @@ jobs:
       - name: Direct local-pipe smoke test
         shell: pwsh
         run: |
-          $env:CODEX_THREAD_ID = [guid]::NewGuid().ToString()
           Push-Location dsi_studio_win\ai
-          .\dsi.ps1 set_title "GitHub Actions direct pipe smoke test" | Tee-Object ..\..\ai_output\direct_set_title.json
-          .\dsi.ps1 list_window | Tee-Object ..\..\ai_output\direct_list_window.json
-          .\dsi.ps1 hub_repo | Tee-Object ..\..\ai_output\direct_hub_repo.json
+          .\dsi.ps1 set_title "GitHub Actions Codex direct pipe smoke test" | Tee-Object ..\..\ai_output\codex\direct_set_title.json
+          .\dsi.ps1 list_window | Tee-Object ..\..\ai_output\codex\direct_list_window.json
+          .\dsi.ps1 hub_repo | Tee-Object ..\..\ai_output\codex\direct_hub_repo.json
           Pop-Location
 
       - name: Prepare agent prompt
         shell: pwsh
         run: |
-          $out = (Resolve-Path ai_output).Path
+          $out = (Resolve-Path ai_output\codex).Path
           $model = "${{ inputs.model }}"
+          $task = @'
+${{ inputs.task_prompt }}
+'@
           @"
 You are running inside GitHub Actions on the same Windows runner as DSI Studio.
 
-Read AGENTS.md first, then read the needed DSI Studio AI command guides:
-- DSI_STUDIO_AI_COMMAND_EXAMPLES_GENERAL.md
-- DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md
-- DSI_STUDIO_AI_COMMAND_EXAMPLES_TRACT.md
-- DSI_STUDIO_AI_COMMAND_EXAMPLES_RENDERING.md
+Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
 
-Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not use shell download commands. Do not ask the user questions.
+Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
 
 Output directory:
 $out
 
-Fiber Data Hub task:
-1. Set the DSI Studio task title to "GitHub Actions arcuate fasciculus test".
-2. Use DSI Studio Fiber Data Hub commands from the main window, not GitHub Actions download steps:
-   - hub_repo
-   - hub_tags data-hcp/lifespan
-   - hub_files data-hcp/lifespan hcp-ya "^100206\\.gqi\\.fz$" 0 20
-   - hub_open data-hcp/lifespan hcp-ya "100206.gqi.fz"
-3. If the exact filename is not accepted by hub_open, use the returned row index from hub_files. After hub_open succeeds, the new tracking window should be selected automatically.
-4. Use DSI Studio AI commands to map the left arcuate fasciculus. Use list_auto_tract first and select the exact AutoTrack name for the left arcuate fasciculus rather than guessing.
-5. Poll list_tract status until tracking is done.
-6. Save the tract bundle exactly as:
-$out\arcuate_fasciculus.tt.gz
-7. Save tract statistics exactly as:
-$out\arcuate_fasciculus_stat.txt
-8. Set up a clear 3D view with tracts visible and save a screenshot exactly as:
-$out\arcuate_fasciculus_lr.png
-Use save_lr_screen with size "1600 1000" unless the manual indicates a better command.
-9. Run preview_screen 3d and save your own final text summary exactly as:
-$out\agent_summary.txt
+Model preference, if relevant:
+$model
 
-The run is successful only if arcuate_fasciculus.tt.gz and arcuate_fasciculus_lr.png exist.
+Dispatcher task:
+$task
+
+Write any required output files under the output directory above. Also write a short final report to:
+$out\agent_summary.txt
 "@ | Set-Content -Path agent_prompt.md -Encoding UTF8
           Get-Content agent_prompt.md
 
-      - name: Install selected agent
+      - name: Install Codex
         shell: pwsh
         run: |
-          if("${{ inputs.agent }}" -eq "codex")
-          {
-            if([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) { throw "OPENAI_API_KEY secret is required for codex." }
-            npm install -g @openai/codex
-            codex --version
-          }
-          else
-          {
-            if([string]::IsNullOrWhiteSpace($env:ANTHROPIC_API_KEY)) { throw "ANTHROPIC_API_KEY secret is required for claude." }
-            npm install -g @anthropic-ai/claude-code
-            claude --version
-          }
+          if([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) { throw "OPENAI_API_KEY secret is required for Codex." }
+          npm install -g @openai/codex
+          codex --version
 
       - name: Run Codex against DSI Studio
-        if: ${{ inputs.agent == 'codex' }}
         shell: pwsh
-        env:
-          CODEX_THREAD_ID: 00000000-0000-4000-8000-000000000001
         run: |
           $prompt = Get-Content agent_prompt.md -Raw
           Push-Location dsi_studio_win\ai
-          $log = "..\..\ai_output\codex.log"
+          $log = "..\..\ai_output\codex\codex.log"
           $attempts = @(
             @("exec","--skip-git-repo-check","--dangerously-bypass-approvals-and-sandbox",$prompt),
             @("exec","--skip-git-repo-check","--full-auto",$prompt),
@@ -200,18 +185,152 @@ The run is successful only if arcuate_fasciculus.tt.gz and arcuate_fasciculus_lr
             if($LASTEXITCODE -eq 0) { $ok = $true; break }
           }
           Pop-Location
-          if(!$ok) { throw "Codex failed. See ai_output/codex.log." }
+          if(!$ok) { throw "Codex failed. See ai_output/codex/codex.log." }
+
+      - name: Verify Codex outputs
+        shell: pwsh
+        run: |
+          Get-ChildItem ai_output\codex -Force
+          $required = @'
+${{ inputs.required_outputs }}
+'@ -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          foreach($file in $required)
+          {
+            $path = Join-Path (Resolve-Path ai_output\codex).Path $file
+            if(!(Test-Path $path)) { throw "Missing Codex output: $file" }
+          }
+
+      - name: Stop DSI Studio
+        if: always()
+        shell: pwsh
+        run: |
+          if($env:DSI_PID)
+          {
+            Stop-Process -Id ([int]$env:DSI_PID) -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload Codex AI test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsi-studio-ai-test-codex
+          path: |
+            ai_output/codex
+            agent_prompt.md
+
+  claude-test:
+    name: AI pipe / Claude
+    if: ${{ inputs.test_claude }}
+    needs: windows-build
+    runs-on: windows-2022
+    timeout-minutes: 90
+
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      QT_OPENGL: software
+      CLAUDE_CODE_SESSION_ID: 00000000-0000-4000-8000-000000000002
+      CLAUDE_CODE_USE_POWERSHELL_TOOL: "1"
+      AGENT_NAME: claude
+
+    steps:
+      - name: Download DSI Studio
+        uses: actions/download-artifact@v4
+        with:
+          name: dsi_studio_win_ai_test
+          path: dsi_studio_win
+
+      - name: Checkout DSI Studio AI manual into app directory
+        uses: actions/checkout@v4
+        with:
+          repository: frankyeh/DSI-Studio-AI
+          path: dsi_studio_win/ai
+
+      - name: Prepare output directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ai_output\claude | Out-Null
+          Get-Item ai_output\claude
+
+      - name: Start DSI Studio GUI local server
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path .\dsi_studio_win\dsi_studio.exe).Path
+          $work = Split-Path $exe
+          $stdout = Join-Path (Resolve-Path ai_output\claude).Path "dsi_stdout.txt"
+          $stderr = Join-Path (Resolve-Path ai_output\claude).Path "dsi_stderr.txt"
+          $process = Start-Process -FilePath $exe -WorkingDirectory $work -PassThru `
+            -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          "DSI_PID=$($process.Id)" >> $env:GITHUB_ENV
+
+          for($i = 0; $i -lt 90; ++$i)
+          {
+            try
+            {
+              $pipe = [IO.Pipes.NamedPipeClientStream]::new('.','dsi-studio')
+              $pipe.Connect(1000)
+              $pipe.Dispose()
+              Write-Host "DSI Studio pipe is ready."
+              exit 0
+            }
+            catch
+            {
+              if($process.HasExited) { throw "DSI Studio exited before the pipe became ready." }
+              Start-Sleep -Seconds 1
+            }
+          }
+          throw "DSI Studio pipe did not become ready."
+
+      - name: Direct local-pipe smoke test
+        shell: pwsh
+        run: |
+          Push-Location dsi_studio_win\ai
+          .\dsi.ps1 set_title "GitHub Actions Claude direct pipe smoke test" | Tee-Object ..\..\ai_output\claude\direct_set_title.json
+          .\dsi.ps1 list_window | Tee-Object ..\..\ai_output\claude\direct_list_window.json
+          .\dsi.ps1 hub_repo | Tee-Object ..\..\ai_output\claude\direct_hub_repo.json
+          Pop-Location
+
+      - name: Prepare agent prompt
+        shell: pwsh
+        run: |
+          $out = (Resolve-Path ai_output\claude).Path
+          $model = "${{ inputs.model }}"
+          $task = @'
+${{ inputs.task_prompt }}
+'@
+          @"
+You are running inside GitHub Actions on the same Windows runner as DSI Studio.
+
+Read AGENTS.md first. Then read whichever DSI Studio AI manuals in this directory are needed for the task.
+
+Use only the local DSI Studio pipe through .\dsi.ps1 or bash ./dsi.sh. Do not use GUI clicking. Do not ask the user questions. Use DSI Studio's own commands, including Fiber Data Hub commands when data are needed.
+
+Output directory:
+$out
+
+Model preference, if relevant:
+$model
+
+Dispatcher task:
+$task
+
+Write any required output files under the output directory above. Also write a short final report to:
+$out\agent_summary.txt
+"@ | Set-Content -Path agent_prompt.md -Encoding UTF8
+          Get-Content agent_prompt.md
+
+      - name: Install Claude
+        shell: pwsh
+        run: |
+          if([string]::IsNullOrWhiteSpace($env:ANTHROPIC_API_KEY)) { throw "ANTHROPIC_API_KEY secret is required for Claude." }
+          npm install -g @anthropic-ai/claude-code
+          claude --version
 
       - name: Run Claude against DSI Studio
-        if: ${{ inputs.agent == 'claude' }}
         shell: pwsh
-        env:
-          CLAUDE_CODE_SESSION_ID: 00000000-0000-4000-8000-000000000002
-          CLAUDE_CODE_USE_POWERSHELL_TOOL: "1"
         run: |
           $prompt = Get-Content agent_prompt.md -Raw
           Push-Location dsi_studio_win\ai
-          $log = "..\..\ai_output\claude.log"
+          $log = "..\..\ai_output\claude\claude.log"
           $allowed = "Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),Read,Glob,Grep,LS"
           $attempts = @(
             @("-p","--dangerously-skip-permissions","--allowedTools",$allowed,$prompt),
@@ -226,14 +345,20 @@ The run is successful only if arcuate_fasciculus.tt.gz and arcuate_fasciculus_lr
             if($LASTEXITCODE -eq 0) { $ok = $true; break }
           }
           Pop-Location
-          if(!$ok) { throw "Claude failed. See ai_output/claude.log." }
+          if(!$ok) { throw "Claude failed. See ai_output/claude/claude.log." }
 
-      - name: Verify AI outputs
+      - name: Verify Claude outputs
         shell: pwsh
         run: |
-          Get-ChildItem ai_output -Force
-          if(!(Test-Path ai_output\arcuate_fasciculus.tt.gz)) { throw "Missing arcuate_fasciculus.tt.gz" }
-          if(!(Test-Path ai_output\arcuate_fasciculus_lr.png)) { throw "Missing arcuate_fasciculus_lr.png" }
+          Get-ChildItem ai_output\claude -Force
+          $required = @'
+${{ inputs.required_outputs }}
+'@ -split "[\r\n,]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          foreach($file in $required)
+          {
+            $path = Join-Path (Resolve-Path ai_output\claude).Path $file
+            if(!(Test-Path $path)) { throw "Missing Claude output: $file" }
+          }
 
       - name: Stop DSI Studio
         if: always()
@@ -244,11 +369,11 @@ The run is successful only if arcuate_fasciculus.tt.gz and arcuate_fasciculus_lr
             Stop-Process -Id ([int]$env:DSI_PID) -Force -ErrorAction SilentlyContinue
           }
 
-      - name: Upload AI test artifacts
+      - name: Upload Claude AI test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dsi-studio-ai-test-${{ inputs.agent }}
+          name: dsi-studio-ai-test-claude
           path: |
-            ai_output
+            ai_output/claude
             agent_prompt.md
