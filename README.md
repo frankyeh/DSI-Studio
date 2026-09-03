@@ -72,7 +72,7 @@ DSI Studio is distributed as a **standalone executable**.
 Notes:
 - **Windows/Linux:** no installation required  
 - **macOS:** you may need to grant execution permission (see download page)  
-- **GPU build:** requires an NVIDIA GPU and CUDA toolkit installed
+- **GPU build:** requires an NVIDIA GPU with a compatible NVIDIA driver; the CUDA Toolkit is not required
 
 ---
 
@@ -85,7 +85,7 @@ Notes:
 
 ### Dependencies
 - None for CPU builds (standalone executable)
-- CUDA toolkit required for GPU builds
+- GPU builds require only a compatible NVIDIA driver; CUDA runtime is statically linked
 
 ### Recommended Hardware
 - CPU: 4+ cores
