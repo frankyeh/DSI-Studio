@@ -377,7 +377,7 @@ jobs:
       - name: Sign and notarize macOS app
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -542,8 +542,15 @@ jobs:
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
-    - name: Install Cuda
+    - name: Install CUDA 11.8
       uses: Jimver/cuda-toolkit@v0.2.23
+      with:
+        cuda: '11.8.0'
+    - name: Verify CUDA 11.8
+      shell: cmd
+      run: |
+        nvcc --version
+        nvcc --version | findstr /C:"release 11.8" >nul || exit /b 1
     - name: Install Qt
       uses: Kidev/install-qt-action@v4.6.0
       with:
