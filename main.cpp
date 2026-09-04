@@ -4,13 +4,9 @@
 #include <cstdio>
 #include <unordered_set>
 #include <QApplication>
-#include <QLabel>
-#include <QListWidget>
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QMessageBox>
-#include <QPushButton>
-#include <QScrollBar>
 #include <QStyleFactory>
 #include <QStandardPaths>
 #include <QFileInfo>
@@ -18,7 +14,6 @@
 #include <QImageReader>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QTextBrowser>
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -591,21 +586,6 @@ int main(int ac, char *av[])
                     {
                         QByteArray reply;
                         w.ai_agent->ai_request(request,reply);
-                        if(auto* history = w.ai_agent->findChild<QTextBrowser*>("ai_chat_history"))
-                        {
-                            auto* bar = history->verticalScrollBar();
-                            bar->setValue(bar->maximum());
-                            history->viewport()->repaint();
-                        }
-                        if(auto* list = w.ai_agent->findChild<QListWidget*>("ai_project_list"))
-                            if(auto* item = list->currentItem())
-                                if(auto* row = list->itemWidget(item))
-                                {
-                                    if(auto* title = row->findChild<QPushButton*>())
-                                        title->repaint();
-                                    if(auto* dot = row->findChild<QLabel*>("ai_project_status_dot"))
-                                        dot->repaint();
-                                }
                         clientSocket->write(reply);
                     }
                     else
