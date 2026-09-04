@@ -312,7 +312,6 @@ void MainWindow::login(void)
             info = QString(record.values().join("")).split(',');
             break;
         }
-        // update news
         if(info.size() >= 1)
         {
             auto reply = get(info[0]);
@@ -325,7 +324,6 @@ void MainWindow::login(void)
                 }
             });
         }
-        // update registering information
         if(info.size() >= 3)
         {
             auto reply = get(info[1]);
@@ -370,7 +368,7 @@ void MainWindow::login(void)
                 if (reply->error() == QNetworkReply::NoError)
                 {
                     QString result = reply->readAll();
-                    if(result.startsWith('{')) // json format
+                    if(result.startsWith('{'))
                     {
                         auto data = QJsonDocument::fromJson(result.toUtf8()).object();
                         if (data.contains("title"))
@@ -398,7 +396,7 @@ void MainWindow::openFile(QStringList file_names)
     auto name = file_name.toLower();
     if(!QFileInfo::exists(file_name))
     {
-        if(file_name[0] == '-') // Mac pass a variable
+        if(file_name[0] == '-')
             return;
         QMessageBox::critical(this,"ERROR",QString("Cannot find ") +
         file_name + " at current dir: " + QDir::current().dirName());
@@ -531,7 +529,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
             event->ignore();
             return;
         }
-    ai_agent->close(); // its own closeEvent stops every running agent process; ~AIAgent() alone would not
+    ai_agent->close();
     QMainWindow::closeEvent(event);
 }
 
@@ -608,8 +606,6 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 extern QByteArray default_geo,default_state;
 QString command_window_id(QWidget* window)
 {
-    // the one place that maps a widget to its AI-addressable window type; everything downstream
-    // that needs the type back out of an id string uses command_window_type(const QString&) instead
     const char* type =
         qobject_cast<MainWindow*>(window) ? "main" :
         qobject_cast<tracking_window*>(window) ? "tracking" :
@@ -635,7 +631,7 @@ QString command_window_type(const QString& id)
 void MainWindow::report_and_target_window(QWidget* window)
 {
     auto id = command_window_id(window);
-    tipl::out() << "window created, id: " << id.toStdString(); // id itself is "<type><hex>", the type needs no separate extraction here
+    tipl::out() << "window created, id: " << id.toStdString();
     ai_agent->update_current_window(window);
 }
 bool MainWindow::loadFib(QString filename)
@@ -751,7 +747,6 @@ void MainWindow::open_DWI(QStringList filenames)
         if(QDir(dir + "/" +QString::number(i)).exists())
         {
             bool is_dwi =false;
-            // has dif info in the method file
             {
                 tipl::io::bruker_info method_file;
                 QString method_name = dir + "/" +QString::number(i)+"/method";
@@ -759,7 +754,6 @@ void MainWindow::open_DWI(QStringList filenames)
                    method_file["PVM_DwEffBval"].length())
                     is_dwi = true;
             }
-            // has dif info in the imnd file
             {
                 tipl::io::bruker_info imnd_file;
                 QString imnd_name = dir + "/" +QString::number(i)+"/imnd";
@@ -907,7 +901,7 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite,s
         if(!header.load_from_file(files[0]))
             return fail("cannot read image volume. skip");
         header.get_sequence_id(sequence);
-        header.get_text(0x0008,0x0070,manu);//Manufacturer
+        header.get_text(0x0008,0x0070,manu);
         header.get_text(0x0008,0x1090,make);
         manu.erase(std::remove(manu.begin(),manu.end(),' '),manu.end());
         make.erase(std::remove(make.begin(),make.end(),' '),make.end());
@@ -1011,7 +1005,7 @@ bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite,std::stri
         for(size_t i = 0;i < dir_list.size();++i,++done)
         {
             if(!prog(done,total))
-                return false; // aborted by the user; not a reportable failure
+                return false;
             auto dicom_file_list = tipl::search_files(dir_list[i],"*.dcm");
             if(dicom_file_list.empty())
                 continue;
@@ -1028,8 +1022,6 @@ bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite,std::stri
         if(!has_dicom)
             pending.insert(pending.end(),dir_list.begin(),dir_list.end());
     }
-    // some series failing is not itself a failure as long as at least one converted; error_msg still
-    // carries every failure so the caller can warn about it even when reporting overall success
     if(attempted == 0)
         error_msg = "no DICOM files found in "+dir.u8string();
     return attempted != 0 && succeeded != 0;
@@ -1093,7 +1085,7 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 {
     QNetworkRequest request;
     request.setUrl(url);
-    if(url.toString().contains("releases/assets/")) // when downloading restricted, the url is replaced by asset id
+    if(url.toString().contains("releases/assets/"))
         request.setRawHeader("Accept", "application/octet-stream");
     else
         request.setRawHeader("Accept", "application/json");
@@ -1108,12 +1100,8 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
                                          });
 }
 
-// run_shell (curl) tasks still in flight: id -> original command text; only ever touched on the GUI
-// thread (dispatch_cmd's caller, and QProcess's own signals, both run there), so no lock is needed
 static QMap<QString,QString> shell_tasks;
 
-// forwards cmd to whichever AI-addressable window type target actually is; false with error left empty means
-// target isn't one of these (e.g. it's main itself) and the caller should fall back to its own error_msg
 static bool command_window(QWidget* target,const std::vector<std::string>& cmd,command_source source,QString& error)
 {
     auto run = [&](auto* window)
@@ -1143,20 +1131,14 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return QJsonObject{{"status","error"},{"result",QJsonArray{
             QJsonObject{{"status","error"},{"error",error}}}}};
     };
-    // removes ANSI escape/color codes from captured command output before it's reported to the AI agent
     auto strip_ansi = [](QString text)
     {
         static const QRegularExpression ansi_escape(
             QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
         return text.remove(ansi_escape);
     };
-    // a chat/reasoning-only request (no command) is valid: the chat text is already
-    // recorded by the caller (AIAgent::ai_request) before this returns, so report success
-    // instead of an error
     bool has_chat = !request["chat"].toString().trimmed().isEmpty() ||
                     !request["reasoning"].toString().trimmed().isEmpty();
-    // exposes this request's chat text (e.g. to run_shell's confirmation dialog) for the duration of this call;
-    // restores the previous value on every exit path, including a reentrant request nested inside a long command
     struct chat_context_guard
     {
         QString& target;
@@ -1170,7 +1152,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return no_command_or_fail();
 
     std::vector<std::vector<std::string>> cmds;
-    // prepare cmds
     for(const auto& value :
         (command_json.isArray() ? command_json.toArray() : QJsonArray{command_json}))
     {
@@ -1192,7 +1173,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     QJsonArray results;
 
-    QPointer<QWidget> locked_target; // releases the locked window (busy) on target switch or batch end; QPointer so a target destroyed mid-batch (e.g. a local user closing it between commands) auto-nulls instead of dangling
+    QPointer<QWidget> locked_target;
     auto unlock_target = [&]
     {
         if(!locked_target)
@@ -1201,7 +1182,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         locked_target = nullptr;
     };
 
-    // pure lookup, no locking/side effects -- safe to reuse anywhere a window id needs checking (e.g. set_window)
     auto find_window = [&](const QString& id) -> QWidget*
     {
         if(id == "main")
@@ -1212,8 +1192,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return nullptr;
     };
 
-    // resolves+locks the current target (unless already locked from a previous command in this same segment);
-    // returns false (with `error` set) if it's busy elsewhere or can't be found
     auto resolve_target = [&](QString& error)
     {
         if(locked_target)
@@ -1241,27 +1219,24 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         auto command_name = QString::fromUtf8(cmd[0]);
         auto window_before = info.current_window;
         QString output,error;
-        QString* prev_capture; // a reentrant request handled during this command's processEvents() calls also captures; restore instead of clearing
+        QString* prev_capture;
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
             prev_capture = console.capture;
             console.capture = &output;
         }
-        auto prev_cwd = QDir::currentPath(); // a reentrant request restores this session's own directory when it's done, same reasoning as prev_capture
+        auto prev_cwd = QDir::currentPath();
         auto session_cwd = info.model_settings["cwd"].toString();
         auto base_cwd = session_cwd.isEmpty() ? prev_cwd : session_cwd;
         if(base_cwd != prev_cwd)
             QDir::setCurrent(base_cwd);
-        // reports error/output, whichever applies; caller writes "if(!finish()) break;". Also the shared cleanup
-        // for every exit path: stops capturing console output for this command, and releases a stale lock if
-        // the command retargeted (open_fib/open_src/open_image/set_window)
         auto finish = [&]
         {
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
                 console.capture = prev_capture;
             }
-            if(auto cwd = QDir::currentPath();cwd != base_cwd) // "run_shell cd ..." changed it; remember it for this session
+            if(auto cwd = QDir::currentPath();cwd != base_cwd)
             {
                 info.model_settings["cwd"] = cwd;
                 info.save_config();
@@ -1270,9 +1245,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(info.current_window != window_before)
                 unlock_target();
 
-            // recorded once, here, for every command regardless of outcome (including unknown/failed ones) --
-            // title is whatever window this command's context ends up being (its own destination for
-            // set_window), empty for main or when there's no such window
             QString title;
             if(command_window_type(info.current_window) != "main")
                 if(auto* target = find_window(info.current_window))
@@ -1297,7 +1269,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(command_name == "bring_to_front" || command_name == "close" ||
                command_name == "minimize" || command_name == "maximize")
             {
-                // instantaneous window-manager calls: no batching benefit from resolve_target's lock, just a plain lookup
                 if(auto* target = find_window(info.current_window))
                 {
                     if(command_name == "close" && target == this)
@@ -1312,14 +1283,14 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         target->showMinimized();
                     else if(command_name == "maximize")
                         target->showMaximized();
-                    else // close
+                    else
                     {
                         if(locked_target == target)
-                            locked_target = nullptr; // let the target manage its own lifetime again once this returns, if an earlier command in this batch had it locked
-                        target->close(); // non-spontaneous: tracking_window::closeEvent() skips the unsaved-tracts prompt for this
+                            locked_target = nullptr;
+                        target->close();
                     }
                 }
-                else // not an agent mistake: most likely a local user closed it -- informational, not an error
+                else
                     output = "target window not found, terminated by user? Use set_window to select a window first.";
             }
             else if(command_name == "set_title")
@@ -1333,11 +1304,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
                 if(info.log_position == quint64(-1))
-                    info.log_position = console.total_size; // first ever log read for this session: start from now, not from the console's whole history
+                    info.log_position = console.total_size;
                 auto end = console.total_size;
                 auto first = end-quint64(console.history.size());
-                // any parameter (cmd[1] or cmd[2]) pulls everything still retained in the console
-                // buffer instead of just what's new since this session's own cursor
                 bool full = (cmd.size() > 1 && !cmd[1].empty()) || (cmd.size() > 2 && !cmd[2].empty());
                 auto begin = full ? first : std::max(info.log_position,first);
                 bool capped = end-begin > 16*1024;
@@ -1359,10 +1328,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
                 if(param.isEmpty() || find_window(param))
                 {
-                    info.current_window = param.isEmpty() ? "main" : param; // finish()'s generic window_before check below releases the previous target's lock
+                    info.current_window = param.isEmpty() ? "main" : param;
                     output = "current window: "+info.current_window;
                 }
-                else // not an error: informational, current window is left unchanged
+                else
                     output = "window \""+param+"\" not found, terminated by user? current window remains: "+info.current_window;
             }
             else if(command_name == "list_window")
@@ -1402,7 +1371,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
                     windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
                 application_busy |= !shell_tasks.isEmpty();
-                // active tipl::progress operations, outermost to innermost; index 0 is the app-lifetime citation entry, skipped
                 QJsonArray progress;
                 for(size_t i = 1;i < tipl::status_list.size();++i)
                 {
@@ -1419,18 +1387,18 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
-            else if(command(cmd,command_source::AI)) {} // handled by MainWindow directly: nothing more to do
+            else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
                 if(!resolve_target(error))
                 {
-                    output = error; // busy-elsewhere / window-not-found: a status report, not an agent mistake
+                    output = error;
                     error.clear();
                 }
                 else if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
-                    error = QString::fromStdString(error_msg); // target is main itself; nothing else to try
+                    error = QString::fromStdString(error_msg);
             }
-            else // recognized by MainWindow but failed for a real reason
+            else
                 error = QString::fromStdString(error_msg);
         }
         catch(const std::exception& e){error = e.what();}
@@ -1442,7 +1410,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         if(!finish())
             break;
     }
-    unlock_target(); // release whatever is still locked when the batch finishes normally
+    unlock_target();
 
     return QJsonObject{
         {"status",results.last().toObject()["status"]},{"result",results}};
@@ -1458,7 +1426,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 {
     error_msg.clear();
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
-    // for a batch command run to completion in this function: err empty means success, prompting "Finished." for a local user; non-empty means fail(err)
     auto finish = [&](const std::string& err)
     {
         if(!err.empty())
@@ -1496,7 +1463,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     };
     auto select_dir = [&](const QString& title,QString initial = {})
     {
-        if(cmd.size() >= 2) // >= rather than == so commands taking a second, separate parameter after the directory (e.g. bids_to_src's output folder) still work
+        if(cmd.size() >= 2)
             return QString::fromUtf8(cmd[1]);
         return QFileDialog::getExistingDirectory(
             this,title,initial.isEmpty() ? work_dir() : initial);
@@ -1598,7 +1565,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         std::string dicom_error;
         if(!dicom2src_and_nii(tipl::qt::to_path(dir),false,dicom_error))
             return fail(dicom_error.empty() ? "DICOM conversion failed" : dicom_error);
-        if(source == command_source::User) // some series may have failed even on overall success; say so instead of a bare "Finished."
+        if(source == command_source::User)
             QMessageBox::information(this,QApplication::applicationName(),
                 dicom_error.empty() ? "Finished." : QString::fromStdString("Finished with warnings:\n"+dicom_error));
         return true;
@@ -1988,7 +1955,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     if(cmd[0] == "open_image")
     {
         auto files = select_images(
-            "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
+            "image files (*.nii *.nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
         if(files.isEmpty())
             return true;
         add_work_dir(QFileInfo(files[0]).absolutePath());
@@ -2028,9 +1995,10 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                 "-NonInteractive",
                 "-Command",
                 "$v=New-Object -ComObject SAPI.SpVoice;"
+                "$z=$v.GetVoices()|Where-Object {$_.GetDescription() -like '*Zira*'}|Select-Object -First 1;"
+                "if($z){$v.Voice=$z};"
                 "[void]$v.Speak($env:DSI_VOICE_TEXT)"
             });
-        // detach: DSI Studio returns immediately and does not wait for powershell to finish speaking
         return process.startDetached() || fail("cannot start Windows speech");
 #else
         return fail("voice is available only on Windows");
@@ -2044,7 +2012,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         QString program = text.section(' ',0,0);
         if(!program.compare("cd",Qt::CaseInsensitive))
         {
-            // "cd" is a shell builtin: change DSI Studio's own working directory so it persists across calls
             QString path = text.mid(program.length()).trimmed();
             if(path.size() >= 2 && path.startsWith('"') && path.endsWith('"'))
                 path = path.mid(1,path.size()-2);
@@ -2053,7 +2020,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             tipl::out() << QDir::currentPath().toStdString();
             return true;
         }
-        // runs "text" through a real shell so pipes/redirection/&&/globbing behave the same on every OS
         auto configure_process = [](QProcess& process,const QString& shell_text)
         {
 #ifdef Q_OS_WIN
@@ -2065,33 +2031,29 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 #endif
         };
         bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
-        if(is_curl) // curl's default progress meter redraws one line via \r for an interactive terminal;
-            text.insert(program.length()," -s -S"); // captured non-interactively, that just floods the log. -s hides it, -S still shows real errors
-        // a plain single command (e.g. a bare "dir"/"ls") runs unconfirmed; anything containing a
-        // character a real shell treats specially -- chaining (&&/||/;/&), piping (|), substitution
-        // (`/$()), or redirection (>/<) -- still requires confirmation, since the full text is what
-        // actually runs, not just what the visible command looks like at a glance
+        if(is_curl)
+            text.insert(program.length()," -s -S");
         static const QStringList shell_special{"&","|",";","`","$(",">","<"};
         bool needs_confirm = std::any_of(shell_special.begin(),shell_special.end(),
             [&](const QString& token){return text.contains(token);});
         if(source == command_source::AI && needs_confirm)
         {
             QString message;
-            if(!ai_chat_context.isEmpty()) // explains why, using the agent's own accompanying chat message, when one was sent with this request
+            if(!ai_chat_context.isEmpty())
                 message = "The AI agent says:\n\n"+ai_chat_context+"\n\n";
             message += "The AI agent wants to run this shell command:\n\n"+text;
             if(QMessageBox::question(this,"AI Shell Command Request",message,
                    QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
                 return fail("user declined to run this shell command");
         }
-        if(!is_curl) // not curl: assume it's fast, wait for it, but bound the wait so a stuck program cannot deadlock this request forever
+        if(!is_curl)
         {
             QProcess process;
             configure_process(process,text);
             process.start();
             if(!process.waitForStarted(3000))
                 return fail("cannot start command");
-            constexpr int shell_timeout_ms = 600000; // 10 minutes; longer operations should use curl's async path instead
+            constexpr int shell_timeout_ms = 600000;
             if(!process.waitForFinished(shell_timeout_ms))
             {
                 process.kill();
@@ -2106,20 +2068,18 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                 return fail("command exited with code "+std::to_string(process.exitCode()));
             return true;
         }
-        // curl can hang, so run it as a self-owned asynchronous QProcess instead of blocking any thread;
-        // "list_window" shows the id as busy until it finishes (there is intentionally no completion timeout here)
         static int next_curl_id = 0;
         QString id = "curl"+QString::number(++next_curl_id);
-        auto* process = new QProcess(this); // falls back to MainWindow as owner if it outlives this call
+        auto* process = new QProcess(this);
         configure_process(*process,text);
-        auto cleanup = [process,id] // every terminal path removes the task and releases the process the same way
+        auto cleanup = [process,id]
         {
             shell_tasks.remove(id);
             process->deleteLater();
         };
         QObject::connect(process,&QProcess::errorOccurred,[id,text,cleanup](QProcess::ProcessError error)
         {
-            if(error != QProcess::FailedToStart) // Crashed etc. still emits finished; that path already cleans up
+            if(error != QProcess::FailedToStart)
                 return;
             tipl::error() << (id+" cannot start: "+text).toStdString();
             cleanup();
