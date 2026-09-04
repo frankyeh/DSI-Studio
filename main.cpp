@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <unordered_set>
 #include <QApplication>
+#include <QEventLoop>
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QMessageBox>
@@ -586,6 +587,8 @@ int main(int ac, char *av[])
                     {
                         QByteArray reply;
                         w.ai_agent->ai_request(request,reply);
+                        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents |
+                                                    QEventLoop::ExcludeSocketNotifiers);
                         clientSocket->write(reply);
                     }
                     else
