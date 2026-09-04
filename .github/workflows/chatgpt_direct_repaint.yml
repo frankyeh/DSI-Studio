@@ -19,25 +19,14 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           p = Path('ai_agent.cpp')
           s = p.read_text()
-
-          old = '''    title->setToolTip(title->text());
-    item->setSizeHint(QSize(0,row->sizeHint().height()));'''
-          new = '''    title->setToolTip(title->text());
-    title->repaint();
-    item->setSizeHint(QSize(0,row->sizeHint().height()));'''
+          old = "    title->setToolTip(title->text());\n    item->setSizeHint(QSize(0,row->sizeHint().height()));"
+          new = "    title->setToolTip(title->text());\n    title->repaint();\n    item->setSizeHint(QSize(0,row->sizeHint().height()));"
           assert s.count(old) == 1, s.count(old)
           s = s.replace(old,new)
-
-          old = '''    QTimer::singleShot(
-        0,bar,[bar]{bar->setValue(bar->maximum());});
-}'''
-          new = '''    QTimer::singleShot(
-        0,bar,[bar]{bar->setValue(bar->maximum());});
-    ui->ai_chat_history->viewport()->repaint();
-}'''
+          old = "    QTimer::singleShot(\n        0,bar,[bar]{bar->setValue(bar->maximum());});\n}"
+          new = "    QTimer::singleShot(\n        0,bar,[bar]{bar->setValue(bar->maximum());});\n    ui->ai_chat_history->viewport()->repaint();\n}"
           assert s.count(old) == 1, s.count(old)
           p.write_text(s)
           PY
@@ -47,7 +36,6 @@ jobs:
           git add ai_agent.cpp main.cpp
           git diff --cached --check
           git diff --cached --name-status
-
           git config user.name 'Fang-Cheng (Frank) Yeh'
           git config user.email 'frank.yeh@gmail.com'
           git commit -m 'Refresh AI chat widgets directly'
