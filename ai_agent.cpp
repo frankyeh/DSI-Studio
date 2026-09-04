@@ -947,6 +947,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         "New "+info.agent_name+" Chat" : info.title();
     title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+chat_title);
     title->setToolTip(title->text());
+    title->repaint();
     item->setSizeHint(QSize(0,row->sizeHint().height()));
 
     update_ai_status(info);
