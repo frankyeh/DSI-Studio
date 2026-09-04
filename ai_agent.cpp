@@ -1120,6 +1120,7 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
     auto* bar = ui->ai_chat_history->verticalScrollBar();
     QTimer::singleShot(
         0,bar,[bar]{bar->setValue(bar->maximum());});
+    ui->ai_chat_history->viewport()->repaint();
 }
 
 void AIAgent::update_agent_models(
