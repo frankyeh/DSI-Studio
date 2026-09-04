@@ -340,11 +340,6 @@ bool ai_info::save_title(QString title)
         return false;
     if(title == project_titles)
         return true;
-    if(projects.isEmpty()) // see save_config()
-    {
-        project_titles = title;
-        return true;
-    }
     QSettings settings;
     settings.setValue("ai/title/"+sessions,title);
     settings.sync();
