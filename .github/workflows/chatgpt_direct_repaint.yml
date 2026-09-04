@@ -1,0 +1,37 @@
+name: Temporary direct repaint patch
+
+on:
+  push:
+    branches: [chatgpt-direct-ai-repaint]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add missing direct repaint
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('ai_agent.cpp')
+          s = p.read_text()
+          old = "    QTimer::singleShot(\n        0,bar,[bar]{bar->setValue(bar->maximum());});\n}"
+          new = "    QTimer::singleShot(\n        0,bar,[bar]{bar->setValue(bar->maximum());});\n    ui->ai_chat_history->viewport()->repaint();\n}"
+          assert s.count(old) == 1, s.count(old)
+          p.write_text(s.replace(old,new))
+          m = Path('main.cpp')
+          b = m.read_bytes()
+          if b.endswith(b'\n'):
+              m.write_bytes(b[:-1])
+          PY
+          git rm .github/workflows/chatgpt_direct_repaint.yml
+          git add ai_agent.cpp main.cpp
+          git diff --cached --check
+          git config user.name 'Fang-Cheng (Frank) Yeh'
+          git config user.email 'frank.yeh@gmail.com'
+          git commit -m 'Complete direct AI chat repaint'
+          git push origin HEAD:chatgpt-direct-ai-repaint
