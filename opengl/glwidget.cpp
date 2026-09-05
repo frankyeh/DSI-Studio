@@ -2257,6 +2257,13 @@ bool GLWidget::command(std::vector<std::string> cmd)
         int view = QString(cmd[1].c_str()).toInt(&okay);
         if(!okay)
             return run->failed("please specify a working parameter");
+        if(!cmd[2].empty())
+        {
+            int flipped = QString(cmd[2].c_str()).toInt(&okay);
+            if(!okay || flipped < 0 || flipped > 1)
+                return run->failed("flipped must be 0 or 1");
+            set_view_flip = flipped;
+        }
         makeCurrent();
         set_view(view);
         update();
