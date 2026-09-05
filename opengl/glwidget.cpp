@@ -1,1 +1,2 @@
 #include <QtOpenGL>
+#include <QtGui>
