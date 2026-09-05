@@ -700,41 +700,93 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_region_color")
     {
-        // cmd[1] : file name
         if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
 
         std::ifstream in(cmd[1]);
-        if (!in)
+        if(!in)
             return run->failed("cannot load file "+cmd[1]);
-        std::vector<int> colors((std::istream_iterator<float>(in)),
-                                  (std::istream_iterator<float>()));
-        if(colors.size() == regions.size()*4) // RGBA
+
+        std::string text((std::istreambuf_iterator<char>(in)),{});
+        std::vector<int64_t> colors(regions.size(),-1);
+
+        if(text.find('\t') != std::string::npos)
         {
-            for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=4)
+            std::istringstream input(text);
+            std::string line;
+            while(std::getline(input,line))
             {
-                tipl::rgb c(std::min<int>(colors[pos],255),
-                            std::min<int>(colors[pos+1],255),
-                            std::min<int>(colors[pos+2],255),
-                            std::min<int>(colors[pos+3],255));
-                regions[index]->region_render->color = c;
-                regions[index]->modified = true;
-                item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
+                if(!line.empty() && line.back() == '\r')
+                    line.pop_back();
+                if(line.empty())
+                    continue;
+
+                auto f = QString::fromStdString(line).split('\t');
+                if(f.size() != 5)
+                    return run->failed("invalid named region color format");
+
+                bool okay;
+                int c[4];
+                for(int i = 0;i < 4;++i)
+                {
+                    c[i] = f[i+1].toInt(&okay);
+                    if(!okay || c[i] < 0 || c[i] > 255)
+                        return run->failed("invalid color");
+                }
+
+                auto name = f[0].toStdString();
+                size_t index = regions.size();
+                for(size_t i = 0;i < regions.size();++i)
+                    if(regions[i]->name == name)
+                    {
+                        if(index != regions.size())
+                            return run->failed("duplicate region name: "+name);
+                        index = i;
+                    }
+
+                if(index == regions.size())
+                    return run->failed("unknown region name: "+name);
+                if(colors[index] >= 0)
+                    return run->failed("duplicate region color: "+name);
+
+                colors[index] = uint32_t(tipl::rgb(c[0],c[1],c[2],c[3]));
             }
+
+            for(size_t i = 0;i < colors.size();++i)
+                if(colors[i] < 0)
+                    return run->failed("missing region color: "+regions[i]->name);
         }
         else
-        //RGB
         {
-            for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=3)
+            std::istringstream input(text);
+            std::vector<int> v;
+            int value;
+            while(input >> value)
             {
-                tipl::rgb c(std::min<int>(colors[pos],255),
-                            std::min<int>(colors[pos+1],255),
-                            std::min<int>(colors[pos+2],255),255);
-                regions[index]->region_render->color = c;
-                regions[index]->modified = true;
-                item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
+                if(value < 0 || value > 255)
+                    return run->failed("invalid color");
+                v.push_back(value);
             }
+            if(!input.eof())
+                return run->failed("invalid region color file");
+
+            size_t n = v.size() == regions.size()*3 ? 3 :
+                       v.size() == regions.size()*4 ? 4 : 0;
+            if(!n)
+                return run->failed("region color count does not match region count");
+
+            for(size_t i = 0,p = 0;i < regions.size();++i,p += n)
+                colors[i] = uint32_t(tipl::rgb(
+                    v[p],v[p+1],v[p+2],n == 4 ? v[p+3] : 255));
         }
+
+        for(size_t i = 0;i < regions.size();++i)
+        {
+            regions[i]->region_render->color = uint32_t(colors[i]);
+            regions[i]->modified = true;
+            item(int(i),2)->setData(Qt::UserRole,uint32_t(colors[i]));
+        }
+
         emit region_changed();
         return run->succeed();
     }
