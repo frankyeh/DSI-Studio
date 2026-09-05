@@ -1462,6 +1462,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
         updateSlicesMenu();
         return run->succeed();
     }
+
+    if(cmd[0] == "clear_surface")
+    {
+        glWidget->surface.reset();
+        glWidget->update();
+        return run->succeed();
+    }
+
     if(tipl::begins_with(cmd[0],"add_surface"))
     {
         // cmd[1] : slice index
