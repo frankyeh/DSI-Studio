@@ -2348,6 +2348,14 @@ bool GLWidget::command(std::vector<std::string> cmd)
         tipl::vector<3,float> neg_dir(-dir[0],-dir[1],-dir[2]);
         tipl::vector<3,float> pos(inv.begin()+12);
 
+        tipl::vector<3,float> image_left(inv.begin());
+        image_left *= -1.0f;
+        image_left.normalize();
+
+        tipl::vector<3,float> image_up(inv.begin()+4);
+        image_up *= -1.0f;
+        image_up.normalize();
+
         auto lps_label = [](tipl::vector<3,float> v)->std::string
         {
             struct axis{ float mag; const char* label; };
@@ -2368,6 +2376,14 @@ bool GLWidget::command(std::vector<std::string> cmd)
         tipl::out() << "view_direction: " << dir[0] << " " << dir[1] << " " << dir[2]
                     << " (looking toward " << lps_label(dir) << ", viewed from " << lps_label(neg_dir) << ")";
         tipl::out() << "view_position (voxel): " << pos[0] << " " << pos[1] << " " << pos[2];
+
+        tipl::out() << "image_left: "
+                    << image_left[0] << " " << image_left[1] << " " << image_left[2]
+                    << " (subject " << lps_label(image_left) << ")";
+
+        tipl::out() << "image_up: "
+                    << image_up[0] << " " << image_up[1] << " " << image_up[2]
+                    << " (subject " << lps_label(image_up) << ")";
         return run->succeed();
     }
     if(tipl::begins_with(cmd[0],"store_camera"))
@@ -2478,10 +2494,13 @@ bool GLWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_rotation_video")
     {
-        return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
-                       this,QString::fromStdString(cmd[0]),
-                       QString::fromStdString(cur_tracking_window.history.file_stem() + "_rotation.avi"),
-                       "video files (*.avi);;All files (*)").toStdString()).empty();
+        if(cmd[1].empty() &&
+           (cmd[1] = QFileDialog::getSaveFileName(
+                this,QString::fromStdString(cmd[0]),
+                QString::fromStdString(cur_tracking_window.history.file_stem() + "_rotation.avi"),
+                "video files (*.avi);;All files (*)").toStdString()).empty())
+            return run->canceled();
+        tipl::progress prog("save video");
         //if(QFileInfo(cmd[1].c_str()).suffix() == "avi")
         {
             tipl::progress prog("save video");
