@@ -1670,7 +1670,7 @@ bool GLWidget::select_object(void)
                     d > 0 && d < slice_distance)
             {
                 moving_at_slice_index = dim;
-                slice_distance = d;
+                slice_distance = object_distance;
                 slice_selected = true;
             }
         }
@@ -1802,7 +1802,6 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 return;
             }
             // if only slice is selected or slice is at the front, then move slice
-            // if the slice is the picture, then the slice will be moved.
             if(slice_selected && object_distance > slice_distance)
             {
                 if(!dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()) ||
@@ -2257,6 +2256,13 @@ bool GLWidget::command(std::vector<std::string> cmd)
         int view = QString(cmd[1].c_str()).toInt(&okay);
         if(!okay)
             return run->failed("please specify a working parameter");
+        if(!cmd[2].empty())
+        {
+            int flipped = QString(cmd[2].c_str()).toInt(&okay);
+            if(!okay || flipped < 0 || flipped > 1)
+                return run->failed("flipped must be 0 or 1");
+            set_view_flip = flipped;
+        }
         makeCurrent();
         set_view(view);
         update();
