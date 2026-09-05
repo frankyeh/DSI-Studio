@@ -2500,7 +2500,6 @@ bool GLWidget::command(std::vector<std::string> cmd)
                 QString::fromStdString(cur_tracking_window.history.file_stem() + "_rotation.avi"),
                 "video files (*.avi);;All files (*)").toStdString()).empty())
             return run->canceled();
-        tipl::progress prog("save video");
         //if(QFileInfo(cmd[1].c_str()).suffix() == "avi")
         {
             tipl::progress prog("save video");
