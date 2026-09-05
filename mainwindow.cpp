@@ -1486,10 +1486,17 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         auto files = settings.value(
             cmd[0] == "list_recent_fib" ?
                 "recentFibFileList" : "recentSrcFileList").toStringList();
+        bool found = false;
         for(auto file : files)
             if(QFileInfo::exists(
                    file = QDir::fromNativeSeparators(file)))
+            {
                 tipl::out() << file.toStdString();
+                found = true;
+            }
+        if(!found)
+            tipl::out() << "no recent files";
+
         return true;
     }
 
