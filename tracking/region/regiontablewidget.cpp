@@ -707,35 +707,39 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!in)
             return run->failed("cannot load file "+cmd[1]);
 
-        std::string text((std::istreambuf_iterator<char>(in)),{});
         std::vector<int64_t> colors(regions.size(),-1);
-
-        if(text.find('\t') != std::string::npos)
+        std::string line;
+        size_t count = 0;
+        int format = 0;
+        while(std::getline(in,line))
         {
-            std::istringstream input(text);
-            std::string line;
-            while(std::getline(input,line))
+            auto text = QString::fromStdString(line);
+            if(text.trimmed().isEmpty())
+                continue;
+
+            // Named rows have five tab-separated fields; numeric rows allow any whitespace.
+            auto f = text.simplified().split(' ');
+            bool named = f.size() != 3 && f.size() != 4;
+            if(named)
+                f = text.split('\t');
+            if((named && f.size() != 5) || (format && format != f.size()))
+                return run->failed("invalid or inconsistent region color format");
+            format = int(f.size());
+
+            int c[4] = {0,0,0,255};
+            for(int i = 0;i < f.size()-int(named);++i)
             {
-                if(!line.empty() && line.back() == '\r')
-                    line.pop_back();
-                if(line.empty())
-                    continue;
-
-                auto f = QString::fromStdString(line).split('\t');
-                if(f.size() != 5)
-                    return run->failed("invalid named region color format");
-
                 bool okay;
-                int c[4];
-                for(int i = 0;i < 4;++i)
-                {
-                    c[i] = f[i+1].toInt(&okay);
-                    if(!okay || c[i] < 0 || c[i] > 255)
-                        return run->failed("invalid color");
-                }
+                c[i] = f[i+int(named)].toInt(&okay);
+                if(!okay || c[i] < 0 || c[i] > 255)
+                    return run->failed("invalid color");
+            }
 
+            size_t index = count;
+            if(named)
+            {
                 auto name = f[0].toStdString();
-                size_t index = regions.size();
+                index = regions.size();
                 for(size_t i = 0;i < regions.size();++i)
                     if(regions[i]->name == name)
                     {
@@ -748,37 +752,17 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                     return run->failed("unknown region name: "+name);
                 if(colors[index] >= 0)
                     return run->failed("duplicate region color: "+name);
-
-                colors[index] = uint32_t(tipl::rgb(c[0],c[1],c[2],c[3]));
             }
-
-            for(size_t i = 0;i < colors.size();++i)
-                if(colors[i] < 0)
-                    return run->failed("missing region color: "+regions[i]->name);
-        }
-        else
-        {
-            std::istringstream input(text);
-            std::vector<int> v;
-            int value;
-            while(input >> value)
-            {
-                if(value < 0 || value > 255)
-                    return run->failed("invalid color");
-                v.push_back(value);
-            }
-            if(!input.eof())
-                return run->failed("invalid region color file");
-
-            size_t n = v.size() == regions.size()*3 ? 3 :
-                       v.size() == regions.size()*4 ? 4 : 0;
-            if(!n)
+            if(index >= regions.size())
                 return run->failed("region color count does not match region count");
-
-            for(size_t i = 0,p = 0;i < regions.size();++i,p += n)
-                colors[i] = uint32_t(tipl::rgb(
-                    v[p],v[p+1],v[p+2],n == 4 ? v[p+3] : 255));
+            colors[index] = uint32_t(tipl::rgb(c[0],c[1],c[2],c[3]));
+            ++count;
         }
+        if(!in.eof())
+            return run->failed("cannot read file "+cmd[1]);
+        for(size_t i = 0;i < colors.size();++i)
+            if(colors[i] < 0)
+                return run->failed("missing region color: "+regions[i]->name);
 
         for(size_t i = 0;i < regions.size();++i)
         {
