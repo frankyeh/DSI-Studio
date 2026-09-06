@@ -82,35 +82,30 @@ constexpr qsizetype max_console_history = 4*1024*1024;
 std::basic_streambuf<char>::int_type
 console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
-    std::lock_guard<std::mutex> lock(edit_buf);
-    buf.push_back(char(v));
-    history.push_back(char(v));
-    ++total_size;
-    if(history.size() > max_console_history)
-        history.remove(0,history.size()-max_console_history);
-
-    if(capture && tipl::is_main_thread()) // worker-thread output must not land in another request's capture buffer
-        capture->push_back(char(v));
-    if(v == '\n')
-        has_output = true;
-    return v;
+    if(traits_type::eq_int_type(v,traits_type::eof()))
+        return traits_type::not_eof(v);
+    char c = traits_type::to_char_type(v);
+    return xsputn(&c,1) == 1 ? v : traits_type::eof();
 }
 
 std::streamsize console_stream::xsputn(
     const char* p,
     std::streamsize n)
 {
+    if(n <= 0)
+        return 0;
     std::lock_guard<std::mutex> lock(edit_buf);
-    QString text = QString::fromUtf8(
-        p,static_cast<qsizetype>(n));
+    QString text = decoder(QByteArrayView(p,static_cast<qsizetype>(n)));
 
     buf += text;
     history += text;
     total_size += text.size();
     if(history.size() > max_console_history)
         history.remove(0,history.size()-max_console_history);
-    if(capture && tipl::is_main_thread())
+    if(capture && tipl::is_main_thread()) // worker-thread output must not land in another request's capture buffer
         *capture += text;
+    if(text.contains('\n'))
+        has_output = true;
 
     return n;
 }
