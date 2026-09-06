@@ -709,6 +709,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
         std::vector<int64_t> colors(regions.size(),-1);
         std::string line;
+
         size_t count = 0;
         int format = 0;
         while(std::getline(in,line))
@@ -719,26 +720,20 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
             // Named rows have five tab-separated fields; numeric rows allow any whitespace.
             auto f = text.simplified().split(' ');
-            bool named = f.size() != 3 && f.size() != 4;
-            if(named)
+            if(f.size() != 3 && f.size() != 4)
+            {
                 f = text.split('\t');
-            if((named && f.size() != 5) || (format && format != f.size()))
-                return run->failed("invalid or inconsistent region color format");
+                if(f.size() != 5)
+                    return run->failed("invalid region color format");
+            }
+            if(format && format != f.size())
+                return run->failed("inconsistent region color format");
             format = int(f.size());
 
-            int c[4] = {0,0,0,255};
-            for(int i = 0;i < f.size()-int(named);++i)
-            {
-                bool okay;
-                c[i] = f[i+int(named)].toInt(&okay);
-                if(!okay || c[i] < 0 || c[i] > 255)
-                    return run->failed("invalid color");
-            }
-
             size_t index = count;
-            if(named)
+            if(format == 5)
             {
-                auto name = f[0].toStdString();
+                auto name = f.takeFirst().toStdString();
                 index = regions.size();
                 for(size_t i = 0;i < regions.size();++i)
                     if(regions[i]->name == name)
@@ -755,6 +750,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             }
             if(index >= regions.size())
                 return run->failed("region color count does not match region count");
+
+            int c[4] = {0,0,0,255};
+            for(int i = 0;i < f.size();++i)
+            {
+                bool okay;
+                c[i] = f[i].toInt(&okay);
+                if(!okay || c[i] < 0 || c[i] > 255)
+                    return run->failed("invalid color");
+            }
             colors[index] = uint32_t(tipl::rgb(c[0],c[1],c[2],c[3]));
             ++count;
         }
