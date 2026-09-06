@@ -4,11 +4,14 @@
 #include <iostream>
 #include <QMainWindow>
 #include <QTimer>
+#include <QStringDecoder>
 
 class QTextEdit;
 class console_stream :  public std::basic_streambuf<char>
 {
     std::basic_streambuf<char>* cout_buf = nullptr;
+    // Preserve incomplete UTF-8 characters between stream writes.
+    QStringDecoder decoder{QStringDecoder::Utf8};
 public:
     console_stream(void):std::basic_streambuf<char>(){}
 protected:
