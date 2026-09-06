@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QClipboard>
+#include <QScopeGuard>
 #include <vector>
 #include "glwidget.h"
 #include "tracking/tracking_window.h"
@@ -2255,8 +2256,8 @@ bool GLWidget::command(std::vector<std::string> cmd)
     {
         bool okay = false;
         int view = QString(cmd[1].c_str()).toInt(&okay);
-        if(!okay)
-            return run->failed("please specify a working parameter");
+        if(!okay || view < 0 || view > 2)
+            return run->failed("view must be 0, 1, or 2");
         if(!cmd[2].empty())
         {
             int flipped = QString(cmd[2].c_str()).toInt(&okay);
@@ -2500,47 +2501,46 @@ bool GLWidget::command(std::vector<std::string> cmd)
                 QString::fromStdString(cur_tracking_window.history.file_stem() + "_rotation.avi"),
                 "video files (*.avi);;All files (*)").toStdString()).empty())
             return run->canceled();
-        //if(QFileInfo(cmd[1].c_str()).suffix() == "avi")
+        auto restore_view = qScopeGuard([&,saved_size = size(),
+            transform = transformation_matrix,rotation = rotation_matrix,
+            transform2 = transformation_matrix2,rotation2 = rotation_matrix2]
         {
-            tipl::progress prog("save video");
-            int ow = width(),oh = height();
-            tipl::io::avi avi;
-            #ifndef __APPLE__
-                resize(1980,1080);
-                resizeGL(1980,1080);
-            #endif
-            for(float index = 0.0f;prog(index,360);index += 0.2f)
-            {
-                rotate_angle(0.2f,0,1.0,0.0);
-                QBuffer buffer;
-                QImageWriter writer(&buffer, "JPG");
-                QImage I = grab_image();
-                writer.write(I);
-                if(index == 0.0f)
-                    avi.open(cmd[1].c_str(),I.width(),I.height(), "MJPG", 30/*fps*/);
-                QByteArray data = buffer.data();
-                avi.add_frame(data.begin(),uint32_t(data.size()),true);
-            }
-            avi.close();
-            resize(ow,oh);
-        }
-        /*
+            transformation_matrix = transform;
+            rotation_matrix = rotation;
+            transformation_matrix2 = transform2;
+            rotation_matrix2 = rotation2;
+            resize(saved_size);
+            makeCurrent();
+            resizeGL(saved_size.width(),saved_size.height());
+            update();
+        });
+        #ifndef __APPLE__
+            resize(1980,1080);
+            makeCurrent();
+            resizeGL(1980,1080);
+        #endif
+
+        tipl::progress prog("save video");
+        tipl::io::avi avi;
+        bool opened = false;
+        auto close_video = qScopeGuard([&]{ if(opened) avi.close(); });
+        for(float angle = 0.0f;prog(angle,360);angle += 0.2f)
         {
-            tipl::progress prog_("save image");
-            float angle = (cmd[2].empty()) ? 1 : QString(cmd[2].c_str()).toFloat();
-            for(float index = 0;prog_(index,360);index += angle)
+            rotate_angle(0.2f,0,1.0,0.0);
+            QBuffer buffer;
+            QImageWriter writer(&buffer,"JPG");
+            QImage image = grab_image();
+            if(!writer.write(image))
+                return run->failed("cannot encode video frame: " + writer.errorString().toStdString());
+            if(!opened)
             {
-                QString save = QFileInfo(cmd[1].c_str()).absolutePath()+"//"+
-                        QFileInfo(cmd[1].c_str()).completeBaseName()+"_"+QString::number(index)+"."+
-                        QFileInfo(cmd[1].c_str()).suffix();
-                tipl::out() << save.toStdString() << std::endl;
-                rotate_angle(angle,0,1.0,0.0);
-                QImage I = grab_image();
-                I.save(save);
+                if(!avi.open(cmd[1],image.width(),image.height(),"MJPG",30))
+                    return run->failed("cannot create video: " + cmd[1]);
+                opened = true;
             }
+            avi.add_frame(buffer.data().constData(),uint32_t(buffer.size()),true);
         }
-        */
-        return true;
+        return prog.aborted() ? run->canceled() : run->succeed();
     }
     return run->not_processed();
 }
