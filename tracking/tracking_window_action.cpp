@@ -563,6 +563,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         if(cmd[1] != "roi" && cmd[1] != "3d")
             return run->failed("cmd[1] must be \"roi\" or \"3d\"");
+        if(!cmd[2].empty())
+            tipl::out() << "cached capture: orientation is from the original capture; "
+                          "current camera and slice orientation are not reported";
         // serves a cached crop (zoom) or a fresh capture via `grab`, then prints it as text art
         auto preview_channel = [&](std::map<std::string,QImage>& cache,const std::string& label,auto&& grab)->bool
         {
@@ -600,7 +603,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if(cmd[1] == "3d")
         {
-            glWidget->command({"get_camera"});
+            if(cmd[2].empty())
+                glWidget->command({"get_camera"});
             static const char* channels[] = {"show_slice","show_region","show_tract","show_surface"};
             for(const char* flag : channels)
             {
@@ -632,8 +636,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         // slice_view_scene's cache (see overlay_cache), not re-rendered per channel -- only valid
         // for the single-slice layout, since those layers are cached per dimension, not per
         // multi-view composite
-        tipl::out() << "R_side=" << ((*this)["orientation_convention"].toInt() ? "right" : "left");
+        if(cmd[2].empty())
         {
+            tipl::out() << "R_side=" << ((*this)["orientation_convention"].toInt() ? "right" : "left");
             static const char* dim_names[3] = {"sagittal","coronal","axial"};
             tipl::out() << "slice_info: " << ui->SliceModality->currentText().toStdString()
                         << " " << dim_names[cur_dim]
