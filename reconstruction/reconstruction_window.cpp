@@ -529,8 +529,11 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     if(!result)
         fail();
     else
-        if(source == command_source::User)
+        if(source == command_source::User &&
+       !tipl::begins_with(cmd,"mask_"))
             QMessageBox::information(this,QApplication::applicationName(),"done");
+
+
     update_dimension();
     load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
