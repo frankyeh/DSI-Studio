@@ -1,5 +1,6 @@
 #include "glwidget.h"
 #include "tract_render.hpp"
+#include "renderingtablewidget.h"
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
@@ -410,7 +411,8 @@ void TractRender::prepare_update(tracking_window& param,
     }
 
     auto tract_color_style = param["tract_color_style"].toInt();
-    auto index_num = param["tract_color_metrics"].toInt();
+    auto index_num = param.handle->get_name_index(
+        param.renderWidget->getListValue("tract_color_metrics").toStdString());
     bool use_metrics = tract_color_style == 2 || tract_color_style == 3 || tract_color_style == 4;
     bool voxel_based_metric = index_num >= param.handle->dir.index_name_data.size();
     if(use_metrics && voxel_based_metric && index_num >= param.handle->slices.size())

@@ -253,7 +253,8 @@ void RegionTableWidget::update_region_color_values(void)
         color_map_values.clear();
     color_map_values.resize(regions.size(),std::nanf(""));
 
-    auto metric_index = cur_tracking_window["region_color_metrics"].toInt();
+    auto metric_index = cur_tracking_window.handle->get_name_index(
+        cur_tracking_window.renderWidget->getListValue("region_color_metrics").toStdString());
     if(metric_index < cur_tracking_window.handle->slices.size() &&
         !cur_tracking_window.handle->slices[metric_index]->optional()) // sample slice values
     {

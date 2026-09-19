@@ -595,7 +595,9 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     }
     if(cur_node->id == "tract_color_metrics" || cur_node->id == "region_color_metrics")
     {
-        size_t item_index = cur_node->value.toInt();
+        size_t item_index = cur_tracking_window.handle->get_name_index(
+            getListValue(cur_node->id).toStdString());
+
         float min_v = 0.0f,max_v = 1.0f;
         if(item_index < cur_tracking_window.handle->slices.size() &&
            !cur_tracking_window.handle->slices[item_index]->optional())
