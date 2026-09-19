@@ -599,8 +599,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
             getListValue(cur_node->id).toStdString());
 
         float min_v = 0.0f,max_v = 1.0f;
-        if(item_index < cur_tracking_window.handle->slices.size() &&
-           !cur_tracking_window.handle->slices[item_index]->optional())
+        if(item_index < cur_tracking_window.handle->slices.size())
         {
             cur_tracking_window.handle->slices[item_index]->get_minmax();
             min_v = cur_tracking_window.handle->slices[item_index]->min_value;
