@@ -3527,12 +3527,13 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
             };
             for(const auto& each : region_points[i])
                 count(each);
-            for(const auto& each : region_points[j])
-                count(each);
+            if(i != j)
+                for(const auto& each : region_points[j])
+                    count(each);
             cur_metrics.push_back("intersect ratio");
             metrics_data[index].push_back(float(sum)/float(region_points[j].size() + region_points[i].size()));
             cur_metrics.push_back("intersect volume(mm^3)");
-            metrics_data[index].push_back(float(sum)/voxel_volume);
+            metrics_data[index].push_back(float(sum)*voxel_volume);
 
         }
         std::lock_guard<std::mutex> lock(metrics_mutex);
