@@ -154,10 +154,8 @@ MainWindow::MainWindow(QWidget *parent) :
     if(!ui->workDir->count())
         ui->workDir->addItem(QDir::currentPath());
     for(auto& each : fib_template_list)
-    {
-        QString name = std::filesystem::path(each).stem().string().c_str();
-        ui->template_list->addItem(name);
-    }
+        if(std::filesystem::exists(each))
+            ui->template_list->addItem(each.stem().string().c_str());
     ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(0);
 

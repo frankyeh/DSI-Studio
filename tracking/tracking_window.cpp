@@ -32,23 +32,19 @@
 #include "regtoolbox.h"
 #include "connectivity_matrix_dialog.h"
 
-extern std::vector<std::filesystem::path> fib_template_list;
 extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
 extern unsigned char auto_track_rgb[6][3];               // projection
 
 QByteArray default_geo,default_state;
 
-
+extern std::vector<std::string> template_name_list;
 void populate_templates(QComboBox* combo,size_t index)
 {
     combo->clear();
-    if(!fib_template_list.empty())
-    {
-        for(size_t i = 0;i < fib_template_list.size();++i)
-            combo->addItem(fib_template_list[i].stem().stem().u8string().c_str());
-        combo->setCurrentIndex(int(index));
-    }
+    for(const auto& name : template_name_list)
+        combo->addItem(name.c_str());
+    combo->setCurrentIndex(int(index));
 }
 
 QVariant tracking_window::operator[](QString name) const

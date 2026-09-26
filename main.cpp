@@ -199,7 +199,8 @@ bool load_file_name(void)
 
     for(const auto& species : species_list)
     {
-        if(!std::filesystem::exists((tract_dir/(species+".fz")).string()))
+        if(!std::filesystem::exists(atlas_dir/species/(species+"_QA.nii.gz")) ||
+           !std::filesystem::exists(atlas_dir/species/(species+"_ISO.nii.gz")))
             continue;
         template_name_list.push_back(species);
         // under tract/
