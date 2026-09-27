@@ -1375,7 +1375,9 @@ QString AIAgent::agent_login_info(const QString& provider)
             {
                 auto state = account["state"].toString();
                 bool credential_required = account["credentialRequired"].toBool();
-                if(!credential_required || state != "loggedOut")
+                if(credential_required && state == "loggedOut")
+                    info = QStringLiteral("");
+                else
                 {
                     info = account["label"].toString().trimmed();
                     if(info.isEmpty())
@@ -1402,8 +1404,11 @@ QString AIAgent::agent_login_info(const QString& provider)
         return {};
     if(is_codex)
     {
-        if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+        if(process.exitStatus() != QProcess::NormalExit)
             return {};
+        if(process.exitCode() != 0)
+            return QString::fromUtf8(process.readAllStandardError()).contains(
+                       "Not logged in",Qt::CaseInsensitive) ? QStringLiteral("") : QString();
         // codex login status has no --json/structured output (email/plan aren't exposed), only this
         // free-text auth-method line -- see https://github.com/openai/codex/issues/19866
         auto output = QString::fromUtf8(process.readAllStandardOutput());
@@ -1411,9 +1416,17 @@ QString AIAgent::agent_login_info(const QString& provider)
                output.contains("ChatGPT",Qt::CaseInsensitive) ? "ChatGPT" :
                output.contains("Agent Identity",Qt::CaseInsensitive) ? "Agent Identity" : "Signed in";
     }
-    auto object = QJsonDocument::fromJson(process.readAllStandardOutput()).object();
-    if(!object["loggedIn"].toBool())
+    if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
         return {};
+    QJsonParseError parse_error;
+    auto document = QJsonDocument::fromJson(process.readAllStandardOutput(),&parse_error);
+    if(parse_error.error != QJsonParseError::NoError || !document.isObject())
+        return {};
+    auto object = document.object();
+    if(!object.contains("loggedIn") || !object["loggedIn"].isBool())
+        return {};
+    if(!object["loggedIn"].toBool())
+        return QStringLiteral("");
     auto email = object["email"].toString();
     if(!email.isEmpty())
     {
@@ -1526,8 +1539,9 @@ void AIAgent::refresh_login_buttons()
             return;
         }
         auto info = agent_login_info(provider);
-        button->setEnabled(info.isEmpty()); // clickable only while not signed in
-        button->setText(info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
+        button->setEnabled(info.isEmpty()); // null = unknown, empty = confirmed signed out
+        button->setText(info.isNull() ? provider+" Login..." :
+                        info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
     };
     refresh("Codex",ui->ai_codex_login);
     refresh("Claude",ui->ai_claude_login);
@@ -2310,11 +2324,15 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!configured)
             return fail_launch("Set the Ollama host/IP in AI Settings first.");
     }
-    else if(agent_login_info(provider).isEmpty())
+    else
     {
-        if(!run_agent_login(provider))
-            return fail_launch(info.launch_name+" sign-in was not completed.",false);
-        refresh_login_buttons();
+        auto login = agent_login_info(provider);
+        if(!login.isNull() && login.isEmpty())
+        {
+            if(!run_agent_login(provider))
+                return fail_launch(info.launch_name+" sign-in was not completed.",false);
+            refresh_login_buttons();
+        }
     }
     auto* process = new QProcess(this);
     process->setObjectName(session);

@@ -97,7 +97,7 @@ class AIAgent : public QMainWindow
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(const QString& provider);
-    QString agent_login_info(const QString& provider); // "" means not signed in (or executable/status query unavailable); otherwise a short account summary from the provider's authoritative status interface
+    QString agent_login_info(const QString& provider); // null = status unknown; empty = confirmed signed out; otherwise a short account summary
     void refresh_login_buttons(); // refreshes the local-agent login buttons from agent_login_info()
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
