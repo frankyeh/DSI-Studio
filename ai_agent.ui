@@ -281,6 +281,13 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="ai_muse_login">
+            <property name="text">
+             <string>Muse Login...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="ai_quick_settings">
             <property name="minimumSize">
              <size>

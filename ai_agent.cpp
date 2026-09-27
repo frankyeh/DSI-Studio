@@ -189,10 +189,10 @@ AIAgent::AIAgent(MainWindow* parent):
     update_agent_status_label();
     // not refreshed here: agent_login_info() runs a blocking CLI subprocess per provider, and AIAgent is
     // constructed eagerly at MainWindow startup whether or not this window is ever opened. showEvent()
-    // refreshes it before the buttons are ever actually seen -- the .ui defaults ("Sign in to Codex...",
-    // "Sign in to Claude...") are shown only in that brief unshown window, never rendered to the user.
+    // refreshes it before the buttons are ever actually seen.
     for(auto [button,provider] : {std::pair{ui->ai_codex_login,QString("Codex")},
-                                   std::pair{ui->ai_claude_login,QString("Claude")}})
+                                  std::pair{ui->ai_claude_login,QString("Claude")},
+                                  std::pair{ui->ai_muse_login,QString("Muse")}})
         connect(button,&QPushButton::clicked,this,[this,provider]
         {
             if(agent_entries[provider].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
@@ -1351,13 +1351,14 @@ QString AIAgent::agent_login_info(const QString& provider)
 
 bool AIAgent::run_agent_login(const QString& provider)
 {
-    if(provider != "Codex" && provider != "Claude")
+    if(provider != "Codex" && provider != "Claude" && provider != "Muse")
         return false;
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return false;
 
     bool is_codex = provider == "Codex";
+    bool needs_code = provider == "Claude";
     auto* process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
 
@@ -1374,7 +1375,7 @@ bool AIAgent::run_agent_login(const QString& provider)
     QPushButton submit("Submit Code");
     code.setVisible(false);
     submit.setVisible(false);
-    if(!is_codex)
+    if(needs_code)
     {
         layout.addWidget(&code);
         layout.addWidget(&submit);
@@ -1392,8 +1393,8 @@ bool AIAgent::run_agent_login(const QString& provider)
         {
             QDesktopServices::openUrl(QUrl(match.captured()));
             opened_url = true;
-            code.setVisible(!is_codex);
-            submit.setVisible(!is_codex);
+            code.setVisible(needs_code);
+            submit.setVisible(needs_code);
         }
     });
     connect(&submit,&QPushButton::clicked,&dialog,[&]
@@ -1422,7 +1423,9 @@ bool AIAgent::run_agent_login(const QString& provider)
         dialog.reject();
     });
 
-    start_process(*process,executable,is_codex ? QStringList{"login"} : QStringList{"auth","login"});
+    start_process(*process,executable,
+                  is_codex ? QStringList{"login"} :
+                  needs_code ? QStringList{"auth","login"} : QStringList{"login"});
 
     dialog.exec();
     if(process->state() != QProcess::NotRunning)
@@ -1447,12 +1450,19 @@ void AIAgent::refresh_login_buttons()
             button->setText("Install "+provider);
             return;
         }
+        if(provider == "Muse")
+        {
+            button->setEnabled(true); // Muse has no reliable noninteractive auth-status command
+            button->setText("Muse Login...");
+            return;
+        }
         auto info = agent_login_info(provider);
         button->setEnabled(info.isEmpty()); // clickable only while not signed in
         button->setText(info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
     };
     refresh("Codex",ui->ai_codex_login);
     refresh("Claude",ui->ai_claude_login);
+    refresh("Muse",ui->ai_muse_login);
 }
 
 bool AIAgent::try_connect_github_issue(const QString& url)
