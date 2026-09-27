@@ -57,6 +57,21 @@
 #include "TIPL/tipl.hpp"
 
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
+void start_process(QProcess& process,const QString& executable,QStringList args)
+{
+#ifdef Q_OS_WIN
+    if(executable.endsWith(".cmd",Qt::CaseInsensitive) ||
+       executable.endsWith(".bat",Qt::CaseInsensitive))
+    {
+        args.prepend(executable);
+        args.prepend("/c");
+        args.prepend("/d");
+        process.start(qEnvironmentVariable("ComSpec","cmd.exe"),args);
+        return;
+    }
+#endif
+    process.start(executable,args);
+}
 bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
@@ -1194,6 +1209,16 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
         claude_path.clear();
 
     QString muse_path = QStandardPaths::findExecutable("muse");
+    if(muse_path.isEmpty())
+    {
+#ifdef Q_OS_WIN
+        muse_path = qEnvironmentVariable("LOCALAPPDATA");
+        if(!muse_path.isEmpty())
+            muse_path += "/Programs/muse/muse.cmd";
+#else
+        muse_path = QDir::homePath()+"/.local/bin/muse";
+#endif
+    }
     if(!QFileInfo::exists(muse_path))
         muse_path.clear();
 
@@ -1240,7 +1265,7 @@ void AIAgent::refresh_codex_models()
         process->deleteLater();
     });
 
-    process->start(path,{"debug","models"});
+    start_process(*process,path,{"debug","models"});
     QTimer::singleShot(5000,process,&QProcess::kill);
 }
 void AIAgent::refresh_ollama_models()
@@ -1297,7 +1322,7 @@ QString AIAgent::agent_login_info(const QString& provider)
         return {};
     bool is_codex = provider == "Codex";
     QProcess process;
-    process.start(executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
+    start_process(process,executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
     if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
         return {};
     if(is_codex)
@@ -1397,7 +1422,7 @@ bool AIAgent::run_agent_login(const QString& provider)
         dialog.reject();
     });
 
-    process->start(executable,is_codex ? QStringList{"login"} : QStringList{"auth","login"});
+    start_process(*process,executable,is_codex ? QStringList{"login"} : QStringList{"auth","login"});
 
     dialog.exec();
     if(process->state() != QProcess::NotRunning)
@@ -2876,7 +2901,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
     set_ai_status(info.sessions,info.status == session_status::New ?
                   session_status::New : session_status::Thinking,
                   "Starting "+info.launch_name);
-    info.processes->start(info.launch_executable,args);
+    start_process(*info.processes,info.launch_executable,args);
 }
 
 void AIAgent::on_ai_send_message_clicked()
