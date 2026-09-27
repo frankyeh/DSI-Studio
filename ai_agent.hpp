@@ -89,7 +89,7 @@ class AIAgent : public QMainWindow
     bool setup_github_token();
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
     ai_info* start_new_local_chat(); // shared by new_chat_dialog() and Send-with-nothing-selected: creates a chat with the current default agent/model (current_agent/current_model_name) and prepares the compose box for it
-    ai_info* create_new_chat(const QString& agent,const QString& provider); // explicit display name and provider; no inference/index coupling
+    ai_info* create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               QString& provider,QString& value); // value: model name for a local agent, issue URL for ChatGPT (web)
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled

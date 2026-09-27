@@ -296,20 +296,13 @@ void ai_info::save_config() const
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
         file.write(QJsonDocument(QJsonObject{
             {"agent",agent_name},
-            {"provider",provider}, // persisted explicitly; loader still accepts the old numeric provider values
+            {"provider",provider},
             {"model_settings",model_settings},
             // never reverts to false once true (New is the only live status this ever sees) -- reload trusts
             // this instead of assuming Completed for a session id that never actually got a real backend thread
             {"established",status != session_status::New}}).toJson(QJsonDocument::Compact));
 }
 
-QString ai_info::identify_provider(const QString& name)
-{
-    // "chatgpt" checked first: the web agent's name is "Codex/ChatGPT-GitHub", which also contains "codex"
-    return name.contains("chatgpt",Qt::CaseInsensitive) ? "ChatGPT" :
-           name.contains("codex",Qt::CaseInsensitive) ? "Codex" :
-           name.contains("claude",Qt::CaseInsensitive) ? "Claude" : QString();
-}
 QString ai_info::details() const
 {
     int user = 0,assistant = 0,activity = 0;
@@ -353,12 +346,14 @@ ai_info* ai_info::find(const QString& session)
     auto found = ai_infos.find(session);
     return found == ai_infos.end() ? nullptr : &found->second;
 }
-ai_info* ai_info::create(QString session,QString agent,QString provider) // the one constructor for the whole registry
+ai_info* ai_info::create(QString session,QString provider,QString agent) // the one constructor for the whole registry
 {
     if(session.isEmpty() || provider.isEmpty())
         return nullptr;
     if(auto* info = find(session))
         return info;
+    if(agent.isEmpty())
+        agent = provider;
     auto& info = ai_infos[session];
     info.sessions = std::move(session);
     info.provider = std::move(provider);

@@ -52,9 +52,8 @@ struct ai_info{
     // placeholder's launch data stays reachable via ai_info::find() alone
     QString launch_name,launch_executable,launch_model;
     QUrl launch_model_url;
-    static QString identify_provider(const QString&); // legacy fallback for histories saved before provider was persisted
     static ai_info* find(const QString&);
-    static ai_info* create(QString,QString,QString); // session, display agent name, explicit provider name
+    static ai_info* create(QString,QString,QString = {}); // session, provider, optional display agent name
     static QString history_file(const QString&);
     static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;

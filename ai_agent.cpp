@@ -283,32 +283,17 @@ AIAgent::AIAgent(MainWindow* parent):
                 history.append(doc.object());
         if(history.isEmpty() || session.isEmpty())
             continue;
-        auto first = history.first();
         QJsonObject config;
         if(QFile config_file(ai_info::config_file(session));config_file.open(QIODevice::ReadOnly))
             config = QJsonDocument::fromJson(config_file.readAll()).object();
-        // config_file() is the current source of truth; fall back to the legacy fields once
-        // embedded in the first history entry, for chats saved before this file existed
-        auto agent = config.contains("agent") ? config["agent"].toString() : first["agent"].toString();
-        // Current configs store the provider name. Accept the old numeric enum values (0..3) so existing
-        // histories keep loading; only configs predating provider persistence fall back to the agent name.
-        auto saved_provider = config["provider"];
-        static const QStringList legacy_providers{"Codex","Claude","ChatGPT","AgentServer"};
-        auto provider = saved_provider.isString() ? saved_provider.toString() :
-                        saved_provider.isDouble() ? legacy_providers.value(saved_provider.toInt()) :
-                        ai_info::identify_provider(agent);
-        auto* ai = ai_info::create(session,agent,provider);
+        auto* ai = ai_info::create(
+            session,config["provider"].toString(),config["agent"].toString());
         if(!ai)
             continue;
-        // absent "established" means a config predating this field, from back when save_config() itself
-        // only ever wrote for an established session -- so absent defaults to true, same as those old files
-        // always implied. Present-and-false means a real, current record of a session that never got a
-        // backend thread; loading it as Completed/resumable would try to --resume an id nothing ever confirmed
-        bool established = config["established"].toBool(true);
+        bool established = config["established"].toBool();
         set_ai_status(ai->sessions,established ? session_status::Completed : session_status::New,
                       established ? "Previous chat loaded." : "Previous attempt never connected.");
-        ai->model_settings = config.contains("model_settings") ?
-            config["model_settings"].toObject() : first["model_settings"].toObject();
+        ai->model_settings = config["model_settings"].toObject();
         ai->project_titles = settings.value("ai/title/"+session).toString();
         ai->projects = std::move(history);
         show_ai_project(*ai);
@@ -612,7 +597,7 @@ void AIAgent::poll_github_issue()
         if(web_info && web_info->status == session_status::New)
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
-        if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub","ChatGPT")) // records which issue this session is bound to, so a restart can auto-resume polling it
+        if(auto* info = ai_info::create(session_id,"ChatGPT","Codex/ChatGPT-GitHub")) // records which issue this session is bound to, so a restart can auto-resume polling it
         {
             set_ai_status(info->sessions,session_status::Thinking,"GitHub request received");
             // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
@@ -844,7 +829,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         // log/routing record for this dispatcher, never a real local Codex/Claude subprocess, regardless of
         // what the caller names itself -- it can't send a live chat message or have its model changed from
         // the GUI (see current_send_action()/on_ai_agent_status_clicked())
-        found = ai_info::create(session,agent,"AgentServer");
+        found = ai_info::create(session,"AgentServer",agent);
         set_ai_status(found->sessions,session_status::Thinking,"Agent request received"); // save_config() skips a still-New session
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
@@ -1884,7 +1869,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     return true;
 }
 
-ai_info* AIAgent::create_new_chat(const QString& agent,const QString& provider)
+ai_info* AIAgent::create_new_chat(const QString& provider,const QString& agent)
 {
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
@@ -1901,7 +1886,7 @@ ai_info* AIAgent::create_new_chat(const QString& agent,const QString& provider)
             ++it;
 
     auto* info = ai_info::create(
-        QUuid::createUuid().toString(QUuid::WithoutBraces),agent,provider); // status defaults to New; no "new:"/other marker on the id itself
+        QUuid::createUuid().toString(QUuid::WithoutBraces),provider,agent); // status defaults to New; no "new:"/other marker on the id itself
     if(info->provider == "ChatGPT")
         web_agent_session_id = info->sessions;
     else
@@ -1931,14 +1916,14 @@ void AIAgent::new_chat_dialog(bool resume)
     bool web = provider == "ChatGPT";
     // no early web_agent_session_id.clear() here: disconnect_github_issue() (below, and inside
     // start_new_local_chat()) needs it to still name the old chat so that chat gets marked Completed;
-    // create_new_chat("ChatGPT(Web)","ChatGPT") already reassigns it for a fresh (non-resume) web chat, and
+    // create_new_chat("ChatGPT","ChatGPT(Web)") already reassigns it for a fresh (non-resume) web chat, and
     // start_new_local_chat() clears it itself once the old channel is actually disconnected
 
     if(web)
     {
         disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         if(!resume)
-            create_new_chat("ChatGPT(Web)","ChatGPT"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
+            create_new_chat("ChatGPT","ChatGPT(Web)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
         try_connect_github_issue(value);
         return;
     }
@@ -1954,7 +1939,7 @@ ai_info* AIAgent::start_new_local_chat() // shared by new_chat_dialog() and Send
     web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
     // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
-    auto* info = create_new_chat(current_agent,current_agent);
+    auto* info = create_new_chat(current_agent);
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     return info;
@@ -2010,7 +1995,7 @@ void AIAgent::on_ai_agent_status_clicked()
         // same ownership setup new_chat_dialog() does for a fresh web chat -- try_connect_github_issue()
         // assumes web_agent_session_id already names a real chat, which nothing else here would have arranged
         disconnect_github_issue(); // leave any old channel cleanly before attempting a different one
-        create_new_chat("ChatGPT(Web)","ChatGPT");
+        create_new_chat("ChatGPT","ChatGPT(Web)");
         try_connect_github_issue(value);
         return;
     }
@@ -2568,7 +2553,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                                  old_info->status == session_status::New;
         auto* info = still_placeholder ?
             assign_ai_session(old_session,new_session) :
-            ai_info::create(new_session,name,"Codex"); // already known, not inferred: this whole handler is Codex-specific
+            ai_info::create(new_session,"Codex",name); // this whole handler is Codex-specific
         if(info)
         {
             set_ai_status(info->sessions,session_status::Thinking,
