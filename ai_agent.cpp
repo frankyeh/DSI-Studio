@@ -60,13 +60,10 @@ constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps 
 QProcessEnvironment agent_environment(const QString& provider)
 {
     auto env = QProcessEnvironment::systemEnvironment();
-    if(provider == "Muse")
-    {
 #if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
-        if(!env.contains("TBH_CREDENTIAL_BACKEND"))
-            env.insert("TBH_CREDENTIAL_BACKEND","file");
+    if(provider == "Muse" && !env.contains("TBH_CREDENTIAL_BACKEND"))
+        env.insert("TBH_CREDENTIAL_BACKEND","file");
 #endif
-    }
     return env;
 }
 void start_process(QProcess& process,const QString& executable,QStringList args)
@@ -1437,7 +1434,8 @@ bool AIAgent::run_agent_login(const QString& provider)
 
     bool needs_code = provider == "Claude";
     auto* process = new QProcess(this);
-    process->setProcessEnvironment(agent_environment(provider));
+    if(provider == "Muse")
+        process->setProcessEnvironment(agent_environment(provider));
     process->setProcessChannelMode(QProcess::MergedChannels);
 
     QDialog dialog(this);
