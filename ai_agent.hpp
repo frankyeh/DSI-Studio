@@ -2,6 +2,7 @@
 #define AI_AGENT_HPP
 
 #include <QByteArray>
+#include <QHash>
 #include <QJsonObject>
 #include <QMainWindow>
 #include <QNetworkAccessManager>
@@ -10,7 +11,6 @@
 #include <QTimer>
 #include <QUrl>
 
-#include <array>
 
 class MainWindow;
 class QMenu;
@@ -20,7 +20,6 @@ class QProcess;
 class QShowEvent;
 class QCloseEvent;
 struct ai_info; // full definition: cmd/ai.hpp -- every use here is by pointer/reference, so a forward declaration is enough; .cpp files that need member access include cmd/ai.hpp directly
-enum class ai_provider; // full definition: cmd/ai.hpp
 enum class session_status; // full definition: cmd/ai.hpp
 
 namespace Ui {
@@ -29,7 +28,7 @@ class AIAgent;
 
 enum class ai_input {User,Pending};
 
-// one entry per ai_provider (Codex/Claude): resolved executable path (empty if not found) and the discovered model profiles (name -> info)
+// one entry per local agent name: resolved executable path (empty if not found) and discovered model profiles
 struct ai_agent_entry
 {
     QString executable;
@@ -52,8 +51,8 @@ class AIAgent : public QMainWindow
     // app-wide default agent/model: only consulted for a chat that doesn't exist yet (New Chat's pre-fill, and
     // "Change Agent/Model" with nothing selected) -- an existing chat's own ai_info::model_settings is always
     // authoritative for that chat once created, never reconciled against these
-    std::array<ai_agent_entry,2> agent_entries; // indexed by ai_provider
-    int current_agent_index = 0;
+    QHash<QString,ai_agent_entry> agent_entries;
+    QString current_agent = "Codex";
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
     void update_agent_status_label();
@@ -89,23 +88,23 @@ class AIAgent : public QMainWindow
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     bool setup_github_token();
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
-    ai_info* start_new_local_chat(); // shared by new_chat_dialog() and Send-with-nothing-selected: creates a chat with the current default agent/model (current_agent_index/current_model_name) and prepares the compose box for it
-    ai_info* create_new_chat(const QString& agent); // drops any abandoned empty placeholder first, then creates+selects a fresh chat (status New, a bare uuid) for the given agent name ("Codex"/"Claude"/"ChatGPT(Web)"); for web, this exists even before a connection is attempted, so a failed connection is just this chat's own Error state rather than needing separate anonymous-session tracking
+    ai_info* start_new_local_chat(); // shared by new_chat_dialog() and Send-with-nothing-selected: creates a chat with the current default agent/model (current_agent/current_model_name) and prepares the compose box for it
+    ai_info* create_new_chat(const QString& agent,const QString& provider); // explicit display name and provider; no inference/index coupling
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
-                              int& agent_index,QString& value); // value: model name for a local agent, issue URL for ChatGPT (web) -- mutually exclusive, caller checks agent_index == ai_provider::ChatGPT
+                              QString& provider,QString& value); // value: model name for a local agent, issue URL for ChatGPT (web)
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
-    bool run_agent_login(ai_provider provider);
-    QString agent_login_info(ai_provider provider); // "" means not signed in (or executable missing); otherwise a short human-readable account/plan summary straight from the CLI's own status query -- never cached, so an external login/logout is always reflected
+    bool run_agent_login(const QString& provider);
+    QString agent_login_info(const QString& provider); // "" means not signed in (or executable missing); otherwise a short human-readable account/plan summary straight from the CLI's own status query -- never cached, so an external login/logout is always reflected
     void refresh_login_buttons(); // shows/hides ai_codex_login/ai_claude_login (bottom of the chat list) based on agent_login_info()
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself (show_ai_history()) only when this chat is the one currently selected
     void show_ai_history(ai_info&,QJsonObject added_entry); // markdown->HTML transcript rendering: a full rebuild, or just appending added_entry when that alone is enough
-    void update_agent_models(int,const QStringList&,bool);
-    void refresh_agent_executables(); // re-runs codex/claude executable discovery into agent_entries[...].executable; called from the constructor and showEvent() so an install completed mid-session is picked up without a restart
+    void update_agent_models(const QString&,const QStringList&,bool);
+    void refresh_agent_executables(); // re-runs codex/claude executable discovery into agent_entries[agent].executable; called from the constructor and showEvent() so an install completed mid-session is picked up without a restart
     void refresh_ollama_models();
     void refresh_codex_models();
     void start_ai(ai_info&,const QString&,ai_input);

@@ -19,7 +19,6 @@ class QProcess;
 class QSettings;
 class QWidget;
 
-enum class ai_provider {Unknown = -1,Infer = -2,Codex = 0,Claude = 1,ChatGPT = 2,AgentServer = 3}; // ChatGPT/AgentServer: never index AIAgent::agent_entries (sized for Codex/Claude only). AgentServer: created by an external agent's request over the local pipe/socket server -- a log/routing record, never backed by a local subprocess, so it can't send a live chat or change its model. Unknown: genuinely unrecognized/invalid, always a hard failure. Infer: derive it from the agent name via identify_provider() -- these two are never interchangeable, so ai_info::create() takes them as one required argument instead of one meaning silently standing in for the other
 enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declaration order is not meaningful -- ai_info::is_running() classifies by name, not ordinal comparison
 // New: chat created, no launch ever attempted yet, OR a launch/reconnection is currently in flight (the OS
 //   process started, waiting for the agent's own protocol confirmation: Codex app-server "thread/start"/
@@ -36,8 +35,7 @@ enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declar
 // connecting) never becomes Failed -- it has no real id to preserve, so it reverts all the way back to New.
 
 struct ai_info{
-    QString sessions,agent_name,project_titles;
-    ai_provider provider = ai_provider::Unknown;
+    QString sessions,agent_name,provider,project_titles;
     QProcess* processes = nullptr;
     QList<QJsonObject> projects;
     QStringList prompts;
@@ -54,9 +52,9 @@ struct ai_info{
     // placeholder's launch data stays reachable via ai_info::find() alone
     QString launch_name,launch_executable,launch_model;
     QUrl launch_model_url;
-    static ai_provider identify_provider(const QString&);
+    static QString identify_provider(const QString&); // legacy fallback for histories saved before provider was persisted
     static ai_info* find(const QString&);
-    static ai_info* create(QString,QString,ai_provider); // the one constructor for the whole registry; pass ai_provider::Infer to derive it from a trusted agent name (Codex/Claude/ChatGPT/...), or a known value directly (AgentServer, a persisted reload) -- never a default, every call site states its intent
+    static ai_info* create(QString,QString,QString); // session, display agent name, explicit provider name
     static QString history_file(const QString&);
     static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;
@@ -78,7 +76,7 @@ extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, befo
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
 ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to
-QUrl agent_install_url(ai_provider provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
+QUrl agent_install_url(const QString& provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
 void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
 QString ai_dialog_style(); // shared stylesheet for the GitHub-setup/new-chat dialogs

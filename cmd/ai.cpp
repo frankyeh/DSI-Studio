@@ -72,10 +72,10 @@ ai_info* assign_ai_session(const QString& from,const QString& to)
     return &inserted.position->second;
 }
 
-QUrl agent_install_url(ai_provider provider) // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
+QUrl agent_install_url(const QString& provider) // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
 {
-    return QUrl(provider == ai_provider::Codex ?
-        "https://chatgpt.com/codex" : "https://claude.com/product/claude-code");
+    return QUrl(provider == "Codex" ? "https://chatgpt.com/codex" :
+                provider == "Claude" ? "https://claude.com/product/claude-code" : QString());
 }
 
 void stop_blink(QWidget* row)
@@ -296,20 +296,19 @@ void ai_info::save_config() const
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
         file.write(QJsonDocument(QJsonObject{
             {"agent",agent_name},
-            {"provider",int(provider)}, // reload must trust this, not re-guess from agent_name -- that misclassifies an AgentServer session (or fails outright for a name identify_provider() doesn't recognize)
+            {"provider",provider}, // persisted explicitly; loader still accepts the old numeric provider values
             {"model_settings",model_settings},
             // never reverts to false once true (New is the only live status this ever sees) -- reload trusts
             // this instead of assuming Completed for a session id that never actually got a real backend thread
             {"established",status != session_status::New}}).toJson(QJsonDocument::Compact));
 }
 
-ai_provider ai_info::identify_provider(const QString& name)
+QString ai_info::identify_provider(const QString& name)
 {
     // "chatgpt" checked first: the web agent's name is "Codex/ChatGPT-GitHub", which also contains "codex"
-    return name.contains("chatgpt",Qt::CaseInsensitive) ? ai_provider::ChatGPT :
-           name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
-           name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
-           ai_provider::Unknown;
+    return name.contains("chatgpt",Qt::CaseInsensitive) ? "ChatGPT" :
+           name.contains("codex",Qt::CaseInsensitive) ? "Codex" :
+           name.contains("claude",Qt::CaseInsensitive) ? "Claude" : QString();
 }
 QString ai_info::details() const
 {
@@ -354,18 +353,15 @@ ai_info* ai_info::find(const QString& session)
     auto found = ai_infos.find(session);
     return found == ai_infos.end() ? nullptr : &found->second;
 }
-ai_info* ai_info::create(QString session,QString agent,ai_provider provider) // the one constructor for the whole registry
+ai_info* ai_info::create(QString session,QString agent,QString provider) // the one constructor for the whole registry
 {
-    if(provider == ai_provider::Infer)
-        provider = identify_provider(agent);
-    if(session.isEmpty() || provider < ai_provider::Codex ||
-       provider > ai_provider::AgentServer)
+    if(session.isEmpty() || provider.isEmpty())
         return nullptr;
     if(auto* info = find(session))
         return info;
     auto& info = ai_infos[session];
     info.sessions = std::move(session);
-    info.provider = provider;
+    info.provider = std::move(provider);
     info.agent_name = std::move(agent);
     return &info;
 }

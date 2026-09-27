@@ -141,21 +141,21 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
 
     refresh_agent_executables();
-    if(agent_entries[int(ai_provider::Codex)].executable.isEmpty() &&
-       !agent_entries[int(ai_provider::Claude)].executable.isEmpty())
-        current_agent_index = int(ai_provider::Claude);
+    if(agent_entries["Codex"].executable.isEmpty() &&
+       !agent_entries["Claude"].executable.isEmpty())
+        current_agent = "Claude";
     update_agent_status_label();
     // not refreshed here: agent_login_info() runs a blocking CLI subprocess per provider, and AIAgent is
     // constructed eagerly at MainWindow startup whether or not this window is ever opened. showEvent()
     // refreshes it before the buttons are ever actually seen -- the .ui defaults ("Sign in to Codex...",
     // "Sign in to Claude...") are shown only in that brief unshown window, never rendered to the user.
-    for(auto [button,provider] : {std::pair{ui->ai_codex_login,ai_provider::Codex},
-                                   std::pair{ui->ai_claude_login,ai_provider::Claude}})
+    for(auto [button,provider] : {std::pair{ui->ai_codex_login,QString("Codex")},
+                                   std::pair{ui->ai_claude_login,QString("Claude")}})
         connect(button,&QPushButton::clicked,this,[this,provider]
         {
-            if(agent_entries[int(provider)].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
+            if(agent_entries[provider].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
                 refresh_agent_executables();
-            if(agent_entries[int(provider)].executable.isEmpty()) // still not installed -- nothing to sign into yet
+            if(agent_entries[provider].executable.isEmpty()) // still not installed -- nothing to sign into yet
                 QDesktopServices::openUrl(agent_install_url(provider));
             else
                 run_agent_login(provider);
@@ -290,11 +290,14 @@ AIAgent::AIAgent(MainWindow* parent):
         // config_file() is the current source of truth; fall back to the legacy fields once
         // embedded in the first history entry, for chats saved before this file existed
         auto agent = config.contains("agent") ? config["agent"].toString() : first["agent"].toString();
-        // never re-guess the provider from the name once it's been persisted -- that's exactly what
-        // misclassifies an AgentServer session; only a legacy config predating persistence falls back to a guess
-        auto* ai = config.contains("provider") ?
-            ai_info::create(session,agent,ai_provider(config["provider"].toInt())) :
-            ai_info::create(session,agent,ai_provider::Infer);
+        // Current configs store the provider name. Accept the old numeric enum values (0..3) so existing
+        // histories keep loading; only configs predating provider persistence fall back to the agent name.
+        auto saved_provider = config["provider"];
+        static const QStringList legacy_providers{"Codex","Claude","ChatGPT","AgentServer"};
+        auto provider = saved_provider.isString() ? saved_provider.toString() :
+                        saved_provider.isDouble() ? legacy_providers.value(saved_provider.toInt()) :
+                        ai_info::identify_provider(agent);
+        auto* ai = ai_info::create(session,agent,provider);
         if(!ai)
             continue;
         // absent "established" means a config predating this field, from back when save_config() itself
@@ -609,7 +612,7 @@ void AIAgent::poll_github_issue()
         if(web_info && web_info->status == session_status::New)
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
-        if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub",ai_provider::Infer)) // records which issue this session is bound to, so a restart can auto-resume polling it
+        if(auto* info = ai_info::create(session_id,"Codex/ChatGPT-GitHub","ChatGPT")) // records which issue this session is bound to, so a restart can auto-resume polling it
         {
             set_ai_status(info->sessions,session_status::Thinking,"GitHub request received");
             // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
@@ -841,7 +844,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         // log/routing record for this dispatcher, never a real local Codex/Claude subprocess, regardless of
         // what the caller names itself -- it can't send a live chat message or have its model changed from
         // the GUI (see current_send_action()/on_ai_agent_status_clicked())
-        found = ai_info::create(session,agent,ai_provider::AgentServer);
+        found = ai_info::create(session,agent,"AgentServer");
         set_ai_status(found->sessions,session_status::Thinking,"Agent request received"); // save_config() skips a still-New session
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
@@ -946,7 +949,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     // chat also transiently is (see session_status), and shouldn't flash back to this placeholder label for
     auto chat_title = info.projects.isEmpty() && info.project_titles.isEmpty() ?
         "New "+info.agent_name+" Chat" : info.title();
-    title->setText((info.provider == ai_provider::ChatGPT ? QString("🌐 ") : QString())+chat_title);
+    title->setText((info.provider == "ChatGPT" ? QString("🌐 ") : QString())+chat_title);
     title->setToolTip(title->text());
     title->repaint();
     item->setSizeHint(QSize(0,row->sizeHint().height()));
@@ -1130,9 +1133,9 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
 }
 
 void AIAgent::update_agent_models(
-    int index,const QStringList& names,bool ollama)
+    const QString& agent,const QStringList& names,bool ollama)
 {
-    auto& profiles = agent_entries[index].profiles;
+    auto& profiles = agent_entries[agent].profiles;
     auto previous = profiles;
     for(auto i = profiles.begin();i != profiles.end();)
         if(i.value().toObject().contains("provider") == ollama)
@@ -1143,7 +1146,7 @@ void AIAgent::update_agent_models(
         profiles[name] = ollama ?
             QJsonObject{{"provider",true}} : previous[name].toObject();
 
-    if(current_agent_index == index)
+    if(current_agent == agent)
     {
         // the current default model's own profile may have just changed (or disappeared) -- refresh its
         // cached info; an unrecognized name is left exactly as it was. profiles.value(), not profiles[] --
@@ -1178,28 +1181,22 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
     if(!QFileInfo::exists(claude_path))
         claude_path.clear();
 
-    static const char* agent_names[] = {"Codex","Claude"};
-    for(auto provider : {ai_provider::Codex,ai_provider::Claude})
-    {
-        auto index = int(provider);
-        const auto& path =
-            provider == ai_provider::Codex ? codex_path : claude_path;
-        QString agent = agent_names[index];
-        agent_entries[index].executable = path;
-        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
-    }
+    agent_entries["Codex"].executable = codex_path;
+    agent_entries["Claude"].executable = claude_path;
+    ai_log(codex_path.isEmpty() ? "Codex not found" : "Codex: "+codex_path);
+    ai_log(claude_path.isEmpty() ? "Claude not found" : "Claude: "+claude_path);
 
     if(!claude_path.isEmpty())
     {
         // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
         static const QStringList claude_models{"sonnet","fable","opus","haiku"};
-        update_agent_models(int(ai_provider::Claude),claude_models,false);
+        update_agent_models("Claude",claude_models,false);
         ai_log("Claude models: "+claude_models.join(", "));
     }
 }
 void AIAgent::refresh_codex_models()
 {
-    auto path = agent_entries[int(ai_provider::Codex)].executable;
+    auto path = agent_entries["Codex"].executable;
     if(path.isEmpty())
         return refresh_ollama_models();
 
@@ -1220,7 +1217,7 @@ void AIAgent::refresh_codex_models()
             if(!model.isEmpty()) models << model;
         }
 
-        update_agent_models(int(ai_provider::Codex),models,false);
+        update_agent_models("Codex",models,false);
         refresh_ollama_models();
         process->deleteLater();
     });
@@ -1235,8 +1232,8 @@ void AIAgent::refresh_ollama_models()
     // selector would let a user pick a selection that's silently ignored at connect time
     auto set_models = [this](const QStringList& models)
     {
-        if(!agent_entries[int(ai_provider::Claude)].executable.isEmpty())
-            update_agent_models(int(ai_provider::Claude),models,true);
+        if(!agent_entries["Claude"].executable.isEmpty())
+            update_agent_models("Claude",models,true);
     };
 
     auto ollama = ai_ollama_url(settings);
@@ -1273,12 +1270,14 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
 }
 
-QString AIAgent::agent_login_info(ai_provider provider)
+QString AIAgent::agent_login_info(const QString& provider)
 {
-    const auto& executable = agent_entries[int(provider)].executable;
+    if(provider != "Codex" && provider != "Claude")
+        return {};
+    const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return {};
-    bool is_codex = provider == ai_provider::Codex;
+    bool is_codex = provider == "Codex";
     QProcess process;
     process.start(executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
     if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
@@ -1307,18 +1306,20 @@ QString AIAgent::agent_login_info(ai_provider provider)
     return api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
 }
 
-bool AIAgent::run_agent_login(ai_provider provider)
+bool AIAgent::run_agent_login(const QString& provider)
 {
-    const auto& executable = agent_entries[int(provider)].executable;
+    if(provider != "Codex" && provider != "Claude")
+        return false;
+    const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return false;
 
-    bool is_codex = provider == ai_provider::Codex;
+    bool is_codex = provider == "Codex";
     auto* process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
 
     QDialog dialog(this);
-    dialog.setWindowTitle((is_codex ? QString("Codex") : QString("Claude"))+" Login");
+    dialog.setWindowTitle(provider+" Login");
     QVBoxLayout layout(&dialog);
     QLabel status("Starting sign-in...");
     status.setWordWrap(true);
@@ -1389,26 +1390,26 @@ bool AIAgent::run_agent_login(ai_provider provider)
     process->deleteLater();
 
     if(!succeeded)
-        QMessageBox::warning(this,"AI Agent",(is_codex ? "Codex" : "Claude")+QString(" sign-in was not completed."));
+        QMessageBox::warning(this,"AI Agent",provider+" sign-in was not completed.");
     return succeeded;
 }
 
 void AIAgent::refresh_login_buttons()
 {
-    auto refresh = [this](ai_provider provider,QPushButton* button,const QString& name)
+    auto refresh = [this](const QString& provider,QPushButton* button)
     {
-        if(agent_entries[int(provider)].executable.isEmpty())
+        if(agent_entries[provider].executable.isEmpty())
         {
             button->setEnabled(true); // clicking opens the CLI's install page
-            button->setText("Install "+name);
+            button->setText("Install "+provider);
             return;
         }
         auto info = agent_login_info(provider);
         button->setEnabled(info.isEmpty()); // clickable only while not signed in
-        button->setText(info.isEmpty() ? "Sign in to "+name+"..." : name+": "+info);
+        button->setText(info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
     };
-    refresh(ai_provider::Codex,ui->ai_codex_login,"Codex");
-    refresh(ai_provider::Claude,ui->ai_claude_login,"Claude");
+    refresh("Codex",ui->ai_codex_login);
+    refresh("Claude",ui->ai_claude_login);
 }
 
 bool AIAgent::try_connect_github_issue(const QString& url)
@@ -1460,11 +1461,11 @@ void AIAgent::update_agent_status_label()
 {
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
     auto* info = selected_info();
-    bool agent_server = info && info->provider == ai_provider::AgentServer; // a log/routing record, no agent/model of its own to show or change
+    bool agent_server = info && info->provider == "AgentServer"; // a log/routing record, no agent/model of its own to show or change
     ui->ai_agent_status->setVisible(!agent_server);
     if(!agent_server)
     {
-        if(info && info->provider == ai_provider::ChatGPT)
+        if(info && info->provider == "ChatGPT")
         {
             // model_settings["github_issue_url"] is bound the moment a connection succeeds (see
             // try_connect_github_issue()), so this chat's own record is always current -- no need to prefer
@@ -1475,18 +1476,18 @@ void AIAgent::update_agent_status_label()
         else // a local chat (its own model, since it can differ from the app-wide default once changed) or
              // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
         {
-            auto format = [&](bool is_codex,const QString& model_name,const QJsonObject& model_info)
+            auto format = [&](const QString& agent,const QString& model_name,const QJsonObject& model_info)
             {
-                QString text = (is_codex ? "Codex" : "Claude") +
-                               dot + (model_name.isEmpty() ? QString("default") : model_name);
+                QString text = agent + dot +
+                               (model_name.isEmpty() ? QString("default") : model_name);
                 if(model_info.contains("provider"))
                     text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
                 return text;
             };
             ui->ai_agent_status->setText(info ?
-                format(info->provider == ai_provider::Codex,info->model_settings["model"].toString(),
+                format(info->provider,info->model_settings["model"].toString(),
                        info->model_settings["info"].toObject()) :
-                format(current_agent_index == int(ai_provider::Codex),current_model_name,current_model_info));
+                format(current_agent,current_model_name,current_model_info));
         }
     }
     // the send button's enabled state/label depends on the same selected-chat context above, so it's
@@ -1496,14 +1497,14 @@ void AIAgent::update_agent_status_label()
 
 void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); name is empty for "default" (model_combo_key()'s data value, not the "default" UI label) or a specific model name -- both are always meaningful, never a no-op
 {
-    const auto& profiles = agent_entries[current_agent_index].profiles;
+    const auto& profiles = agent_entries[current_agent].profiles;
     current_model_name = name;
     current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
 }
 
 void AIAgent::set_chat_model(ai_info& info,const QString& name) const // writes directly into this chat's own model_settings; same name resolution as try_set_current_model()
 {
-    const auto& profiles = agent_entries[int(info.provider)].profiles;
+    auto profiles = agent_entries.value(info.provider).profiles;
     info.model_settings["model"] = name;
     info.model_settings["info"] = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
     info.save_config();
@@ -1519,7 +1520,7 @@ ai_info* AIAgent::selected_info() const
 
 bool AIAgent::github_connected(const ai_info& info) const
 {
-    return info.provider == ai_provider::ChatGPT &&
+    return info.provider == "ChatGPT" &&
            info.sessions == web_agent_session_id &&
            !github_issue_api.isEmpty();
 }
@@ -1529,12 +1530,12 @@ AIAgent::send_action AIAgent::current_send_action() const
     auto* info = selected_info();
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
     // nothing selected: still lets a typed message start a chat directly (same process as New Chat, minus the
-    // dialog -- current_agent_index/current_model_name, the app-wide default, pick the agent/model)
+    // dialog -- current_agent/current_model_name, the app-wide default, pick the agent/model)
     if(!info)
         return has_input ? send_action::Send : send_action::Disabled;
-    if(info->provider == ai_provider::AgentServer) // a log/routing record, no local subprocess to send to
+    if(info->provider == "AgentServer") // a log/routing record, no local subprocess to send to
         return send_action::Disabled;
-    if(info->provider == ai_provider::ChatGPT)
+    if(info->provider == "ChatGPT")
         return github_connected(*info) ? send_action::Stop : send_action::Resume;
     if(!info->processes) // never launched (or a prior attempt cleanly ended): a fresh launch, always a real send
         return has_input ? send_action::Send : send_action::Disabled;
@@ -1694,7 +1695,7 @@ bool AIAgent::setup_github_token()
 
 // resume only ever applies to the web agent: the Agent combo is locked to ChatGPT and disabled, only the issue URL (defaulted to the last one) can still be changed
 bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
-                                   int& agent_index,QString& value)
+                                   QString& provider,QString& value)
 {
     QDialog dialog(this);
     dialog.setWindowTitle(title);
@@ -1705,22 +1706,23 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     layout.setContentsMargins(20,18,20,16);
 
     QComboBox agent;
-    agent.addItem("Codex");
-    agent.addItem("Claude");
-    agent.addItem("ChatGPT (Web)");
+    agent.addItem("Codex",QString("Codex"));
+    agent.addItem("Claude",QString("Claude"));
+    agent.addItem("ChatGPT (Web)",QString("ChatGPT"));
     if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
     {
-        auto disable = [&](int index,bool available,const QString& reason)
+        auto disable = [&](const QString& provider,const QString& reason)
         {
-            if(available)
+            auto index = agent.findData(provider);
+            if(index < 0 || !agent_entries[provider].executable.isEmpty())
                 return;
             item_model->item(index)->setEnabled(false);
             item_model->item(index)->setToolTip(reason);
         };
-        disable(int(ai_provider::Codex),!agent_entries[int(ai_provider::Codex)].executable.isEmpty(),"Codex was not found");
-        disable(int(ai_provider::Claude),!agent_entries[int(ai_provider::Claude)].executable.isEmpty(),"Claude was not found");
+        disable("Codex","Codex was not found");
+        disable("Claude","Claude was not found");
     }
-    agent.setCurrentIndex(resume ? int(ai_provider::ChatGPT) : current_agent_index);
+    agent.setCurrentIndex(agent.findData(resume ? QString("ChatGPT") : current_agent));
     agent.setEnabled(!resume);
     layout.addRow("Agent:",&agent);
 
@@ -1807,7 +1809,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     };
     auto update_field = [&]
     {
-        bool chatgpt = agent.currentIndex() == int(ai_provider::ChatGPT);
+        auto provider = agent.currentData().toString();
+        bool chatgpt = provider == "ChatGPT";
         local.setVisible(!chatgpt);
         web.setVisible(chatgpt);
         if(chatgpt)
@@ -1817,9 +1820,9 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
             update_web();
         }
         if(!chatgpt)
-            set_model_selector(model,agent_entries[agent.currentIndex()].profiles,
+            set_model_selector(model,agent_entries[provider].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
-                agent.currentIndex() == current_agent_index ? current_model_name : QString());
+                provider == current_agent ? current_model_name : QString());
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
@@ -1862,7 +1865,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     layout.addRow(&buttons);
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
-        if(agent.currentIndex() == int(ai_provider::ChatGPT))
+        if(agent.currentData().toString() == "ChatGPT")
         {
             if(settings.value("ai/github_token").toString().trimmed().isEmpty())
                 return setup_token.click();
@@ -1876,12 +1879,12 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     if(dialog.exec() != QDialog::Accepted)
         return false;
 
-    agent_index = agent.currentIndex();
-    value = (agent_index == int(ai_provider::ChatGPT)) ? issue_url_edit.text().trimmed() : model_combo_key(model);
+    provider = agent.currentData().toString();
+    value = provider == "ChatGPT" ? issue_url_edit.text().trimmed() : model_combo_key(model);
     return true;
 }
 
-ai_info* AIAgent::create_new_chat(const QString& agent)
+ai_info* AIAgent::create_new_chat(const QString& agent,const QString& provider)
 {
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
@@ -1898,8 +1901,8 @@ ai_info* AIAgent::create_new_chat(const QString& agent)
             ++it;
 
     auto* info = ai_info::create(
-        QUuid::createUuid().toString(QUuid::WithoutBraces),agent,ai_provider::Infer); // status defaults to New; no "new:"/other marker on the id itself
-    if(info->provider == ai_provider::ChatGPT)
+        QUuid::createUuid().toString(QUuid::WithoutBraces),agent,provider); // status defaults to New; no "new:"/other marker on the id itself
+    if(info->provider == "ChatGPT")
         web_agent_session_id = info->sessions;
     else
         info->model_settings = QJsonObject{
@@ -1921,27 +1924,26 @@ void AIAgent::new_chat_dialog(bool resume)
                 return;
             }
 
-    int agent_index = 0;
-    QString value;
+    QString provider,value;
     if(!run_new_chat_dialog(resume,resume ? "Resume Chat" : "New Chat",resume ? "Resume" : "Start",
-                             agent_index,value))
+                             provider,value))
         return;
-    bool web = agent_index == int(ai_provider::ChatGPT);
+    bool web = provider == "ChatGPT";
     // no early web_agent_session_id.clear() here: disconnect_github_issue() (below, and inside
     // start_new_local_chat()) needs it to still name the old chat so that chat gets marked Completed;
-    // create_new_chat("ChatGPT(Web)") already reassigns it for a fresh (non-resume) web chat, and
+    // create_new_chat("ChatGPT(Web)","ChatGPT") already reassigns it for a fresh (non-resume) web chat, and
     // start_new_local_chat() clears it itself once the old channel is actually disconnected
 
     if(web)
     {
         disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         if(!resume)
-            create_new_chat("ChatGPT(Web)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
+            create_new_chat("ChatGPT(Web)","ChatGPT"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
         try_connect_github_issue(value);
         return;
     }
 
-    current_agent_index = agent_index;
+    current_agent = provider;
     try_set_current_model(value);
     start_new_local_chat();
 }
@@ -1952,7 +1954,7 @@ ai_info* AIAgent::start_new_local_chat() // shared by new_chat_dialog() and Send
     web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
     // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
-    auto* info = create_new_chat(current_agent_index == int(ai_provider::Codex) ? "Codex" : "Claude");
+    auto* info = create_new_chat(current_agent,current_agent);
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     return info;
@@ -1967,25 +1969,24 @@ void AIAgent::on_ai_agent_status_clicked()
 {
     if(auto* info = selected_info())
     {
-        if(info->provider == ai_provider::ChatGPT) // change or reconnect using a possibly different issue link
+        if(info->provider == "ChatGPT") // change or reconnect using a possibly different issue link
         {
             web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
-            int agent_index = 0;
-            QString value;
-            if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",agent_index,value))
+            QString provider,value;
+            if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",provider,value))
                 return;
             disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
             try_connect_github_issue(value);
             return;
         }
-        if(info->provider == ai_provider::AgentServer) // no local agent/model of its own to change
+        if(info->provider == "AgentServer") // no local agent/model of its own to change
             return;
         QDialog dialog(this);
         dialog.setWindowTitle("Change Model");
         QFormLayout layout(&dialog);
-        QLabel agent_label(info->provider == ai_provider::Codex ? "Codex" : "Claude");
+        QLabel agent_label(info->provider);
         QComboBox model;
-        set_model_selector(model,agent_entries[int(info->provider)].profiles,info->model_settings["model"].toString());
+        set_model_selector(model,agent_entries[info->provider].profiles,info->model_settings["model"].toString());
         layout.addRow("Agent:",&agent_label);
         layout.addRow("Model:",&model);
         QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
@@ -2000,22 +2001,21 @@ void AIAgent::on_ai_agent_status_clicked()
         return;
     }
 
-    int agent_index = 0;
-    QString value;
-    if(!run_new_chat_dialog(false,"Change Agent/Model","Save",agent_index,value))
+    QString provider,value;
+    if(!run_new_chat_dialog(false,"Change Agent/Model","Save",provider,value))
         return;
 
-    if(agent_index == int(ai_provider::ChatGPT))
+    if(provider == "ChatGPT")
     {
         // same ownership setup new_chat_dialog() does for a fresh web chat -- try_connect_github_issue()
         // assumes web_agent_session_id already names a real chat, which nothing else here would have arranged
         disconnect_github_issue(); // leave any old channel cleanly before attempting a different one
-        create_new_chat("ChatGPT(Web)");
+        create_new_chat("ChatGPT(Web)","ChatGPT");
         try_connect_github_issue(value);
         return;
     }
 
-    current_agent_index = agent_index;
+    current_agent = provider;
     try_set_current_model(value);
     update_agent_status_label();
 }
@@ -2162,10 +2162,10 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     };
 
     // Resolve agent
-    info.launch_name = provider == ai_provider::Codex ? "Codex" : "Claude";
-    if(agent_entries[int(provider)].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
+    info.launch_name = provider;
+    if(agent_entries[provider].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
         refresh_agent_executables();
-    info.launch_executable = agent_entries[int(provider)].executable;
+    info.launch_executable = agent_entries[provider].executable;
     if(info.launch_executable.isEmpty())
     {
         QDesktopServices::openUrl(agent_install_url(provider)); // same as the sidebar's Install button
@@ -2568,7 +2568,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                                  old_info->status == session_status::New;
         auto* info = still_placeholder ?
             assign_ai_session(old_session,new_session) :
-            ai_info::create(new_session,name,ai_provider::Codex); // already known, not inferred: this whole handler is Codex-specific
+            ai_info::create(new_session,name,"Codex"); // already known, not inferred: this whole handler is Codex-specific
         if(info)
         {
             set_ai_status(info->sessions,session_status::Thinking,
@@ -2665,6 +2665,10 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 
 void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
 {
+    Q_ASSERT(info.provider == "Codex" || info.provider == "Claude");
+    if(info.provider != "Codex" && info.provider != "Claude")
+        return;
+
     if(info.processes)
     {
         add_ai_history(info,"user",text);
@@ -2673,7 +2677,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         bool send = info.processes->state() == QProcess::Running;
         if(send)
         {
-            if(info.provider == ai_provider::Claude)
+            if(info.provider == "Claude")
                 info.processes->write(claude_input(text));
             else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
             {
@@ -2691,14 +2695,14 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         return;
     }
 
-    Q_ASSERT(info.provider == ai_provider::Codex || info.provider == ai_provider::Claude); // never ChatGPT: callers must intercept a web chat before reaching here
-
     prepare_ai(info,text,input);
     if(!info.processes) // prepare_ai() failed before ever creating a process
         return;
-    auto args = info.provider == ai_provider::Codex ?
-        configure_codex(info,text) :
-        configure_claude(info,text);
+    QStringList args;
+    if(info.provider == "Codex")
+        args = configure_codex(info,text);
+    else
+        args = configure_claude(info,text);
     ai_log("start " + info.launch_executable +
            " args: " + args.join(" ").remove("\n"));
     // New only for a genuinely never-established launch; an already-established session being resumed (info.status
@@ -2725,9 +2729,9 @@ void AIAgent::on_ai_send_message_clicked()
         new_chat_dialog(true);
         return;
     case send_action::Stop: // only reachable when info exists, see current_send_action()
-        if(info->provider == ai_provider::ChatGPT)
+        if(info->provider == "ChatGPT")
             disconnect_github_issue();
-        else if(auto turn_id = info->provider == ai_provider::Codex ?
+        else if(auto turn_id = info->provider == "Codex" ?
                 info->processes->property("turn_id").toString() : QString();
                 !turn_id.isEmpty()) // Codex mid-turn: interrupt it in place rather than ending the whole session
             info->processes->write(codex_turn_interrupt(info->processes->objectName(),turn_id));
