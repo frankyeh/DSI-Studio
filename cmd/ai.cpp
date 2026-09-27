@@ -75,7 +75,8 @@ ai_info* assign_ai_session(const QString& from,const QString& to)
 QUrl agent_install_url(const QString& provider) // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
 {
     return QUrl(provider == "Codex" ? "https://chatgpt.com/codex" :
-                provider == "Claude" ? "https://claude.com/product/claude-code" : QString());
+                provider == "Claude" ? "https://claude.com/product/claude-code" :
+                provider == "Muse" ? "https://dev.meta.ai/docs/muse-code" : QString());
 }
 
 void stop_blink(QWidget* row)

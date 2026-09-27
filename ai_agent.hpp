@@ -82,7 +82,7 @@ class AIAgent : public QMainWindow
     void send_pending_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool github_connected(const ai_info&) const; // true iff this specific chat is the one the live GitHub issue channel is currently bound to (web_agent_session_id + a non-empty github_issue_api) -- a chat can be ChatGPT-provider without being the connection's current owner (e.g. a different/older web chat)
-    enum class send_action {Disabled,Send,Stop,Resume}; // both local providers now use a persistent process (Claude stdin, Codex app-server turn/start|turn/steer) -- send-vs-queue is purely an internal start_ai() timing detail (process not yet Running) now, not a distinct user-facing state
+    enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
@@ -104,12 +104,13 @@ class AIAgent : public QMainWindow
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself (show_ai_history()) only when this chat is the one currently selected
     void show_ai_history(ai_info&,QJsonObject added_entry); // markdown->HTML transcript rendering: a full rebuild, or just appending added_entry when that alone is enough
     void update_agent_models(const QString&,const QStringList&,bool);
-    void refresh_agent_executables(); // re-runs codex/claude executable discovery into agent_entries[agent].executable; called from the constructor and showEvent() so an install completed mid-session is picked up without a restart
+    void refresh_agent_executables(); // re-runs local-agent executable discovery into agent_entries[agent].executable
     void refresh_ollama_models();
     void refresh_codex_models();
     void start_ai(ai_info&,const QString&,ai_input);
     QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
-    QStringList configure_claude(const ai_info&,const QString&); // same contract as configure_codex
+    QStringList configure_claude(const ai_info&,const QString&);
+    QStringList configure_muse(const ai_info&,const QString&);
     void prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes -- check info.processes to see whether it succeeded; the process callbacks advance info.status
 
 public:

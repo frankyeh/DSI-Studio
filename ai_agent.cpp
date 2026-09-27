@@ -61,6 +61,33 @@ bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
 }
+QString muse_uuid_v7()
+{
+    auto bytes = QUuid::createUuid().toRfc4122();
+    auto ms = quint64(QDateTime::currentMSecsSinceEpoch());
+    for(int i = 5;i >= 0;--i,ms >>= 8)
+        bytes[i] = char(ms);
+    bytes[6] = char((quint8(bytes[6])&0x0f)|0x70);
+    bytes[8] = char((quint8(bytes[8])&0x3f)|0x80);
+    return QUuid::fromRfc4122(bytes).toString(QUuid::WithoutBraces);
+}
+QByteArray muse_command(const QString& id,const QString& method,QJsonObject params)
+{
+    params["commandId"] = id;
+    return QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id",id},
+        {"method",method},{"params",params}}).toJson(QJsonDocument::Compact)+'\n';
+}
+QByteArray muse_turn_start(const QString& session,const QString& text)
+{
+    auto id = muse_uuid_v7();
+    return muse_command(id,"turn/start",QJsonObject{{"sessionId",session},{"ifBusy","steer"},
+        {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}});
+}
+QByteArray muse_turn_cancel(const QString& session,const QString& turn)
+{
+    auto id = muse_uuid_v7();
+    return muse_command(id,"turn/cancel",QJsonObject{{"sessionId",session},{"turnId",turn}});
+}
 
 void AIAgent::ai_log(QString text)
 {
@@ -141,9 +168,9 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
 
     refresh_agent_executables();
-    if(agent_entries["Codex"].executable.isEmpty() &&
-       !agent_entries["Claude"].executable.isEmpty())
-        current_agent = "Claude";
+    if(agent_entries["Codex"].executable.isEmpty())
+        current_agent = !agent_entries["Claude"].executable.isEmpty() ? "Claude" :
+                        !agent_entries["Muse"].executable.isEmpty() ? "Muse" : "Codex";
     update_agent_status_label();
     // not refreshed here: agent_login_info() runs a blocking CLI subprocess per provider, and AIAgent is
     // constructed eagerly at MainWindow startup whether or not this window is ever opened. showEvent()
@@ -1166,10 +1193,16 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
     if(!QFileInfo::exists(claude_path))
         claude_path.clear();
 
+    QString muse_path = QStandardPaths::findExecutable("muse");
+    if(!QFileInfo::exists(muse_path))
+        muse_path.clear();
+
     agent_entries["Codex"].executable = codex_path;
     agent_entries["Claude"].executable = claude_path;
+    agent_entries["Muse"].executable = muse_path;
     ai_log(codex_path.isEmpty() ? "Codex not found" : "Codex: "+codex_path);
     ai_log(claude_path.isEmpty() ? "Claude not found" : "Claude: "+claude_path);
+    ai_log(muse_path.isEmpty() ? "Muse not found" : "Muse: "+muse_path);
 
     if(!claude_path.isEmpty())
     {
@@ -1693,6 +1726,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     QComboBox agent;
     agent.addItem("Codex",QString("Codex"));
     agent.addItem("Claude",QString("Claude"));
+    agent.addItem("Muse",QString("Muse"));
     agent.addItem("ChatGPT (Web)",QString("ChatGPT"));
     if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
     {
@@ -1706,6 +1740,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         };
         disable("Codex","Codex was not found");
         disable("Claude","Claude was not found");
+        disable("Muse","Muse was not found");
     }
     agent.setCurrentIndex(agent.findData(resume ? QString("ChatGPT") : current_agent));
     agent.setEnabled(!resume);
@@ -2171,7 +2206,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!configured)
             return fail_launch("Set the Ollama host/IP in AI Settings first.");
     }
-    else if(agent_login_info(provider).isEmpty())
+    else if(provider != "Muse" && agent_login_info(provider).isEmpty())
     {
         if(!run_agent_login(provider))
             return fail_launch(info.launch_name+" sign-in was not completed.",false);
@@ -2236,14 +2271,13 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
     connect(process,&QProcess::started,this,[=,status = info.status]
     {
-        // stdin stays open for both providers: Codex now uses app-server, a persistent JSON-RPC session over
-        // stdio, same as Claude's own stream-json stdin protocol -- neither is a one-shot exec anymore
+        // stdin stays open for every local provider: Codex app-server, Claude stream-json, and Muse MSP
         auto session = process->objectName();
         ai_log("connecting to "+ name + "@" + session+
             " pid:"+QString::number(process->processId()));
         // the OS process starting proves nothing about the backend conversation itself -- only this provider's
-        // own established-session event (configure_codex's "thread/start"/"thread/resume" response, configure_claude's
-        // "system"/"init") confirms the session, so a genuine first launch stays New until then. A reconnect of an
+        // own established-session event confirms the session, so a genuine first launch stays New until then.
+        // A reconnect of an
         // already-established session (pre-launch status captured above, same as errorOccurred/finished use to
         // tell the two apart) shows Thinking instead -- staying New here too would let a save mid-reconnect
         // wrongly persist established:false over it (see save_config())
@@ -2449,6 +2483,149 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
     args << "--model" << (info.launch_model.isEmpty() ? "sonnet" : info.launch_model);
     return args;
 }
+QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
+{
+    auto* process = info.processes;
+    auto session = info.sessions;
+    auto status = info.status;
+    auto model = info.launch_model;
+    auto workspace = QApplication::applicationDirPath()+"/ai";
+    auto write = [process](const QJsonObject& msg)
+    {
+        process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
+    };
+
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        while(process->canReadLine())
+        {
+            auto msg = next_json_line(process);
+            auto id = msg["id"].toString();
+            auto session_request = process->property("muse_session_request").toString();
+            if(msg.contains("error"))
+            {
+                auto message = msg["error"].toObject()["message"].toString().trimmed();
+                message = "Muse "+(message.isEmpty() ? QString("request failed.") : message);
+                if(id == "initialize" || id == session_request)
+                {
+                    process->setProperty("stderr",process->property("stderr").toByteArray()+
+                                         '\n'+message.toUtf8());
+                    process->kill();
+                }
+                else if(auto* current = ai_info::find(process->objectName()))
+                {
+                    set_ai_status(current->sessions,session_status::Failed,message);
+                    add_ai_history(*current,"activity",message);
+                }
+                continue;
+            }
+
+            if(id == "initialize")
+            {
+                write({{"jsonrpc","2.0"},{"method","initialized"}});
+                auto request_id = muse_uuid_v7();
+                process->setProperty("muse_session_request",request_id);
+                QJsonObject params;
+                QString method;
+                if(status == session_status::New)
+                {
+                    method = "session/start";
+                    params["approvalMode"] = "allowAll";
+                    params["workspaceRoot"] = workspace;
+                    if(!model.isEmpty())
+                        params["modelId"] = model;
+                }
+                else
+                {
+                    method = "session/resume";
+                    params["sessionId"] = session;
+                }
+                process->write(muse_command(request_id,method,params));
+                continue;
+            }
+
+            if(id == session_request)
+            {
+                auto new_session = msg["result"].toObject()["session"].toObject()["sessionId"].toString();
+                if(!is_valid_session_id(new_session))
+                {
+                    process->setProperty("stderr",process->property("stderr").toByteArray()+
+                                         "\nMuse returned an invalid session ID.");
+                    process->kill();
+                    continue;
+                }
+                auto old_session = process->objectName();
+                auto* current = old_session == new_session ? ai_info::find(old_session) :
+                                assign_ai_session(old_session,new_session);
+                if(!current)
+                    current = ai_info::create(new_session,"Muse");
+                set_ai_status(current->sessions,session_status::Thinking,
+                              "Session started; waiting for Muse");
+                current->save_config();
+                if(old_session != new_session)
+                {
+                    process->setObjectName(new_session);
+                    current->processes = process;
+                }
+                process->write(muse_turn_start(new_session,text));
+                continue;
+            }
+
+            auto result = msg["result"].toObject();
+            if(result.contains("turnId"))
+                process->setProperty("turn_id",result["turnId"].toString());
+
+            auto method = msg["method"].toString();
+            if(method == "turn/started")
+                process->setProperty("turn_id",msg["params"].toObject()["turnId"].toString());
+            else if(method == "item/completed")
+            {
+                auto item = msg["params"].toObject()["item"].toObject();
+                auto kind = item["kind"].toString();
+                auto value = item["text"].toString().trimmed();
+                if((kind == "agentMessage" || kind == "reasoning") && !value.isEmpty())
+                {
+                    process->setProperty("had_reply",true);
+                    if(auto* current = ai_info::find(process->objectName()))
+                        add_ai_reply(*current,kind == "agentMessage" ? value : QString(),
+                                    kind == "reasoning" ? value : QString());
+                }
+            }
+            else if(method == "turn/completed")
+            {
+                process->setProperty("turn_id",QString());
+                if(auto* current = ai_info::find(process->objectName()))
+                {
+                    auto params = msg["params"].toObject();
+                    auto terminal = params["terminal"].toString();
+                    if(terminal == "failed")
+                    {
+                        auto error = params["error"].toObject()["message"].toString();
+                        if(error.isEmpty())
+                            error = params["reason"].toString();
+                        set_ai_status(current->sessions,session_status::Failed,
+                                      error.isEmpty() ? "Muse turn failed." : error);
+                        add_ai_history(*current,"activity",current->status_message);
+                    }
+                    else if(terminal == "cancelled")
+                        set_ai_status(current->sessions,session_status::WaitingUser,"Stopped by user.");
+                    else
+                        set_ai_status(current->sessions,session_status::WaitingUser,"Waiting for user");
+                }
+            }
+        }
+    });
+
+    connect(process,&QProcess::started,process,[=]
+    {
+        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+            {"params",QJsonObject{{"clientInfo",QJsonObject{
+                {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
+                {"capabilities",QJsonObject{{"userInputDialogs",false}}}}}});
+    });
+    return {"serve"};
+}
+
 QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 {
     // app-server: a persistent JSON-RPC session over stdio (same shape as Claude's stream-json stdin protocol),
@@ -2649,8 +2826,8 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 
 void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
 {
-    Q_ASSERT(info.provider == "Codex" || info.provider == "Claude");
-    if(info.provider != "Codex" && info.provider != "Claude")
+    Q_ASSERT(info.provider == "Codex" || info.provider == "Claude" || info.provider == "Muse");
+    if(info.provider != "Codex" && info.provider != "Claude" && info.provider != "Muse")
         return;
 
     if(info.processes)
@@ -2663,6 +2840,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         {
             if(info.provider == "Claude")
                 info.processes->write(claude_input(text));
+            else if(info.provider == "Muse")
+                info.processes->write(muse_turn_start(info.processes->objectName(),text));
             else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
             {
                 auto turn_id = info.processes->property("turn_id").toString();
@@ -2685,6 +2864,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
     QStringList args;
     if(info.provider == "Codex")
         args = configure_codex(info,text);
+    else if(info.provider == "Muse")
+        args = configure_muse(info,text);
     else
         args = configure_claude(info,text);
     ai_log("start " + info.launch_executable +
@@ -2715,6 +2896,9 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Stop: // only reachable when info exists, see current_send_action()
         if(info->provider == "ChatGPT")
             disconnect_github_issue();
+        else if(auto turn_id = info->processes->property("turn_id").toString();
+                info->provider == "Muse" && !turn_id.isEmpty())
+            info->processes->write(muse_turn_cancel(info->processes->objectName(),turn_id));
         else if(auto turn_id = info->provider == "Codex" ?
                 info->processes->property("turn_id").toString() : QString();
                 !turn_id.isEmpty()) // Codex mid-turn: interrupt it in place rather than ending the whole session
