@@ -2498,10 +2498,29 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             add_ai_reply(*info,chat,reasoning);
     };
 
-    // our own request's reply: {"id":...,"result":...}, never has "method"
+    // our own request's reply: {"id":...,"result":...} or {"id":...,"error":...}, never has "method"
     auto handle_response = [=,status = info.status](const QJsonObject& msg)
     {
         auto id = msg["id"].toString();
+        if(msg.contains("error"))
+        {
+            auto error = msg["error"].toObject()["message"].toString().trimmed();
+            auto message = "Codex "+id+" failed: "+(error.isEmpty() ? "Unknown error." : error);
+            if(auto* info = ai_info::find(process->objectName()))
+            {
+                set_ai_status(info->sessions,info->status == session_status::New ? session_status::New :
+                              process->property("turn_id").toString().isEmpty() ? session_status::Failed :
+                              session_status::Thinking,message);
+                if(id == "initialize" || id == "thread_start" || id == "thread_resume")
+                {
+                    // The finish handler records the failure and releases the process for a fresh attempt.
+                    process->setProperty("stderr",process->property("stderr").toByteArray()+'\n'+message.toUtf8());
+                    return process->kill();
+                }
+                add_ai_history(*info,"activity",message);
+            }
+            return;
+        }
         if(id == "initialize")
         {
             write_message({{"method","initialized"}});
@@ -2601,6 +2620,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                 {
                     auto err = turn["error"].toObject()["message"].toString();
                     set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
+                    add_ai_history(*info,"activity",info->status_message);
                 }
                 else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
                     set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
@@ -2609,7 +2629,16 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             }
         }
         else if(method == "error")
-            ai_log("Codex app-server error: "+msg["params"].toObject()["error"].toObject()["message"].toString());
+        {
+            auto error = msg["params"].toObject()["error"].toObject()["message"].toString().trimmed();
+            auto message = "Codex error: "+(error.isEmpty() ? QString("Unknown error.") : error);
+            if(auto* info = ai_info::find(process->objectName()))
+            {
+                // An error notification can precede recovery; turn/completed owns the final status.
+                set_ai_status(info->sessions,info->status,message);
+                add_ai_history(*info,"activity",message);
+            }
+        }
     };
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
@@ -2617,7 +2646,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
         while(process->canReadLine())
         {
             auto msg = next_json_line(process);
-            if(msg.contains("result"))
+            if(!msg.contains("method") && (msg.contains("result") || msg.contains("error")))
                 handle_response(msg);
             else
                 handle_notification(msg);
