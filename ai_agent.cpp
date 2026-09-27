@@ -803,7 +803,18 @@ void AIAgent::closeEvent(QCloseEvent* event)
         if(auto* process = entry.second.processes)
         {
             process->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message right after this window tried to shut everything down
-            process->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+            if(entry.second.provider == "Codex" || entry.second.provider == "Claude" ||
+               entry.second.provider == "Muse")
+            {
+                process->closeWriteChannel();
+                QTimer::singleShot(5000,process,[process]
+                {
+                    if(process->state() != QProcess::NotRunning)
+                        process->kill();
+                });
+            }
+            else
+                process->kill();
         }
     disconnect_github_issue();
     QMainWindow::closeEvent(event);
@@ -1322,7 +1333,7 @@ void AIAgent::refresh_muse_models()
                     update_agent_models("Muse",models,false);
                     ai_log("Muse models: "+models.join(", "));
                 }
-                process->kill();
+                process->closeWriteChannel();
             }
         }
     });
