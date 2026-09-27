@@ -2673,7 +2673,9 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
     auto session = info.sessions;
     auto status = info.status;
     auto model = info.launch_model;
-    auto workspace = QApplication::applicationDirPath()+"/ai";
+    auto workspace = info.model_settings["cwd"].toString();
+    if(workspace.isEmpty())
+        workspace = ui->ai_work_dir->text();
     auto write = [process](const QJsonObject& msg)
     {
         process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
