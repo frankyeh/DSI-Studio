@@ -784,8 +784,9 @@ void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reas
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the two refreshes below read agent_entries[...].executable
+    refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
     refresh_codex_models();
+    refresh_muse_models();
     refresh_login_buttons(); // re-checked every time this window is shown, so a login/logout done outside DSI Studio is picked up
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
@@ -1275,6 +1276,67 @@ void AIAgent::refresh_codex_models()
     });
 
     start_process(*process,path,{"debug","models"});
+    QTimer::singleShot(5000,process,&QProcess::kill);
+}
+void AIAgent::refresh_muse_models()
+{
+    auto path = agent_entries["Muse"].executable;
+    if(path.isEmpty())
+        return;
+
+    auto* process = new QProcess(this);
+    process->setProcessEnvironment(agent_environment("Muse"));
+    auto write = [process](const QJsonObject& msg)
+    {
+        process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
+    };
+
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        while(process->canReadLine())
+        {
+            auto msg = next_json_line(process);
+            auto id = msg["id"].toString();
+            if(id == "initialize")
+            {
+                if(msg.contains("error"))
+                {
+                    process->kill();
+                    return;
+                }
+                write({{"jsonrpc","2.0"},{"method","initialized"}});
+                write({{"jsonrpc","2.0"},{"id","model_list"},{"method","model/list"},
+                       {"params",QJsonObject()}});
+            }
+            else if(id == "model_list")
+            {
+                if(!msg.contains("error"))
+                {
+                    QStringList models;
+                    for(const auto& value : msg["result"].toObject()["models"].toArray())
+                    {
+                        auto model = value.toObject()["modelId"].toString();
+                        if(!model.isEmpty())
+                            models << model;
+                    }
+                    update_agent_models("Muse",models,false);
+                    ai_log("Muse models: "+models.join(", "));
+                }
+                process->kill();
+            }
+        }
+    });
+    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+            process,&QObject::deleteLater);
+    connect(process,&QProcess::started,process,[=]
+    {
+        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+            {"params",QJsonObject{{"clientInfo",QJsonObject{
+                {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
+                {"capabilities",QJsonObject{{"userInputDialogs",false}}}}}});
+    });
+
+    start_process(*process,path,{"serve"});
     QTimer::singleShot(5000,process,&QProcess::kill);
 }
 void AIAgent::refresh_ollama_models()

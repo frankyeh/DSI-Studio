@@ -107,6 +107,7 @@ class AIAgent : public QMainWindow
     void refresh_agent_executables(); // re-runs local-agent executable discovery into agent_entries[agent].executable
     void refresh_ollama_models();
     void refresh_codex_models();
+    void refresh_muse_models();
     void start_ai(ai_info&,const QString&,ai_input);
     QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
     QStringList configure_claude(const ai_info&,const QString&);
