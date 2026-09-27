@@ -57,6 +57,18 @@
 #include "TIPL/tipl.hpp"
 
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
+QProcessEnvironment agent_environment(const QString& provider)
+{
+    auto env = QProcessEnvironment::systemEnvironment();
+    if(provider == "Muse")
+    {
+#if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
+        if(!env.contains("TBH_CREDENTIAL_BACKEND"))
+            env.insert("TBH_CREDENTIAL_BACKEND","file");
+#endif
+    }
+    return env;
+}
 void start_process(QProcess& process,const QString& executable,QStringList args)
 {
 #ifdef Q_OS_WIN
@@ -1324,6 +1336,7 @@ QString AIAgent::agent_login_info(const QString& provider)
     if(provider == "Muse")
     {
         QProcess process;
+        process.setProcessEnvironment(agent_environment(provider));
         start_process(process,executable,{"serve"});
         if(!process.waitForStarted(3000))
             return {};
@@ -1424,6 +1437,7 @@ bool AIAgent::run_agent_login(const QString& provider)
 
     bool needs_code = provider == "Claude";
     auto* process = new QProcess(this);
+    process->setProcessEnvironment(agent_environment(provider));
     process->setProcessChannelMode(QProcess::MergedChannels);
 
     QDialog dialog(this);
@@ -2307,7 +2321,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     auto* process = new QProcess(this);
     process->setObjectName(session);
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
-    auto env = QProcessEnvironment::systemEnvironment();
+    auto env = agent_environment(provider);
 #ifdef Q_OS_WIN
     // locate bash for windows
     for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
