@@ -603,7 +603,8 @@ bool fib_data::correct_bias_field(void)
             image_data.push_back(const_cast<float*>(each));
         for(const auto& each : slices)
         {
-            if(tipl::contains(each->name,{"rdi"}))
+            if(tipl::contains(each->name,{"rdi"}) &&
+               mat_reader.has(each->name)) // skip externally loaded rdi
                 image_data.push_back(const_cast<float*>(mat_reader.read_as_type<float>(each->name)));
             if(prog.aborted())
                 return false;
