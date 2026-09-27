@@ -264,6 +264,7 @@ AIAgent::AIAgent(MainWindow* parent):
         // reads this chat's own model_settings directly, and merely looking at a chat shouldn't change what the
         // next New Chat starts with
         update_agent_status_label();
+        ui->ai_chat_history->clear(); // a newly selected chat opens at its latest message
         show_ai_project(*info);
         update_send_button();
     });
@@ -976,6 +977,9 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
 void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
 {
+    auto* bar = ui->ai_chat_history->verticalScrollBar();
+    const auto scroll_position = bar->value();
+    const bool follow_latest = bar->maximum()-scroll_position <= bar->singleStep();
     const auto& history = info.projects;
     const auto added_type = added_entry["type"].toString();
     auto to_html = [](QString text)
@@ -1116,10 +1120,12 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
     else
         append(added_entry);
 
-    ui->ai_chat_history->ensureCursorVisible();
-    auto* bar = ui->ai_chat_history->verticalScrollBar();
-    QTimer::singleShot(
-        0,bar,[bar]{bar->setValue(bar->maximum());});
+    // Rebuilding the document resets its scroll position; preserve readers browsing earlier replies.
+    if(follow_latest)
+        QTimer::singleShot(
+            0,bar,[bar]{bar->setValue(bar->maximum());});
+    else
+        bar->setValue(scroll_position);
     ui->ai_chat_history->viewport()->repaint();
 }
 
