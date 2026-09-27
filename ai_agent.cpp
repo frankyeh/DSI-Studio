@@ -1315,11 +1315,76 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
 
 QString AIAgent::agent_login_info(const QString& provider)
 {
-    if(provider != "Codex" && provider != "Claude")
+    if(provider != "Codex" && provider != "Claude" && provider != "Muse")
         return {};
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return {};
+
+    if(provider == "Muse")
+    {
+        QProcess process;
+        start_process(process,executable,{"serve"});
+        if(!process.waitForStarted(3000))
+            return {};
+
+        auto write = [&](const QJsonObject& msg)
+        {
+            process.write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
+        };
+        auto deadline = QDateTime::currentMSecsSinceEpoch()+5000;
+        auto read_response = [&](const QString& id)
+        {
+            while(process.state() != QProcess::NotRunning &&
+                  QDateTime::currentMSecsSinceEpoch() < deadline)
+            {
+                if(!process.canReadLine())
+                    process.waitForReadyRead(int(deadline-QDateTime::currentMSecsSinceEpoch()));
+                while(process.canReadLine())
+                {
+                    auto msg = next_json_line(&process);
+                    if(msg["id"].toString() == id)
+                        return msg;
+                }
+            }
+            return QJsonObject();
+        };
+
+        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+            {"params",QJsonObject{{"clientInfo",QJsonObject{
+                {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
+                {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}}}});
+        auto initialized = read_response("initialize");
+        QString info;
+        if(initialized["result"].toObject()["experimentalApi"].toBool())
+        {
+            write({{"jsonrpc","2.0"},{"method","initialized"}});
+            write({{"jsonrpc","2.0"},{"id","account_read"},{"method","account/read"}});
+            auto account = read_response("account_read")["result"].toObject();
+            if(!account.isEmpty())
+            {
+                auto state = account["state"].toString();
+                bool credential_required = account["credentialRequired"].toBool();
+                if(!credential_required || state != "loggedOut")
+                {
+                    info = account["label"].toString().trimmed();
+                    if(info.isEmpty())
+                        info = state == "apiKey" ? "API key" :
+                               state == "envKey" ? "Environment key" :
+                               state == "accountLogin" ? "Signed in" :
+                               credential_required ? "Signed in" : "Ready";
+                }
+            }
+        }
+        process.closeWriteChannel();
+        if(!process.waitForFinished(1000))
+        {
+            process.kill();
+            process.waitForFinished(1000);
+        }
+        return info;
+    }
+
     bool is_codex = provider == "Codex";
     QProcess process;
     start_process(process,executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
@@ -1357,7 +1422,6 @@ bool AIAgent::run_agent_login(const QString& provider)
     if(executable.isEmpty())
         return false;
 
-    bool is_codex = provider == "Codex";
     bool needs_code = provider == "Claude";
     auto* process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
@@ -1424,7 +1488,6 @@ bool AIAgent::run_agent_login(const QString& provider)
     });
 
     start_process(*process,executable,
-                  is_codex ? QStringList{"login"} :
                   needs_code ? QStringList{"auth","login"} : QStringList{"login"});
 
     dialog.exec();
@@ -1448,12 +1511,6 @@ void AIAgent::refresh_login_buttons()
         {
             button->setEnabled(true); // clicking opens the CLI's install page
             button->setText("Install "+provider);
-            return;
-        }
-        if(provider == "Muse")
-        {
-            button->setEnabled(true); // Muse has no reliable noninteractive auth-status command
-            button->setText("Muse Login...");
             return;
         }
         auto info = agent_login_info(provider);
@@ -2241,7 +2298,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!configured)
             return fail_launch("Set the Ollama host/IP in AI Settings first.");
     }
-    else if(provider != "Muse" && agent_login_info(provider).isEmpty())
+    else if(agent_login_info(provider).isEmpty())
     {
         if(!run_agent_login(provider))
             return fail_launch(info.launch_name+" sign-in was not completed.",false);
