@@ -2177,8 +2177,6 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             return fail_launch(info.launch_name+" sign-in was not completed.",false);
         refresh_login_buttons();
     }
-    info.save_config(); // model_settings itself is untouched by this launch -- nothing new to persist here, just re-confirming it under the now-current status
-
     auto* process = new QProcess(this);
     process->setObjectName(session);
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
@@ -2208,6 +2206,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         // sent that one-time event more than once (observed with an Ollama-routed session), the stale
         // stashed text got replayed again too, duplicating the opening message into the chat history
         add_ai_history(info,"user",text);
+        info.save_config();
         ui->ai_chat_input->clear();
     }
 
