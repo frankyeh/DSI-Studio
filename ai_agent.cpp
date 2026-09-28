@@ -2235,7 +2235,7 @@ void AIAgent::on_ai_quick_settings_clicked()
             return;
         }
         button->setEnabled(false);
-        button->setText("Checking "+provider+"...");
+        button->setText("Checking "+provider+" status...");
         auto info = QSharedPointer<QString>::create();
         auto* worker = QThread::create([this,provider,info]{*info = agent_login_info(provider);});
         connect(worker,&QThread::finished,&dialog,[provider,button,info]
