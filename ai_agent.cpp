@@ -105,7 +105,7 @@ QByteArray muse_turn_start(const QString& session,const QString& text)
 {
     auto id = muse_uuid_v7();
     return muse_command(id,"turn/start",QJsonObject{{"sessionId",session},{"ifBusy","steer"},
-        {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}});
+        {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}});
 }
 QByteArray muse_turn_cancel(const QString& session,const QString& turn)
 {
@@ -199,10 +199,13 @@ AIAgent::AIAgent(MainWindow* parent):
     // not refreshed here: agent_login_info() runs a blocking CLI subprocess per provider, and AIAgent is
     // constructed eagerly at MainWindow startup whether or not this window is ever opened. showEvent()
     // refreshes it before the buttons are ever actually seen.
-    for(auto [button,provider] : {std::pair{ui->ai_codex_login,QString("Codex")},
+    for(const auto& each : {std::pair{ui->ai_codex_login,QString("Codex")},
                                   std::pair{ui->ai_claude_login,QString("Claude")},
                                   std::pair{ui->ai_muse_login,QString("Muse")}})
-        connect(button,&QPushButton::clicked,this,[this,provider]
+    {
+        const auto& button = each.first;
+        const auto& provider = each.second;
+        connect(button,&QPushButton::clicked,this,[=]
         {
             if(agent_entries[provider].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
                 refresh_agent_executables();
@@ -212,6 +215,7 @@ AIAgent::AIAgent(MainWindow* parent):
                 run_agent_login(provider);
             refresh_login_buttons();
         });
+    }
 
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
