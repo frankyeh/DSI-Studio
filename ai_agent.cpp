@@ -2074,6 +2074,7 @@ ai_info* AIAgent::create_new_chat(const QString& provider,const QString& agent)
             ++it;
 
     auto* info = ai_info::create(
+        provider == "Muse" ? muse_uuid_v7() :
         QUuid::createUuid().toString(QUuid::WithoutBraces),provider,agent); // status defaults to New; no "new:"/other marker on the id itself
     if(info->provider == "ChatGPT")
         web_agent_session_id = info->sessions;
@@ -2416,11 +2417,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
     auto env = agent_environment(provider);
     if(provider == "Muse")
-    {
-        auto muse_session = info.status == session_status::New ? muse_uuid_v7() : session;
-        process->setProperty("muse_session",muse_session);
-        env.insert("MUSE_SESSION_ID",muse_session);
-    }
+        env.insert("MUSE_SESSION_ID",session);
 #ifdef Q_OS_WIN
     // locate bash for windows
     for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
@@ -2745,7 +2742,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 if(status == session_status::New)
                 {
                     method = "session/start";
-                    params["sessionId"] = process->property("muse_session").toString();
+                    params["sessionId"] = session;
                     params["approvalMode"] = "allowAll";
                     params["workspaceRoot"] = workspace;
                     if(!model.isEmpty())
