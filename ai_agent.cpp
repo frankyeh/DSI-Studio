@@ -2415,6 +2415,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     process->setObjectName(session);
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
     auto env = agent_environment(provider);
+    if(provider == "Muse")
+        env.insert("MUSE_SESSION_ID",session);
 #ifdef Q_OS_WIN
     // locate bash for windows
     for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
@@ -2736,6 +2738,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 if(status == session_status::New)
                 {
                     method = "session/start";
+                    params["sessionId"] = session;
                     params["approvalMode"] = "allowAll";
                     params["workspaceRoot"] = workspace;
                     if(!model.isEmpty())
