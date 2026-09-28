@@ -2368,14 +2368,16 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(input == ai_input::Pending)
             info.prompts.append(text);
     };
-    auto fail_launch = [&](const QString& message,bool warn = true)
+    auto fail_launch = [&](QString message)
     {
+        if(!message.startsWith("ERROR:"))
+            message.prepend("ERROR: ");
         preserve_pending();
         set_ai_status(session,info.status == session_status::New ?
                       session_status::New : session_status::Failed,message);
+        add_ai_history(info,"activity",message);
+        info.save_config();
         show_ai_project(info);
-        if(warn)
-            QMessageBox::warning(this,"AI Agent",message);
     };
 
     // Resolve agent
@@ -2409,7 +2411,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!login.isNull() && login.isEmpty())
         {
             if(!run_agent_login(provider))
-                return fail_launch(info.launch_name+" sign-in was not completed.",false);
+                return fail_launch(info.launch_name+" sign-in was not completed.");
         }
     }
     auto* process = new QProcess(this);
