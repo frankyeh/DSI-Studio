@@ -2829,7 +2829,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
                 {"capabilities",QJsonObject{{"userInputDialogs",false}}}}}});
     });
-    return {"serve","--trust-workspace"};
+    return {"serve","--trust-workspace","--disable-sandbox"};
 }
 
 QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
