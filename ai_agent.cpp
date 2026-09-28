@@ -2542,8 +2542,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
                                          exit_status == QProcess::CrashExit);
         auto error_message = user_stopped ? QString("Stopped by user.") :
                              !fatal_error.isEmpty() ? "ERROR: "+fatal_error :
-                              ("ERROR: error code:"+QString::number(exit_code)+" "+
-                              QString::fromUtf8(error)).trimmed();
+                             !error.isEmpty() ? "ERROR: "+QString::fromUtf8(error) :
+                             "ERROR: "+name+" exited with code "+QString::number(exit_code)+".";
         if(failed)
             ai_log(error_message);
 
