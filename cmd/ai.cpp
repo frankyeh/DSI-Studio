@@ -76,7 +76,9 @@ QUrl agent_install_url(const QString& provider) // shared by the sidebar's Insta
 {
     return QUrl(provider == "Codex" ? "https://chatgpt.com/codex" :
                 provider == "Claude" ? "https://claude.com/product/claude-code" :
-                provider == "Muse" ? "https://dev.meta.ai/docs/muse-code" : QString());
+                provider == "Muse" ? "https://dev.meta.ai/docs/muse-code" :
+                provider == "Antigravity" ? "https://antigravity.google/docs/cli/install/" :
+                QString());
 }
 
 void stop_blink(QWidget* row)

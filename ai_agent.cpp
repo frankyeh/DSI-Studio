@@ -114,6 +114,11 @@ QByteArray muse_turn_cancel(const QString& session,const QString& turn)
     auto id = muse_uuid_v7();
     return muse_command(id,"turn/cancel",QJsonObject{{"sessionId",session},{"turnId",turn}});
 }
+QByteArray antigravity_input(const QString& text)
+{
+    return QJsonDocument(QJsonObject{{"event","user"},
+        {"message",QJsonObject{{"content",text}}}}).toJson(QJsonDocument::Compact)+'\n';
+}
 
 void AIAgent::ai_log(QString text)
 {
@@ -196,7 +201,8 @@ AIAgent::AIAgent(MainWindow* parent):
     refresh_agent_executables();
     if(agent_entries["Codex"].executable.isEmpty())
         current_agent = !agent_entries["Claude"].executable.isEmpty() ? "Claude" :
-                        !agent_entries["Muse"].executable.isEmpty() ? "Muse" : "Codex";
+                        !agent_entries["Muse"].executable.isEmpty() ? "Muse" :
+                        !agent_entries["Antigravity"].executable.isEmpty() ? "Antigravity" : "Codex";
     update_agent_status_label();
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
@@ -772,6 +778,7 @@ void AIAgent::showEvent(QShowEvent* event)
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
     refresh_codex_models();
     refresh_muse_models();
+    refresh_antigravity_models();
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
@@ -788,7 +795,7 @@ void AIAgent::closeEvent(QCloseEvent* event)
         {
             process->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message right after this window tried to shut everything down
             if(entry.second.provider == "Codex" || entry.second.provider == "Claude" ||
-               entry.second.provider == "Muse")
+               entry.second.provider == "Muse" || entry.second.provider == "Antigravity")
             {
                 process->closeWriteChannel();
                 QTimer::singleShot(5000,process,[process]
@@ -1227,12 +1234,26 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
     if(!QFileInfo::exists(muse_path))
         muse_path.clear();
 
+    QString antigravity_path = QStandardPaths::findExecutable("agy");
+    if(antigravity_path.isEmpty())
+    {
+#ifdef Q_OS_WIN
+        antigravity_path = qEnvironmentVariable("LOCALAPPDATA")+"/agy/bin/agy.exe";
+#else
+        antigravity_path = QDir::homePath()+"/.local/bin/agy";
+#endif
+    }
+    if(!QFileInfo::exists(antigravity_path))
+        antigravity_path.clear();
+
     agent_entries["Codex"].executable = codex_path;
     agent_entries["Claude"].executable = claude_path;
     agent_entries["Muse"].executable = muse_path;
+    agent_entries["Antigravity"].executable = antigravity_path;
     ai_log(codex_path.isEmpty() ? "Codex not found" : "Codex: "+codex_path);
     ai_log(claude_path.isEmpty() ? "Claude not found" : "Claude: "+claude_path);
     ai_log(muse_path.isEmpty() ? "Muse not found" : "Muse: "+muse_path);
+    ai_log(antigravity_path.isEmpty() ? "Antigravity not found" : "Antigravity: "+antigravity_path);
 
     if(!claude_path.isEmpty())
     {
@@ -1334,6 +1355,46 @@ void AIAgent::refresh_muse_models()
     start_process(*process,path,{"serve"});
     QTimer::singleShot(5000,process,&QProcess::kill);
 }
+void AIAgent::refresh_antigravity_models()
+{
+    auto path = agent_entries["Antigravity"].executable;
+    if(path.isEmpty())
+        return;
+
+    auto* process = new QProcess(this);
+    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+            this,[=]
+    {
+        if(process->exitStatus() == QProcess::NormalExit && process->exitCode() == 0)
+        {
+            QStringList models;
+            auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
+            auto list = doc.isArray() ? doc.array() : doc.object()["models"].toArray();
+            for(const auto& value : list)
+            {
+                if(value.isString())
+                {
+                    models << value.toString();
+                    continue;
+                }
+                auto object = value.toObject();
+                auto model = object["slug"].toString();
+                if(model.isEmpty()) model = object["id"].toString();
+                if(model.isEmpty()) model = object["model"].toString();
+                if(model.isEmpty()) model = object["modelId"].toString();
+                if(model.isEmpty()) model = object["name"].toString();
+                if(!model.isEmpty())
+                    models << model;
+            }
+            update_agent_models("Antigravity",models,false);
+            ai_log("Antigravity models: "+models.join(", "));
+        }
+        process->deleteLater();
+    });
+
+    start_process(*process,path,{"models","--output-format","json"});
+    QTimer::singleShot(10000,process,&QProcess::kill);
+}
 void AIAgent::refresh_ollama_models()
 {
     // Claude only: configure_codex() has no app-server equivalent yet for routing a turn through Ollama (the
@@ -1381,11 +1442,32 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
 
 QString AIAgent::agent_login_info(const QString& provider)
 {
-    if(provider != "Codex" && provider != "Claude" && provider != "Muse")
+    if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
+       provider != "Antigravity")
         return {};
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return {};
+
+    if(provider == "Antigravity")
+    {
+        QProcess process;
+        start_process(process,executable,{"models","--output-format","json"});
+        if(!process.waitForStarted(3000))
+            return {};
+        if(!process.waitForFinished(10000))
+        {
+            process.kill();
+            process.waitForFinished(1000);
+            return {};
+        }
+        if(process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0)
+            return "Signed in";
+        auto error = QString::fromUtf8(process.readAllStandardError()+
+                                       process.readAllStandardOutput());
+        return error.contains("authentication required",Qt::CaseInsensitive) ?
+               QStringLiteral("") : QString();
+    }
 
     if(provider == "Muse")
     {
@@ -1496,11 +1578,64 @@ QString AIAgent::agent_login_info(const QString& provider)
 
 bool AIAgent::run_agent_login(const QString& provider)
 {
-    if(provider != "Codex" && provider != "Claude" && provider != "Muse")
+    if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
+       provider != "Antigravity")
         return false;
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return false;
+
+    if(provider == "Antigravity")
+    {
+        bool started = false;
+        auto work_dir = ui->ai_work_dir->text();
+#ifdef Q_OS_WIN
+        started = QProcess::startDetached(qEnvironmentVariable("ComSpec","cmd.exe"),
+                                          {"/k",QDir::toNativeSeparators(executable)},
+                                          work_dir);
+#elif defined(Q_OS_MACOS)
+        auto command = executable;
+        command.replace("\\","\\\\").replace("\"","\\\"");
+        started = QProcess::startDetached("osascript",
+            {"-e","tell application \"Terminal\" to do script \""+command+"\""});
+#else
+        for(const auto& terminal : {QString("x-terminal-emulator"),QString("gnome-terminal"),
+                                    QString("konsole"),QString("xterm")})
+        {
+            auto program = QStandardPaths::findExecutable(terminal);
+            if(program.isEmpty())
+                continue;
+            auto args = terminal == "gnome-terminal" ? QStringList{"--",executable} :
+                                                       QStringList{"-e",executable};
+            if(started = QProcess::startDetached(program,args,work_dir))
+                break;
+        }
+#endif
+        if(!started)
+            return false;
+
+        QDialog dialog(this);
+        dialog.setWindowTitle("Antigravity Sign In");
+        QVBoxLayout layout(&dialog);
+        QLabel status("Complete sign-in in the Antigravity terminal/browser, then click Done.");
+        status.setWordWrap(true);
+        status.setFixedWidth(420);
+        layout.addWidget(&status);
+        QDialogButtonBox buttons(QDialogButtonBox::Cancel);
+        auto* done = buttons.addButton("Done",QDialogButtonBox::AcceptRole);
+        layout.addWidget(&buttons);
+        connect(done,&QPushButton::clicked,&dialog,[&]
+        {
+            auto info = agent_login_info(provider);
+            if(!info.isEmpty())
+                dialog.accept();
+            else
+                status.setText(info.isNull() ? "Could not verify Antigravity sign-in." :
+                               "Sign-in not detected yet. Complete sign-in, then click Done again.");
+        });
+        connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+        return dialog.exec() == QDialog::Accepted;
+    }
 
     bool needs_code = provider == "Claude";
     auto* process = new QProcess(this);
@@ -1882,9 +2017,11 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     agent.addItem("Codex",QString("Codex"));
     agent.addItem("Claude",QString("Claude"));
     agent.addItem("Muse",QString("Muse"));
+    agent.addItem("Antigravity",QString("Antigravity"));
     agent.addItem("ChatGPT (Web)",QString("ChatGPT"));
     if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
-        for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse")})
+        for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),
+                                    QString("Antigravity")})
         {
             auto index = agent.findData(provider);
             if(index < 0 || (!agent_entries[provider].executable.isEmpty() &&
@@ -2225,7 +2362,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     agent_heading->setObjectName("ai_step_heading");
     agent_layout->addWidget(agent_heading);
 
-    QPushButton codex,claude,muse;
+    QPushButton codex,claude,muse,antigravity;
     auto refresh_agent_button = [this,&dialog](const QString& provider,QPushButton* button)
     {
         if(agent_entries[provider].executable.isEmpty())
@@ -2265,6 +2402,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     setup_agent_button("Codex",&codex);
     setup_agent_button("Claude",&claude);
     setup_agent_button("Muse",&muse);
+    setup_agent_button("Antigravity",&antigravity);
     root->addWidget(agent_card);
 
     auto* ollama_card = new QFrame;
@@ -2431,7 +2569,9 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     }
     auto* process = new QProcess(this);
     process->setObjectName(session);
-    process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
+    process->setWorkingDirectory(provider == "Antigravity" ?
+                                 ui->ai_work_dir->text() :
+                                 QApplication::applicationDirPath()+"/ai");
     auto env = agent_environment(provider);
     if(provider == "Muse")
         env.insert("MUSE_SESSION_ID",session);
@@ -2858,6 +2998,106 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
     return {"serve","--trust-workspace","--disable-sandbox"};
 }
 
+QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& text)
+{
+    auto* process = info.processes;
+    auto session = info.sessions;
+    auto status = info.status;
+    auto workspace = ui->ai_work_dir->text();
+    auto ai_dir = QDir::cleanPath(QApplication::applicationDirPath()+"/ai");
+    auto prompt = "Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+
+                  " before handling this request. Use `bash \""+
+                  QDir::fromNativeSeparators(ai_dir+"/dsi.sh")+
+                  "\"` for DSI Studio commands.\n\n"+text;
+
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        while(process->canReadLine())
+        {
+            auto msg = next_json_line(process);
+            auto event = msg["event"].toString();
+            if(event == "init")
+            {
+                auto new_session = msg["conversation_id"].toString();
+                if(!is_valid_session_id(new_session))
+                {
+                    process->setProperty("fatal_error","Antigravity returned an invalid conversation ID.");
+                    process->kill();
+                    continue;
+                }
+                auto old_session = process->objectName();
+                if(status != session_status::New && old_session != new_session)
+                {
+                    process->setProperty("fatal_error","Antigravity resumed a different conversation ID.");
+                    process->kill();
+                    continue;
+                }
+                auto* current = old_session == new_session ? ai_info::find(old_session) :
+                                assign_ai_session(old_session,new_session);
+                if(!current)
+                {
+                    process->setProperty("fatal_error","Antigravity session could not be assigned.");
+                    process->kill();
+                    continue;
+                }
+                if(old_session != new_session)
+                {
+                    process->setObjectName(new_session);
+                    current->processes = process;
+                }
+                set_ai_status(current->sessions,session_status::Thinking,
+                              "Session started; waiting for Antigravity");
+                current->save_config();
+                process->write(antigravity_input(prompt));
+                continue;
+            }
+            if(event != "result")
+                continue;
+
+            auto result = msg["result"].toObject();
+            auto terminal = result["status"].toString();
+            if(auto* current = ai_info::find(process->objectName()))
+            {
+                if(terminal == "SUCCESS")
+                {
+                    auto reply = result["response"].toString().trimmed();
+                    if(!reply.isEmpty())
+                    {
+                        process->setProperty("had_reply",true);
+                        add_ai_reply(*current,reply,QString());
+                    }
+                    else
+                        set_ai_status(current->sessions,session_status::WaitingUser,
+                                      "Waiting for user");
+                }
+                else if(terminal == "CANCELED" || terminal == "INTERRUPTED")
+                    set_ai_status(current->sessions,session_status::WaitingUser,
+                                  "Stopped by user.");
+                else
+                {
+                    auto error = result["error"].toString().trimmed();
+                    auto message = "ERROR: Antigravity "+
+                                   (error.isEmpty() ?
+                                    (terminal.isEmpty() ? QString("request failed.") :
+                                     terminal.toLower()+".") : error);
+                    set_ai_status(current->sessions,session_status::Failed,message);
+                    add_ai_history(*current,"activity",message);
+                }
+            }
+        }
+    });
+
+    QStringList args{"--input-format","stream-json",
+                     "--output-format","stream-json",
+                     "--dangerously-skip-permissions",
+                     "--add-dir",workspace};
+    if(!info.launch_model.isEmpty())
+        args << "--model" << info.launch_model;
+    if(status != session_status::New)
+        args << "--conversation" << session;
+    return args;
+}
+
 QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 {
     // app-server: a persistent JSON-RPC session over stdio (same shape as Claude's stream-json stdin protocol),
@@ -3058,8 +3298,10 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 
 void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
 {
-    Q_ASSERT(info.provider == "Codex" || info.provider == "Claude" || info.provider == "Muse");
-    if(info.provider != "Codex" && info.provider != "Claude" && info.provider != "Muse")
+    Q_ASSERT(info.provider == "Codex" || info.provider == "Claude" ||
+             info.provider == "Muse" || info.provider == "Antigravity");
+    if(info.provider != "Codex" && info.provider != "Claude" &&
+       info.provider != "Muse" && info.provider != "Antigravity")
         return;
 
     if(info.processes)
@@ -3074,6 +3316,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
                 info.processes->write(claude_input(text));
             else if(info.provider == "Muse")
                 info.processes->write(muse_turn_start(info.processes->objectName(),text));
+            else if(info.provider == "Antigravity")
+                info.processes->write(antigravity_input(text));
             else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
             {
                 auto turn_id = info.processes->property("turn_id").toString();
@@ -3098,6 +3342,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         args = configure_codex(info,text);
     else if(info.provider == "Muse")
         args = configure_muse(info,text);
+    else if(info.provider == "Antigravity")
+        args = configure_antigravity(info,text);
     else
         args = configure_claude(info,text);
     ai_log("start " + info.launch_executable +
