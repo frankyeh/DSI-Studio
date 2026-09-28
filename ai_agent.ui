@@ -244,19 +244,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
            </widget>
           </item>
           <item>
-           <spacer name="ai_new_chat_spacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
            <widget class="QPushButton" name="ai_quick_settings">
             <property name="minimumSize">
              <size>
@@ -356,11 +343,11 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
              </property>
              <item>
               <widget class="QLineEdit" name="ai_work_dir">
-               <property name="frame">
-                <bool>false</bool>
-               </property>
                <property name="styleSheet">
                 <string notr="true">QLineEdit#ai_work_dir { border: none; background: transparent; }</string>
+               </property>
+               <property name="frame">
+                <bool>false</bool>
                </property>
                <property name="placeholderText">
                 <string>AI agent working directory</string>
