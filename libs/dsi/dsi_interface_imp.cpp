@@ -285,6 +285,8 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_mni)
                 throw std::runtime_error("not QSDR fib file");
+            if(!fib.has_odfs())
+                throw std::runtime_error("ODF data required for population template");
             if(index == 0)
             {
                 report = fib.report;
