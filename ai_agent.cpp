@@ -1353,7 +1353,7 @@ void AIAgent::refresh_muse_models()
     });
 
     start_process(*process,path,{"serve"});
-    QTimer::singleShot(5000,process,&QProcess::kill);
+    QTimer::singleShot(15000,process,&QProcess::kill);
 }
 void AIAgent::refresh_antigravity_models()
 {
@@ -1368,21 +1368,11 @@ void AIAgent::refresh_antigravity_models()
         if(process->exitStatus() == QProcess::NormalExit && process->exitCode() == 0)
         {
             QStringList models;
-            auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
-            auto list = doc.isArray() ? doc.array() : doc.object()["models"].toArray();
-            for(const auto& value : list)
+            auto data = QJsonDocument::fromJson(process->readAllStandardOutput()).
+                        object()["command"].toObject()["data"].toObject();
+            for(const auto& value : data["models"].toArray())
             {
-                if(value.isString())
-                {
-                    models << value.toString();
-                    continue;
-                }
-                auto object = value.toObject();
-                auto model = object["slug"].toString();
-                if(model.isEmpty()) model = object["id"].toString();
-                if(model.isEmpty()) model = object["model"].toString();
-                if(model.isEmpty()) model = object["modelId"].toString();
-                if(model.isEmpty()) model = object["name"].toString();
+                auto model = value.toObject()["id"].toString();
                 if(!model.isEmpty())
                     models << model;
             }
@@ -1391,8 +1381,9 @@ void AIAgent::refresh_antigravity_models()
         }
         process->deleteLater();
     });
+    connect(process,&QProcess::started,process,&QProcess::closeWriteChannel);
 
-    start_process(*process,path,{"models","--output-format","json"});
+    start_process(*process,path,{"--output-format","json","models"});
     QTimer::singleShot(10000,process,&QProcess::kill);
 }
 void AIAgent::refresh_ollama_models()
@@ -1452,9 +1443,10 @@ QString AIAgent::agent_login_info(const QString& provider)
     if(provider == "Antigravity")
     {
         QProcess process;
-        start_process(process,executable,{"models","--output-format","json"});
+        start_process(process,executable,{"--output-format","json","models"});
         if(!process.waitForStarted(3000))
             return {};
+        process.closeWriteChannel();
         if(!process.waitForFinished(10000))
         {
             process.kill();
@@ -1634,7 +1626,10 @@ bool AIAgent::run_agent_login(const QString& provider)
                                "Sign-in not detected yet. Complete sign-in, then click Done again.");
         });
         connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
-        return dialog.exec() == QDialog::Accepted;
+        if(dialog.exec() != QDialog::Accepted)
+            return false;
+        refresh_antigravity_models();
+        return true;
     }
 
     bool needs_code = provider == "Claude";
@@ -1717,6 +1712,8 @@ bool AIAgent::run_agent_login(const QString& provider)
 
     if(!succeeded)
         QMessageBox::warning(this,"AI Agent",provider+" sign-in was not completed.");
+    else if(provider == "Muse")
+        refresh_muse_models();
     return succeeded;
 }
 
