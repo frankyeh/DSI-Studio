@@ -2416,7 +2416,11 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
     auto env = agent_environment(provider);
     if(provider == "Muse")
-        env.insert("MUSE_SESSION_ID",session);
+    {
+        auto muse_session = info.status == session_status::New ? muse_uuid_v7() : session;
+        process->setProperty("muse_session",muse_session);
+        env.insert("MUSE_SESSION_ID",muse_session);
+    }
 #ifdef Q_OS_WIN
     // locate bash for windows
     for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
@@ -2449,9 +2453,10 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     // this session was never established, so it has no real id worth preserving -- back to New entirely,
     // as if this attempt never happened, rather than left marked Failed. The message itself stays recorded
     // (it really was sent) -- this just explains what happened to it, the same as any other failed launch
-    auto restore_new_chat = [=](const QString& message)
+    auto restore_new_chat = [=](QString message)
     {
-        QMessageBox::warning(this,"AI Agent",message);
+        if(message != "Stopped by user." && !message.startsWith("ERROR:"))
+            message.prepend("ERROR: ");
         if(auto* info = ai_info::find(process->objectName()))
         {
             info->processes = nullptr;
@@ -2499,7 +2504,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             return;
 
         auto session = process->objectName();
-        auto message = "Cannot start "+name+": "+process->errorString();
+        auto message = "ERROR: Cannot start "+name+": "+process->errorString();
         ai_log(message);
 
         auto* found = ai_info::find(session);
@@ -2533,9 +2538,12 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         ai_log(name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
-        bool failed = !user_stopped && (exit_code || exit_status == QProcess::CrashExit);
+        auto fatal_error = process->property("fatal_error").toString();
+        bool failed = !user_stopped && (!fatal_error.isEmpty() || exit_code ||
+                                         exit_status == QProcess::CrashExit);
         auto error_message = user_stopped ? QString("Stopped by user.") :
-                              ("error code:"+QString::number(exit_code)+" "+
+                             !fatal_error.isEmpty() ? "ERROR: "+fatal_error :
+                              ("ERROR: error code:"+QString::number(exit_code)+" "+
                               QString::fromUtf8(error)).trimmed();
         if(failed)
             ai_log(error_message);
@@ -2543,12 +2551,9 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         auto* found = ai_info::find(session);
         // Same reasoning as errorOccurred: only an unestablished first launch returns to New.
         if(!found || (status == session_status::New && found->status == session_status::New))
-        {
-            auto message = found && found->status == session_status::New ?
-                           found->status_message : failed ? error_message :
-                           "AI agent ended before creating a new chat.";
-            restore_new_chat(message);
-        }
+            restore_new_chat(user_stopped ? "Stopped by user." :
+                             failed ? error_message :
+                             "AI agent ended before creating a new chat.");
         else
         {
             auto& info = *found;
@@ -2716,12 +2721,14 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 message = "Muse "+(message.isEmpty() ? QString("request failed.") : message);
                 if(id == "initialize" || id == session_request)
                 {
+                    process->setProperty("fatal_error",message);
                     process->setProperty("stderr",process->property("stderr").toByteArray()+
                                          '\n'+message.toUtf8());
                     process->kill();
                 }
                 else if(auto* current = ai_info::find(process->objectName()))
                 {
+                    message.prepend("ERROR: ");
                     set_ai_status(current->sessions,session_status::Failed,message);
                     add_ai_history(*current,"activity",message);
                 }
@@ -2738,7 +2745,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 if(status == session_status::New)
                 {
                     method = "session/start";
-                    params["sessionId"] = session;
+                    params["sessionId"] = process->property("muse_session").toString();
                     params["approvalMode"] = "allowAll";
                     params["workspaceRoot"] = workspace;
                     if(!model.isEmpty())
@@ -2758,8 +2765,10 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 auto new_session = msg["result"].toObject()["session"].toObject()["sessionId"].toString();
                 if(!is_valid_session_id(new_session))
                 {
+                    auto message = QString("Muse returned an invalid session ID.");
+                    process->setProperty("fatal_error",message);
                     process->setProperty("stderr",process->property("stderr").toByteArray()+
-                                         "\nMuse returned an invalid session ID.");
+                                         '\n'+message.toUtf8());
                     process->kill();
                     continue;
                 }
@@ -2812,9 +2821,9 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                         auto error = params["error"].toObject()["message"].toString();
                         if(error.isEmpty())
                             error = params["reason"].toString();
-                        set_ai_status(current->sessions,session_status::Failed,
-                                      error.isEmpty() ? "Muse turn failed." : error);
-                        add_ai_history(*current,"activity",current->status_message);
+                        error = "ERROR: "+(error.isEmpty() ? QString("Muse turn failed.") : error);
+                        set_ai_status(current->sessions,session_status::Failed,error);
+                        add_ai_history(*current,"activity",error);
                     }
                     else if(terminal == "cancelled")
                         set_ai_status(current->sessions,session_status::WaitingUser,"Stopped by user.");
