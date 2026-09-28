@@ -2691,6 +2691,11 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
     auto workspace = info.model_settings["cwd"].toString();
     if(workspace.isEmpty())
         workspace = ui->ai_work_dir->text();
+    auto prompt = text;
+    auto ai_dir = QApplication::applicationDirPath()+"/ai";
+    if(QDir::cleanPath(workspace) != QDir::cleanPath(ai_dir))
+        prompt.prepend("Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+
+                       " before handling this request.\n\n");
     auto write = [process](const QJsonObject& msg)
     {
         process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
@@ -2768,7 +2773,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                     process->setObjectName(new_session);
                     current->processes = process;
                 }
-                process->write(muse_turn_start(new_session,text));
+                process->write(muse_turn_start(new_session,prompt));
                 continue;
             }
 
