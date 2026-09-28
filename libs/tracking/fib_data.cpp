@@ -1457,6 +1457,7 @@ void fib_data::set_template_id(size_t new_id)
         s2t.clear();
         atlas_list.clear();
         track_atlas.reset();
+        has_manual_atlas = false;
         // populate atlas list
         {
             std::string species = tipl::split(std::filesystem::path(t1w_template_list[template_id]).filename().stem().string(),'_')[0];
