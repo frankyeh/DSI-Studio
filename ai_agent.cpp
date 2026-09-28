@@ -34,11 +34,13 @@
 #include <QRegularExpression>
 #include <QScrollBar>
 #include <QShortcut>
+#include <QSharedPointer>
 #include <QShowEvent>
 #include <QSpinBox>
 #include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTextFrame>
+#include <QThread>
 #include <QTimer>
 #include <QToolButton>
 #include <QUuid>
@@ -2224,7 +2226,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     agent_layout->addWidget(agent_heading);
 
     QPushButton codex,claude,muse;
-    auto refresh_agent_button = [this](const QString& provider,QPushButton* button)
+    auto refresh_agent_button = [this,&dialog](const QString& provider,QPushButton* button)
     {
         if(agent_entries[provider].executable.isEmpty())
         {
@@ -2232,10 +2234,18 @@ void AIAgent::on_ai_quick_settings_clicked()
             button->setText("Install "+provider);
             return;
         }
-        auto info = agent_login_info(provider);
-        button->setEnabled(info.isEmpty());
-        button->setText(info.isNull() ? provider+" Login..." :
-                        info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
+        button->setEnabled(false);
+        button->setText("Checking "+provider+"...");
+        auto info = QSharedPointer<QString>::create();
+        auto* worker = QThread::create([this,provider,info]{*info = agent_login_info(provider);});
+        connect(worker,&QThread::finished,&dialog,[provider,button,info]
+        {
+            button->setEnabled(info->isEmpty());
+            button->setText(info->isNull() ? provider+" Login..." :
+                            info->isEmpty() ? "Sign in to "+provider+"..." : provider+": "+*info);
+        });
+        connect(worker,&QThread::finished,worker,&QObject::deleteLater);
+        worker->start();
     };
     auto setup_agent_button = [&](const QString& provider,QPushButton* button)
     {
