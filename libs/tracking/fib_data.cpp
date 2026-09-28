@@ -1695,6 +1695,9 @@ bool fib_data::load_track_atlas(bool symmetric)
         tractography_atlas_roa->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     }
 
+    if(track_atlas_symmetric != symmetric)
+        track_atlas.reset();
+
     if(!track_atlas.get())
     {
         tipl::progress prog(symmetric ?  "loading symmetric tractography atlas" : "loading asymmetric tractography atlas");
@@ -1806,6 +1809,7 @@ bool fib_data::load_track_atlas(bool symmetric)
             tract_atlas_max_length.swap(max_length);
             tract_atlas_median_length.swap(median_length);
         }
+        track_atlas_symmetric = symmetric;
     }
     return true;
 }
