@@ -1882,20 +1882,25 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     agent.addItem("Muse",QString("Muse"));
     agent.addItem("ChatGPT (Web)",QString("ChatGPT"));
     if(auto* item_model = qobject_cast<QStandardItemModel*>(agent.model()))
-    {
-        auto disable = [&](const QString& provider,const QString& reason)
+        for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse")})
         {
             auto index = agent.findData(provider);
-            if(index < 0 || !agent_entries[provider].executable.isEmpty())
-                return;
-            item_model->item(index)->setEnabled(false);
-            item_model->item(index)->setToolTip(reason);
-        };
-        disable("Codex","Codex was not found");
-        disable("Claude","Claude was not found");
-        disable("Muse","Muse was not found");
-    }
-    agent.setCurrentIndex(agent.findData(resume ? QString("ChatGPT") : current_agent));
+            if(index < 0 || (!agent_entries[provider].executable.isEmpty() &&
+                             !agent_login_info(provider).isEmpty()))
+                continue;
+            auto* item = item_model->item(index);
+            item->setText(provider+" (setup required)");
+            item->setEnabled(false);
+            item->setToolTip("Open Settings (⚙) to install or sign in.");
+        }
+    auto index = agent.findData(resume ? QString("ChatGPT") : current_agent);
+    auto enabled = [&](int i)
+    {
+        return i >= 0 && agent.model()->flags(agent.model()->index(i,0)).testFlag(Qt::ItemIsEnabled);
+    };
+    if(!enabled(index))
+        for(index = 0;index < agent.count() && !enabled(index);++index) {}
+    agent.setCurrentIndex(index);
     agent.setEnabled(!resume);
     layout.addRow("Agent:",&agent);
 
