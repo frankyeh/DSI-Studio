@@ -196,27 +196,6 @@ AIAgent::AIAgent(MainWindow* parent):
         current_agent = !agent_entries["Claude"].executable.isEmpty() ? "Claude" :
                         !agent_entries["Muse"].executable.isEmpty() ? "Muse" : "Codex";
     update_agent_status_label();
-    // not refreshed here: agent_login_info() runs a blocking CLI subprocess per provider, and AIAgent is
-    // constructed eagerly at MainWindow startup whether or not this window is ever opened. showEvent()
-    // refreshes it before the buttons are ever actually seen.
-    for(const auto& each : {std::pair{ui->ai_codex_login,QString("Codex")},
-                                  std::pair{ui->ai_claude_login,QString("Claude")},
-                                  std::pair{ui->ai_muse_login,QString("Muse")}})
-    {
-        const auto& button = each.first;
-        const auto& provider = each.second;
-        connect(button,&QPushButton::clicked,this,[=]
-        {
-            if(agent_entries[provider].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
-                refresh_agent_executables();
-            if(agent_entries[provider].executable.isEmpty()) // still not installed -- nothing to sign into yet
-                QDesktopServices::openUrl(agent_install_url(provider));
-            else
-                run_agent_login(provider);
-            refresh_login_buttons();
-        });
-    }
-
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
@@ -791,7 +770,6 @@ void AIAgent::showEvent(QShowEvent* event)
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
     refresh_codex_models();
     refresh_muse_models();
-    refresh_login_buttons(); // re-checked every time this window is shown, so a login/logout done outside DSI Studio is picked up
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
@@ -1605,26 +1583,6 @@ bool AIAgent::run_agent_login(const QString& provider)
     return succeeded;
 }
 
-void AIAgent::refresh_login_buttons()
-{
-    auto refresh = [this](const QString& provider,QPushButton* button)
-    {
-        if(agent_entries[provider].executable.isEmpty())
-        {
-            button->setEnabled(true); // clicking opens the CLI's install page
-            button->setText("Install "+provider);
-            return;
-        }
-        auto info = agent_login_info(provider);
-        button->setEnabled(info.isEmpty()); // null = unknown, empty = confirmed signed out
-        button->setText(info.isNull() ? provider+" Login..." :
-                        info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
-    };
-    refresh("Codex",ui->ai_codex_login);
-    refresh("Claude",ui->ai_claude_login);
-    refresh("Muse",ui->ai_muse_login);
-}
-
 bool AIAgent::try_connect_github_issue(const QString& url)
 {
     if(auto* info = ai_info::find(web_agent_session_id))
@@ -2250,6 +2208,49 @@ void AIAgent::on_ai_quick_settings_clicked()
     title->setObjectName("ai_dialog_title");
     root->addWidget(title);
 
+    auto* agent_card = new QFrame;
+    agent_card->setObjectName("ai_step_card");
+    auto* agent_layout = new QVBoxLayout(agent_card);
+    agent_layout->setContentsMargins(14,12,14,12);
+    agent_layout->setSpacing(8);
+    auto* agent_heading = new QLabel("Local agents");
+    agent_heading->setObjectName("ai_step_heading");
+    agent_layout->addWidget(agent_heading);
+
+    QPushButton codex,claude,muse;
+    auto refresh_agent_button = [this](const QString& provider,QPushButton* button)
+    {
+        if(agent_entries[provider].executable.isEmpty())
+        {
+            button->setEnabled(true);
+            button->setText("Install "+provider);
+            return;
+        }
+        auto info = agent_login_info(provider);
+        button->setEnabled(info.isEmpty());
+        button->setText(info.isNull() ? provider+" Login..." :
+                        info.isEmpty() ? "Sign in to "+provider+"..." : provider+": "+info);
+    };
+    auto setup_agent_button = [&](const QString& provider,QPushButton* button)
+    {
+        refresh_agent_button(provider,button);
+        connect(button,&QPushButton::clicked,&dialog,[&,provider,button]
+        {
+            if(agent_entries[provider].executable.isEmpty())
+                refresh_agent_executables();
+            if(agent_entries[provider].executable.isEmpty())
+                QDesktopServices::openUrl(agent_install_url(provider));
+            else
+                run_agent_login(provider);
+            refresh_agent_button(provider,button);
+        });
+        agent_layout->addWidget(button);
+    };
+    setup_agent_button("Codex",&codex);
+    setup_agent_button("Claude",&claude);
+    setup_agent_button("Muse",&muse);
+    root->addWidget(agent_card);
+
     auto* ollama_card = new QFrame;
     ollama_card->setObjectName("ai_step_card");
     auto* ollama_layout = new QVBoxLayout(ollama_card);
@@ -2408,7 +2409,6 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         {
             if(!run_agent_login(provider))
                 return fail_launch(info.launch_name+" sign-in was not completed.",false);
-            refresh_login_buttons();
         }
     }
     auto* process = new QProcess(this);
