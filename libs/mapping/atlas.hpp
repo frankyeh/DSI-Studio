@@ -25,6 +25,15 @@ public:
     bool is_multiple_roi;
     tipl::matrix<4,4> template_to_mni;
 public:
+    void set_template_to_mni(const tipl::matrix<4,4>& trans)
+    {
+        if(template_to_mni != trans && !I.empty())
+        {
+            I.clear();
+            in_template_space = false;
+        }
+        template_to_mni = trans;
+    }
     bool load_from_file(void);
     const std::vector<std::string>& get_list(void)
     {
