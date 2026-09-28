@@ -2265,6 +2265,7 @@ void tracking_window::on_alt_mapping_currentIndexChanged(int index)
         handle->alternative_mapping_index = index;
         handle->s2t.clear();
         handle->t2s.clear();
+        handle->track_atlas.reset();
     }
 
 }
