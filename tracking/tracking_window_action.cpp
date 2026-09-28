@@ -2172,14 +2172,10 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     handle->has_manual_atlas = true;
 
 
-    auto output_file_name = handle->fib_file_name;
-    output_file_name += "." + template_name_list[handle->template_id] + ".mz";
-    if(handle->s2t.empty() && std::filesystem::exists(output_file_name))
-    {
-        handle->s2t.clear();
-        handle->t2s.clear();
-        std::filesystem::remove(output_file_name);
-    }
+    handle->s2t.clear();
+    handle->t2s.clear();
+    handle->track_atlas.reset();
+    std::filesystem::remove(handle->get_mapping_file_name());
 
     if(!handle->map_to_mni())
     {
