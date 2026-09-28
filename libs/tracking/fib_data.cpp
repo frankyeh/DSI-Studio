@@ -1685,14 +1685,14 @@ bool fib_data::load_track_atlas(bool symmetric)
         tractography_atlas_roi = std::make_shared<atlas>();
         tractography_atlas_roi->name = "tractography atlas ROI";
         tractography_atlas_roi->filename = tractography_atlas_roi_file_name;
-        tractography_atlas_roi->template_to_mni = trans_to_mni;
+        tractography_atlas_roi->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     }
     if(!tractography_atlas_roa.get() && std::filesystem::exists(tractography_atlas_roa_file_name))
     {
         tractography_atlas_roa = std::make_shared<atlas>();
         tractography_atlas_roa->name = "tractography atlas ROA";
         tractography_atlas_roa->filename = tractography_atlas_roa_file_name;
-        tractography_atlas_roa->template_to_mni = trans_to_mni;
+        tractography_atlas_roa->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     }
 
     if(!track_atlas.get())
