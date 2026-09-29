@@ -1954,10 +1954,9 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
                std::vector<unsigned int>& labels,
                std::vector<std::string> & label_names)
 {
-    if(!load_track_atlas(false/*asymmetric*/))
-        return false;
     std::vector<unsigned int> c,count;
-    recognize(trk,c,count);
+    if(!recognize(trk,c,count))
+        return false;
     std::multimap<unsigned int,unsigned int,std::greater<unsigned int> > tract_list;
     for(unsigned int i = 0;i < count.size();++i)
         if(count[i])
