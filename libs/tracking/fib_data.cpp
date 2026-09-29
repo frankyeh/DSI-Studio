@@ -1889,6 +1889,8 @@ unsigned int find_nearest_contain(const float* trk,unsigned int length,
     float best_distance = std::numeric_limits<float>::max();
     for(size_t i = 0;i < tract_data.size();++i)
     {
+        if(tract_data[i].size() < 6)
+            continue;
         bool skip = false;
         float max_dis = 0;
         for(size_t n = 0;n < length;n += 6)
@@ -1910,6 +1912,8 @@ unsigned int find_nearest_contain(const float* trk,unsigned int length,
             best_index = i;
         }
     }
+    if(best_index == tract_data.size())
+        return std::numeric_limits<unsigned int>::max();
     return tract_cluster[best_index];
 }
 
