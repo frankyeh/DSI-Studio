@@ -189,6 +189,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::progress prog(cmd[0],true);
         if(!handle->load_template() || !handle->load_mapping(cmd[1]))
             return run->failed(handle->error_msg);
+        handle->track_atlas.reset();
         return run->succeed();
     }
     if(cmd[0] == "list_atlas")
