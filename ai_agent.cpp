@@ -2084,11 +2084,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     agent.addItem("Antigravity",QString("Antigravity"));
     agent.addItem("ChatGPT (Web)",QString("ChatGPT"));
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
-    auto update_agent = [&](const QString& provider)
+    auto ready = [&](const QString& provider)
     {
-        auto index = agent.findData(provider);
-        if(index < 0 || !item_model)
-            return;
         const auto& entry = agent_entries[provider];
         bool ollama = false;
         if(provider == "Claude")
@@ -2098,15 +2095,22 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
                     ollama = true;
                     break;
                 }
-        bool ready = !entry.executable.isEmpty() &&
-                     (entry.status == ai_agent_status::Ready || ollama);
+        return !entry.executable.isEmpty() &&
+               (entry.status == ai_agent_status::Ready || ollama);
+    };
+    auto update_agent = [&](const QString& provider)
+    {
+        auto index = agent.findData(provider);
+        if(index < 0 || !item_model)
+            return;
+        const auto& entry = agent_entries[provider];
+        bool is_ready = ready(provider);
         bool checking = entry.status == ai_agent_status::Unknown ||
                         entry.status == ai_agent_status::Checking;
         auto* item = item_model->item(index);
-        item->setText(ready ? provider :
+        item->setText(is_ready ? provider :
                       provider+(checking ? " (checking...)" : " (setup required)"));
-        item->setEnabled(ready);
-        item->setToolTip(ready ? QString() : checking ?
+        item->setToolTip(is_ready ? QString() : checking ?
                          "Checking local agent status..." :
                          "Open Settings (⚙) to install or sign in.");
     };
@@ -2114,21 +2118,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
                                 QString("Antigravity")})
         update_agent(provider);
 
-    auto enabled = [&](int i)
-    {
-        return i >= 0 && agent.model()->flags(agent.model()->index(i,0)).testFlag(Qt::ItemIsEnabled);
-    };
-    auto checking = [&](int i)
-    {
-        if(i < 0 || agent.itemData(i).toString() == "ChatGPT")
-            return false;
-        auto status = agent_entries[agent.itemData(i).toString()].status;
-        return status == ai_agent_status::Unknown || status == ai_agent_status::Checking;
-    };
-    auto index = agent.findData(resume ? QString("ChatGPT") : current_agent);
-    if(!enabled(index) && (resume || !checking(index)))
-        for(index = 0;index < agent.count() && !enabled(index);++index) {}
-    agent.setCurrentIndex(index);
+    agent.setCurrentIndex(
+        agent.findData(resume ? QString("ChatGPT") : current_agent));
     agent.setEnabled(!resume);
     layout.addRow("Agent:",&agent);
 
@@ -2269,14 +2260,6 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
     layout.addRow(&buttons);
-    auto update_accept = [&]
-    {
-        accept->setEnabled(agent.currentData().toString() == "ChatGPT" ||
-                           enabled(agent.currentIndex()));
-    };
-    update_accept();
-    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
-            &dialog,[&](int){update_accept();});
     auto update_provider = [&](const QString& provider,bool models_changed)
     {
         update_agent(provider);
@@ -2285,14 +2268,6 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
             auto selected = model_combo_key(model);
             set_model_selector(model,agent_entries[provider].profiles,selected);
         }
-        if(agent.currentData().toString() == provider &&
-           !enabled(agent.currentIndex()) && !checking(agent.currentIndex()))
-        {
-            auto index = 0;
-            for(;index < agent.count() && !enabled(index);++index) {}
-            agent.setCurrentIndex(index);
-        }
-        update_accept();
     };
     connect(this,&AIAgent::agent_status_changed,&dialog,
             [&](const QString& provider){update_provider(provider,false);});
@@ -2300,7 +2275,14 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
             [&](const QString& provider){update_provider(provider,true);});
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
-        if(agent.currentData().toString() == "ChatGPT")
+        auto provider = agent.currentData().toString();
+        if(provider != "ChatGPT" && !ready(provider))
+        {
+            dialog.reject();
+            on_ai_quick_settings_clicked();
+            return;
+        }
+        if(provider == "ChatGPT")
         {
             if(settings.value("ai/github_token").toString().trimmed().isEmpty())
                 return setup_token.click();
