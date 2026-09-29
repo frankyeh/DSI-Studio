@@ -1431,34 +1431,38 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
 }
 
-QString AIAgent::agent_login_info(const QString& provider)
+ai_agent_status AIAgent::check_agent_status(const QString& provider,QString& info)
 {
+    info.clear();
     if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
        provider != "Antigravity")
-        return {};
+        return ai_agent_status::Error;
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
-        return {};
+        return ai_agent_status::NotInstalled;
 
     if(provider == "Antigravity")
     {
         QProcess process;
         start_process(process,executable,{"--output-format","json","models"});
         if(!process.waitForStarted(3000))
-            return {};
+            return ai_agent_status::Error;
         process.closeWriteChannel();
         if(!process.waitForFinished(10000))
         {
             process.kill();
             process.waitForFinished(1000);
-            return {};
+            return ai_agent_status::Error;
         }
         if(process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0)
-            return "Signed in";
+        {
+            info = "Signed in";
+            return ai_agent_status::Ready;
+        }
         auto error = QString::fromUtf8(process.readAllStandardError()+
                                        process.readAllStandardOutput());
         return error.contains("authentication required",Qt::CaseInsensitive) ?
-               QStringLiteral("") : QString();
+               ai_agent_status::SignInRequired : ai_agent_status::Error;
     }
 
     if(provider == "Muse")
@@ -1467,7 +1471,7 @@ QString AIAgent::agent_login_info(const QString& provider)
         process.setProcessEnvironment(agent_environment(provider));
         start_process(process,executable,{"serve"});
         if(!process.waitForStarted(3000))
-            return {};
+            return ai_agent_status::Error;
 
         auto write = [&](const QJsonObject& msg)
         {
@@ -1496,7 +1500,7 @@ QString AIAgent::agent_login_info(const QString& provider)
                 {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
                 {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}}}});
         auto initialized = read_response("initialize");
-        QString info;
+        auto status = ai_agent_status::Error;
         if(initialized["result"].toObject()["experimentalApi"].toBool())
         {
             write({{"jsonrpc","2.0"},{"method","initialized"}});
@@ -1507,7 +1511,7 @@ QString AIAgent::agent_login_info(const QString& provider)
                 auto state = account["state"].toString();
                 bool credential_required = account["credentialRequired"].toBool();
                 if(credential_required && state == "loggedOut")
-                    info = QStringLiteral("");
+                    status = ai_agent_status::SignInRequired;
                 else
                 {
                     info = account["label"].toString().trimmed();
@@ -1516,6 +1520,7 @@ QString AIAgent::agent_login_info(const QString& provider)
                                state == "envKey" ? "Environment key" :
                                state == "accountLogin" ? "Signed in" :
                                credential_required ? "Signed in" : "Ready";
+                    status = ai_agent_status::Ready;
                 }
             }
         }
@@ -1525,47 +1530,53 @@ QString AIAgent::agent_login_info(const QString& provider)
             process.kill();
             process.waitForFinished(1000);
         }
-        return info;
+        return status;
     }
 
     bool is_codex = provider == "Codex";
     QProcess process;
     start_process(process,executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
     if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
-        return {};
+        return ai_agent_status::Error;
     if(is_codex)
     {
         if(process.exitStatus() != QProcess::NormalExit)
-            return {};
+            return ai_agent_status::Error;
         if(process.exitCode() != 0)
             return QString::fromUtf8(process.readAllStandardError()).contains(
-                       "Not logged in",Qt::CaseInsensitive) ? QStringLiteral("") : QString();
+                       "Not logged in",Qt::CaseInsensitive) ?
+                       ai_agent_status::SignInRequired : ai_agent_status::Error;
         // codex login status has no --json/structured output (email/plan aren't exposed), only this
         // free-text auth-method line -- see https://github.com/openai/codex/issues/19866
         auto output = QString::fromUtf8(process.readAllStandardOutput());
-        return output.contains("API key",Qt::CaseInsensitive) ? "API key" :
+        info = output.contains("API key",Qt::CaseInsensitive) ? "API key" :
                output.contains("ChatGPT",Qt::CaseInsensitive) ? "ChatGPT" :
                output.contains("Agent Identity",Qt::CaseInsensitive) ? "Agent Identity" : "Signed in";
+        return ai_agent_status::Ready;
     }
     if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
-        return {};
+        return ai_agent_status::Error;
     QJsonParseError parse_error;
     auto document = QJsonDocument::fromJson(process.readAllStandardOutput(),&parse_error);
     if(parse_error.error != QJsonParseError::NoError || !document.isObject())
-        return {};
+        return ai_agent_status::Error;
     auto object = document.object();
     if(!object.contains("loggedIn") || !object["loggedIn"].isBool())
-        return {};
+        return ai_agent_status::Error;
     if(!object["loggedIn"].toBool())
-        return QStringLiteral("");
+        return ai_agent_status::SignInRequired;
     auto email = object["email"].toString();
     if(!email.isEmpty())
     {
         auto tier = object["subscriptionType"].toString();
-        return tier.isEmpty() ? email : email+" · "+tier.left(1).toUpper()+tier.mid(1);
+        info = tier.isEmpty() ? email : email+" · "+tier.left(1).toUpper()+tier.mid(1);
     }
-    auto api_provider = object["apiProvider"].toString();
-    return api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
+    else
+    {
+        auto api_provider = object["apiProvider"].toString();
+        info = api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
+    }
+    return ai_agent_status::Ready;
 }
 
 bool AIAgent::run_agent_login(const QString& provider)
@@ -1618,12 +1629,14 @@ bool AIAgent::run_agent_login(const QString& provider)
         layout.addWidget(&buttons);
         connect(done,&QPushButton::clicked,&dialog,[&]
         {
-            auto info = agent_login_info(provider);
-            if(!info.isEmpty())
+            QString info;
+            auto agent_status = check_agent_status(provider,info);
+            if(agent_status == ai_agent_status::Ready)
                 dialog.accept();
             else
-                status.setText(info.isNull() ? "Could not verify Antigravity sign-in." :
-                               "Sign-in not detected yet. Complete sign-in, then click Done again.");
+                status.setText(agent_status == ai_agent_status::SignInRequired ?
+                    "Sign-in not detected yet. Complete sign-in, then click Done again." :
+                    "Could not verify Antigravity sign-in.");
         });
         connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
         if(dialog.exec() != QDialog::Accepted)
@@ -2021,8 +2034,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
                                     QString("Antigravity")})
         {
             auto index = agent.findData(provider);
-            if(index < 0 || (!agent_entries[provider].executable.isEmpty() &&
-                             !agent_login_info(provider).isEmpty()))
+            QString info;
+            if(index < 0 || check_agent_status(provider,info) == ai_agent_status::Ready)
                 continue;
             auto* item = item_model->item(index);
             item->setText(provider+" (setup required)");
@@ -2370,13 +2383,23 @@ void AIAgent::on_ai_quick_settings_clicked()
         }
         button->setEnabled(false);
         button->setText("Checking "+provider+" status...");
-        auto info = QSharedPointer<QString>::create();
-        auto* worker = QThread::create([this,provider,info]{*info = agent_login_info(provider);});
-        connect(worker,&QThread::finished,&dialog,[provider,button,info]
+        struct status_result
         {
-            button->setEnabled(info->isEmpty());
-            button->setText(info->isNull() ? provider+" Login..." :
-                            info->isEmpty() ? "Sign in to "+provider+"..." : provider+": "+*info);
+            ai_agent_status status = ai_agent_status::Error;
+            QString info;
+        };
+        auto result = QSharedPointer<status_result>::create();
+        auto* worker = QThread::create([this,provider,result]
+        {
+            result->status = check_agent_status(provider,result->info);
+        });
+        connect(worker,&QThread::finished,&dialog,[provider,button,result]
+        {
+            button->setEnabled(result->status != ai_agent_status::Ready);
+            button->setText(result->status == ai_agent_status::SignInRequired ?
+                            "Sign in to "+provider+"..." :
+                            result->status == ai_agent_status::Ready ?
+                            provider+": "+result->info : provider+" Login...");
         });
         connect(worker,&QThread::finished,worker,&QObject::deleteLater);
         worker->start();
@@ -2557,12 +2580,10 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     }
     else
     {
-        auto login = agent_login_info(provider);
-        if(!login.isNull() && login.isEmpty())
-        {
+        QString status_info;
+        if(check_agent_status(provider,status_info) == ai_agent_status::SignInRequired)
             if(!run_agent_login(provider))
                 return fail_launch(info.launch_name+" sign-in was not completed.");
-        }
     }
     auto* process = new QProcess(this);
     process->setObjectName(session);

@@ -109,7 +109,7 @@ class AIAgent : public QMainWindow
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(const QString& provider);
-    QString agent_login_info(const QString& provider); // null = status unknown; empty = confirmed signed out; otherwise a short account summary
+    ai_agent_status check_agent_status(const QString& provider,QString& info); // synchronous provider readiness check; info is display text only
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself (show_ai_history()) only when this chat is the one currently selected
