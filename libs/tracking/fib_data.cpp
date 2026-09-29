@@ -1563,7 +1563,10 @@ bool fib_data::load_template(void)
 
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
+    {
+        template_I.clear();
         return error_msg = "image resolution mismatch: ratio=" + std::to_string(ratio),false;
+    }
 
     unsigned int downsampling = 0;
     while((!is_human_data && template_I.width()/3 > int(dim[0])) ||
