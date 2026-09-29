@@ -2689,13 +2689,11 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         if(!configured)
             return fail_launch("Set the Ollama host/IP in AI Settings first.");
     }
-    else
+    else if(agent_entries[provider].status == ai_agent_status::SignInRequired)
     {
-        QString status_info;
-        if(check_agent_status(
-                provider,info.launch_executable,status_info) == ai_agent_status::SignInRequired)
-            if(!run_agent_login(provider))
-                return fail_launch(info.launch_name+" sign-in was not completed.");
+        if(!run_agent_login(provider))
+            return fail_launch(info.launch_name+" sign-in was not completed.");
+        refresh_agent_status(provider);
     }
     auto* process = new QProcess(this);
     process->setObjectName(session);
