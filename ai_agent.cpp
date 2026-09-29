@@ -1867,6 +1867,14 @@ void AIAgent::update_agent_status_label()
     update_send_button();
 }
 
+bool AIAgent::can_start_agent(const QString& provider,const QJsonObject& model_info) const
+{
+    const auto& entry = agent_entries[provider];
+    return !entry.executable.isEmpty() &&
+           (entry.status == ai_agent_status::Ready ||
+            (provider == "Claude" && model_info.contains("provider")));
+}
+
 void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); name is empty for "default" (model_combo_key()'s data value, not the "default" UI label) or a specific model name -- both are always meaningful, never a no-op
 {
     const auto& profiles = agent_entries[current_agent].profiles;
@@ -2276,12 +2284,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
         auto provider = agent.currentData().toString();
-        bool can_start = ready(provider);
-        if(provider == "Claude")
-            can_start = !agent_entries[provider].executable.isEmpty() &&
-                        (agent_entries[provider].status == ai_agent_status::Ready ||
-                         model.currentData().toJsonObject().contains("provider"));
-        if(provider != "ChatGPT" && !can_start)
+        if(provider != "ChatGPT" &&
+           !can_start_agent(provider,model.currentData().toJsonObject()))
         {
             dialog.reject();
             on_ai_quick_settings_clicked();
@@ -3526,6 +3530,11 @@ void AIAgent::on_ai_send_message_clicked()
         }
         return;
     case send_action::Send: // reachable when info exists and isn't AgentServer, or when nothing is selected but there's text to send, see current_send_action()
+        if(!info && !can_start_agent(current_agent,current_model_info))
+        {
+            on_ai_quick_settings_clicked();
+            return;
+        }
         start_ai(*(info ? info : start_new_local_chat()),text,ai_input::User);
         update_send_button();
         return;

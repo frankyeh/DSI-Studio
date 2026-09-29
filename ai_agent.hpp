@@ -69,6 +69,7 @@ class AIAgent : public QMainWindow
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
     void update_agent_status_label();
+    bool can_start_agent(const QString& provider,const QJsonObject& model_info) const;
     void try_set_current_model(const QString& name); // name is always written as-is, even if unknown to profiles (the model combo is editable, so a typed name is meaningful, not a mistake); writes the app-wide default above, not any chat's own model
     void set_chat_model(ai_info& info,const QString& name) const; // same resolution as try_set_current_model(), but writes directly into this chat's own model_settings and persists it
 
