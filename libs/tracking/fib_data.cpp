@@ -1705,9 +1705,9 @@ bool fib_data::load_track_atlas(bool symmetric)
         if(!map_to_mni(tipl::show_prog))
             return false;
         // load the tract to the template space
-        track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
-        track_atlas->is_mni = true;
-        if(!track_atlas->load_tracts_from_file(tractography_atlas_file_name.u8string(),this,true))
+        auto new_track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
+        new_track_atlas->is_mni = true;
+        if(!new_track_atlas->load_tracts_from_file(tractography_atlas_file_name.u8string(),this,true))
         {
             error_msg = "failed to load tractography atlas: " + tractography_atlas_file_name.u8string();
             return false;
@@ -1728,8 +1728,8 @@ bool fib_data::load_track_atlas(bool symmetric)
                 }
 
         // copy tract from one side to another
-        const auto& tracts = track_atlas->get_tracts();
-        auto& cluster = track_atlas->tract_cluster;
+        const auto& tracts = new_track_atlas->get_tracts();
+        auto& cluster = new_track_atlas->tract_cluster;
 
         std::vector<std::vector<float> > new_tracts;
         std::vector<unsigned int> new_cluster;
@@ -1754,7 +1754,7 @@ bool fib_data::load_track_atlas(bool symmetric)
         }
 
         // add adds
-        track_atlas->add_tracts(new_tracts);
+        new_track_atlas->add_tracts(new_tracts);
         cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
 
 
@@ -1766,14 +1766,14 @@ bool fib_data::load_track_atlas(bool symmetric)
         // warp tractography atlas to subject space
         {
             tipl::progress prog("warping template tracts to subject space");
-            temp2sub(track_atlas->get_tracts());
-            track_atlas->geo = dim;
-            track_atlas->vs = vs;
-            track_atlas->trans_to_mni = trans_to_mni;
-            track_atlas->is_mni = is_mni;
+            temp2sub(new_track_atlas->get_tracts());
+            new_track_atlas->geo = dim;
+            new_track_atlas->vs = vs;
+            new_track_atlas->trans_to_mni = trans_to_mni;
+            new_track_atlas->is_mni = is_mni;
         }
 
-        auto& tract_data = track_atlas->get_tracts();
+        auto& tract_data = new_track_atlas->get_tracts();
         // get min max length
         {
             std::vector<float> all_lengths(tract_data.size(), 0.0f);
@@ -1783,7 +1783,7 @@ bool fib_data::load_track_atlas(bool symmetric)
                 if(tract_data.size() <= 6)
                     return;
                 if(cluster[i] < tractography_name_list.size())
-                    all_lengths[i] = float(track_atlas->get_tract_length_in_mm(i));
+                    all_lengths[i] = float(new_track_atlas->get_tract_length_in_mm(i));
             });
 
             std::vector<std::vector<float>> cluster_lengths(tractography_name_list.size());
@@ -1810,6 +1810,7 @@ bool fib_data::load_track_atlas(bool symmetric)
             tract_atlas_max_length.swap(max_length);
             tract_atlas_median_length.swap(median_length);
         }
+        track_atlas = std::move(new_track_atlas);
         track_atlas_symmetric = symmetric;
     }
     return true;
