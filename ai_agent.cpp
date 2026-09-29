@@ -199,6 +199,7 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
 
     refresh_agent_executables();
+    refresh_agent_status();
     if(agent_entries["Codex"].executable.isEmpty())
         current_agent = !agent_entries["Claude"].executable.isEmpty() ? "Claude" :
                         !agent_entries["Muse"].executable.isEmpty() ? "Muse" :
@@ -776,7 +777,6 @@ void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
-    refresh_agent_status();
     refresh_codex_models();
     refresh_muse_models();
     refresh_antigravity_models();
