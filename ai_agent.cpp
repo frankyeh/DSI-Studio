@@ -776,6 +776,7 @@ void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
+    refresh_agent_status();
     refresh_codex_models();
     refresh_muse_models();
     refresh_antigravity_models();
