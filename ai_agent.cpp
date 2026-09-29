@@ -2276,7 +2276,12 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
         auto provider = agent.currentData().toString();
-        if(provider != "ChatGPT" && !ready(provider))
+        bool can_start = ready(provider);
+        if(provider == "Claude")
+            can_start = !agent_entries[provider].executable.isEmpty() &&
+                        (agent_entries[provider].status == ai_agent_status::Ready ||
+                         model.currentData().toJsonObject().contains("provider"));
+        if(provider != "ChatGPT" && !can_start)
         {
             dialog.reject();
             on_ai_quick_settings_clicked();
