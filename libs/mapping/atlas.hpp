@@ -22,7 +22,7 @@ private:// for multiple roi atlas only
 public:
     std::filesystem::path filename;
     std::string name,error_msg;
-    bool is_multiple_roi;
+    bool is_multiple_roi = false;
     tipl::matrix<4,4> template_to_mni;
 public:
     void set_template_to_mni(const tipl::matrix<4,4>& trans)

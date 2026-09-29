@@ -2155,6 +2155,12 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 
 void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 {
+    if(handle->is_mni && handle->template_id == handle->matched_template_id)
+    {
+        QMessageBox::information(this,"Manual Atlas Alignment",
+                                 "QSDR FZ files are already in template space; manual atlas alignment is not needed.");
+        return;
+    }
     if(!handle->load_template())
     {
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
