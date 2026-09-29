@@ -28,11 +28,23 @@ class AIAgent;
 
 enum class ai_input {User,Pending};
 
-// one entry per local agent name: resolved executable path (empty if not found) and discovered model profiles
+enum class ai_agent_status
+{
+    Unknown = 0,
+    Checking,
+    NotInstalled,
+    SignInRequired,
+    Ready,
+    Error
+};
+
+// one entry per local agent name: executable, discovered model profiles, and cached status
 struct ai_agent_entry
 {
     QString executable;
     QJsonObject profiles;
+    QString status_info;
+    ai_agent_status status = ai_agent_status::Unknown;
 };
 
 class AIAgent : public QMainWindow
