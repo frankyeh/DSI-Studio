@@ -1870,19 +1870,15 @@ void AIAgent::update_agent_status_label()
 void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); name is empty for "default" (model_combo_key()'s data value, not the "default" UI label) or a specific model name -- both are always meaningful, never a no-op
 {
     const auto& profiles = agent_entries[current_agent].profiles;
-    auto previous = current_model_name;
     current_model_name = name;
-    if(name.isEmpty() || name != previous || profiles.contains(name))
-        current_model_info = profiles.value(name).toObject();
+    current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
 }
 
 void AIAgent::set_chat_model(ai_info& info,const QString& name) const // writes directly into this chat's own model_settings; same name resolution as try_set_current_model()
 {
     auto profiles = agent_entries.value(info.provider).profiles;
-    auto previous = info.model_settings["model"].toString();
     info.model_settings["model"] = name;
-    if(name.isEmpty() || name != previous || profiles.contains(name))
-        info.model_settings["info"] = profiles.value(name).toObject();
+    info.model_settings["info"] = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
     info.save_config();
 }
 
@@ -2270,9 +2266,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         if(models_changed && agent.currentData().toString() == provider)
         {
             auto selected = model_combo_key(model);
-            auto selected_info = model.currentData().toJsonObject();
-            set_model_selector(model,agent_entries[provider].profiles,
-                               selected,{},selected_info);
+            set_model_selector(model,agent_entries[provider].profiles,selected);
         }
     };
     connect(this,&AIAgent::agent_status_changed,&dialog,
@@ -2372,11 +2366,6 @@ void AIAgent::new_chat_dialog(bool resume)
         return;
     }
 
-    if(current_agent != provider)
-    {
-        current_model_name.clear();
-        current_model_info = {};
-    }
     current_agent = provider;
     try_set_current_model(value);
     start_new_local_chat();
@@ -2420,22 +2409,11 @@ void AIAgent::on_ai_agent_status_clicked()
         QFormLayout layout(&dialog);
         QLabel agent_label(info->provider);
         QComboBox model;
-        set_model_selector(model,agent_entries[info->provider].profiles,
-                           info->model_settings["model"].toString(),{},
-                           info->model_settings["info"].toObject());
+        set_model_selector(model,agent_entries[info->provider].profiles,info->model_settings["model"].toString());
         layout.addRow("Agent:",&agent_label);
         layout.addRow("Model:",&model);
         QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
         layout.addRow(&buttons);
-        connect(this,&AIAgent::agent_models_changed,&dialog,[&](const QString& provider)
-        {
-            if(provider != info->provider)
-                return;
-            auto selected = model_combo_key(model);
-            auto selected_info = model.currentData().toJsonObject();
-            set_model_selector(model,agent_entries[provider].profiles,
-                               selected,{},selected_info);
-        });
         connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
         connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
         if(dialog.exec() != QDialog::Accepted)
@@ -2460,11 +2438,6 @@ void AIAgent::on_ai_agent_status_clicked()
         return;
     }
 
-    if(current_agent != provider)
-    {
-        current_model_name.clear();
-        current_model_info = {};
-    }
     current_agent = provider;
     try_set_current_model(value);
     update_agent_status_label();
