@@ -1927,7 +1927,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
 {
     if(!load_track_atlas(false/*asymmetric*/))
         return false;
-    labels.resize(trk->get_tracts().size());
+    labels.assign(trk->get_tracts().size(),std::numeric_limits<unsigned int>::max());
 
     tipl::progress prog("recognizing tracks");
     size_t total = 0;
@@ -1963,7 +1963,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
             tract_list.insert(std::make_pair(count[i],i));
 
     unsigned int index = 0;
-    labels.resize(c.size());
+    labels.assign(c.size(),std::numeric_limits<unsigned int>::max());
     for(auto p : tract_list)
     {
         for(size_t j = 0;j < c.size();++j)
