@@ -136,6 +136,7 @@ public:
 
 signals:
     void agent_status_changed(const QString& provider);
+    void agent_models_changed(const QString& provider);
 
 protected:
     void showEvent(QShowEvent*) override;

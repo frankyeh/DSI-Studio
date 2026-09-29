@@ -1197,6 +1197,8 @@ void AIAgent::update_agent_models(
             current_model_info = profiles.value(current_model_name).toObject();
         update_agent_status_label();
     }
+    if(profiles != previous)
+        emit agent_models_changed(agent);
 }
 void AIAgent::refresh_agent_executables() // re-run discovery so an install completed after DSI Studio was already running (e.g. via the sidebar's Install button) is picked up without a restart -- called from the constructor and showEvent()
 {
@@ -2273,9 +2275,14 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     update_accept();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
             &dialog,[&](int){update_accept();});
-    connect(this,&AIAgent::agent_status_changed,&dialog,[&](const QString& provider)
+    auto update_provider = [&](const QString& provider,bool models_changed)
     {
         update_agent(provider);
+        if(models_changed && agent.currentData().toString() == provider)
+        {
+            auto selected = model_combo_key(model);
+            set_model_selector(model,agent_entries[provider].profiles,selected);
+        }
         if(agent.currentData().toString() == provider &&
            !enabled(agent.currentIndex()) && !checking(agent.currentIndex()))
         {
@@ -2284,7 +2291,11 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
             agent.setCurrentIndex(index);
         }
         update_accept();
-    });
+    };
+    connect(this,&AIAgent::agent_status_changed,&dialog,
+            [&](const QString& provider){update_provider(provider,false);});
+    connect(this,&AIAgent::agent_models_changed,&dialog,
+            [&](const QString& provider){update_provider(provider,true);});
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
         if(agent.currentData().toString() == "ChatGPT")
