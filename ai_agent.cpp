@@ -1777,6 +1777,8 @@ bool AIAgent::run_agent_login(const QString& provider)
 
     if(!succeeded)
         QMessageBox::warning(this,"AI Agent",provider+" sign-in was not completed.");
+    else if(provider == "Codex")
+        refresh_codex_models();
     else if(provider == "Muse")
         refresh_muse_models();
     return succeeded;
@@ -2519,7 +2521,17 @@ void AIAgent::on_ai_quick_settings_clicked()
                 if(agent_entries[provider].executable.isEmpty())
                     QDesktopServices::openUrl(agent_install_url(provider));
                 else
+                {
                     refresh_agent_status(provider);
+                    if(provider == "Codex")
+                        refresh_codex_models();
+                    else if(provider == "Claude")
+                        refresh_ollama_models();
+                    else if(provider == "Muse")
+                        refresh_muse_models();
+                    else if(provider == "Antigravity")
+                        refresh_antigravity_models();
+                }
             }
             else if(status == ai_agent_status::SignInRequired)
             {
