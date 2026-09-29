@@ -1589,10 +1589,12 @@ void AIAgent::refresh_agent_status(const QString& provider)
         if(entry.executable.isEmpty())
         {
             entry.status = ai_agent_status::NotInstalled;
+            emit agent_status_changed(provider);
             return;
         }
 
         entry.status = ai_agent_status::Checking;
+        emit agent_status_changed(provider);
         auto executable = entry.executable;
         struct status_result
         {
@@ -1611,6 +1613,7 @@ void AIAgent::refresh_agent_status(const QString& provider)
                 return;
             entry.status = result->status;
             entry.status_info = result->info;
+            emit agent_status_changed(provider);
         });
         connect(worker,&QThread::finished,worker,&QObject::deleteLater);
         worker->start();
@@ -2421,50 +2424,55 @@ void AIAgent::on_ai_quick_settings_clicked()
     agent_layout->addWidget(agent_heading);
 
     QPushButton codex,claude,muse,antigravity;
-    auto refresh_agent_button = [this,&dialog](const QString& provider,QPushButton* button)
+    auto refresh_agent_button = [this](const QString& provider,QPushButton* button)
     {
-        if(agent_entries[provider].executable.isEmpty())
+        const auto& entry = agent_entries[provider];
+        switch(entry.status)
         {
+        case ai_agent_status::NotInstalled:
             button->setEnabled(true);
             button->setText("Install "+provider);
             return;
+        case ai_agent_status::Checking:
+            button->setEnabled(false);
+            button->setText("Checking "+provider+" status...");
+            return;
+        case ai_agent_status::SignInRequired:
+            button->setEnabled(true);
+            button->setText("Sign in to "+provider+"...");
+            return;
+        case ai_agent_status::Ready:
+            button->setEnabled(false);
+            button->setText(provider+": "+(entry.status_info.isEmpty() ? "Ready" : entry.status_info));
+            return;
+        case ai_agent_status::Unknown:
+        case ai_agent_status::Error:
+            button->setEnabled(true);
+            button->setText("Check "+provider+" status");
+            return;
         }
-        button->setEnabled(false);
-        button->setText("Checking "+provider+" status...");
-        struct status_result
-        {
-            ai_agent_status status = ai_agent_status::Error;
-            QString info;
-        };
-        auto result = QSharedPointer<status_result>::create();
-        auto executable = agent_entries[provider].executable;
-        auto* worker = QThread::create([provider,executable,result]
-        {
-            result->status = check_agent_status(provider,executable,result->info);
-        });
-        connect(worker,&QThread::finished,&dialog,[provider,button,result]
-        {
-            button->setEnabled(result->status != ai_agent_status::Ready);
-            button->setText(result->status == ai_agent_status::SignInRequired ?
-                            "Sign in to "+provider+"..." :
-                            result->status == ai_agent_status::Ready ?
-                            provider+": "+result->info : provider+" Login...");
-        });
-        connect(worker,&QThread::finished,worker,&QObject::deleteLater);
-        worker->start();
     };
     auto setup_agent_button = [&](const QString& provider,QPushButton* button)
     {
         refresh_agent_button(provider,button);
-        connect(button,&QPushButton::clicked,&dialog,[&,provider,button]
+        connect(button,&QPushButton::clicked,&dialog,[&,provider]
         {
-            if(agent_entries[provider].executable.isEmpty())
+            auto status = agent_entries[provider].status;
+            if(status == ai_agent_status::NotInstalled)
+            {
                 refresh_agent_executables();
-            if(agent_entries[provider].executable.isEmpty())
-                QDesktopServices::openUrl(agent_install_url(provider));
-            else
-                run_agent_login(provider);
-            refresh_agent_button(provider,button);
+                if(agent_entries[provider].executable.isEmpty())
+                    QDesktopServices::openUrl(agent_install_url(provider));
+                else
+                    refresh_agent_status(provider);
+            }
+            else if(status == ai_agent_status::SignInRequired)
+            {
+                if(run_agent_login(provider))
+                    refresh_agent_status(provider);
+            }
+            else if(status == ai_agent_status::Unknown || status == ai_agent_status::Error)
+                refresh_agent_status(provider);
         });
         agent_layout->addWidget(button);
     };
@@ -2472,6 +2480,16 @@ void AIAgent::on_ai_quick_settings_clicked()
     setup_agent_button("Claude",&claude);
     setup_agent_button("Muse",&muse);
     setup_agent_button("Antigravity",&antigravity);
+    connect(this,&AIAgent::agent_status_changed,&dialog,
+            [&,refresh_agent_button](const QString& provider)
+    {
+        auto* button = provider == "Codex" ? &codex :
+                       provider == "Claude" ? &claude :
+                       provider == "Muse" ? &muse :
+                       provider == "Antigravity" ? &antigravity : nullptr;
+        if(button)
+            refresh_agent_button(provider,button);
+    });
     root->addWidget(agent_card);
 
     auto* ollama_card = new QFrame;
