@@ -2313,6 +2313,8 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
                              const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& to_diffusion_space,
                              std::vector<tipl::vector<3,short> >& points)
 {
+    if(!at || roi_index >= at->get_list().size())
+        return error_msg = "invalid atlas region index",false;
     if(get_sub2temp_mapping().empty() || !at->load_from_file())
     {
         error_msg = "no mni mapping";
