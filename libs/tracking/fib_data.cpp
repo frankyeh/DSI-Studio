@@ -2241,32 +2241,7 @@ bool fib_data::load_mapping(const std::filesystem::path& file_name)
         return true;
     }
 
-    tipl::image<3> shiftx,shifty,shiftz;
-    tipl::matrix<4,4,float> trans;
-    if(!(tipl::io::gz_nifti(file_name,std::ios::in) >> shiftx >> shifty >> shiftz >> trans
-         >> [&](const std::string& e){tipl::error() << (error_msg = e);}))
-        return false;
-    tipl::out() << "dimension: " << shiftx.shape();
-    tipl::out() << "trans_to_mni: " << trans;
-    if(shiftx.shape() != dim || shifty.shape() != dim || shiftz.shape() != dim)
-        return error_msg = "image size does not match",false;
-
-    auto T = template_to_mni;
-    T.inv();
-    s2t.resize(dim);
-    t2s.resize(template_I.shape());
-    tipl::out() << s2t[0];
-    tipl::par_for<tipl::sequential>(s2t.shape(),[&](const tipl::pixel_index<3>& index)
-    {
-        s2t[index.index()] = index;
-        apply_trans(s2t[index.index()],trans);
-        s2t[index.index()][0] += shiftx[index.index()];
-        s2t[index.index()][1] += shifty[index.index()];
-        s2t[index.index()][2] += shiftz[index.index()];
-        apply_trans(s2t[index.index()],T);
-    });
-    tipl::out() << s2t[0];
-    return true;
+    return error_msg = "unsupported mapping format",false;
 }
 
 void fib_data::temp2sub(tipl::vector<3>& pos) const
