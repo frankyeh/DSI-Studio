@@ -45,6 +45,7 @@ struct ai_agent_entry
     QJsonObject profiles;
     QString status_info;
     ai_agent_status status = ai_agent_status::Unknown;
+    quint64 status_check_id = 0;
 };
 
 class AIAgent : public QMainWindow
@@ -109,13 +110,13 @@ class AIAgent : public QMainWindow
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(const QString& provider);
-    ai_agent_status check_agent_status(const QString& provider,QString& info); // synchronous provider readiness check; info is display text only
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself (show_ai_history()) only when this chat is the one currently selected
     void show_ai_history(ai_info&,QJsonObject added_entry); // markdown->HTML transcript rendering: a full rebuild, or just appending added_entry when that alone is enough
     void update_agent_models(const QString&,const QStringList&,bool);
     void refresh_agent_executables(); // re-runs local-agent executable discovery into agent_entries[agent].executable
+    void refresh_agent_status(const QString& provider = {});
     void refresh_ollama_models();
     void refresh_codex_models();
     void refresh_muse_models();

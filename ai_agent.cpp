@@ -1431,13 +1431,12 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
 }
 
-ai_agent_status AIAgent::check_agent_status(const QString& provider,QString& info)
+ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
 {
     info.clear();
     if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
        provider != "Antigravity")
         return ai_agent_status::Error;
-    const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
         return ai_agent_status::NotInstalled;
 
@@ -1487,7 +1486,7 @@ ai_agent_status AIAgent::check_agent_status(const QString& provider,QString& inf
                     process.waitForReadyRead(int(deadline-QDateTime::currentMSecsSinceEpoch()));
                 while(process.canReadLine())
                 {
-                    auto msg = next_json_line(&process);
+                    auto msg = QJsonDocument::fromJson(process.readLine()).object();
                     if(msg["id"].toString() == id)
                         return msg;
                 }
@@ -1579,6 +1578,53 @@ ai_agent_status AIAgent::check_agent_status(const QString& provider,QString& inf
     return ai_agent_status::Ready;
 }
 
+void AIAgent::refresh_agent_status(const QString& provider)
+{
+    auto check = [this](const QString& provider)
+    {
+        auto& entry = agent_entries[provider];
+        auto check_id = ++entry.status_check_id;
+        entry.status_info.clear();
+        if(entry.executable.isEmpty())
+        {
+            entry.status = ai_agent_status::NotInstalled;
+            return;
+        }
+
+        entry.status = ai_agent_status::Checking;
+        auto executable = entry.executable;
+        struct status_result
+        {
+            ai_agent_status status = ai_agent_status::Error;
+            QString info;
+        };
+        auto result = QSharedPointer<status_result>::create();
+        auto* worker = QThread::create([provider,executable,result]
+        {
+            result->status = check_agent_status(provider,executable,result->info);
+        });
+        connect(worker,&QThread::finished,this,[this,provider,executable,check_id,result]
+        {
+            auto& entry = agent_entries[provider];
+            if(entry.status_check_id != check_id || entry.executable != executable)
+                return;
+            entry.status = result->status;
+            entry.status_info = result->info;
+        });
+        connect(worker,&QThread::finished,worker,&QObject::deleteLater);
+        worker->start();
+    };
+
+    if(!provider.isEmpty())
+    {
+        check(provider);
+        return;
+    }
+    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),
+                                QString("Antigravity")})
+        check(provider);
+}
+
 bool AIAgent::run_agent_login(const QString& provider)
 {
     if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
@@ -1630,7 +1676,7 @@ bool AIAgent::run_agent_login(const QString& provider)
         connect(done,&QPushButton::clicked,&dialog,[&]
         {
             QString info;
-            auto agent_status = check_agent_status(provider,info);
+            auto agent_status = check_agent_status(provider,executable,info);
             if(agent_status == ai_agent_status::Ready)
                 dialog.accept();
             else
@@ -2035,7 +2081,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         {
             auto index = agent.findData(provider);
             QString info;
-            if(index < 0 || check_agent_status(provider,info) == ai_agent_status::Ready)
+            if(index < 0 || check_agent_status(
+                    provider,agent_entries[provider].executable,info) == ai_agent_status::Ready)
                 continue;
             auto* item = item_model->item(index);
             item->setText(provider+" (setup required)");
@@ -2389,9 +2436,10 @@ void AIAgent::on_ai_quick_settings_clicked()
             QString info;
         };
         auto result = QSharedPointer<status_result>::create();
-        auto* worker = QThread::create([this,provider,result]
+        auto executable = agent_entries[provider].executable;
+        auto* worker = QThread::create([provider,executable,result]
         {
-            result->status = check_agent_status(provider,result->info);
+            result->status = check_agent_status(provider,executable,result->info);
         });
         connect(worker,&QThread::finished,&dialog,[provider,button,result]
         {
@@ -2581,7 +2629,8 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     else
     {
         QString status_info;
-        if(check_agent_status(provider,status_info) == ai_agent_status::SignInRequired)
+        if(check_agent_status(
+                provider,info.launch_executable,status_info) == ai_agent_status::SignInRequired)
             if(!run_agent_login(provider))
                 return fail_launch(info.launch_name+" sign-in was not completed.");
     }
