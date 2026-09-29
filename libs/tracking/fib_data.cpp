@@ -1785,7 +1785,7 @@ bool fib_data::load_track_atlas(bool symmetric)
 
             tipl::par_for(tract_data.size(),[&](size_t i)
             {
-                if(tract_data.size() <= 6)
+                if(tract_data[i].size() < 6)
                     return;
                 if(cluster[i] < tractography_name_list.size())
                     all_lengths[i] = float(new_track_atlas->get_tract_length_in_mm(i));
