@@ -1431,7 +1431,7 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
     show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
 }
 
-ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
+static ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
 {
     info.clear();
     if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
