@@ -341,7 +341,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
     {
         std::vector<unsigned int> labels;
         std::vector<std::string> names;
-        handle->recognize(tract_model,labels,names);
+        if(!handle->recognize(tract_model,labels,names))
+            return tipl::error() << handle->error_msg,1;
         auto output = po.get("recognize");
         if(!tipl::write_text_file(
                output+".label.txt",tipl::merge(labels,' '),tipl::error()) ||
