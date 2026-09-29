@@ -1715,6 +1715,11 @@ bool fib_data::load_track_atlas(bool symmetric)
             error_msg = "failed to load tractography atlas: " + tractography_atlas_file_name.u8string();
             return false;
         }
+        const auto& tracts = new_track_atlas->get_tracts();
+        auto& cluster = new_track_atlas->tract_cluster;
+        if(cluster.size() != tracts.size() ||
+           std::any_of(cluster.begin(),cluster.end(),[&](auto c){return c >= tractography_name_list.size();}))
+            return error_msg = "invalid tractography atlas cluster information",false;
 
 
         // find left right pairs
@@ -1731,9 +1736,6 @@ bool fib_data::load_track_atlas(bool symmetric)
                 }
 
         // copy tract from one side to another
-        const auto& tracts = new_track_atlas->get_tracts();
-        auto& cluster = new_track_atlas->tract_cluster;
-
         std::vector<std::vector<float> > new_tracts;
         std::vector<unsigned int> new_cluster;
 
