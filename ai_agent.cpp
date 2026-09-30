@@ -778,6 +778,7 @@ void AIAgent::showEvent(QShowEvent* event)
     QMainWindow::showEvent(event);
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
     refresh_codex_models();
+    refresh_ollama_models();
     refresh_muse_models();
     refresh_antigravity_models();
     auto* item = ui->ai_project_list->currentItem();
@@ -1270,7 +1271,7 @@ void AIAgent::refresh_codex_models()
 {
     auto path = agent_entries["Codex"].executable;
     if(path.isEmpty())
-        return refresh_ollama_models();
+        return;
 
     auto* process = new QProcess(this);
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
@@ -1290,7 +1291,6 @@ void AIAgent::refresh_codex_models()
         }
 
         update_agent_models("Codex",models,false);
-        refresh_ollama_models();
         process->deleteLater();
     });
 
@@ -2567,6 +2567,54 @@ void AIAgent::on_ai_quick_settings_clicked()
     ollama_form->addRow("Host/IP:",&host);
     ollama_form->addRow("Port:",&port);
     ollama_layout->addLayout(ollama_form);
+
+    QPushButton check_ollama("Check connection");
+    QLabel ollama_status;
+    ollama_status.setObjectName("ai_step_body");
+    auto* ollama_button_row = new QHBoxLayout;
+    ollama_button_row->addWidget(&check_ollama);
+    ollama_button_row->addWidget(&ollama_status);
+    ollama_button_row->addStretch();
+    ollama_layout->addLayout(ollama_button_row);
+
+    auto* ollama_network = new QNetworkAccessManager(&dialog);
+    ollama_network->setProxy(QNetworkProxy::NoProxy);
+    connect(&check_ollama,&QPushButton::clicked,&dialog,[&]
+    {
+        auto value = host.text().trimmed();
+        if(value.isEmpty())
+        {
+            ollama_status.setText("Host required");
+            return;
+        }
+        if(!value.contains("://"))
+            value.prepend("http://");
+
+        QUrl url(value);
+        url.setPort(port.value());
+        url.setPath("/api/tags");
+        check_ollama.setEnabled(false);
+        ollama_status.setText("Checking...");
+
+        QNetworkRequest request(url);
+        request.setTransferTimeout(10000);
+        auto* reply = ollama_network->get(request);
+        connect(reply,&QNetworkReply::finished,&dialog,[&,reply]
+        {
+            check_ollama.setEnabled(true);
+            if(reply->error() != QNetworkReply::NoError)
+                ollama_status.setText("Unavailable: "+reply->errorString());
+            else
+            {
+                auto models = QJsonDocument::fromJson(reply->readAll()).
+                              object()["models"].toArray();
+                ollama_status.setText(
+                    "Connected · "+QString::number(models.size())+" models");
+            }
+            reply->deleteLater();
+        });
+    });
+
     root->addWidget(ollama_card);
 
     auto* github_card = new QFrame;
