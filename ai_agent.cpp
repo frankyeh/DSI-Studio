@@ -2763,6 +2763,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
                                  ui->ai_work_dir->text() :
                                  QApplication::applicationDirPath()+"/ai");
     auto env = agent_environment(provider);
+    env.insert("DSI_STUDIO_AGENT",provider);
     if(provider == "Muse")
         env.insert("MUSE_SESSION_ID",session);
 #ifdef Q_OS_WIN
