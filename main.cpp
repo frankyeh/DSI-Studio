@@ -567,7 +567,8 @@ int main(int ac, char *av[])
 
         QLocalServer server;
         server.setSocketOptions(QLocalServer::WorldAccessOption);
-        if(server.listen("dsi-studio"))
+        w.setProperty("ai_available",server.listen("dsi-studio"));
+        if(w.property("ai_available").toBool())
         {
             QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
             {

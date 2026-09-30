@@ -1980,6 +1980,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     {
         if(cmd.size() != 1)
             return fail("open_ai takes no arguments");
+        if(!property("ai_available").toBool())
+            return fail("AI Agents are unavailable because another DSI Studio instance is running.");
         ai_agent->showNormal();
         ai_agent->raise();
         ai_agent->activateWindow();
