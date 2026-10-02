@@ -36,7 +36,7 @@ QWidget *DeviceTypeDelegate::createEditor(QWidget *parent,
     else
         if (index.column() >= 3 && index.column() <= 8)
         {
-            float max_v[6] = {100.0f,512.0f,512.0f,512.0f,180.0f,180.0f};
+            float max_v[6] = {512.0f,512.0f,512.0f,512.0f,180.0f,180.0f};
             float min_v[6] = {0.5f,-512.0f,-512.0f,-512.0f,-180.0f,0.0f};
             QDoubleSpinBox* sb = new QDoubleSpinBox(parent);
             sb->setRange(min_v[index.column()-3],max_v[index.column()-3]);
