@@ -594,7 +594,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
                                     int((x1-x0)*gray.width()),int((y1-y0)*gray.height()));
             }
             TextPreview preview(region.width(),region.height(),
-                [&](int x,int y){ return double(region.constScanLine(y)[x]); },bg);
+                [&](int x,int y)
+                {
+                    double v = region.constScanLine(y)[x];
+                    return cmd[1] == "3d" ? std::fabs(v-bg) : v;
+                },cmd[1] == "3d" ? 0.0 : bg);
             tipl::out() << label << ":";
             tipl::out() << preview.render_art(16);
             tipl::out() << preview.render_occupancy();
