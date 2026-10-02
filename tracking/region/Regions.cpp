@@ -368,30 +368,33 @@ bool ROIRegion::shift(tipl::vector<3,float> dx) // shift in region's voxel space
 template<class Image,class Points>
 void calculate_region_stat(const Image& I, const Points& p,float& mean,float& max,float& min,const float* T = nullptr)
 {
+    mean = max = min = 0.0f;
     double sum = 0.0;
     size_t count = 0;
-    for(size_t index = 0; index < p.size(); ++index)
+    for(const auto& point : p)
     {
-        float value = 0.0f;
-        tipl::vector<3> pos(p[index]);
+        tipl::vector<3> pos(point);
         if(T)
             pos.to(T);
-        value = I[pos];
-        if(value == 0.0f || std::isnan(value) || std::isinf(value))
+
+        float value;
+        if(!tipl::estimate(I,pos,value) ||
+           value == 0.0f || !std::isfinite(value))
             continue;
-        if(index)
+
+        if(count)
         {
-            max = std::max<float>(value,max);
-            min = std::min<float>(value,min);
+            max = std::max(value,max);
+            min = std::min(value,min);
         }
         else
             min = max = value;
+
         sum += double(value);
         ++count;
     }
     if(count)
-        sum /= double(count);
-    mean = float(sum);
+        mean = float(sum/double(count));
 }
 float ROIRegion::get_volume(void) const
 {
@@ -430,28 +433,27 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     data.push_back(get_volume()); //volume (mm^3)
     if(region.empty())
         return;
+
+    std::vector<tipl::vector<3> > points(region.size());
+    std::copy(region.begin(),region.end(),points.begin());
+    if(!is_diffusion_space)
+        for(auto& point : points)
+            point.to(to_diffusion_space);
+
     {
         tipl::vector<3,float> cm = get_pos();
-        tipl::vector<3,float> max(region[0]),min(region[0]);
-        for (unsigned int index = 0; index < region.size(); ++index)
-        {
-            max[0] = std::max<float>(max[0],region[index][0]);
-            max[1] = std::max<float>(max[1],region[index][1]);
-            max[2] = std::max<float>(max[2],region[index][2]);
-            min[0] = std::min<float>(min[0],region[index][0]);
-            min[1] = std::min<float>(min[1],region[index][1]);
-            min[2] = std::min<float>(min[2],region[index][2]);
-        }
+        tipl::vector<3> max,min;
+        tipl::bounding_box(points,max,min);
 
         titles.push_back("center x");
         titles.push_back("center y");
         titles.push_back("center z");
-        titles.push_back("bounding box x");
-        titles.push_back("bounding box y");
-        titles.push_back("bounding box z");
-        titles.push_back("bounding box x");
-        titles.push_back("bounding box y");
-        titles.push_back("bounding box z");
+        titles.push_back("bounding box min x");
+        titles.push_back("bounding box min y");
+        titles.push_back("bounding box min z");
+        titles.push_back("bounding box max x");
+        titles.push_back("bounding box max y");
+        titles.push_back("bounding box max z");
         std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
         std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
         std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
@@ -459,27 +461,37 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         if(!handle->s2t.empty())
         {
             handle->sub2mni(cm);
-            handle->sub2mni(max);
-            handle->sub2mni(min);
+
+            std::vector<tipl::vector<3> > mni_points;
+            mni_points.reserve(points.size());
+            for(auto point : points)
+                if(handle->dim.is_valid(point))
+                {
+                    handle->sub2mni(point);
+                    mni_points.push_back(point);
+                }
+
             titles.push_back("center mni x");
             titles.push_back("center mni y");
             titles.push_back("center mni z");
-            titles.push_back("bounding box mni x");
-            titles.push_back("bounding box mni y");
-            titles.push_back("bounding box mni z");
-            titles.push_back("bounding box mni x");
-            titles.push_back("bounding box mni y");
-            titles.push_back("bounding box mni z");
+            titles.push_back("bounding box mni min x");
+            titles.push_back("bounding box mni min y");
+            titles.push_back("bounding box mni min z");
+            titles.push_back("bounding box mni max x");
+            titles.push_back("bounding box mni max y");
+            titles.push_back("bounding box mni max z");
             std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
-            // swap due to RAS to LPS
-            std::swap(min[0],max[0]);
-            std::swap(min[1],max[1]);
-            std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
-            std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
+
+            if(!mni_points.empty())
+            {
+                tipl::bounding_box(mni_points,max,min);
+                std::copy(min.begin(),min.end(),std::back_inserter(data));
+                std::copy(max.begin(),max.end(),std::back_inserter(data));
+            }
+            else
+                data.insert(data.end(),6,0.0f);
         }
     }
-    std::vector<tipl::vector<3> > points(region.size());
-    std::copy(region.begin(),region.end(),points.begin());
     std::vector<float> max_values,min_values;
     std::vector<std::string> index_titles;
     for(const auto& each : handle->slices)
