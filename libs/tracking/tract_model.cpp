@@ -2,6 +2,10 @@
 #include <QString>
 #include <QFileInfo>
 #include <QImage>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <zlib.h>
 #include <fstream>
 #include <sstream>
 #include <array>
@@ -486,6 +490,820 @@ bool trk2tt(const std::string& trk_file,const char* tt_file)
     return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,
                                    std::vector<uint16_t>(loaded_tract_cluster.begin(),loaded_tract_cluster.end()),info,p_id,std::vector<unsigned int>({color}));
 }
+
+
+bool load_trx(const std::filesystem::path& file_name,
+              std::vector<std::vector<float> >& tract_data,
+              std::vector<unsigned int>& tract_cluster,
+              std::vector<std::string>& tract_cluster_names,
+              tipl::shape<3>& geo,
+              tipl::vector<3>& vs,
+              tipl::matrix<4,4>& trans_to_mni,
+              std::vector<float>& loaded_values)
+{
+    struct entry_type
+    {
+        std::string name;
+        uint16_t method = 0;
+        uint32_t crc = 0;
+        uint64_t compressed_size = 0;
+        uint64_t size = 0;
+        uint64_t offset = 0;
+    };
+
+    std::ifstream in(file_name,std::ios::binary);
+    if(!in)
+        return false;
+
+    auto u16 = [](const unsigned char* p)
+    {
+        return uint16_t(p[0]) | uint16_t(p[1]) << 8;
+    };
+    auto u32 = [](const unsigned char* p)
+    {
+        return uint32_t(p[0]) |
+               uint32_t(p[1]) << 8 |
+               uint32_t(p[2]) << 16 |
+               uint32_t(p[3]) << 24;
+    };
+    auto u64 = [&](const unsigned char* p)
+    {
+        return uint64_t(u32(p)) | uint64_t(u32(p+4)) << 32;
+    };
+    auto read_at = [&](uint64_t pos,void* data,size_t size)
+    {
+        in.clear();
+        in.seekg(std::streamoff(pos));
+        in.read(reinterpret_cast<char*>(data),std::streamsize(size));
+        return bool(in);
+    };
+
+    // locate central directory
+    in.seekg(0,std::ios::end);
+    uint64_t file_size = uint64_t(in.tellg());
+    size_t tail_size = size_t(std::min<uint64_t>(file_size,65557));
+    std::vector<unsigned char> tail(tail_size);
+    if(!read_at(file_size-tail_size,tail.data(),tail.size()))
+        return false;
+
+    size_t eocd = size_t(-1);
+    if(tail.size() >= 22)
+        for(size_t i = tail.size()-22;;--i)
+        {
+            if(u32(tail.data()+i) == 0x06054b50 &&
+                i+22+u16(tail.data()+i+20) == tail.size())
+            {
+                eocd = i;
+                break;
+            }
+            if(!i)
+                break;
+        }
+    if(eocd == size_t(-1))
+        return false;
+
+    uint64_t entry_count = u16(tail.data()+eocd+10);
+    uint64_t central_size = u32(tail.data()+eocd+12);
+    uint64_t central_offset = u32(tail.data()+eocd+16);
+    uint64_t eocd_offset = file_size-tail_size+eocd;
+
+    // ZIP64, if present
+    if((entry_count == 0xffff ||
+         central_size == 0xffffffff ||
+         central_offset == 0xffffffff) && eocd_offset >= 20)
+    {
+        unsigned char locator[20];
+        if(read_at(eocd_offset-20,locator,sizeof(locator)) &&
+            u32(locator) == 0x07064b50)
+        {
+            unsigned char z64[56];
+            if(!read_at(u64(locator+8),z64,sizeof(z64)) ||
+                u32(z64) != 0x06064b50)
+                return false;
+            entry_count = u64(z64+32);
+            central_size = u64(z64+40);
+            central_offset = u64(z64+48);
+        }
+    }
+
+    // read central directory
+    std::vector<entry_type> entries;
+    entries.reserve(size_t(entry_count));
+    in.clear();
+    in.seekg(std::streamoff(central_offset));
+
+    for(uint64_t i = 0;i < entry_count;++i)
+    {
+        unsigned char h[46];
+        in.read(reinterpret_cast<char*>(h),sizeof(h));
+        if(!in || u32(h) != 0x02014b50)
+            return false;
+
+        uint16_t flags = u16(h+8);
+        if(flags & 1) // encrypted
+            return false;
+
+        uint16_t name_size = u16(h+28);
+        uint16_t extra_size = u16(h+30);
+        uint16_t comment_size = u16(h+32);
+
+        std::string name(name_size,'\0');
+        std::vector<unsigned char> extra(extra_size);
+        in.read(name.data(),name.size());
+        if(extra_size)
+            in.read(reinterpret_cast<char*>(extra.data()),extra.size());
+        in.seekg(comment_size,std::ios::cur);
+        if(!in)
+            return false;
+
+        entry_type e;
+        e.name = std::move(name);
+        e.method = u16(h+10);
+        e.crc = u32(h+16);
+        e.compressed_size = u32(h+20);
+        e.size = u32(h+24);
+        e.offset = u32(h+42);
+
+        // ZIP64 extended information
+        if(e.size == 0xffffffff ||
+            e.compressed_size == 0xffffffff ||
+            e.offset == 0xffffffff)
+        {
+            for(size_t p = 0;p+4 <= extra.size();)
+            {
+                uint16_t id = u16(extra.data()+p);
+                uint16_t n = u16(extra.data()+p+2);
+                p += 4;
+                if(p+n > extra.size())
+                    return false;
+                if(id == 1)
+                {
+                    const unsigned char* q = extra.data()+p;
+                    size_t remain = n;
+                    auto get64 = [&]()
+                    {
+                        if(remain < 8)
+                            return uint64_t(0);
+                        uint64_t v = u64(q);
+                        q += 8;
+                        remain -= 8;
+                        return v;
+                    };
+                    if(e.size == 0xffffffff)
+                        e.size = get64();
+                    if(e.compressed_size == 0xffffffff)
+                        e.compressed_size = get64();
+                    if(e.offset == 0xffffffff)
+                        e.offset = get64();
+                    break;
+                }
+                p += n;
+            }
+        }
+        entries.push_back(std::move(e));
+    }
+
+    // read one ZIP entry; supports STORE and raw DEFLATE
+    auto read_entry = [&](const entry_type& e,std::vector<char>& data)
+    {
+        if(e.size > uint64_t(std::numeric_limits<size_t>::max()))
+            return false;
+
+        unsigned char h[30];
+        if(!read_at(e.offset,h,sizeof(h)) || u32(h) != 0x04034b50)
+            return false;
+
+        uint64_t data_offset =
+            e.offset+30+u16(h+26)+u16(h+28);
+
+        data.resize(size_t(e.size));
+        in.clear();
+        in.seekg(std::streamoff(data_offset));
+
+        if(e.method == 0)
+        {
+            uint64_t done = 0;
+            while(done < e.size)
+            {
+                size_t n = size_t(std::min<uint64_t>(e.size-done,1 << 20));
+                in.read(data.data()+done,std::streamsize(n));
+                if(!in)
+                    return false;
+                done += n;
+            }
+            return true;
+        }
+
+        if(e.method != 8)
+            return false;
+
+        z_stream z = {};
+        if(inflateInit2(&z,-MAX_WBITS) != Z_OK)
+            return false;
+
+        std::vector<unsigned char> src(1 << 20);
+        uint64_t remain = e.compressed_size;
+        size_t out_pos = 0;
+        int ret = Z_OK;
+
+        while(remain && ret != Z_STREAM_END)
+        {
+            size_t n = size_t(std::min<uint64_t>(remain,src.size()));
+            in.read(reinterpret_cast<char*>(src.data()),std::streamsize(n));
+            if(!in)
+            {
+                inflateEnd(&z);
+                return false;
+            }
+            remain -= n;
+
+            z.next_in = src.data();
+            z.avail_in = uInt(n);
+
+            while(z.avail_in && ret != Z_STREAM_END)
+            {
+                if(out_pos >= data.size())
+                {
+                    inflateEnd(&z);
+                    return false;
+                }
+                uInt nout = uInt(std::min<size_t>(
+                    data.size()-out_pos,1 << 20));
+                z.next_out =
+                    reinterpret_cast<unsigned char*>(data.data()+out_pos);
+                z.avail_out = nout;
+                ret = inflate(&z,Z_NO_FLUSH);
+                out_pos += nout-z.avail_out;
+
+                if(ret != Z_OK && ret != Z_STREAM_END)
+                {
+                    inflateEnd(&z);
+                    return false;
+                }
+            }
+        }
+
+        inflateEnd(&z);
+        return ret == Z_STREAM_END && out_pos == data.size();
+    };
+
+    auto dtype_size = [](const std::string& type)->size_t
+    {
+        if(type == "int8" || type == "uint8") return 1;
+        if(type == "int16" || type == "uint16" || type == "float16") return 2;
+        if(type == "int32" || type == "uint32" || type == "float32") return 4;
+        if(type == "int64" || type == "uint64" || type == "float64") return 8;
+        return 0;
+    };
+
+    auto half_to_float = [](uint16_t h)
+    {
+        uint32_t sign = uint32_t(h & 0x8000) << 16;
+        uint32_t exp = (h >> 10) & 31;
+        uint32_t mantissa = h & 0x3ff;
+        uint32_t f;
+
+        if(!exp)
+        {
+            if(!mantissa)
+                f = sign;
+            else
+            {
+                int e = -14;
+                while(!(mantissa & 0x400))
+                {
+                    mantissa <<= 1;
+                    --e;
+                }
+                mantissa &= 0x3ff;
+                f = sign |
+                    uint32_t(e+127) << 23 |
+                    mantissa << 13;
+            }
+        }
+        else
+            if(exp == 31)
+                f = sign | 0x7f800000 | mantissa << 13;
+            else
+                f = sign |
+                    uint32_t(int(exp)-15+127) << 23 |
+                    mantissa << 13;
+
+        float result;
+        std::memcpy(&result,&f,sizeof(result));
+        return result;
+    };
+
+    auto number = [&](const char* p,const std::string& type)->double
+    {
+        const auto* q = reinterpret_cast<const unsigned char*>(p);
+
+        if(type == "uint8")  return *q;
+        if(type == "int8")   return int8_t(*q);
+        if(type == "uint16") return u16(q);
+        if(type == "int16")  return int16_t(u16(q));
+        if(type == "uint32") return u32(q);
+        if(type == "int32")  return int32_t(u32(q));
+        if(type == "uint64") return double(u64(q));
+        if(type == "int64")  return double(int64_t(u64(q)));
+        if(type == "float16") return half_to_float(u16(q));
+        if(type == "float32")
+        {
+            uint32_t bits = u32(q);
+            float v;
+            std::memcpy(&v,&bits,4);
+            return v;
+        }
+        if(type == "float64")
+        {
+            uint64_t bits = u64(q);
+            double v;
+            std::memcpy(&v,&bits,8);
+            return v;
+        }
+        return 0.0;
+    };
+
+    const entry_type* header_entry = nullptr;
+    const entry_type* positions_entry = nullptr;
+    const entry_type* offsets_entry = nullptr;
+
+    for(const auto& e : entries)
+    {
+        if(e.name == "header.json")
+            header_entry = &e;
+        else
+            if(e.name.rfind("positions.3.",0) == 0)
+                positions_entry = &e;
+            else
+                if(e.name.rfind("offsets.",0) == 0)
+                    offsets_entry = &e;
+    }
+
+    if(!header_entry || !positions_entry || !offsets_entry)
+        return false;
+
+    // header
+    std::vector<char> buf;
+    if(!read_entry(*header_entry,buf))
+        return false;
+
+    auto header = QJsonDocument::fromJson(
+                      QByteArray(buf.data(),qsizetype(buf.size()))).object();
+
+    auto dim = header["DIMENSIONS"].toArray();
+    auto affine = header["VOXEL_TO_RASMM"].toArray();
+    if(dim.size() != 3 || affine.size() != 4)
+        return false;
+
+    geo = tipl::shape<3>(
+        uint32_t(dim[0].toInteger()),
+        uint32_t(dim[1].toInteger()),
+        uint32_t(dim[2].toInteger()));
+
+    tipl::matrix<4,4> voxel_to_ras;
+    for(int i = 0;i < 4;++i)
+    {
+        auto row = affine[i].toArray();
+        if(row.size() != 4)
+            return false;
+        for(int j = 0;j < 4;++j)
+            voxel_to_ras[i*4+j] = float(row[j].toDouble());
+    }
+
+    // DSI uses LPS affine internally
+    trans_to_mni = voxel_to_ras;
+    for(int j = 0;j < 4;++j)
+    {
+        trans_to_mni[j] = -trans_to_mni[j];
+        trans_to_mni[4+j] = -trans_to_mni[4+j];
+    }
+
+    for(int j = 0;j < 3;++j)
+        vs[j] = std::sqrt(
+            voxel_to_ras[j]*voxel_to_ras[j] +
+            voxel_to_ras[4+j]*voxel_to_ras[4+j] +
+            voxel_to_ras[8+j]*voxel_to_ras[8+j]);
+
+    // offsets
+    std::vector<char> offsets_data;
+    if(!read_entry(*offsets_entry,offsets_data))
+        return false;
+
+    std::string offset_type =
+        offsets_entry->name.substr(offsets_entry->name.find_last_of('.')+1);
+    size_t offset_size = dtype_size(offset_type);
+    if((offset_type != "uint32" && offset_type != "uint64") ||
+        !offset_size || offsets_data.size()%offset_size)
+        return false;
+
+    size_t offset_count = offsets_data.size()/offset_size;
+    if(!offset_count)
+        return false;
+
+    std::vector<uint64_t> offsets(offset_count);
+    for(size_t i = 0;i < offset_count;++i)
+        offsets[i] = uint64_t(number(
+            offsets_data.data()+i*offset_size,offset_type));
+
+    // positions
+    std::vector<char> positions;
+    if(!read_entry(*positions_entry,positions))
+        return false;
+
+    std::string position_type =
+        positions_entry->name.substr(positions_entry->name.find_last_of('.')+1);
+    size_t position_size = dtype_size(position_type);
+    if((position_type != "float16" &&
+         position_type != "float32" &&
+         position_type != "float64") ||
+        !position_size ||
+        positions.size()%(position_size*3))
+        return false;
+
+    size_t vertex_count = positions.size()/(position_size*3);
+    if(offsets.back() != vertex_count)
+        return false;
+
+    tipl::transformation_matrix<float,3> ras_to_voxel(voxel_to_ras);
+    ras_to_voxel.inverse();
+
+    tract_data.resize(offset_count-1);
+    for(size_t s = 0;s+1 < offsets.size();++s)
+    {
+        if(offsets[s] > offsets[s+1] || offsets[s+1] > vertex_count)
+            return false;
+
+        auto& tract = tract_data[s];
+        tract.resize(size_t(offsets[s+1]-offsets[s])*3);
+
+        for(uint64_t i = offsets[s],j = 0;i < offsets[s+1];++i,j += 3)
+        {
+            float p[3];
+            for(int k = 0;k < 3;++k)
+                p[k] = float(number(
+                    positions.data()+(i*3+k)*position_size,
+                    position_type));
+
+            ras_to_voxel(p);
+            tract[j]   = p[0];
+            tract[j+1] = p[1];
+            tract[j+2] = p[2];
+        }
+    }
+
+    // groups -> DSI's single cluster assignment
+    tract_cluster.clear();
+    tract_cluster_names.clear();
+    std::vector<unsigned int> assignment(
+        tract_data.size(),std::numeric_limits<unsigned int>::max());
+
+    for(const auto& e : entries)
+    {
+        if(e.name.rfind("groups/",0) != 0 ||
+            !tipl::ends_with(e.name,".uint32"))
+            continue;
+
+        std::vector<char> group;
+        if(!read_entry(e,group) || group.size()%4)
+            return false;
+
+        unsigned int id = tract_cluster_names.size();
+        auto name = e.name.substr(7,e.name.size()-7-7);
+        tract_cluster_names.push_back(name);
+
+        for(size_t i = 0;i < group.size();i += 4)
+        {
+            uint32_t index =
+                u32(reinterpret_cast<const unsigned char*>(group.data()+i));
+            if(index < assignment.size() &&
+                assignment[index] == std::numeric_limits<unsigned int>::max())
+                assignment[index] = id;
+        }
+    }
+
+    if(!tract_cluster_names.empty())
+    {
+        bool ungrouped = std::find(
+                             assignment.begin(),assignment.end(),
+                             std::numeric_limits<unsigned int>::max()) != assignment.end();
+
+        if(ungrouped)
+        {
+            unsigned int id = tract_cluster_names.size();
+            tract_cluster_names.push_back("ungrouped");
+            for(auto& v : assignment)
+                if(v == std::numeric_limits<unsigned int>::max())
+                    v = id;
+        }
+        tract_cluster.swap(assignment);
+    }
+
+    // first scalar DPS compatible with streamline count
+    loaded_values.clear();
+    for(const auto& e : entries)
+    {
+        if(e.name.rfind("dps/",0) != 0)
+            continue;
+
+        std::string type = e.name.substr(e.name.find_last_of('.')+1);
+        size_t n = dtype_size(type);
+        if(!n || e.size != tract_data.size()*n)
+            continue;
+
+        std::vector<char> dps;
+        if(!read_entry(e,dps))
+            return false;
+
+        loaded_values.resize(tract_data.size());
+        for(size_t i = 0;i < loaded_values.size();++i)
+            loaded_values[i] =
+                float(number(dps.data()+i*n,type));
+        break;
+    }
+
+    return true;
+}
+bool save_trx(const std::filesystem::path& file_name,
+              const std::vector<std::vector<float> >& tract_data,
+              const std::vector<unsigned int>& tract_cluster,
+              const std::vector<std::string>& tract_cluster_names,
+              const tipl::shape<3>& geo,
+              const tipl::matrix<4,4>& trans_to_mni,
+              const std::vector<float>& loaded_values)
+{
+    struct entry_type
+    {
+        std::string name;
+        uint64_t offset = 0;
+        uint64_t size = 0;
+        uint32_t crc = 0;
+    };
+
+    std::ofstream out(file_name,std::ios::binary);
+    if(!out)
+        return false;
+
+    auto w16 = [&](uint16_t v)
+    {
+        unsigned char b[] = {
+                             static_cast<unsigned char>(v),
+                             static_cast<unsigned char>(v >> 8)};
+        out.write(reinterpret_cast<char*>(b),2);
+    };
+    auto w32 = [&](uint32_t v)
+    {
+        for(int i = 0;i < 4;++i)
+            out.put(char(v >> (i*8)));
+    };
+    auto w64 = [&](uint64_t v)
+    {
+        for(int i = 0;i < 8;++i)
+            out.put(char(v >> (i*8)));
+    };
+    auto pos = [&]()
+    {
+        return uint64_t(out.tellp());
+    };
+    auto write_data = [&](const void* ptr,uint64_t size)
+    {
+        auto* p = reinterpret_cast<const char*>(ptr);
+        while(size)
+        {
+            size_t n = size_t(std::min<uint64_t>(size,1 << 20));
+            out.write(p,std::streamsize(n));
+            p += n;
+            size -= n;
+        }
+        return bool(out);
+    };
+
+    std::vector<entry_type> entries;
+
+    // ZIP_STORE entry
+    auto add_entry = [&](const std::string& name,const void* data,uint64_t size)
+    {
+        if(name.size() > 0xffff)
+            return false;
+
+        uint32_t crc = crc32(0L,Z_NULL,0);
+        auto* p = reinterpret_cast<const Bytef*>(data);
+        for(uint64_t left = size;left;)
+        {
+            uInt n = uInt(std::min<uint64_t>(left,1 << 30));
+            crc = crc32(crc,p,n);
+            p += n;
+            left -= n;
+        }
+
+        uint64_t offset = pos();
+        bool zip64 = size >= 0xffffffffULL;
+
+        w32(0x04034b50);
+        w16(zip64 ? 45 : 20);
+        w16(0);                 // flags
+        w16(0);                 // STORE
+        w16(0); w16(0);         // time/date
+        w32(crc);
+        w32(zip64 ? 0xffffffff : uint32_t(size));
+        w32(zip64 ? 0xffffffff : uint32_t(size));
+        w16(uint16_t(name.size()));
+        w16(zip64 ? 20 : 0);
+        out.write(name.data(),std::streamsize(name.size()));
+
+        if(zip64)
+        {
+            w16(1);
+            w16(16);
+            w64(size);
+            w64(size);
+        }
+
+        if(size && !write_data(data,size))
+            return false;
+
+        entries.push_back({name,offset,size,crc});
+        return bool(out);
+    };
+
+    // DSI LPS -> TRX RAS+
+    tipl::matrix<4,4> voxel_to_ras(trans_to_mni);
+    for(int j = 0;j < 4;++j)
+    {
+        voxel_to_ras[j] = -voxel_to_ras[j];
+        voxel_to_ras[4+j] = -voxel_to_ras[4+j];
+    }
+
+    size_t vertex_count = 0;
+    for(const auto& tract : tract_data)
+        vertex_count += tract.size()/3;
+
+    std::vector<float> positions;
+    std::vector<uint64_t> offsets(tract_data.size()+1);
+    positions.reserve(vertex_count*3);
+
+    tipl::transformation_matrix<float,3> voxel_to_world(voxel_to_ras);
+
+    for(size_t i = 0;i < tract_data.size();++i)
+    {
+        offsets[i] = positions.size()/3;
+        for(size_t j = 0;j < tract_data[i].size();j += 3)
+        {
+            float p[3] = {
+                          tract_data[i][j],
+                          tract_data[i][j+1],
+                          tract_data[i][j+2]};
+            voxel_to_world(p);
+            positions.insert(positions.end(),p,p+3);
+        }
+    }
+    offsets.back() = positions.size()/3;
+
+    QJsonArray dim{
+                   int(geo[0]),int(geo[1]),int(geo[2])};
+
+    QJsonArray affine;
+    for(int i = 0;i < 4;++i)
+    {
+        QJsonArray row;
+        for(int j = 0;j < 4;++j)
+            row.append(voxel_to_ras[i*4+j]);
+        affine.append(row);
+    }
+
+    QJsonObject header;
+    header["VOXEL_TO_RASMM"] = affine;
+    header["DIMENSIONS"] = dim;
+    header["NB_STREAMLINES"] = double(tract_data.size());
+    header["NB_VERTICES"] = double(vertex_count);
+
+    QByteArray header_data =
+        QJsonDocument(header).toJson(QJsonDocument::Compact);
+
+    if(!add_entry("header.json",
+                   header_data.constData(),
+                   uint64_t(header_data.size())) ||
+        !add_entry("positions.3.float32",
+                   positions.data(),
+                   uint64_t(positions.size()*sizeof(float))) ||
+        !add_entry("offsets.uint64",
+                   offsets.data(),
+                   uint64_t(offsets.size()*sizeof(uint64_t))))
+        return false;
+
+    // groups
+    if(tract_cluster.size() == tract_data.size())
+    {
+        std::map<unsigned int,std::vector<uint32_t> > groups;
+        for(size_t i = 0;i < tract_cluster.size();++i)
+            groups[tract_cluster[i]].push_back(uint32_t(i));
+
+        for(const auto& group : groups)
+        {
+            std::string name =
+                group.first < tract_cluster_names.size() &&
+                        !tract_cluster_names[group.first].empty() ?
+                    tract_cluster_names[group.first] :
+                    "cluster_"+std::to_string(group.first);
+
+            for(auto& ch : name)
+                if(ch == '/' || ch == '\\')
+                    ch = '_';
+
+            if(!add_entry("groups/"+name+".uint32",
+                           group.second.data(),
+                           group.second.size()*sizeof(uint32_t)))
+                return false;
+        }
+    }
+
+    if(loaded_values.size() == tract_data.size() &&
+        !loaded_values.empty())
+        if(!add_entry("dps/dsi_loaded_values.float32",
+                       loaded_values.data(),
+                       loaded_values.size()*sizeof(float)))
+            return false;
+
+    // central directory
+    uint64_t central_offset = pos();
+
+    for(const auto& e : entries)
+    {
+        bool zip64 =
+            e.size >= 0xffffffffULL ||
+            e.offset >= 0xffffffffULL;
+
+        w32(0x02014b50);
+        w16(zip64 ? 45 : 20);
+        w16(zip64 ? 45 : 20);
+        w16(0);                 // flags
+        w16(0);                 // STORE
+        w16(0); w16(0);         // time/date
+        w32(e.crc);
+        w32(zip64 ? 0xffffffff : uint32_t(e.size));
+        w32(zip64 ? 0xffffffff : uint32_t(e.size));
+        w16(uint16_t(e.name.size()));
+        w16(zip64 ? 28 : 0);
+        w16(0);                 // comment
+        w16(0);                 // disk
+        w16(0);                 // internal attributes
+        w32(0);                 // external attributes
+        w32(zip64 ? 0xffffffff : uint32_t(e.offset));
+        out.write(e.name.data(),std::streamsize(e.name.size()));
+
+        if(zip64)
+        {
+            w16(1);
+            w16(24);
+            w64(e.size);
+            w64(e.size);
+            w64(e.offset);
+        }
+    }
+
+    uint64_t central_size = pos()-central_offset;
+    bool zip64 =
+        entries.size() >= 0xffff ||
+        central_offset >= 0xffffffffULL ||
+        central_size >= 0xffffffffULL ||
+        std::any_of(entries.begin(),entries.end(),
+                    [](const entry_type& e)
+                    {
+                        return e.size >= 0xffffffffULL ||
+                               e.offset >= 0xffffffffULL;
+                    });
+
+    if(zip64)
+    {
+        uint64_t zip64_offset = pos();
+
+        w32(0x06064b50);
+        w64(44);
+        w16(45); w16(45);
+        w32(0); w32(0);
+        w64(entries.size());
+        w64(entries.size());
+        w64(central_size);
+        w64(central_offset);
+
+        w32(0x07064b50);
+        w32(0);
+        w64(zip64_offset);
+        w32(1);
+    }
+
+    // normal EOCD is required even for ZIP64
+    w32(0x06054b50);
+    w16(0); w16(0);
+    w16(zip64 ? 0xffff : uint16_t(entries.size()));
+    w16(zip64 ? 0xffff : uint16_t(entries.size()));
+    w32(zip64 ? 0xffffffff : uint32_t(central_size));
+    w32(zip64 ? 0xffffffff : uint32_t(central_offset));
+    w16(0);
+
+    return bool(out);
+}
+
 //---------------------------------------------------------------------------
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo)
 {
