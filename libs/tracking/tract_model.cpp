@@ -1492,11 +1492,11 @@ bool load_fib_from_tracks(const std::filesystem::path& file_name,
     else
     if(tipl::ends_with(file_name.u8string(),".trx"))
     {
-        std::vector<unsigned int> loaded_tract_cluster;
-        std::vector<std::string> tract_cluster_names;
+        std::vector<unsigned int> ignored_cluster;
+        std::vector<std::string> ignored_cluster_names;
         std::vector<float> loaded_values;
-        if(!load_trx(file_name,loaded_tract_data,loaded_tract_cluster,
-                     tract_cluster_names,geo,vs,trans_to_mni,loaded_values))
+        if(!load_trx(file_name,loaded_tract_data,ignored_cluster,
+                     ignored_cluster_names,geo,vs,trans_to_mni,loaded_values))
             return std::cout << "cannot read " << file_name,false;
     }
     else
