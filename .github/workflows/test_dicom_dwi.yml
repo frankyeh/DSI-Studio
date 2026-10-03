@@ -72,20 +72,10 @@ jobs:
           input=data/In
           [ -d "$input" ] || input=data
 
-          mapfile -t dirs < <(
-            find "$input" -type d \
-              \( -iname '*dwi*' -o -iname '*dti*' \) |
-            sort
-          )
+          dsi_studio --action=ren --source="$input"
+          dsi_studio --action=src --source="$input"
 
-          [ ${#dirs[@]} -gt 0 ]
-
-          for dir in "${dirs[@]}"; do
-            echo "Testing $dir"
-            dsi_studio --action=src --source="$dir"
-          done
-
-          find . -type f \
+          find "$input" -type f \
             \( -name '*.src.gz' -o -name '*.sz' \) \
             -print | tee outputs.txt
 
