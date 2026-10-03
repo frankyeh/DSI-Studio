@@ -684,7 +684,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         if(po.has("output"))
         {
             auto output = po.get("output");
-            if(!tipl::ends_with(output,{".nii.gz",".trk.gz",".tt.gz"}))
+            if(!tipl::ends_with(output,{".nii.gz",".trk.gz",".tt.gz",".trx"}))
                 return tipl::error() << "unsupported output format: " << output,1;
             if(tipl::ends_with(output,".nii.gz") && (!po.get("overwrite",1) && std::filesystem::exists(output)))
                 tipl::out() << output << " exists.";
