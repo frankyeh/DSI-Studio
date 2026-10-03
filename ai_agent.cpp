@@ -1811,12 +1811,19 @@ bool AIAgent::try_connect_github_issue(const QString& url)
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
     if(auto* info = ai_info::find(web_agent_session_id))
     {
-        // status flips to WaitingUser (established) BEFORE save_config() -- save_config()'s "established"
-        // field reads status at the moment it's called, and this chat may be an already-established one just
-        // reconnecting (status still New here from the "Connecting..." update above); saving while still New
-        // would wrongly persist established:false over a genuinely established chat
-        set_ai_status(info->sessions,session_status::WaitingUser, // established and idle -- Thinking is reserved for actually processing a request (see poll_github_issue())
-                      "Connected; monitoring GitHub issue");
+        // Channel connected is not session established. A fresh, never-established placeholder
+        // stays New: the first real request (poll_github_issue()) sees New and assigns the
+        // agent's canonical session UUID in place via assign_ai_session(). Flipping it to
+        // WaitingUser here would block that rename, orphaning the placeholder while a duplicate
+        // chat is created for the real session. No GitHub path ever resets an established chat
+        // to New, so New here always means never established (save_config()'s established:false
+        // for it is correct). An already-established reconnecting chat was moved to Thinking
+        // above and settles to WaitingUser here as before.
+        bool fresh = info->status == session_status::New;
+        set_ai_status(info->sessions,
+                      fresh ? session_status::New : session_status::WaitingUser,
+                      fresh ? "Connected; waiting for the agent's first request"
+                            : "Connected; monitoring GitHub issue");
         // bound the moment the connection succeeds, not deferred until a request happens to arrive
         // (poll_github_issue() also does this for the reactive/resume case) -- the chat's own record is
         // now always current, so update_agent_status_label() never needs to prefer github_issue_api over it
@@ -2227,7 +2234,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
                 setup_github_token();
             update_web();
         }
-        else
+        if(!is_github)
             set_model_selector(model,agent_entries[provider].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
                 provider == current_agent ? current_model_name : QString());
