@@ -902,11 +902,6 @@ bool load_trx(const std::filesystem::path& file_name,
 
     // DSI uses LPS affine internally
     trans_to_mni = voxel_to_ras;
-    for(int j = 0;j < 4;++j)
-    {
-        trans_to_mni[j] = -trans_to_mni[j];
-        trans_to_mni[4+j] = -trans_to_mni[4+j];
-    }
 
     for(int j = 0;j < 3;++j)
         vs[j] = std::sqrt(
@@ -1215,13 +1210,6 @@ bool save_trx(const std::filesystem::path& file_name,
 
     // DSI LPS -> TRX RAS+
     tipl::matrix<4,4> voxel_to_ras(trans_to_mni);
-
-    for(int j = 0;j < 4;++j)
-    {
-        voxel_to_ras[j] = -voxel_to_ras[j];
-        voxel_to_ras[4+j] = -voxel_to_ras[4+j];
-    }
-
     size_t vertex_count = 0;
 
     for(const auto& tract : tract_data)
