@@ -306,6 +306,16 @@ int trk_post(tipl::program_option<tipl::out>& po,
     tipl::progress prog("post-tracking analysis");
     if(!tract_model->get_visible_track_count())
         return tipl::out() << "no tract for post-track analysis",0;
+    if(po.has("delete_repeat") || po.get("action") == "atk" ||
+       po.has("track_id"))
+        tract_model->delete_repeated(
+            po.get("delete_repeat",float(0.5f)));
+    if(po.has("delete_by_length"))
+        tract_model->delete_by_length(
+            po.get("delete_by_length",float(1)));
+    if(!tract_model->get_visible_track_count())
+        return tipl::out() << "no tract remains for further actions",0;
+
     if(po.has("overlap"))
     {
         std::string result;
@@ -319,22 +329,26 @@ int trk_post(tipl::program_option<tipl::out>& po,
             return tipl::error() << handle->error_msg,1;
 
         auto file_name = tract_file_name;
-        file_name += ".overlap.txt";
+        if(po.has("output") && po.get("output") != "no_file")
+        {
+            std::filesystem::path output(po.get("output"));
+            if(std::filesystem::is_directory(output))
+                file_name = output/(tract_file_name.empty() ?
+                    tipl::remove_all_suffix(std::filesystem::path(po.get("source")).filename()) :
+                    tract_file_name.filename());
+            else
+                file_name = output;
+            if(!tipl::ends_with(file_name.u8string(),{".tt.gz",".trk.gz",".trk",".tck",".txt",".nii.gz",".nii",".mat"}))
+                file_name += "." + po.get("trk_format","tt.gz");
+        }
+        file_name += "." + atlas_name + ".overlap.txt";
 
-        tipl::out() << "output overlap statistics to " << file_name << std::endl;
+        tipl::out() << "output overlap statistics to "
+                    << file_name << std::endl;
 
         if(!tipl::write_text_file(file_name,result,tipl::error()))
             return 1;
     }
-    if(po.has("delete_repeat") || po.get("action") == "atk" ||
-       po.has("track_id"))
-        tract_model->delete_repeated(
-            po.get("delete_repeat",float(0.5f)));
-    if(po.has("delete_by_length"))
-        tract_model->delete_by_length(
-            po.get("delete_by_length",float(1)));
-    if(!tract_model->get_visible_track_count())
-        return tipl::out() << "no tract remains for further actions",0;
 
     if(po.has("cluster"))
     {
