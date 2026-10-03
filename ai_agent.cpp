@@ -528,7 +528,12 @@ void AIAgent::disconnect_github_issue()
     update_send_button(); // flips to "Resume" if still in a web-agent session
     if(auto* info = ai_info::find(web_agent_session_id))
         if(info->status != session_status::Failed) // a deliberate disconnect never replaces a real failure
-            set_ai_status(info->sessions,session_status::Completed,"GitHub issue channel stopped.");
+            // A fresh, never-established placeholder stays New: the session is only established
+            // by the first real request (see try_connect_github_issue()). Marking it Completed
+            // here would block assign_ai_session() after a resume, duplicating the chat.
+            set_ai_status(info->sessions,
+                          info->status == session_status::New ? session_status::New : session_status::Completed,
+                          "GitHub issue channel stopped.");
 }
 
 bool AIAgent::handle_github_reply(QNetworkReply* reply,quint64 connection_id,int& status,QByteArray& data)
