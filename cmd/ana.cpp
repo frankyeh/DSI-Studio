@@ -562,7 +562,9 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         get_regions_statistics(handle,regions,result);
     }
 
-    std::filesystem::path file_name = po.get("source")+".statistics.txt";
+    std::filesystem::path file_name = po.has("overlap") ?
+        po.get("source")+"."+po.get("overlap")+".overlap.txt" :
+        po.get("source")+".statistics.txt";
     if(po.has("output"))
     {
         std::filesystem::path output = po.get("output");
