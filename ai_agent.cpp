@@ -2172,7 +2172,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     web_layout->setContentsMargins(0,0,0,0);
     web_layout->setSpacing(10);
 
-    QPushButton setup_token("Set up GitHub token"); // becomes a disabled "GitHub token ready" status readout once configured -- see update_web()
+    QPushButton setup_token("Set up GitHub token"); // fallback only, visible when no token is set -- see update_web()
     auto* token_row = new QHBoxLayout;
     token_row->addWidget(&setup_token);
     token_row->addStretch();
@@ -2182,14 +2182,39 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     issue_card->setObjectName("ai_step_card");
     auto* issue_card_layout = new QVBoxLayout(issue_card);
     issue_card_layout->setContentsMargins(14,12,14,12);
-    issue_card_layout->setSpacing(8);
-    auto* issue_heading = new QLabel("Session issue");
-    issue_heading->setObjectName("ai_step_heading");
-    auto* issue_body = new QLabel("Ask an AI agent (ChatGPT, Muse, ...) to create the issue, then paste its URL below.");
-    issue_body->setObjectName("ai_step_body");
-    issue_body->setWordWrap(true);
-    issue_card_layout->addWidget(issue_heading);
-    issue_card_layout->addWidget(issue_body);
+    issue_card_layout->setSpacing(10);
+
+    auto* step1_heading = new QLabel("Step 1 — Copy the setup prompt");
+    step1_heading->setObjectName("ai_step_heading");
+    issue_card_layout->addWidget(step1_heading);
+    QPushButton copy_prompt("Copy setup prompt");
+    auto* step1_row = new QHBoxLayout;
+    step1_row->addWidget(&copy_prompt);
+    step1_row->addStretch();
+    issue_card_layout->addLayout(step1_row);
+
+    auto* step2_heading = new QLabel("Step 2 — Paste it into an AI chat");
+    step2_heading->setObjectName("ai_step_heading");
+    auto* step2_body = new QLabel("Press Ctrl+V in the chat box and send.");
+    step2_body->setObjectName("ai_step_body");
+    step2_body->setWordWrap(true);
+    issue_card_layout->addWidget(step2_heading);
+    issue_card_layout->addWidget(step2_body);
+    QPushButton open_chatgpt("Open ChatGPT");
+    QPushButton open_muse("Open Muse");
+    auto* step2_row = new QHBoxLayout;
+    step2_row->addWidget(&open_chatgpt);
+    step2_row->addWidget(&open_muse);
+    step2_row->addStretch();
+    issue_card_layout->addLayout(step2_row);
+
+    auto* step3_heading = new QLabel("Step 3 — Paste the reply link");
+    step3_heading->setObjectName("ai_step_heading");
+    auto* step3_body = new QLabel("Paste the Issue URL from ChatGPT/Muse's reply below.");
+    step3_body->setObjectName("ai_step_body");
+    step3_body->setWordWrap(true);
+    issue_card_layout->addWidget(step3_heading);
+    issue_card_layout->addWidget(step3_body);
 
     auto* issue_field_frame = new QFrame;
     issue_field_frame->setObjectName("ai_field_frame");
@@ -2201,14 +2226,6 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     issue_row->addWidget(&issue_url_edit,1);
     issue_row->addWidget(&paste_issue);
     issue_card_layout->addWidget(issue_field_frame);
-
-    QPushButton setup_issue_chatgpt("Ask ChatGPT...");
-    QPushButton setup_issue_muse("Ask Muse...");
-    auto* issue_button_row = new QHBoxLayout;
-    issue_button_row->addWidget(&setup_issue_chatgpt);
-    issue_button_row->addWidget(&setup_issue_muse);
-    issue_button_row->addStretch();
-    issue_card_layout->addLayout(issue_button_row);
     web_layout->addWidget(issue_card);
 
     QLabel helper;
@@ -2230,15 +2247,15 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     auto update_web = [&]
     {
         bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
-        setup_token.setEnabled(!has_token);
-        setup_token.setText(has_token ? "GitHub token ready ✓" : "Set up GitHub token");
-        for(auto* widget : {static_cast<QWidget*>(&issue_url_edit),
-                            static_cast<QWidget*>(&paste_issue),
-                            static_cast<QWidget*>(&setup_issue_chatgpt),
-                            static_cast<QWidget*>(&setup_issue_muse)})
+        setup_token.setVisible(!has_token);
+        for(auto* widget : {static_cast<QWidget*>(&copy_prompt),
+                            static_cast<QWidget*>(&open_chatgpt),
+                            static_cast<QWidget*>(&open_muse),
+                            static_cast<QWidget*>(&issue_url_edit),
+                            static_cast<QWidget*>(&paste_issue)})
             widget->setEnabled(has_token);
         set_helper(has_token ?
-            "GitHub access is ready. Create or paste the session issue URL." :
+            "GitHub access is ready. Follow the steps below." :
             "A GitHub token is required. Click Set up GitHub token.");
     };
     auto update_field = [&]
@@ -2279,10 +2296,10 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         else
             set_helper("No GitHub issue URL was found in the clipboard.");
     });
-    auto setup_with_agent = [&](const QString& agent_name,const QString& agent_url)
+    connect(&copy_prompt,&QPushButton::clicked,&dialog,[&]
     {
         QApplication::clipboard()->setText(
-            "I want to connect "+agent_name+" to DSI Studio.\n\n"
+            "I want to connect an AI agent to DSI Studio.\n\n"
             "First read the public GitHub file:\n\n"
             "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GITHUB_ISSUE_SESSION.md\n\n"
             "Follow its instructions for starting a new AI agent GitHub issue session. "
@@ -2290,12 +2307,10 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
             "Create or select an appropriate private personal GitHub repository, preferably DSI-Studio-Connect, "
             "create the required session issue, and clearly give me the complete Issue URL to paste into DSI Studio.\n\n"
             "Do not send DSI Studio commands until I confirm that DSI Studio is connected to the issue.");
-        QDesktopServices::openUrl(QUrl(agent_url));
-        set_helper("Setup instructions copied. Paste them into "+agent_name+
-                   ". When "+agent_name+" gives you an Issue URL, return here and click Paste.");
-    };
-    connect(&setup_issue_chatgpt,&QPushButton::clicked,&dialog,[&]{ setup_with_agent("ChatGPT","https://chatgpt.com/"); });
-    connect(&setup_issue_muse,&QPushButton::clicked,&dialog,[&]{ setup_with_agent("Muse","https://muse.ai"); });
+        set_helper("Setup prompt copied. Open an AI chat, paste it with Ctrl+V, and send.");
+    });
+    connect(&open_chatgpt,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://chatgpt.com/")); });
+    connect(&open_muse,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://muse.ai")); });
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
