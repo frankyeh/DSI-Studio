@@ -41,12 +41,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dataset:
-          - dcm_qa_dti
-          - dcm_qa_philips_dwi
-          - dcm_qa_sag
-          - dcm_qa_xa30
-          - dcm_qa_xa30i
+        include:
+          - dataset: dcm_qa_dti
+            inputs: In/Prisma
+          - dataset: dcm_qa_philips
+            inputs: In/Bangalore_2008/dwi_no-phi In/Rosetta_2013/1101 In/Vanderbilt_2018/601_WIP_dti_ax
+          - dataset: dcm_qa_philips_dwi
+            inputs: In/cl/DICOM In/enh/DICOM
+          - dataset: dcm_qa_sag
+            inputs: In/4_DWI_SagAPmosaic In/5_DWI_SagHFmosaic In/6_DWI_SagAP In/7_DWI_SagHF
+          - dataset: dcm_qa_xa30
+            inputs: In/10_DWI_dir80_PA In/11_DWI_dir80_PA In/12_DWI_dir80_PA In/13_DWI_dir80_PA In/14_DWI_dir80_PA In/15_DWI_dir80_PA In/16_DWI_dir80_PA In/17_DWI_dir80_AP In/18_DWI_dir80_AP In/19_DWI_dir80_AP In/20_DWI_dir80_AP In/21_DWI_dir80_AP In/22_DWI_dir80_AP In/23_DWI_dir80_AP In/24_DWI_dir80_AP
+          - dataset: dcm_qa_xa30i
+            inputs: In/11001_DWI_dir80_AP In/12001_DWI_dir80_AP In/13001_DWI_dir80_AP In/14001_DWI_dir80_AP In/15001_DWI_dir80_AP In/16_DWI_dir80_AP In/17001_DWI_dir80_AP
 
     steps:
       - name: Download DSI Studio
@@ -69,15 +76,16 @@ jobs:
         run: |
           set -euxo pipefail
 
-          input=data/In
-          [ -d "$input" ] || input=data
-          find "$input" -type f -name '*.gz' -exec gzip -d {} +
+          for path in ${{ matrix.inputs }}; do
+            input="data/$path"
+            find "$input" -type f -name '*.gz' -exec gzip -d {} +
 
-          dsi_studio --action=ren --source="$input"
-          dsi_studio --action=src --source="$input"
+            dsi_studio --action=ren --source="$input"
+            dsi_studio --action=src --source="$input"
 
-          find "$input" -type f \
-            \( -name '*.src.gz' -o -name '*.sz' \) \
-            -print | tee outputs.txt
+            find "$input" -type f \
+              \( -name '*.src.gz' -o -name '*.sz' \) \
+              -print | tee outputs.txt
 
-          test -s outputs.txt
+            test -s outputs.txt
+          done
