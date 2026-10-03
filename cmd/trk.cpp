@@ -338,7 +338,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
                     tract_file_name.filename());
             else
                 file_name = output;
-            if(!tipl::ends_with(file_name.u8string(),{".tt.gz",".trk.gz",".trk",".tck",".txt",".nii.gz",".nii",".mat"}))
+            if(!tipl::ends_with(file_name.u8string(),{".tt.gz",".trk.gz",".trk",".tck",".trx",".txt",".nii.gz",".nii",".mat"}))
                 file_name += "." + po.get("trk_format","tt.gz");
         }
         file_name += "." + atlas_name + ".overlap.txt";
@@ -411,7 +411,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
     if(output_track)
     {
-        if(!tipl::ends_with(tract_file_name.u8string(),{".tt.gz",".trk.gz",".trk",".tck",".txt",".nii.gz",".nii",".mat"}))
+        if(!tipl::ends_with(tract_file_name.u8string(),{".tt.gz",".trk.gz",".trk",".tck",".trx",".txt",".nii.gz",".nii",".mat"}))
             tract_file_name += "." + po.get("trk_format","tt.gz");
         bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
