@@ -1559,7 +1559,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 result))
             return run->failed(cur_tracking_window.handle->error_msg);
 
-        if(run->source == command_source::AI)
+        if(run->source != command_source::User)
             tipl::out() << result;
         else
             show_info_dialog(
