@@ -1,0 +1,92 @@
+name: DICOM DWI Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-build:
+    name: Linux build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Build
+        run: |
+          git clone --depth 1 https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+          mv DSI-Studio-Build/build_packages .
+
+      - uses: docker/setup-qemu-action@v3.0.0
+      - uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Build Linux
+        uses: docker/build-push-action@v5.1.0
+        with:
+          context: .
+          build-args: |
+            DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
+          file: build_packages/ubuntu2404/Dockerfile
+          push: false
+          outputs: dsi-studio
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsi_studio_linux
+          path: dsi-studio
+
+  dicom-test:
+    name: ${{ matrix.dataset }}
+    needs: linux-build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dataset:
+          - dcm_qa_dti
+          - dcm_qa_philips_dwi
+          - dcm_qa_sag
+          - dcm_qa_xa30
+          - dcm_qa_xa30i
+
+    steps:
+      - name: Download DSI Studio
+        uses: actions/download-artifact@v4
+        with:
+          name: dsi_studio_linux
+          path: dsi-studio
+
+      - name: Prepare DSI Studio
+        run: |
+          chmod +x dsi-studio/dsi_studio
+          echo "$PWD/dsi-studio" >> "$GITHUB_PATH"
+
+      - name: Download ${{ matrix.dataset }}
+        run: |
+          git clone --depth 1 \
+            https://github.com/neurolabusc/${{ matrix.dataset }}.git data
+
+      - name: Test ${{ matrix.dataset }}
+        run: |
+          set -euxo pipefail
+
+          input=data/In
+          [ -d "$input" ] || input=data
+
+          mapfile -t dirs < <(
+            find "$input" -type d \
+              \( -iname '*dwi*' -o -iname '*dti*' \) |
+            sort
+          )
+
+          [ ${#dirs[@]} -gt 0 ]
+
+          for dir in "${dirs[@]}"; do
+            echo "Testing $dir"
+            dsi_studio --action=src --source="$dir"
+          done
+
+          find . -type f \
+            \( -name '*.src.gz' -o -name '*.sz' \) \
+            -print | tee outputs.txt
+
+          test -s outputs.txt
