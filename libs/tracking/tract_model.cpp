@@ -3323,12 +3323,19 @@ void ConnectivityMatrix::save_to_file(const std::filesystem::path& file_name)
         return;
     tipl::out() << "saving " << file_name;
     tipl::io::mat_write mat_header(file_name);
+    // backward compatibility with Visualize Graph:
+    // "connectivity" is the metric the user had selected in the dialog
+    mat_header.write("connectivity",matrix_value,region_points.size());
+    auto current_matrix = matrix_value; // set_metrics() mutates these;
+    auto current_t2r = t2r_value;       // restore the selection after saving
     for(size_t i = 0;i < metrics.size();++i)
     {
         set_metrics(i);
         mat_header.write(metrics[i] + " t2r",t2r_value,region_points.size());
         mat_header.write(metrics[i] + " r2r",matrix_value,region_points.size());
     }
+    matrix_value.swap(current_matrix);
+    t2r_value.swap(current_t2r);
     std::ostringstream out;
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     std::string result(out.str());
