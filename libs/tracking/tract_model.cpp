@@ -492,6 +492,7 @@ bool trk2tt(const std::string& trk_file,const char* tt_file)
 }
 
 
+
 bool load_trx(const std::filesystem::path& file_name,
               std::vector<std::vector<float> >& tract_data,
               std::vector<unsigned int>& tract_cluster,
@@ -636,10 +637,12 @@ bool load_trx(const std::filesystem::path& file_name,
                 p += 4;
                 if(p+n > extra.size())
                     return false;
+
                 if(id == 1)
                 {
                     const unsigned char* q = extra.data()+p;
                     size_t remain = n;
+
                     auto get64 = [&]()
                     {
                         if(remain < 8)
@@ -649,6 +652,7 @@ bool load_trx(const std::filesystem::path& file_name,
                         remain -= 8;
                         return v;
                     };
+
                     if(e.size == 0xffffffff)
                         e.size = get64();
                     if(e.compressed_size == 0xffffffff)
@@ -660,6 +664,7 @@ bool load_trx(const std::filesystem::path& file_name,
                 p += n;
             }
         }
+
         entries.push_back(std::move(e));
     }
 
@@ -679,6 +684,9 @@ bool load_trx(const std::filesystem::path& file_name,
         data.resize(size_t(e.size));
         in.clear();
         in.seekg(std::streamoff(data_offset));
+
+        if(!e.size)
+            return e.method == 0 || e.method == 8;
 
         if(e.method == 0)
         {
@@ -727,11 +735,14 @@ bool load_trx(const std::filesystem::path& file_name,
                     inflateEnd(&z);
                     return false;
                 }
+
                 uInt nout = uInt(std::min<size_t>(
                     data.size()-out_pos,1 << 20));
+
                 z.next_out =
                     reinterpret_cast<unsigned char*>(data.data()+out_pos);
                 z.avail_out = nout;
+
                 ret = inflate(&z,Z_NO_FLUSH);
                 out_pos += nout-z.avail_out;
 
@@ -749,10 +760,14 @@ bool load_trx(const std::filesystem::path& file_name,
 
     auto dtype_size = [](const std::string& type)->size_t
     {
-        if(type == "int8" || type == "uint8") return 1;
-        if(type == "int16" || type == "uint16" || type == "float16") return 2;
-        if(type == "int32" || type == "uint32" || type == "float32") return 4;
-        if(type == "int64" || type == "uint64" || type == "float64") return 8;
+        if(type == "int8" || type == "uint8")
+            return 1;
+        if(type == "int16" || type == "uint16" || type == "float16")
+            return 2;
+        if(type == "int32" || type == "uint32" || type == "float32")
+            return 4;
+        if(type == "int64" || type == "uint64" || type == "float64")
+            return 8;
         return 0;
     };
 
@@ -798,15 +813,25 @@ bool load_trx(const std::filesystem::path& file_name,
     {
         const auto* q = reinterpret_cast<const unsigned char*>(p);
 
-        if(type == "uint8")  return *q;
-        if(type == "int8")   return int8_t(*q);
-        if(type == "uint16") return u16(q);
-        if(type == "int16")  return int16_t(u16(q));
-        if(type == "uint32") return u32(q);
-        if(type == "int32")  return int32_t(u32(q));
-        if(type == "uint64") return double(u64(q));
-        if(type == "int64")  return double(int64_t(u64(q)));
-        if(type == "float16") return half_to_float(u16(q));
+        if(type == "uint8")
+            return *q;
+        if(type == "int8")
+            return int8_t(*q);
+        if(type == "uint16")
+            return u16(q);
+        if(type == "int16")
+            return int16_t(u16(q));
+        if(type == "uint32")
+            return u32(q);
+        if(type == "int32")
+            return int32_t(u32(q));
+        if(type == "uint64")
+            return double(u64(q));
+        if(type == "int64")
+            return double(int64_t(u64(q)));
+        if(type == "float16")
+            return half_to_float(u16(q));
+
         if(type == "float32")
         {
             uint32_t bits = u32(q);
@@ -814,6 +839,7 @@ bool load_trx(const std::filesystem::path& file_name,
             std::memcpy(&v,&bits,4);
             return v;
         }
+
         if(type == "float64")
         {
             uint64_t bits = u64(q);
@@ -821,6 +847,7 @@ bool load_trx(const std::filesystem::path& file_name,
             std::memcpy(&v,&bits,8);
             return v;
         }
+
         return 0.0;
     };
 
@@ -853,6 +880,7 @@ bool load_trx(const std::filesystem::path& file_name,
 
     auto dim = header["DIMENSIONS"].toArray();
     auto affine = header["VOXEL_TO_RASMM"].toArray();
+
     if(dim.size() != 3 || affine.size() != 4)
         return false;
 
@@ -867,6 +895,7 @@ bool load_trx(const std::filesystem::path& file_name,
         auto row = affine[i].toArray();
         if(row.size() != 4)
             return false;
+
         for(int j = 0;j < 4;++j)
             voxel_to_ras[i*4+j] = float(row[j].toDouble());
     }
@@ -892,9 +921,11 @@ bool load_trx(const std::filesystem::path& file_name,
 
     std::string offset_type =
         offsets_entry->name.substr(offsets_entry->name.find_last_of('.')+1);
+
     size_t offset_size = dtype_size(offset_type);
     if((offset_type != "uint32" && offset_type != "uint64") ||
-        !offset_size || offsets_data.size()%offset_size)
+        !offset_size ||
+        offsets_data.size()%offset_size)
         return false;
 
     size_t offset_count = offsets_data.size()/offset_size;
@@ -903,8 +934,14 @@ bool load_trx(const std::filesystem::path& file_name,
 
     std::vector<uint64_t> offsets(offset_count);
     for(size_t i = 0;i < offset_count;++i)
-        offsets[i] = uint64_t(number(
-            offsets_data.data()+i*offset_size,offset_type));
+    {
+        const auto* p = reinterpret_cast<const unsigned char*>(
+            offsets_data.data()+i*offset_size);
+        offsets[i] = offset_type == "uint64" ? u64(p) : u32(p);
+    }
+
+    if(offsets.front() != 0)
+        return false;
 
     // positions
     std::vector<char> positions;
@@ -912,7 +949,9 @@ bool load_trx(const std::filesystem::path& file_name,
         return false;
 
     std::string position_type =
-        positions_entry->name.substr(positions_entry->name.find_last_of('.')+1);
+        positions_entry->name.substr(
+            positions_entry->name.find_last_of('.')+1);
+
     size_t position_size = dtype_size(position_type);
     if((position_type != "float16" &&
          position_type != "float32" &&
@@ -922,30 +961,45 @@ bool load_trx(const std::filesystem::path& file_name,
         return false;
 
     size_t vertex_count = positions.size()/(position_size*3);
+
     if(offsets.back() != vertex_count)
+        return false;
+
+    // header consistency checks
+    if(header.contains("NB_STREAMLINES") &&
+        uint64_t(header["NB_STREAMLINES"].toInteger()) != offset_count-1)
+        return false;
+
+    if(header.contains("NB_VERTICES") &&
+        uint64_t(header["NB_VERTICES"].toInteger()) != vertex_count)
         return false;
 
     tipl::transformation_matrix<float,3> ras_to_voxel(voxel_to_ras);
     ras_to_voxel.inverse();
 
     tract_data.resize(offset_count-1);
+
     for(size_t s = 0;s+1 < offsets.size();++s)
     {
-        if(offsets[s] > offsets[s+1] || offsets[s+1] > vertex_count)
+        if(offsets[s] > offsets[s+1] ||
+            offsets[s+1] > vertex_count)
             return false;
 
         auto& tract = tract_data[s];
         tract.resize(size_t(offsets[s+1]-offsets[s])*3);
 
-        for(uint64_t i = offsets[s],j = 0;i < offsets[s+1];++i,j += 3)
+        for(uint64_t i = offsets[s],j = 0;
+             i < offsets[s+1];++i,j += 3)
         {
             float p[3];
+
             for(int k = 0;k < 3;++k)
                 p[k] = float(number(
                     positions.data()+(i*3+k)*position_size,
                     position_type));
 
             ras_to_voxel(p);
+
             tract[j]   = p[0];
             tract[j+1] = p[1];
             tract[j+2] = p[2];
@@ -955,6 +1009,7 @@ bool load_trx(const std::filesystem::path& file_name,
     // groups -> DSI's single cluster assignment
     tract_cluster.clear();
     tract_cluster_names.clear();
+
     std::vector<unsigned int> assignment(
         tract_data.size(),std::numeric_limits<unsigned int>::max());
 
@@ -975,38 +1030,51 @@ bool load_trx(const std::filesystem::path& file_name,
         for(size_t i = 0;i < group.size();i += 4)
         {
             uint32_t index =
-                u32(reinterpret_cast<const unsigned char*>(group.data()+i));
-            if(index < assignment.size() &&
-                assignment[index] == std::numeric_limits<unsigned int>::max())
+                u32(reinterpret_cast<const unsigned char*>(
+                    group.data()+i));
+
+            if(index >= assignment.size())
+                return false;
+
+            // DSI has one cluster per streamline.
+            // If TRX groups overlap, retain the first group encountered.
+            if(assignment[index] ==
+                std::numeric_limits<unsigned int>::max())
                 assignment[index] = id;
         }
     }
 
     if(!tract_cluster_names.empty())
     {
-        bool ungrouped = std::find(
-                             assignment.begin(),assignment.end(),
-                             std::numeric_limits<unsigned int>::max()) != assignment.end();
+        bool ungrouped =
+            std::find(assignment.begin(),assignment.end(),
+                      std::numeric_limits<unsigned int>::max()) !=
+            assignment.end();
 
         if(ungrouped)
         {
             unsigned int id = tract_cluster_names.size();
             tract_cluster_names.push_back("ungrouped");
+
             for(auto& v : assignment)
                 if(v == std::numeric_limits<unsigned int>::max())
                     v = id;
         }
+
         tract_cluster.swap(assignment);
     }
 
     // first scalar DPS compatible with streamline count
     loaded_values.clear();
+
     for(const auto& e : entries)
     {
         if(e.name.rfind("dps/",0) != 0)
             continue;
 
-        std::string type = e.name.substr(e.name.find_last_of('.')+1);
+        std::string type =
+            e.name.substr(e.name.find_last_of('.')+1);
+
         size_t n = dtype_size(type);
         if(!n || e.size != tract_data.size()*n)
             continue;
@@ -1016,14 +1084,17 @@ bool load_trx(const std::filesystem::path& file_name,
             return false;
 
         loaded_values.resize(tract_data.size());
+
         for(size_t i = 0;i < loaded_values.size();++i)
             loaded_values[i] =
                 float(number(dps.data()+i*n,type));
+
         break;
     }
 
     return true;
 }
+
 bool save_trx(const std::filesystem::path& file_name,
               const std::vector<std::vector<float> >& tract_data,
               const std::vector<unsigned int>& tract_cluster,
@@ -1051,46 +1122,58 @@ bool save_trx(const std::filesystem::path& file_name,
                              static_cast<unsigned char>(v >> 8)};
         out.write(reinterpret_cast<char*>(b),2);
     };
+
     auto w32 = [&](uint32_t v)
     {
         for(int i = 0;i < 4;++i)
             out.put(char(v >> (i*8)));
     };
+
     auto w64 = [&](uint64_t v)
     {
         for(int i = 0;i < 8;++i)
             out.put(char(v >> (i*8)));
     };
+
     auto pos = [&]()
     {
         return uint64_t(out.tellp());
     };
+
     auto write_data = [&](const void* ptr,uint64_t size)
     {
         auto* p = reinterpret_cast<const char*>(ptr);
+
         while(size)
         {
-            size_t n = size_t(std::min<uint64_t>(size,1 << 20));
+            size_t n =
+                size_t(std::min<uint64_t>(size,1 << 20));
+
             out.write(p,std::streamsize(n));
             p += n;
             size -= n;
         }
+
         return bool(out);
     };
 
     std::vector<entry_type> entries;
 
     // ZIP_STORE entry
-    auto add_entry = [&](const std::string& name,const void* data,uint64_t size)
+    auto add_entry =
+        [&](const std::string& name,const void* data,uint64_t size)
     {
         if(name.size() > 0xffff)
             return false;
 
         uint32_t crc = crc32(0L,Z_NULL,0);
         auto* p = reinterpret_cast<const Bytef*>(data);
+
         for(uint64_t left = size;left;)
         {
-            uInt n = uInt(std::min<uint64_t>(left,1 << 30));
+            uInt n =
+                uInt(std::min<uint64_t>(left,1 << 30));
+
             crc = crc32(crc,p,n);
             p += n;
             left -= n;
@@ -1103,17 +1186,21 @@ bool save_trx(const std::filesystem::path& file_name,
         w16(zip64 ? 45 : 20);
         w16(0);                 // flags
         w16(0);                 // STORE
-        w16(0); w16(0);         // time/date
+        w16(0);
+        w16(0);                 // time/date
         w32(crc);
+
         w32(zip64 ? 0xffffffff : uint32_t(size));
         w32(zip64 ? 0xffffffff : uint32_t(size));
+
         w16(uint16_t(name.size()));
         w16(zip64 ? 20 : 0);
+
         out.write(name.data(),std::streamsize(name.size()));
 
         if(zip64)
         {
-            w16(1);
+            w16(1);             // ZIP64 extra field
             w16(16);
             w64(size);
             w64(size);
@@ -1128,6 +1215,7 @@ bool save_trx(const std::filesystem::path& file_name,
 
     // DSI LPS -> TRX RAS+
     tipl::matrix<4,4> voxel_to_ras(trans_to_mni);
+
     for(int j = 0;j < 4;++j)
     {
         voxel_to_ras[j] = -voxel_to_ras[j];
@@ -1135,47 +1223,66 @@ bool save_trx(const std::filesystem::path& file_name,
     }
 
     size_t vertex_count = 0;
+
     for(const auto& tract : tract_data)
+    {
+        if(tract.size()%3)
+            return false;
         vertex_count += tract.size()/3;
+    }
 
     std::vector<float> positions;
     std::vector<uint64_t> offsets(tract_data.size()+1);
+
     positions.reserve(vertex_count*3);
 
-    tipl::transformation_matrix<float,3> voxel_to_world(voxel_to_ras);
+    tipl::transformation_matrix<float,3>
+        voxel_to_world(voxel_to_ras);
 
     for(size_t i = 0;i < tract_data.size();++i)
     {
         offsets[i] = positions.size()/3;
+
         for(size_t j = 0;j < tract_data[i].size();j += 3)
         {
             float p[3] = {
                           tract_data[i][j],
                           tract_data[i][j+1],
                           tract_data[i][j+2]};
+
             voxel_to_world(p);
+
             positions.insert(positions.end(),p,p+3);
         }
     }
+
     offsets.back() = positions.size()/3;
 
     QJsonArray dim{
-                   int(geo[0]),int(geo[1]),int(geo[2])};
+                   int(geo[0]),
+                   int(geo[1]),
+                   int(geo[2])};
 
     QJsonArray affine;
+
     for(int i = 0;i < 4;++i)
     {
         QJsonArray row;
+
         for(int j = 0;j < 4;++j)
             row.append(voxel_to_ras[i*4+j]);
+
         affine.append(row);
     }
 
     QJsonObject header;
+
     header["VOXEL_TO_RASMM"] = affine;
     header["DIMENSIONS"] = dim;
-    header["NB_STREAMLINES"] = double(tract_data.size());
-    header["NB_VERTICES"] = double(vertex_count);
+    header["NB_STREAMLINES"] =
+        double(tract_data.size());
+    header["NB_VERTICES"] =
+        double(vertex_count);
 
     QByteArray header_data =
         QJsonDocument(header).toJson(QJsonDocument::Compact);
@@ -1195,6 +1302,7 @@ bool save_trx(const std::filesystem::path& file_name,
     if(tract_cluster.size() == tract_data.size())
     {
         std::map<unsigned int,std::vector<uint32_t> > groups;
+
         for(size_t i = 0;i < tract_cluster.size();++i)
             groups[tract_cluster[i]].push_back(uint32_t(i));
 
@@ -1210,18 +1318,20 @@ bool save_trx(const std::filesystem::path& file_name,
                 if(ch == '/' || ch == '\\')
                     ch = '_';
 
-            if(!add_entry("groups/"+name+".uint32",
-                           group.second.data(),
-                           group.second.size()*sizeof(uint32_t)))
+            if(!add_entry(
+                    "groups/"+name+".uint32",
+                    group.second.data(),
+                    uint64_t(group.second.size()*sizeof(uint32_t))))
                 return false;
         }
     }
 
     if(loaded_values.size() == tract_data.size() &&
         !loaded_values.empty())
-        if(!add_entry("dps/dsi_loaded_values.float32",
-                       loaded_values.data(),
-                       loaded_values.size()*sizeof(float)))
+        if(!add_entry(
+                "dps/dsi_loaded_values.float32",
+                loaded_values.data(),
+                uint64_t(loaded_values.size()*sizeof(float))))
             return false;
 
     // central directory
@@ -1234,26 +1344,33 @@ bool save_trx(const std::filesystem::path& file_name,
             e.offset >= 0xffffffffULL;
 
         w32(0x02014b50);
-        w16(zip64 ? 45 : 20);
-        w16(zip64 ? 45 : 20);
-        w16(0);                 // flags
-        w16(0);                 // STORE
-        w16(0); w16(0);         // time/date
+        w16(zip64 ? 45 : 20);   // version made by
+        w16(zip64 ? 45 : 20);   // version needed
+        w16(0);                  // flags
+        w16(0);                  // STORE
+        w16(0);
+        w16(0);                  // time/date
         w32(e.crc);
+
         w32(zip64 ? 0xffffffff : uint32_t(e.size));
         w32(zip64 ? 0xffffffff : uint32_t(e.size));
+
         w16(uint16_t(e.name.size()));
         w16(zip64 ? 28 : 0);
-        w16(0);                 // comment
-        w16(0);                 // disk
-        w16(0);                 // internal attributes
-        w32(0);                 // external attributes
+        w16(0);                  // comment
+        w16(0);                  // disk
+        w16(0);                  // internal attributes
+        w32(0);                  // external attributes
+
         w32(zip64 ? 0xffffffff : uint32_t(e.offset));
-        out.write(e.name.data(),std::streamsize(e.name.size()));
+
+        out.write(
+            e.name.data(),
+            std::streamsize(e.name.size()));
 
         if(zip64)
         {
-            w16(1);
+            w16(1);              // ZIP64 extra field
             w16(24);
             w64(e.size);
             w64(e.size);
@@ -1262,30 +1379,36 @@ bool save_trx(const std::filesystem::path& file_name,
     }
 
     uint64_t central_size = pos()-central_offset;
+
     bool zip64 =
         entries.size() >= 0xffff ||
         central_offset >= 0xffffffffULL ||
         central_size >= 0xffffffffULL ||
-        std::any_of(entries.begin(),entries.end(),
-                    [](const entry_type& e)
-                    {
-                        return e.size >= 0xffffffffULL ||
-                               e.offset >= 0xffffffffULL;
-                    });
+        std::any_of(
+            entries.begin(),entries.end(),
+            [](const entry_type& e)
+            {
+                return e.size >= 0xffffffffULL ||
+                       e.offset >= 0xffffffffULL;
+            });
 
     if(zip64)
     {
         uint64_t zip64_offset = pos();
 
+        // ZIP64 end of central directory
         w32(0x06064b50);
         w64(44);
-        w16(45); w16(45);
-        w32(0); w32(0);
+        w16(45);
+        w16(45);
+        w32(0);
+        w32(0);
         w64(entries.size());
         w64(entries.size());
         w64(central_size);
         w64(central_offset);
 
+        // ZIP64 end of central directory locator
         w32(0x07064b50);
         w32(0);
         w64(zip64_offset);
@@ -1294,11 +1417,19 @@ bool save_trx(const std::filesystem::path& file_name,
 
     // normal EOCD is required even for ZIP64
     w32(0x06054b50);
-    w16(0); w16(0);
-    w16(zip64 ? 0xffff : uint16_t(entries.size()));
-    w16(zip64 ? 0xffff : uint16_t(entries.size()));
-    w32(zip64 ? 0xffffffff : uint32_t(central_size));
-    w32(zip64 ? 0xffffffff : uint32_t(central_offset));
+    w16(0);
+    w16(0);
+
+    w16(zip64 ? 0xffff :
+            uint16_t(entries.size()));
+    w16(zip64 ? 0xffff :
+            uint16_t(entries.size()));
+
+    w32(zip64 ? 0xffffffff :
+            uint32_t(central_size));
+    w32(zip64 ? 0xffffffff :
+            uint32_t(central_offset));
+
     w16(0);
 
     return bool(out);
