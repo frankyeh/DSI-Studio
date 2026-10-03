@@ -1856,6 +1856,7 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
     set_data("min_length",float(param.min_length));
     set_data("max_length",float(param.max_length));
 
+    param.tracking_method = renderWidget->getData("tracking_method").toInt();
     set_data("tracking_method",int(param.tracking_method));
     set_data("check_ending",int(param.check_ending));
     set_data("max_tract_count",int(param.max_tract_count));
@@ -1967,6 +1968,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QString("There are %1 values in the file. The matrix in the text file is not a square matrix.").arg(buf.size()));
             return;
         }
+        glWidget->connectivity.resize(tipl::shape<2>(dim,dim));
         std::copy(buf.begin(),buf.end(),glWidget->connectivity.begin());
     }
 
@@ -2073,7 +2075,7 @@ void tracking_window::start_reg(void)
 
 void tracking_window::insertPicture()
 {
-    QAction *action = qobject_cast<QAction *>(sender());
+    QAction *action = qobject_cast<QAction*>(sender());
     if(!action)
         return;
     if(action->text().contains("Sagittal"))
@@ -2253,7 +2255,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     if(!handle->map_to_mni())
     {
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
+        return ;
     }
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     atlas_dialog->exec();
@@ -2292,7 +2294,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     if(!handle->map_to_mni())
     {
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return ;
+        return;
     }
 
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
