@@ -966,6 +966,7 @@
     <addaction name="separator"/>
     <addaction name="actionTract_To_Region_Connectome"/>
     <addaction name="actionRegion_statistics"/>
+    <addaction name="actionRegion_Atlas_Intersection_Statistics"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -3537,6 +3538,14 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run show_region_statistics</string>
+   </property>
+  </action>
+  <action name="actionRegion_Atlas_Intersection_Statistics">
+   <property name="text">
+    <string>Region-Atlas Intersection Statistics...</string>
+   </property>
+   <property name="toolTip">
+    <string>run show_region_overlap_statistics</string>
    </property>
   </action>
   <action name="actionTract_Analysis_Report">
