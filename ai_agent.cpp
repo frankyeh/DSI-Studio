@@ -802,18 +802,12 @@ void AIAgent::closeEvent(QCloseEvent* event)
         if(auto* process = entry.second.processes)
         {
             process->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message right after this window tried to shut everything down
-            if(entry.second.provider == "Codex" || entry.second.provider == "Claude" ||
-               entry.second.provider == "Muse" || entry.second.provider == "Antigravity")
+            process->closeWriteChannel();
+            QTimer::singleShot(5000,process,[process]
             {
-                process->closeWriteChannel();
-                QTimer::singleShot(5000,process,[process]
-                {
-                    if(process->state() != QProcess::NotRunning)
-                        process->kill();
-                });
-            }
-            else
-                process->kill();
+                if(process->state() != QProcess::NotRunning)
+                    process->kill();
+            });
         }
     disconnect_github_issue();
     QMainWindow::closeEvent(event);
@@ -892,15 +886,12 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         // what the caller names itself -- it can't send a live chat message or have its model changed from
         // the GUI (see current_send_action()/on_ai_agent_status_clicked())
         found = ai_info::create(session,"AgentServer",agent);
-        set_ai_status(found->sessions,session_status::Thinking,"Agent request received"); // save_config() skips a still-New session
         if(auto model = request["model"].toString().trimmed();!model.isEmpty())
             found->model_settings["model"] = model;
-        found->save_config();
     }
     ai_info& info = *found;
     set_ai_status(session,session_status::Thinking,"Processing agent request");
 
-    reply.clear();
     ai_log("received: "+QString::fromUtf8(data));
     auto chat = request["chat"].toString().trimmed();
     auto reasoning = request["reasoning"].toString().trimmed();
@@ -921,17 +912,15 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         set_ai_status(session,session_status::WaitingUser,
                       "Request completed; waiting for next request.");
 
-    {
-        auto entry = info.record_reply(chat,reasoning);
-        if(!info.prompts.isEmpty())
-            result["prompt"] = QJsonArray::fromStringList(info.prompts);
-        reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
-        ai_log(QString("reply for %1@%2: %3 ...")
-                   .arg(info.agent_name,session,
-                        QString::fromUtf8(reply).left(32)));
-        info.prompts.clear();
-        show_ai_project(info,entry);
-    }
+    auto entry = info.record_reply(chat,reasoning);
+    if(!info.prompts.isEmpty())
+        result["prompt"] = QJsonArray::fromStringList(info.prompts);
+    reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
+    ai_log(QString("reply for %1@%2: %3 ...")
+               .arg(info.agent_name,session,
+                    QString::fromUtf8(reply).left(32)));
+    info.prompts.clear();
+    show_ai_project(info,entry);
 }
 
 void AIAgent::update_current_window(QWidget* window)
@@ -1924,14 +1913,6 @@ void AIAgent::try_set_current_model(const QString& name) // writes the app-wide 
     current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
 }
 
-void AIAgent::set_chat_model(ai_info& info,const QString& name) const // writes directly into this chat's own model_settings; same name resolution as try_set_current_model()
-{
-    auto profiles = agent_entries.value(info.provider).profiles;
-    info.model_settings["model"] = name;
-    info.model_settings["info"] = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
-    info.save_config();
-}
-
 ai_info* AIAgent::selected_info() const
 {
     auto* item = ui->ai_project_list->currentItem();
@@ -2375,7 +2356,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     return true;
 }
 
-ai_info* AIAgent::create_new_chat(const QString& provider,const QString& agent)
+void AIAgent::create_new_chat(const QString& provider,const QString& agent)
 {
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
@@ -2402,7 +2383,6 @@ ai_info* AIAgent::create_new_chat(const QString& provider,const QString& agent)
     set_ai_status(info->sessions,session_status::New,"Ready for a message.");
     show_ai_project(*info);
     ui->ai_project_list->setCurrentItem(info->project_items);
-    return info;
 }
 
 void AIAgent::new_chat_dialog(bool resume)
@@ -2421,10 +2401,7 @@ void AIAgent::new_chat_dialog(bool resume)
                              provider,value))
         return;
     bool is_github = provider == "GitHub";
-    // no early web_agent_session_id.clear() here: disconnect_github_issue() (below, and inside
-    // start_new_local_chat()) needs it to still name the old chat so that chat gets marked Completed;
-    // create_new_chat("GitHub","GitHub (ChatGPT, Muse, ...)") already reassigns it for a fresh (non-resume) web chat, and
-    // start_new_local_chat() clears it itself once the old channel is actually disconnected
+    // Keep web_agent_session_id until disconnect_github_issue() marks the old chat Completed.
 
     if(is_github)
     {
@@ -2437,11 +2414,6 @@ void AIAgent::new_chat_dialog(bool resume)
 
     current_agent = provider;
     try_set_current_model(value);
-    start_new_local_chat();
-}
-
-void AIAgent::start_new_local_chat() // creates a fresh chat with the current default agent/model and prepares the compose box for it
-{
     disconnect_github_issue(); // leaving web-agent mode for a local chat -- marks the old web chat Completed via web_agent_session_id, so clear that only after
     web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
@@ -2487,7 +2459,12 @@ void AIAgent::on_ai_agent_status_clicked()
         if(dialog.exec() != QDialog::Accepted)
             return;
 
-        set_chat_model(*info,model_combo_key(model)); // this chat's own model, not the app-wide default
+        auto name = model_combo_key(model);
+        auto profiles = agent_entries.value(info->provider).profiles;
+        info->model_settings["model"] = name;
+        info->model_settings["info"] =
+            profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
+        info->save_config();
         update_agent_status_label();
         return;
     }

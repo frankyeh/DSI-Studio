@@ -71,7 +71,6 @@ class AIAgent : public QMainWindow
     void update_agent_status_label();
     bool can_start_agent(const QString& provider,const QJsonObject& model_info) const;
     void try_set_current_model(const QString& name); // name is always written as-is, even if unknown to profiles (the model combo is editable, so a typed name is meaningful, not a mistake); writes the app-wide default above, not any chat's own model
-    void set_chat_model(ai_info& info,const QString& name) const; // same resolution as try_set_current_model(), but writes directly into this chat's own model_settings and persists it
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
     QNetworkAccessManager github_manager;
@@ -102,8 +101,7 @@ class AIAgent : public QMainWindow
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     bool setup_github_token();
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
-    void start_new_local_chat(); // creates a chat with the current default agent/model (current_agent/current_model_name) and prepares the compose box for it
-    ai_info* create_new_chat(const QString& provider,const QString& agent = {});
+    void create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               QString& provider,QString& value); // value: model name for a local agent, issue URL for the GitHub agent
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
