@@ -2176,9 +2176,11 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     issue_row->addWidget(&paste_issue);
     issue_card_layout->addWidget(issue_field_frame);
 
-    QPushButton setup_issue("Ask AI Agent...");
+    QPushButton setup_issue_chatgpt("Ask ChatGPT...");
+    QPushButton setup_issue_muse("Ask Muse...");
     auto* issue_button_row = new QHBoxLayout;
-    issue_button_row->addWidget(&setup_issue);
+    issue_button_row->addWidget(&setup_issue_chatgpt);
+    issue_button_row->addWidget(&setup_issue_muse);
     issue_button_row->addStretch();
     issue_card_layout->addLayout(issue_button_row);
     web_layout->addWidget(issue_card);
@@ -2206,7 +2208,8 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         setup_token.setText(has_token ? "GitHub token ready ✓" : "Set up GitHub token");
         for(auto* widget : {static_cast<QWidget*>(&issue_url_edit),
                             static_cast<QWidget*>(&paste_issue),
-                            static_cast<QWidget*>(&setup_issue)})
+                            static_cast<QWidget*>(&setup_issue_chatgpt),
+                            static_cast<QWidget*>(&setup_issue_muse)})
             widget->setEnabled(has_token);
         set_helper(has_token ?
             "GitHub access is ready. Create or paste the session issue URL." :
@@ -2250,20 +2253,23 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
         else
             set_helper("No GitHub issue URL was found in the clipboard.");
     });
-    connect(&setup_issue,&QPushButton::clicked,&dialog,[&]
+    auto setup_with_agent = [&](const QString& agent_name,const QString& agent_url)
     {
         QApplication::clipboard()->setText(
-            "I want to connect an AI agent (ChatGPT, Muse, ...) to DSI Studio.\n\n"
+            "I want to connect "+agent_name+" to DSI Studio.\n\n"
             "First read the public GitHub file:\n\n"
             "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GITHUB_ISSUE_SESSION.md\n\n"
             "Follow its instructions for starting a new AI agent GitHub issue session. "
-            "Use the GitHub tools available to the AI agent. If GitHub is unavailable, guide me through enabling it first. "
+            "Use the GitHub tools available to you. If GitHub is unavailable, guide me through enabling it first. "
             "Create or select an appropriate private personal GitHub repository, preferably DSI-Studio-Connect, "
             "create the required session issue, and clearly give me the complete Issue URL to paste into DSI Studio.\n\n"
             "Do not send DSI Studio commands until I confirm that DSI Studio is connected to the issue.");
-        QDesktopServices::openUrl(QUrl("https://chatgpt.com/"));
-        set_helper("Setup instructions copied. Paste them into the AI agent. When the AI agent gives you an Issue URL, return here and click Paste.");
-    });
+        QDesktopServices::openUrl(QUrl(agent_url));
+        set_helper("Setup instructions copied. Paste them into "+agent_name+
+                   ". When "+agent_name+" gives you an Issue URL, return here and click Paste.");
+    };
+    connect(&setup_issue_chatgpt,&QPushButton::clicked,&dialog,[&]{ setup_with_agent("ChatGPT","https://chatgpt.com/"); });
+    connect(&setup_issue_muse,&QPushButton::clicked,&dialog,[&]{ setup_with_agent("Muse","https://muse.ai"); });
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
@@ -2296,7 +2302,10 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
             if(settings.value("ai/github_token").toString().trimmed().isEmpty())
                 return setup_token.click();
             if(issue_url_edit.text().trimmed().isEmpty())
-                return setup_issue.click();
+            {
+                set_helper("Choose ChatGPT or Muse below to create the session issue, then paste its URL.");
+                return;
+            }
         }
         dialog.accept();
     });
