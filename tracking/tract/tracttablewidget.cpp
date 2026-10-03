@@ -285,6 +285,19 @@ void TractTableWidget::show_tracking_progress(void)
 
 void TractTableWidget::fetch_tracts(void)
 {
+    // Guard against re-entrant timer invocations. trim() below can take longer than the
+    // 500ms timer interval and pump the event loop, letting the timer fire again while a
+    // previous fetch_tracts is still running. A nested run would reset thread_data[index]
+    // out from under the outer run, crashing it at the item() updates below.
+    static bool in_fetch_tracts = false;
+    if(in_fetch_tracts)
+        return;
+    struct ReentrancyGuard
+    {
+        bool& flag;
+        explicit ReentrancyGuard(bool& f):flag(f){flag = true;}
+        ~ReentrancyGuard(){flag = false;}
+    } guard(in_fetch_tracts);
     bool has_tracts = false;
     bool has_thread = false;
     for(unsigned int index = 0;index < thread_data.size();++index)
