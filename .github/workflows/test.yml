@@ -2,10 +2,40 @@ name: DSI Studio Test
 
 on:
   workflow_dispatch:
+    inputs:
+      run_linux:
+        type: boolean
+        description: 'Run Linux tests'
+        required: false
+        default: true
+      run_windows:
+        type: boolean
+        description: 'Run Windows tests'
+        required: false
+        default: true
+      run_macos:
+        type: boolean
+        description: 'Run macOS tests'
+        required: false
+        default: true
   workflow_call:
+    inputs:
+      run_linux:
+        type: boolean
+        required: false
+        default: true
+      run_windows:
+        type: boolean
+        required: false
+        default: true
+      run_macos:
+        type: boolean
+        required: false
+        default: true
 
 jobs:
   linux-build:
+    if: ${{ inputs.run_linux }}
     name: Linux build
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +63,7 @@ jobs:
           path: dsi-studio
 
   windows-build:
+    if: ${{ inputs.run_windows }}
     name: Windows build
     runs-on: windows-2022
     steps:
@@ -63,6 +94,7 @@ jobs:
           path: dsi_studio_win
 
   macos-build:
+    if: ${{ inputs.run_macos }}
     name: macOS ARM build
     runs-on: macos-14
     steps:
@@ -205,7 +237,7 @@ jobs:
 
               mv ./data/*/*.nii.gz ./data
               cd data
-              dsi_studio --action=img --source=*.nii.gz --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../
+              dsi_studio --action=img --source=*.nii.gz --cmd=change_type:3+bias_field_correction+normalize_otsu_median+change_type:0 --output=sub-01_ses-forrestgump_T1w_norm.nii.gz
               ;;
 
             image-processing)
