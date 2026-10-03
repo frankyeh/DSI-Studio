@@ -369,7 +369,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     // snapshot now, so a later new-chat edit cannot swap the identity mid-poll (github_request() uses this member for the whole session)
     github_token = settings.value("ai/github_token").toString().trimmed();
     if(github_token.isEmpty())
-        return error = "no GitHub token configured; set one when starting the ChatGPT Web agent "
+        return error = "no GitHub token configured; set one when starting the Web agent "
                         "(GitHub requires an authenticated request for every write, "
                         "including editing a comment on a public issue)",false;
 
@@ -1843,7 +1843,7 @@ void AIAgent::update_agent_status_label()
             // try_connect_github_issue()), so this chat's own record is always current -- no need to prefer
             // the live github_issue_api over it
             auto path = info->model_settings["github_issue_url"].toString();
-            ui->ai_agent_status->setText(path.isEmpty() ? "ChatGPT(Web)" : "ChatGPT(Web)"+dot+path);
+            ui->ai_agent_status->setText(path.isEmpty() ? "Web (ChatGPT, Muse, ...)" : "Web (ChatGPT, Muse, ...)"+dot+path);
         }
         else // a local chat (its own model, since it can differ from the app-wide default once changed) or
              // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
@@ -1950,7 +1950,7 @@ bool AIAgent::setup_github_token()
     auto* title = new QLabel("Connect a GitHub issue channel");
     title->setObjectName("ai_dialog_title");
     auto* subtitle = new QLabel(
-        "DSI Studio sends and receives ChatGPT (Web) requests through a private repository issue. "
+        "DSI Studio sends and receives Web agent (ChatGPT, Muse, ...) requests through a private repository issue. "
         "Set this up once: a repository, then a token scoped to it.");
     subtitle->setObjectName("ai_dialog_subtitle");
     subtitle->setWordWrap(true);
@@ -2048,7 +2048,7 @@ bool AIAgent::setup_github_token()
             "5. Issues access: choose Read and write.\n"
             "6. Click Generate token.\n"
             "7. Copy the token and click Paste in the DSI Studio dialog.\n"
-            "Never paste the token into ChatGPT or a GitHub issue.");
+            "Never paste the token into a web agent or a GitHub issue.");
         QDesktopServices::openUrl(QUrl("https://github.com/settings/personal-access-tokens/new"));
         set_helper("Instructions copied. Create and copy the token in GitHub, then return here and click Paste.");
     });
@@ -2090,7 +2090,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     agent.addItem("Claude",QString("Claude"));
     agent.addItem("Muse",QString("Muse"));
     agent.addItem("Antigravity",QString("Antigravity"));
-    agent.addItem("ChatGPT (Web)",QString("ChatGPT"));
+    agent.addItem("Web (ChatGPT, Muse, ...)",QString("ChatGPT"));
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
     auto ready = [&](const QString& provider)
     {
@@ -2159,7 +2159,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     issue_card_layout->setSpacing(8);
     auto* issue_heading = new QLabel("Session issue");
     issue_heading->setObjectName("ai_step_heading");
-    auto* issue_body = new QLabel("Ask ChatGPT to create the issue, then paste its URL below.");
+    auto* issue_body = new QLabel("Ask a web agent (ChatGPT, Muse, ...) to create the issue, then paste its URL below.");
     issue_body->setObjectName("ai_step_body");
     issue_body->setWordWrap(true);
     issue_card_layout->addWidget(issue_heading);
@@ -2176,7 +2176,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     issue_row->addWidget(&paste_issue);
     issue_card_layout->addWidget(issue_field_frame);
 
-    QPushButton setup_issue("Ask ChatGPT...");
+    QPushButton setup_issue("Ask Web Agent...");
     auto* issue_button_row = new QHBoxLayout;
     issue_button_row->addWidget(&setup_issue);
     issue_button_row->addStretch();
@@ -2253,16 +2253,16 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     connect(&setup_issue,&QPushButton::clicked,&dialog,[&]
     {
         QApplication::clipboard()->setText(
-            "I want to connect ChatGPT (Web) to DSI Studio.\n\n"
+            "I want to connect a web AI agent (ChatGPT, Muse, ...) to DSI Studio.\n\n"
             "First read the public GitHub file:\n\n"
             "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GITHUB_ISSUE_SESSION.md\n\n"
-            "Follow its instructions for starting a new ChatGPT (Web) GitHub issue session. "
-            "Use the GitHub tools available in ChatGPT. If GitHub is unavailable, guide me through enabling it first. "
+            "Follow its instructions for starting a new Web agent GitHub issue session. "
+            "Use the GitHub tools available in the web agent. If GitHub is unavailable, guide me through enabling it first. "
             "Create or select an appropriate private personal GitHub repository, preferably DSI-Studio-Connect, "
             "create the required session issue, and clearly give me the complete Issue URL to paste into DSI Studio.\n\n"
             "Do not send DSI Studio commands until I confirm that DSI Studio is connected to the issue.");
         QDesktopServices::openUrl(QUrl("https://chatgpt.com/"));
-        set_helper("Setup instructions copied. Paste them into ChatGPT. When ChatGPT gives you an Issue URL, return here and click Paste.");
+        set_helper("Setup instructions copied. Paste them into the web agent. When the web agent gives you an Issue URL, return here and click Paste.");
     });
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
@@ -2358,14 +2358,14 @@ void AIAgent::new_chat_dialog(bool resume)
     bool web = provider == "ChatGPT";
     // no early web_agent_session_id.clear() here: disconnect_github_issue() (below, and inside
     // start_new_local_chat()) needs it to still name the old chat so that chat gets marked Completed;
-    // create_new_chat("ChatGPT","ChatGPT(Web)") already reassigns it for a fresh (non-resume) web chat, and
+    // create_new_chat("ChatGPT","Web (ChatGPT, Muse, ...)") already reassigns it for a fresh (non-resume) web chat, and
     // start_new_local_chat() clears it itself once the old channel is actually disconnected
 
     if(web)
     {
         disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         if(!resume)
-            create_new_chat("ChatGPT","ChatGPT(Web)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
+            create_new_chat("ChatGPT","Web (ChatGPT, Muse, ...)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
         try_connect_github_issue(value);
         return;
     }
@@ -2437,7 +2437,7 @@ void AIAgent::on_ai_agent_status_clicked()
         // same ownership setup new_chat_dialog() does for a fresh web chat -- try_connect_github_issue()
         // assumes web_agent_session_id already names a real chat, which nothing else here would have arranged
         disconnect_github_issue(); // leave any old channel cleanly before attempting a different one
-        create_new_chat("ChatGPT","ChatGPT(Web)");
+        create_new_chat("ChatGPT","Web (ChatGPT, Muse, ...)");
         try_connect_github_issue(value);
         return;
     }
@@ -2624,7 +2624,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     github_layout->setSpacing(8);
     auto* github_heading = new QLabel("GitHub access");
     github_heading->setObjectName("ai_step_heading");
-    auto* github_body = new QLabel("Required to connect a ChatGPT (Web) session through a GitHub issue.");
+    auto* github_body = new QLabel("Required to connect a Web agent session through a GitHub issue.");
     github_body->setObjectName("ai_step_body");
     github_body->setWordWrap(true);
     github_layout->addWidget(github_heading);
