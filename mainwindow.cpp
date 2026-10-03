@@ -425,7 +425,8 @@ void MainWindow::openFile(QStringList file_names)
         else
         if(name.endsWith(".tt.gz") ||
            name.endsWith(".trk") ||
-           name.endsWith(".trk.gz"))
+           name.endsWith(".trk.gz") ||
+           name.endsWith(".trx"))
         {
             auto file_list = QFileInfo(file_name).dir().entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
             file_list << QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
@@ -659,7 +660,7 @@ bool MainWindow::loadFib(QString filename)
     }
     tracking_windows.back()->showNormal();
     tracking_windows.back()->resize(1200,700);
-    if(tipl::ends_with(filename.toStdString(),{".trk.gz",".trk",".tck",".tt.gz"}))
+    if(tipl::ends_with(filename.toStdString(),{".trk.gz",".trk",".tck",".tt.gz",".trx"}))
     {
         tracking_windows.back()->command({"open_tract",filename.toStdString()});
         if(filename.endsWith(".tck"))
