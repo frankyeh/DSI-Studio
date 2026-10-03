@@ -4,6 +4,7 @@
 #include <ctime>
 #include <random>
 #include <memory>
+#include <mutex>
 
 #include "roi.hpp"
 #include "tracking_method.hpp"
@@ -65,6 +66,11 @@ public:
         return running.empty() ? true : std::find(running.begin(),running.end(),1) == running.end();
     }
 public:
+    // Serializes the double-buffer handoff: a worker's (read buffer_switch + emplace)
+    // must be mutually exclusive with fetchTracks' (drain + flip buffer_switch).
+    // Without this, a worker preempted between reading buffer_switch and emplacing can
+    // write into the buffer fetchTracks is concurrently draining -> heap corruption.
+    std::mutex buffer_mutex;
     bool buffer_switch = true;
     std::vector<std::vector<std::vector<float> > > track_buffer_back,track_buffer_front;
     void end_thread(void);

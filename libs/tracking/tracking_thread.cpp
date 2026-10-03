@@ -172,7 +172,10 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             if(ptr.first)
             {
                 if(global_tract_count_atom++ < max_tract_count)
+                {
+                    std::lock_guard<std::mutex> lock(buffer_mutex);
                     (buffer_switch ? track_buffer_front[thread_id] : track_buffer_back[thread_id]).emplace_back(ptr.first,ptr.second);
+                }
                 else
                     break;
             }
@@ -191,6 +194,7 @@ bool ThreadData::fetchTracks(TractModel* handle)
     bool has_track = false;
     if(handle->parameter_id.empty())
         handle->parameter_id = param.get_code();
+    std::lock_guard<std::mutex> lock(buffer_mutex);
     auto& buffer_at_rest = buffer_switch ? track_buffer_back : track_buffer_front;
     for(auto& tract_per_thread : buffer_at_rest)
         if(!tract_per_thread.empty())
