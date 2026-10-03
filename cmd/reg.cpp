@@ -145,7 +145,7 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
 template<bool direction,typename reg_type>
 bool apply_warping(const reg_type& reg,const std::string& input,const std::string& output)
 {
-    if(tipl::ends_with(input,".tt.gz"))
+    if(tipl::ends_with(input,{".tt.gz",".trx"}))
         return apply_warping_tt<direction>(reg,input,output);
     if(tipl::ends_with(input,{".nii.gz",".nii"}))
         return apply_warping_nii<direction>(reg,input,output);
