@@ -48,6 +48,47 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     }
     result = out.str();
 }
+
+bool get_region_overlap_statistics(std::shared_ptr<fib_data> handle,
+                                   const ROIRegion& region,
+                                   const std::string& atlas_name,
+                                   std::string& result)
+{
+    auto at = handle->get_atlas(atlas_name);
+    if(!at)
+        return false;
+
+    std::vector<std::vector<tipl::vector<3,short>>> atlas_regions;
+    std::vector<std::string> names;
+    if(!handle->get_atlas_all_roi(
+            at,region.dim,region.to_diffusion_space,
+            atlas_regions,names))
+        return false;
+
+    auto mask = region.to_mask();
+    std::vector<std::shared_ptr<ROIRegion>> overlaps;
+    for(size_t i = 0;i < atlas_regions.size();++i)
+    {
+        auto& points = atlas_regions[i];
+        points.erase(std::remove_if(points.begin(),points.end(),[&](const auto& p)
+                                    {
+                                        return !region.dim.is_valid(p) || !mask.at(p);
+                                    }),points.end());
+
+        if(points.empty())
+            continue;
+
+        auto overlap = std::make_shared<ROIRegion>(handle);
+        overlap->copy_space(region);
+        overlap->name = names[i];
+        overlap->add_points(std::move(points));
+        overlaps.push_back(std::move(overlap));
+    }
+
+    get_regions_statistics(handle,overlaps,result);
+    return true;
+}
+
 void load_nii_label(const std::filesystem::path& filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
