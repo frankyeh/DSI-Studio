@@ -1467,6 +1467,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             if(run->source != command_source::User)
                 return run->failed("usage: mark_region_on_slices <region index> <intensity ratio>");
+            cmd[1] = std::to_string(region_index); // record GUI-supplied region for replay
         }
         else
         {
@@ -1488,6 +1489,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
             if(!ok)
                 return run->canceled();
+            cmd[2] = std::to_string(ratio); // record GUI-supplied ratio for replay
         }
         else
             ratio = run->from_cmd(2,1.0);
@@ -1524,6 +1526,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
             if(!ok)
                 return run->canceled();
+            cmd[1] = std::to_string(ratio); // record GUI-supplied ratio for replay
         }
         else
             ratio = run->from_cmd(1,1.0);
