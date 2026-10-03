@@ -1060,6 +1060,12 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
     };
 
     const bool show_reasoning = settings.value("ai/show_reasoning",false).toBool(); // read once: append() runs per history entry
+    auto hidden_assistant = [&](const QJsonObject& entry)
+    {
+        return entry["type"] == "assistant" &&
+               entry["text"].toString().trimmed().isEmpty() &&
+               (!show_reasoning || entry["reasoning"].toString().trimmed().isEmpty());
+    };
     auto append = [&](const QJsonObject& entry,const QStringList& activities = {})
     {
         bool user = entry["type"] == "user";
@@ -1108,7 +1114,8 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
                 index+1 < history.size() &&
                 history[index+1]["type"] == "request";
 
-            if(entry["type"] != "request" && !attach_requests)
+            if(entry["type"] != "request" &&
+               !hidden_assistant(entry) && !attach_requests)
             {
                 append(entry);
                 ++index;
@@ -1116,7 +1123,7 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
             }
 
             QJsonObject owner;
-            if(attach_requests)
+            if(entry["type"] == "assistant")
             {
                 owner = entry;
                 ++index;
@@ -1139,10 +1146,13 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
                 commands.clear();
             };
 
-            for(;index < history.size() &&
-                   history[index]["type"] == "request";++index)
+            for(;index < history.size();++index)
             {
                 const auto& request = history[index];
+                if(hidden_assistant(request))
+                    continue;
+                if(request["type"] != "request")
+                    break;
 
                 auto request_target = request["title"].toString();
                 request_target +=
