@@ -528,8 +528,24 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         return tipl::error() << "no region assigned",1;
 
     std::string result;
-    tipl::out() << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
-    get_regions_statistics(handle,regions,result);
+    if(po.has("overlap"))
+    {
+        if(regions.size() != 1)
+            return tipl::error() << "--overlap requires a single region",1;
+
+        auto atlas_name = po.get("overlap");
+        tipl::out() << "calculating overlap statistics with " << atlas_name;
+
+        if(!get_region_overlap_statistics(
+                handle,*regions.front(),atlas_name,result))
+            return tipl::error() << handle->error_msg,1;
+    }
+    else
+    {
+        tipl::out() << "calculating region statistics at a total of "
+                    << regions.size() << " regions" << std::endl;
+        get_regions_statistics(handle,regions,result);
+    }
 
     std::filesystem::path file_name = po.get("source")+".statistics.txt";
     if(po.has("output"))
