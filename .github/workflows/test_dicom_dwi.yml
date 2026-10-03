@@ -80,9 +80,9 @@ jobs:
             input="data/$path"
             find "$input" -type f -name '*.gz' -exec gzip -d {} +
 
-            dsi_studio --action=src --source="$input"
-
             rm -rf "$RUNNER_TEMP/dicom_ren"
             cp -a "$input" "$RUNNER_TEMP/dicom_ren"
+
+            dsi_studio --action=src --source="$input"
             dsi_studio --action=ren --source="$RUNNER_TEMP/dicom_ren"
           done
