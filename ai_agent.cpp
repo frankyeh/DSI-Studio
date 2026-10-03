@@ -3,14 +3,12 @@
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCloseEvent>
-#include <QColor>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
-#include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -48,9 +46,6 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
-#include <cstring>
-#include <unordered_map>
-
 #include "ai_agent.hpp"
 #include "cmd/ai.hpp"
 #include "ui_ai_agent.h"
@@ -311,9 +306,7 @@ AIAgent::AIAgent(MainWindow* parent):
         // reads this chat's own model_settings directly, and merely looking at a chat shouldn't change what the
         // next New Chat starts with
         update_agent_status_label();
-        ui->ai_chat_history->clear(); // a newly selected chat opens at its latest message
         show_ai_project(*info);
-        update_send_button();
     });
 
     for(const auto& info : QDir(ai_project_dir).entryInfoList(
@@ -497,7 +490,6 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     github_last_id = last_id;
     github_pending_result = QJsonObject();
     github_timer.start(500);
-    update_send_button();
 
     // a request can have been executed (side effects already ran) without its result ever being
     // confirmed published, e.g. DSI Studio exited in between; the durable marker written just before
@@ -647,7 +639,6 @@ void AIAgent::poll_github_issue()
         bool include_log = request_obj["include_log"].toBool();
         request_obj.remove("id");
         request_obj.remove("include_log");
-        request_obj["agent"] = "GitHub";
 
         auto session_id = request_obj["session"].toString();
         bool set_title = !ai_info::find(session_id);
@@ -655,7 +646,7 @@ void AIAgent::poll_github_issue()
         if(web_info && web_info->status == session_status::New)
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
-        if(auto* info = ai_info::create(session_id,"GitHub","GitHub")) // records which issue this session is bound to, so a restart can auto-resume polling it
+        if(auto* info = ai_info::create(session_id,"GitHub","GitHub")) // records which issue this session is bound to so Resume can reconnect it
         {
             set_ai_status(info->sessions,session_status::Thinking,"GitHub request received");
             // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
@@ -1102,7 +1093,10 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
                          cell+"<td width=\"20%\"></td>"));
     };
 
-    if(added_type.isEmpty() || added_type == "request")
+    if(added_type.isEmpty() || added_type == "request" ||
+       (added_type == "assistant" &&
+        history.size() > 1 &&
+        history[history.size()-2]["type"] == "request"))
     {
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();)
@@ -1817,7 +1811,6 @@ bool AIAgent::try_connect_github_issue(const QString& url)
         set_ai_status(info->sessions,info->status == session_status::New ?
                       session_status::New : session_status::Thinking,
                       "Connecting to "+url);
-    update_send_button();
     update_agent_status_label();
     tipl::out() << "connecting to GitHub issue: " << url.toStdString();
 
@@ -1864,7 +1857,6 @@ bool AIAgent::try_connect_github_issue(const QString& url)
             QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
         info->save_config();
     }
-    update_send_button();
     update_agent_status_label();
     return true;
 }
@@ -2438,16 +2430,15 @@ void AIAgent::new_chat_dialog(bool resume)
     start_new_local_chat();
 }
 
-ai_info* AIAgent::start_new_local_chat() // shared by new_chat_dialog() and Send-with-nothing-selected: creates a fresh chat with the current default agent/model and prepares the compose box for it
+void AIAgent::start_new_local_chat() // creates a fresh chat with the current default agent/model and prepares the compose box for it
 {
     disconnect_github_issue(); // leaving web-agent mode for a local chat -- marks the old web chat Completed via web_agent_session_id, so clear that only after
     web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
     // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
-    auto* info = create_new_chat(current_agent);
+    create_new_chat(current_agent);
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
-    return info;
 }
 
 void AIAgent::on_ai_new_chat_clicked()
@@ -2770,23 +2761,17 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     auto provider = info.provider;
     auto session = info.sessions; // captured by value below for every async handler -- info itself must never be captured across them (Codex can still rename/rekey the session)
 
-    // a failed launch still owes the caller's message a home: queued as a pending prompt on the
-    // session so the next successful run picks it up, rather than silently dropping it
-    auto preserve_pending = [&]()
-    {
-        if(input == ai_input::Pending)
-            info.prompts.append(text);
-    };
     auto fail_launch = [&](QString message)
     {
         if(!message.startsWith("ERROR:"))
             message.prepend("ERROR: ");
-        preserve_pending();
+        // A failed launch still owes a pending message a home so the next successful run picks it up.
+        if(input == ai_input::Pending)
+            info.prompts.append(text);
         set_ai_status(session,info.status == session_status::New ?
                       session_status::New : session_status::Failed,message);
         add_ai_history(info,"activity",message);
         info.save_config();
-        show_ai_project(info);
     };
 
     // Resolve agent
@@ -3651,13 +3636,8 @@ void AIAgent::on_ai_send_message_clicked()
             info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         }
         return;
-    case send_action::Send: // reachable when info exists and isn't AgentServer, or when nothing is selected but there's text to send, see current_send_action()
-        if(!info && !can_start_agent(current_agent,current_model_info))
-        {
-            on_ai_quick_settings_clicked();
-            return;
-        }
-        start_ai(*(info ? info : start_new_local_chat()),text,ai_input::User);
+    case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
+        start_ai(*info,text,ai_input::User);
         update_send_button();
         return;
     }
