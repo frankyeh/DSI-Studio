@@ -69,7 +69,6 @@ class AIAgent : public QMainWindow
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
     void update_agent_status_label();
-    bool can_start_agent(const QString& provider,const QJsonObject& model_info) const;
     void try_set_current_model(const QString& name); // writes the selected model, or an empty name for the default, to the app-wide settings above
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
