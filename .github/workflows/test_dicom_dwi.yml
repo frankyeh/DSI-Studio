@@ -35,7 +35,7 @@ jobs:
           path: dsi-studio
 
   dicom-test:
-    name: ${{ matrix.dataset }}
+    name: ${{ matrix.dataset }} - ${{ matrix.input }}
     needs: linux-build
     runs-on: ubuntu-latest
     strategy:
@@ -43,17 +43,31 @@ jobs:
       matrix:
         include:
           - dataset: dcm_qa_dti
-            inputs: In/Prisma
+            input: In/Prisma
           - dataset: dcm_qa_philips
-            inputs: In/Bangalore_2008/dwi_no-phi In/Rosetta_2013/1101 In/Vanderbilt_2018/601_WIP_dti_ax
+            input: In/Bangalore_2008/dwi_no-phi
+          - dataset: dcm_qa_philips
+            input: In/Rosetta_2013/1101
+          - dataset: dcm_qa_philips
+            input: In/Vanderbilt_2018/601_WIP_dti_ax
           - dataset: dcm_qa_philips_dwi
-            inputs: In/cl/DICOM In/enh/DICOM
+            input: In/cl/DICOM
+          - dataset: dcm_qa_philips_dwi
+            input: In/enh/DICOM
           - dataset: dcm_qa_sag
-            inputs: In/4_DWI_SagAPmosaic In/5_DWI_SagHFmosaic In/6_DWI_SagAP In/7_DWI_SagHF
+            input: In/4_DWI_SagAPmosaic
+          - dataset: dcm_qa_sag
+            input: In/5_DWI_SagHFmosaic
+          - dataset: dcm_qa_sag
+            input: In/6_DWI_SagAP
+          - dataset: dcm_qa_sag
+            input: In/7_DWI_SagHF
           - dataset: dcm_qa_xa30
-            inputs: In/10_DWI_dir80_PA In/11_DWI_dir80_PA In/12_DWI_dir80_PA In/13_DWI_dir80_PA In/14_DWI_dir80_PA In/15_DWI_dir80_PA In/16_DWI_dir80_PA In/17_DWI_dir80_AP In/18_DWI_dir80_AP In/19_DWI_dir80_AP In/20_DWI_dir80_AP In/21_DWI_dir80_AP In/22_DWI_dir80_AP In/23_DWI_dir80_AP In/24_DWI_dir80_AP
+            input: In/10_DWI_dir80_PA
+          - dataset: dcm_qa_xa30
+            input: In/17_DWI_dir80_AP
           - dataset: dcm_qa_xa30i
-            inputs: In/11001_DWI_dir80_AP In/12001_DWI_dir80_AP In/13001_DWI_dir80_AP In/14001_DWI_dir80_AP In/15001_DWI_dir80_AP In/16_DWI_dir80_AP In/17001_DWI_dir80_AP
+            input: In/11001_DWI_dir80_AP
 
     steps:
       - name: Download DSI Studio
@@ -72,14 +86,12 @@ jobs:
           git clone --depth 1 \
             https://github.com/neurolabusc/${{ matrix.dataset }}.git data
 
-      - name: Test ${{ matrix.dataset }}
+      - name: Test ${{ matrix.dataset }} - ${{ matrix.input }}
         run: |
           set -euxo pipefail
 
-          for path in ${{ matrix.inputs }}; do
-            input="data/$path"
-            find "$input" -type f -name '*.gz' -exec gzip -d {} +
+          input="data/${{ matrix.input }}"
+          find "$input" -type f -name '*.gz' -exec gzip -d {} +
 
-            dsi_studio --action=ren --source="$input"
-            dsi_studio --action=src --source="$input"
-          done
+          dsi_studio --action=ren --source="$input"
+          dsi_studio --action=src --source="$input"
