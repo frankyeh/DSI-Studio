@@ -95,7 +95,7 @@ class AIAgent : public QMainWindow
     void publish_github_result(QJsonObject);
     void send_pending_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
-    bool github_connected(const ai_info&) const; // true iff this specific chat is the one the live GitHub issue channel is currently bound to (web_agent_session_id + a non-empty github_issue_api) -- a chat can be Web-provider without being the connection's current owner (e.g. a different/older web chat)
+    bool github_connected(const ai_info&) const; // true iff this specific chat is the one the live GitHub issue channel is currently bound to (web_agent_session_id + a non-empty github_issue_api) -- a chat can be GitHub-provider without being the connection's current owner (e.g. a different/older web chat)
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
@@ -105,7 +105,7 @@ class AIAgent : public QMainWindow
     ai_info* start_new_local_chat(); // shared by new_chat_dialog() and Send-with-nothing-selected: creates a chat with the current default agent/model (current_agent/current_model_name) and prepares the compose box for it
     ai_info* create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
-                              QString& provider,QString& value); // value: model name for a local agent, issue URL for the Web agent
+                              QString& provider,QString& value); // value: model name for a local agent, issue URL for the GitHub agent
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);

@@ -40,7 +40,7 @@ struct ai_info{
     QList<QJsonObject> projects;
     QStringList prompts;
     QListWidgetItem* project_items = nullptr;
-    QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "github_issue_url": bound issue, Web agent sessions only
+    QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "github_issue_url": bound issue, GitHub agent sessions only
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
