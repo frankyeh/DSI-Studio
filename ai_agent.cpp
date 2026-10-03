@@ -1118,19 +1118,9 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
         };
         for(int index = 0;index < history.size();++index)
         {
-            auto entry = history[index];
-            int begin = index+1;
-
+            const auto& entry = history[index];
             if(!is_leader(entry))
-            {
-                if(index || entry["type"] != "request")
-                    continue;
-                entry = QJsonObject{
-                    {"type","assistant"},
-                    {"time",entry["time"]}
-                };
-                begin = index;
-            }
+                continue;
 
             QStringList activities,commands;
             QString target;
