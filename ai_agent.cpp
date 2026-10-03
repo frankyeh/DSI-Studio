@@ -293,6 +293,8 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!item)
         {
             ui->ai_chat_history->clear();
+            ui->ai_chat_history->setEnabled(false);
+            ui->ai_chat_input->setEnabled(false);
             update_send_button();
             return ui->ai_status->hide();
         }
@@ -301,6 +303,8 @@ AIAgent::AIAgent(MainWindow* parent):
         auto* info = selected_info();
         if(!info) // item is a real row, but guard anyway rather than trust that indirectly
             return;
+        ui->ai_chat_history->setEnabled(true);
+        ui->ai_chat_input->setEnabled(true);
         ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
             info->model_settings["cwd"].toString() : main_window.work_dir());
         // no longer copies the selected chat's agent/model into the app-wide default: update_agent_status_label()
@@ -343,6 +347,12 @@ AIAgent::AIAgent(MainWindow* parent):
     }
     if(ui->ai_project_list->count())
         ui->ai_project_list->setCurrentRow(0);
+    else // no chat at all: leave the right pane disabled until New Chat creates one
+    {
+        ui->ai_chat_history->setEnabled(false);
+        ui->ai_chat_input->setEnabled(false);
+        update_send_button();
+    }
     // GitHub issue channels are never auto-reconnected at startup; use Resume to reconnect a chat explicitly
 }
 
@@ -1926,10 +1936,9 @@ AIAgent::send_action AIAgent::current_send_action() const
 {
     auto* info = selected_info();
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
-    // nothing selected: still lets a typed message start a chat directly (same process as New Chat, minus the
-    // dialog -- current_agent/current_model_name, the app-wide default, pick the agent/model)
+    // nothing selected: new chats start only from the New Chat button
     if(!info)
-        return has_input ? send_action::Send : send_action::Disabled;
+        return send_action::Disabled;
     if(info->provider == "AgentServer") // a log/routing record, no local subprocess to send to
         return send_action::Disabled;
     if(info->provider == "GitHub")
