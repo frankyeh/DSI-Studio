@@ -18,6 +18,11 @@
 #include "atlas.hpp"
 
 
+bool get_tract_overlap_statistics(std::shared_ptr<fib_data> handle,
+                                  TractModel& tract,
+                                  const std::string& atlas_name,
+                                  std::string& result);
+
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {
@@ -1507,6 +1512,63 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             item(row,0)->setData(Qt::UserRole+1,all ? Qt::Unchecked : Qt::Checked);
         }
         return true;
+    }
+    if(cmd[0] == "show_tract_overlap_statistics")
+    {
+        // cmd[1] : tract index (default current)
+        // cmd[2] : atlas name
+
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+
+        if(cmd[2].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed(
+                    "usage: show_tract_overlap_statistics <tract index> <atlas name>");
+
+            QStringList atlas_names;
+            for(const auto& at : cur_tracking_window.handle->atlas_list)
+                atlas_names << at->name.c_str();
+
+            if(atlas_names.empty())
+                return run->failed("no atlas available");
+
+            bool okay = false;
+            auto atlas_name = QInputDialog::getItem(
+                this,
+                QApplication::applicationName(),
+                "Atlas:",
+                atlas_names,
+                0,
+                false,
+                &okay);
+
+            if(!okay)
+                return run->canceled();
+
+            cmd[2] = atlas_name.toStdString();
+        }
+
+        std::string result;
+        if(!get_tract_overlap_statistics(
+                cur_tracking_window.handle,
+                *tract_models[cur_row],
+                cmd[2],
+                result))
+            return run->failed(cur_tracking_window.handle->error_msg);
+
+        if(run->source == command_source::AI)
+            tipl::out() << result;
+        else
+            show_info_dialog(
+                "Tract-Atlas Intersection Statistics",
+                result,
+                cur_tracking_window.history.file_stem(false) +
+                "_tract_overlap_stat.txt");
+
+        return run->succeed();
     }
     return run->not_processed();
 }
