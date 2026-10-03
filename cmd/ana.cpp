@@ -89,6 +89,21 @@ bool get_region_overlap_statistics(std::shared_ptr<fib_data> handle,
     return true;
 }
 
+bool get_tract_overlap_statistics(std::shared_ptr<fib_data> handle,
+                                  TractModel& tract,
+                                  const std::string& atlas_name,
+                                  std::string& result)
+{
+    std::vector<tipl::vector<3,short>> points;
+    tract.to_voxel(points);
+
+    ROIRegion region(handle);
+    region.add_points(std::move(points));
+
+    return get_region_overlap_statistics(
+                handle,region,atlas_name,result);
+}
+
 void load_nii_label(const std::filesystem::path& filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
