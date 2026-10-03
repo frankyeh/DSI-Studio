@@ -2227,7 +2227,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
                 setup_github_token();
             update_web();
         }
-        if(!chatgpt)
+        if(!is_github)
             set_model_selector(model,agent_entries[provider].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
                 provider == current_agent ? current_model_name : QString());
