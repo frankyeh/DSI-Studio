@@ -280,11 +280,16 @@ AIAgent::AIAgent(MainWindow* parent):
             [this](QListWidgetItem* item,QListWidgetItem* previous)
     {
         for(auto* i : {previous,item})
-            if(i) // itemWidget() is null for an item already detached from the list (e.g. mid-removal), so guard both calls
-                if(auto* widget = ui->ai_project_list->itemWidget(i))
-                    if(auto* button = widget->findChild<QPushButton*>())
-                        button->setStyleSheet(i == item ?
-                            "color:#202124;background:#dce9f9;" : "");
+        {
+            if(!i)
+                continue;
+            auto* widget = ui->ai_project_list->itemWidget(i);
+            if(!widget) // null for an item already detached from the list (e.g. mid-removal)
+                continue;
+            if(auto* button = widget->findChild<QPushButton*>())
+                button->setStyleSheet(i == item ?
+                    "color:#202124;background:#dce9f9;" : "");
+        }
         if(!item)
         {
             ui->ai_chat_history->clear();
@@ -625,12 +630,13 @@ void AIAgent::poll_github_issue()
             // goes through the same retrying publish path as any result; send_pending_result() disconnects once this is confirmed published
             return publish_github_result(stamp(QJsonObject{{"state","closed"}}));
 
-        if(request_obj["session"].toString().isEmpty())
+        auto session_id = request_obj["session"].toString();
+        if(session_id.isEmpty())
             return publish_github_result(stamp(QJsonObject{
                 {"state","error"},
                 {"response",QJsonObject{{"status","error"},
                     {"error","malformed request: missing session"}}}}));
-        if(!is_valid_session_id(request_obj["session"].toString()))
+        if(!is_valid_session_id(session_id))
             return publish_github_result(stamp(QJsonObject{
                 {"state","error"},
                 {"response",QJsonObject{{"status","error"},
@@ -640,7 +646,6 @@ void AIAgent::poll_github_issue()
         request_obj.remove("id");
         request_obj.remove("include_log");
 
-        auto session_id = request_obj["session"].toString();
         bool set_title = !ai_info::find(session_id);
         auto* web_info = ai_info::find(web_agent_session_id);
         if(web_info && web_info->status == session_status::New)
@@ -682,7 +687,7 @@ void AIAgent::poll_github_issue()
             run_ai_command(session_id,"set_title",issue["title"].toString());
 
         if(include_log)
-            response["log"] = run_ai_command(request_obj["session"].toString(),"log");
+            response["log"] = run_ai_command(session_id,"log");
 
         auto succeeded = [](const QJsonObject& reply)
         {
@@ -902,11 +907,10 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     if(info.processes && info.processes->state() != QProcess::NotRunning)
         set_ai_status(session,session_status::Thinking,
                       "Command completed; waiting for agent input");
-    else if(github_connected(info))
-        set_ai_status(session,session_status::WaitingUser,
-                      "Request completed; monitoring GitHub issue");
     else
         set_ai_status(session,session_status::WaitingUser,
+                      github_connected(info) ?
+                      "Request completed; monitoring GitHub issue" :
                       "Request completed; waiting for next request.");
 
     auto entry = info.record_reply(chat,reasoning);
@@ -1089,15 +1093,8 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
         {
             const auto& entry = history[index];
 
-            bool attach_requests =
-                entry["type"] == "assistant" &&
-                index+1 < history.size() &&
-                history[index+1]["type"] == "request";
-
-            if(entry["type"] != "request" &&
-               !hidden_assistant(entry) && !attach_requests)
+            if(hidden_assistant(entry))
             {
-                append(entry);
                 ++index;
                 continue;
             }
@@ -1107,12 +1104,29 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
             {
                 owner = entry;
                 ++index;
+
+                while(index < history.size() &&
+                      hidden_assistant(history[index]))
+                    ++index;
+
+                if(index == history.size() ||
+                   history[index]["type"] != "request")
+                {
+                    append(owner);
+                    continue;
+                }
             }
-            else
+            else if(entry["type"] == "request")
                 owner = QJsonObject{
                     {"type","assistant"},
                     {"time",entry["time"]}
                 };
+            else
+            {
+                append(entry);
+                ++index;
+                continue;
+            }
 
             QStringList activities,commands;
             QString target;
@@ -1854,46 +1868,40 @@ void AIAgent::update_agent_status_label()
 {
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
     auto* info = selected_info();
-    bool agent_server = info && info->provider == "AgentServer"; // a log/routing record, no agent/model of its own to show or change
-    ui->ai_agent_status->setVisible(!agent_server);
-    if(!agent_server)
+    if(info && info->provider == "AgentServer") // a log/routing record, no agent/model of its own to show or change
     {
-        if(info && info->provider == "GitHub")
+        ui->ai_agent_status->hide();
+        update_send_button();
+        return;
+    }
+    ui->ai_agent_status->show();
+    if(info && info->provider == "GitHub")
+    {
+        // model_settings["github_issue_url"] is bound the moment a connection succeeds (see
+        // try_connect_github_issue()), so this chat's own record is always current -- no need to prefer
+        // the live github_issue_api over it
+        auto path = info->model_settings["github_issue_url"].toString();
+        ui->ai_agent_status->setText(path.isEmpty() ? "GitHub (ChatGPT, Muse, ...)" : "GitHub (ChatGPT, Muse, ...)"+dot+path);
+    }
+    else // a local chat (its own model, since it can differ from the app-wide default once changed) or
+         // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
+    {
+        auto format = [&](const QString& agent,const QString& model_name,const QJsonObject& model_info)
         {
-            // model_settings["github_issue_url"] is bound the moment a connection succeeds (see
-            // try_connect_github_issue()), so this chat's own record is always current -- no need to prefer
-            // the live github_issue_api over it
-            auto path = info->model_settings["github_issue_url"].toString();
-            ui->ai_agent_status->setText(path.isEmpty() ? "GitHub (ChatGPT, Muse, ...)" : "GitHub (ChatGPT, Muse, ...)"+dot+path);
-        }
-        else // a local chat (its own model, since it can differ from the app-wide default once changed) or
-             // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
-        {
-            auto format = [&](const QString& agent,const QString& model_name,const QJsonObject& model_info)
-            {
-                QString text = agent + dot +
-                               (model_name.isEmpty() ? QString("default") : model_name);
-                if(model_info.contains("provider"))
-                    text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
-                return text;
-            };
-            ui->ai_agent_status->setText(info ?
-                format(info->provider,info->model_settings["model"].toString(),
-                       info->model_settings["info"].toObject()) :
-                format(current_agent,current_model_name,current_model_info));
-        }
+            QString text = agent + dot +
+                           (model_name.isEmpty() ? QString("default") : model_name);
+            if(model_info.contains("provider"))
+                text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
+            return text;
+        };
+        ui->ai_agent_status->setText(info ?
+            format(info->provider,info->model_settings["model"].toString(),
+                   info->model_settings["info"].toObject()) :
+            format(current_agent,current_model_name,current_model_info));
     }
     // the send button's enabled state/label depends on the same selected-chat context above, so it's
     // refreshed here on every call rather than relying on each call site to also remember it
     update_send_button();
-}
-
-bool AIAgent::can_start_agent(const QString& provider,const QJsonObject& model_info) const
-{
-    const auto& entry = agent_entries[provider];
-    return !entry.executable.isEmpty() &&
-           (entry.status == ai_agent_status::Ready ||
-            (provider == "Claude" && model_info.contains("provider")));
 }
 
 void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); name is empty for "default" (model_combo_key()'s data value, not the "default" UI label) or a specific model name -- both are always meaningful, never a no-op
@@ -1922,10 +1930,8 @@ AIAgent::send_action AIAgent::current_send_action() const
 {
     auto* info = selected_info();
     bool has_input = !ui->ai_chat_input->toPlainText().trimmed().isEmpty();
-    // nothing selected: new chats start only from the New Chat button
-    if(!info)
-        return send_action::Disabled;
-    if(info->provider == "AgentServer") // a log/routing record, no local subprocess to send to
+    // New chats start only from the New Chat button; AgentServer is a log/routing record with no local subprocess.
+    if(!info || info->provider == "AgentServer")
         return send_action::Disabled;
     if(info->provider == "GitHub")
         return github_connected(*info) ? send_action::Stop : send_action::Resume;
@@ -2317,12 +2323,18 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
         auto provider = agent.currentData().toString();
-        if(provider != "GitHub" &&
-           !can_start_agent(provider,model.currentData().toJsonObject()))
+        if(provider != "GitHub")
         {
-            dialog.reject();
-            on_ai_quick_settings_clicked();
-            return;
+            const auto& entry = agent_entries[provider];
+            if(entry.executable.isEmpty() ||
+               (entry.status != ai_agent_status::Ready &&
+                (provider != "Claude" ||
+                 !model.currentData().toJsonObject().contains("provider"))))
+            {
+                dialog.reject();
+                on_ai_quick_settings_clicked();
+                return;
+            }
         }
         if(provider == "GitHub")
         {
@@ -2391,10 +2403,10 @@ void AIAgent::new_chat_dialog(bool resume)
                              provider,value))
         return;
     // Keep web_agent_session_id until disconnect_github_issue() marks the old chat Completed.
+    disconnect_github_issue();
 
     if(provider == "GitHub")
     {
-        disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         if(!resume)
             create_new_chat("GitHub","GitHub (ChatGPT, Muse, ...)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
         try_connect_github_issue(value);
@@ -2403,7 +2415,6 @@ void AIAgent::new_chat_dialog(bool resume)
 
     current_agent = provider;
     try_set_current_model(value);
-    disconnect_github_issue(); // leaving web-agent mode for a local chat -- marks the old web chat Completed via web_agent_session_id, so clear that only after
     web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
     // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
