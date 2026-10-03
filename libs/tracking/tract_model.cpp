@@ -1490,6 +1490,16 @@ bool load_fib_from_tracks(const std::filesystem::path& file_name,
         geo = vis.dim;
     }
     else
+    if(tipl::ends_with(file_name.u8string(),".trx"))
+    {
+        std::vector<unsigned int> loaded_tract_cluster;
+        std::vector<std::string> tract_cluster_names;
+        std::vector<float> loaded_values;
+        if(!load_trx(file_name,loaded_tract_data,loaded_tract_cluster,
+                     tract_cluster_names,geo,vs,trans_to_mni,loaded_values))
+            return std::cout << "cannot read " << file_name,false;
+    }
+    else
         if(tipl::ends_with(file_name.u8string(),"tt.gz"))
         {
             std::vector<unsigned short> loaded_tract_cluster;
@@ -1546,6 +1556,7 @@ bool TractModel::load_tracts_from_file(const std::filesystem::path& file_name,fi
 {
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
+    std::vector<float> loaded_tract_values;
     std::vector<unsigned int> colors;
     unsigned int color = default_tract_color;
     if(file_name.filename().string().find(".dec") != std::string::npos)
@@ -1582,6 +1593,14 @@ bool TractModel::load_tracts_from_file(const std::filesystem::path& file_name,fi
             if(param.set_code(parameter_id))
                 report += param.get_report();
         }
+    }
+    if(tipl::ends_with(file_name.u8string(),".trx"))
+    {
+        std::vector<unsigned int> ignored_cluster;
+        std::vector<std::string> ignored_cluster_names;
+        if(!load_trx(file_name,loaded_tract_data,ignored_cluster,
+                     ignored_cluster_names,geo,vs,source_trans_to_mni,loaded_tract_values))
+            return false;
     }
 
     if (tipl::ends_with(file_name.u8string(),".txt"))
@@ -1732,6 +1751,11 @@ bool TractModel::load_tracts_from_file(const std::filesystem::path& file_name,fi
                 tract_cluster[i] = tract_cluster.back();
                 tract_cluster.pop_back();
             }
+            if(i < loaded_tract_values.size())
+            {
+                loaded_tract_values[i] = loaded_tract_values.back();
+                loaded_tract_values.pop_back();
+            }
         }
         else
             ++i;
@@ -1749,6 +1773,7 @@ bool TractModel::load_tracts_from_file(const std::filesystem::path& file_name,fi
     deleted_count.clear();
     is_cut.clear();
     redo_size.clear();
+    loaded_tract_values.swap(loaded_values);
     return true;
 }
 
@@ -1861,6 +1886,8 @@ bool TractModel::save_tracts_to_file(const std::filesystem::path& file_name)
                                        tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
                                        std::vector<unsigned int>{get_cluster_color(tract_color)});
     }
+    if(tipl::ends_with(file_name.u8string(),".trx"))
+        return save_trx(file_name,tract_data,{},{},geo,trans_to_mni,loaded_values);
     if(tipl::ends_with(file_name.u8string(),{".trk.gz",".trk"}))
     {
         return TrackVis::save_to_file(file_name,geo,vs,trans_to_mni,
@@ -2122,6 +2149,30 @@ bool TractModel::save_all(const std::filesystem::path& file_name,
     tipl::progress prog("save",file_name.u8string());
     for(unsigned int index = 0;index < all.size();++index)
         all[index]->saved = true;
+    if(tipl::ends_with(file_name.u8string(),".trx"))
+    {
+        size_t total_size = 0;
+        bool has_values = true;
+        for(const auto& model : all)
+        {
+            total_size += model->tract_data.size();
+            has_values &= model->loaded_values.size() == model->tract_data.size();
+        }
+        std::vector<std::vector<float> > tract_data;
+        std::vector<float> loaded_values;
+        tract_data.reserve(total_size);
+        if(has_values)
+            loaded_values.reserve(total_size);
+        for(const auto& model : all)
+        {
+            tract_data.insert(tract_data.end(),
+                              model->tract_data.begin(),model->tract_data.end());
+            if(has_values)
+                loaded_values.insert(loaded_values.end(),
+                                     model->loaded_values.begin(),model->loaded_values.end());
+        }
+        return save_trx(file_name,tract_data,{},{},all[0]->geo,all[0]->trans_to_mni,loaded_values);
+    }
     if (tipl::ends_with(file_name.u8string(),".tt.gz"))
     {
         std::vector<size_t> tract_size(all.size());
