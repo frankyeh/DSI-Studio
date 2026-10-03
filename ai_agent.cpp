@@ -588,7 +588,26 @@ void AIAgent::poll_github_issue()
         {if(!github_issue_api.isEmpty()) github_timer.start(delay_ms);};
 
         if(reply->error() != QNetworkReply::NoError && status != 304)
-            return restart(5000); // transient network error: back off, retry later
+        {
+            // transient network error: back off, retry later. One history entry per
+            // outage (deduped against the history itself while it's the latest entry,
+            // no new state) so a persistently broken token/network doesn't masquerade
+            // as healthy "monitoring".
+            if(auto* info = ai_info::find(web_agent_session_id))
+            {
+                bool dup = false;
+                if(!info->projects.isEmpty())
+                {
+                    auto last = info->projects.constLast();
+                    dup = last["type"].toString() == "activity" &&
+                          last["text"].toString().startsWith("GitHub issue poll failed");
+                }
+                if(!dup)
+                    add_ai_history(*info,"activity",
+                        "GitHub issue poll failed ("+reply->errorString()+"); retrying");
+            }
+            return restart(5000);
+        }
         if(status == 304)
             return restart(); // not modified
 
@@ -830,6 +849,25 @@ void AIAgent::set_ai_status(const QString& session,session_status status,QString
                     << session.toStdString() << " " << session_status_text(status).toStdString()
                     << ": " << info->status_message.toStdString();
     update_ai_status(*info,true);
+
+    // Smart history intercept: the sidebar shows every transient flicker, but the
+    // chat history only keeps terminal states (Failed/Completed) worth scrolling
+    // back to. Deduped against the history itself -- no new state: if the most
+    // recent entry is already this exact activity message (e.g. disconnect called
+    // twice), there is nothing new to report.
+    if((status == session_status::Failed || status == session_status::Completed) &&
+       !info->status_message.isEmpty())
+    {
+        bool dup = false;
+        if(!info->projects.isEmpty())
+        {
+            auto last = info->projects.constLast();
+            dup = last["type"].toString() == "activity" &&
+                  last["text"].toString() == info->status_message;
+        }
+        if(!dup)
+            add_ai_history(*info,"activity",info->status_message);
+    }
 }
 
 void AIAgent::update_ai_status(const ai_info& info,bool pulse)
@@ -1810,9 +1848,17 @@ bool AIAgent::try_connect_github_issue(const QString& url)
         // web_agent_session_id (not sidebar selection) is the reliable way to find the chat this connection
         // belongs to; the caller guarantees it already refers to a real chat (created fresh, or being resumed)
         if(auto* info = ai_info::find(web_agent_session_id))
+        {
+            // A fresh, never-established placeholder stays New even on failure, so a later retry
+            // can still establish the session on the first real request. New isn't terminal, so
+            // the set_ai_status history intercept won't mirror it -- record explicitly.
+            bool fresh = info->status == session_status::New;
             set_ai_status(info->sessions,
-                          info->status == session_status::New ? session_status::New : session_status::Failed,
+                          fresh ? session_status::New : session_status::Failed,
                           error_msg);
+            if(fresh)
+                add_ai_history(*info,"activity",error_msg);
+        }
         return false;
     }
     tipl::out() << "connected to GitHub issue: " << url.toStdString();
@@ -2744,7 +2790,10 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         preserve_pending();
         set_ai_status(session,info.status == session_status::New ?
                       session_status::New : session_status::Failed,message);
-        add_ai_history(info,"activity",message);
+        if(info.status == session_status::New)
+            // stays New (not terminal, so the set_ai_status history intercept
+            // won't mirror it) -- record explicitly
+            add_ai_history(info,"activity",message);
         info.save_config();
         show_ai_project(info);
     };
@@ -2890,7 +2939,6 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
                     item && item->data(Qt::UserRole).toString() == session &&
                     ui->ai_chat_input->toPlainText().trimmed().isEmpty())
                 ui->ai_chat_input->setPlainText(text);
-            add_ai_history(info,"activity",message);
         }
         update_send_button();
         process->deleteLater();
@@ -2937,12 +2985,10 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             {
                 set_ai_status(session,failed ? session_status::Failed : session_status::Completed,
                               error_message);
-                add_ai_history(info,"activity",error_message);
             }
             else if(!process->property("had_reply").toBool())
             {
                 set_ai_status(session,session_status::Completed,"No reply from AI agent.");
-                add_ai_history(info,"activity","No reply from AI agent.");
             }
             else
             {
@@ -3098,7 +3144,6 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 {
                     message.prepend("ERROR: ");
                     set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"activity",message);
                 }
                 continue;
             }
@@ -3191,7 +3236,6 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                             error = params["reason"].toString();
                         error = "ERROR: "+(error.isEmpty() ? QString("Muse turn failed.") : error);
                         set_ai_status(current->sessions,session_status::Failed,error);
-                        add_ai_history(*current,"activity",error);
                     }
                     else if(terminal == "cancelled")
                         set_ai_status(current->sessions,session_status::WaitingUser,"Stopped by user.");
@@ -3295,7 +3339,6 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
                                     (terminal.isEmpty() ? QString("request failed.") :
                                      terminal.toLower()+".") : error);
                     set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"activity",message);
                 }
             }
         }
@@ -3355,16 +3398,20 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             auto message = "Codex "+id+" failed: "+(error.isEmpty() ? "Unknown error." : error);
             if(auto* info = ai_info::find(process->objectName()))
             {
-                set_ai_status(info->sessions,info->status == session_status::New ? session_status::New :
-                              process->property("turn_id").toString().isEmpty() ? session_status::Failed :
-                              session_status::Thinking,message);
+                auto new_status = info->status == session_status::New ? session_status::New :
+                                  process->property("turn_id").toString().isEmpty() ? session_status::Failed :
+                                  session_status::Thinking;
+                set_ai_status(info->sessions,new_status,message);
                 if(id == "initialize" || id == "thread_start" || id == "thread_resume")
                 {
                     // The finish handler records the failure and releases the process for a fresh attempt.
                     process->setProperty("stderr",process->property("stderr").toByteArray()+'\n'+message.toUtf8());
                     return process->kill();
                 }
-                add_ai_history(*info,"activity",message);
+                if(new_status != session_status::Failed)
+                    // Failed is already mirrored to history by the set_ai_status intercept;
+                    // record explicitly only for non-terminal states, where the turn may recover
+                    add_ai_history(*info,"activity",message);
             }
             return;
         }
@@ -3467,7 +3514,6 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                 {
                     auto err = turn["error"].toObject()["message"].toString();
                     set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
-                    add_ai_history(*info,"activity",info->status_message);
                 }
                 else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
                     set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
@@ -3482,8 +3528,12 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             if(auto* info = ai_info::find(process->objectName()))
             {
                 // An error notification can precede recovery; turn/completed owns the final status.
-                set_ai_status(info->sessions,info->status,message);
-                add_ai_history(*info,"activity",message);
+                // (set_ai_status mirrors Failed/Completed to history itself, so record
+                // explicitly only when the status isn't terminal.)
+                auto st = info->status;
+                set_ai_status(info->sessions,st,message);
+                if(st != session_status::Failed && st != session_status::Completed)
+                    add_ai_history(*info,"activity",message);
             }
         }
     };
