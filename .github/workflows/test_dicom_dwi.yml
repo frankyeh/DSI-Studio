@@ -71,6 +71,7 @@ jobs:
 
           input=data/In
           [ -d "$input" ] || input=data
+          find "$input" -type f -name '*.gz' -exec gzip -d {} +
 
           dsi_studio --action=ren --source="$input"
           dsi_studio --action=src --source="$input"
