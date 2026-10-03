@@ -1029,6 +1029,7 @@
     <addaction name="actionConnectivity_matrix"/>
     <addaction name="actionOpen_Connectivity_Matrix"/>
     <addaction name="actionStatistics"/>
+    <addaction name="actionTract_Atlas_Intersection_Statistics"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
@@ -3370,6 +3371,18 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run show_tract_statistics</string>
+   </property>
+  </action>
+  <action name="actionTract_Atlas_Intersection_Statistics">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Tract-Atlas Intersection Statistics...</string>
+   </property>
+   <property name="toolTip">
+    <string>run show_tract_overlap_statistics</string>
    </property>
   </action>
   <action name="actionHierarchical">
