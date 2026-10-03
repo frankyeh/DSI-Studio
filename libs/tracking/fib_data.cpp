@@ -541,7 +541,7 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
         report = out.str();
     }
     else
-        if(tipl::ends_with(file_name_str,{".trk.gz",".trk",".tck",".tt.gz"}) && !load_fib_from_tracks(file_name_str,I,vs,trans_to_mni))
+        if(tipl::ends_with(file_name_str,{".trk.gz",".trk",".tck",".tt.gz",".trx"}) && !load_fib_from_tracks(file_name_str,I,vs,trans_to_mni))
             return error_msg = "Invalid track format",false;
 
     if(!I.empty())
