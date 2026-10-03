@@ -843,11 +843,8 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
         return;
     // one line -- a multi-line stderr dump (Failed) must not grow the composer's height
     auto text = (session_status_text(info.status)+": "+info.status_message).simplified();
-    if(running)
-    {
-        if(!text.endsWith('.'))
-            text += ".";
-    }
+    if(running && !text.endsWith('.'))
+        text += ".";
     ui->ai_status->show();
     ui->ai_status->setToolTip(text); // full message on hover -- the label itself may show a truncated "..." version
     ui->ai_status->setText(QFontMetrics(ui->ai_status->font()).elidedText(
@@ -1000,9 +997,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         return; // currentItemChanged already rebuilt this chat's complete history
     }
 
-    bool visible = current == item && isVisible();
-
-    if(!added_type.isEmpty() && added_type != "user" && !visible)
+    if(!added_type.isEmpty() && added_type != "user" &&
+       (current != item || !isVisible()))
     {
         row->setStyleSheet("background:#ffe082;border-radius:5px;");
         row->findChild<QTimer*>()->start();
@@ -1042,12 +1038,6 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
         return html.mid(begin+1,end-begin-1).trimmed().replace(
             loose_margins,"margin-top:0px; margin-bottom:6px;");
     };
-    auto display_time = [](const QJsonValue& value)
-    {
-        return QDateTime::fromString(value.toString(),Qt::ISODate).
-               toString("MM/dd HH:mm:ss");
-    };
-
     const bool show_reasoning = settings.value("ai/show_reasoning",false).toBool(); // read once: append() runs per history entry
     auto hidden_assistant = [&](const QJsonObject& entry)
     {
@@ -1073,7 +1063,8 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
                        activities.join("<br>") + "</div>";
 
         auto color = user ? "#e8f0fe" : "#e8f5e9";
-        auto time = display_time(entry["time"]);
+        auto time = QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
+                    toString("MM/dd HH:mm:ss");
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
@@ -1810,7 +1801,6 @@ bool AIAgent::try_connect_github_issue(const QString& url)
         set_ai_status(info->sessions,info->status == session_status::New ?
                       session_status::New : session_status::Thinking,
                       "Connecting to "+url);
-    update_agent_status_label();
     tipl::out() << "connecting to GitHub issue: " << url.toStdString();
 
     QString error;
@@ -2400,10 +2390,9 @@ void AIAgent::new_chat_dialog(bool resume)
     if(!run_new_chat_dialog(resume,resume ? "Resume Chat" : "New Chat",resume ? "Resume" : "Start",
                              provider,value))
         return;
-    bool is_github = provider == "GitHub";
     // Keep web_agent_session_id until disconnect_github_issue() marks the old chat Completed.
 
-    if(is_github)
+    if(provider == "GitHub")
     {
         disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
         if(!resume)
