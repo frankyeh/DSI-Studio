@@ -1102,78 +1102,87 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
                          cell+"<td width=\"20%\"></td>"));
     };
 
-    if(added_type.isEmpty() || added_type == "request" ||
-       (added_type == "assistant" && history.size() > 1 &&
-        history[history.size()-2]["type"] == "request"))
+    if(added_type.isEmpty() || added_type == "request")
     {
         ui->ai_chat_history->clear();
-        auto is_leader = [&](const QJsonObject& entry)
-        {
-            auto type = entry["type"].toString();
-            return type != "request" &&
-                   (type != "assistant" ||
-                    !entry["text"].toString().trimmed().isEmpty() ||
-                    (show_reasoning &&
-                     !entry["reasoning"].toString().trimmed().isEmpty()));
-        };
-        for(int index = 0;index < history.size();++index)
+        for(int index = 0;index < history.size();)
         {
             const auto& entry = history[index];
-            if(!is_leader(entry))
+
+            bool attach_requests =
+                entry["type"] == "assistant" &&
+                index+1 < history.size() &&
+                history[index+1]["type"] == "request";
+
+            if(entry["type"] != "request" && !attach_requests)
+            {
+                append(entry);
+                ++index;
                 continue;
+            }
+
+            QJsonObject owner;
+            if(attach_requests)
+            {
+                owner = entry;
+                ++index;
+            }
+            else
+                owner = QJsonObject{
+                    {"type","assistant"},
+                    {"time",entry["time"]}
+                };
 
             QStringList activities,commands;
             QString target;
+
             auto add_activity = [&]
             {
                 if(commands.isEmpty())
                     return;
                 activities << "<b>"+to_html(target)+"</b>: "+
-                              commands.join(" &rarr; ");
+                                  commands.join(" &rarr; ");
                 commands.clear();
             };
-            for(auto end = index+1;end < history.size();++end)
+
+            for(;index < history.size() &&
+                   history[index]["type"] == "request";++index)
             {
-                const auto& request = history[end];
-                if(is_leader(request))
-                    break;
-                if(request["type"] != "request")
-                    continue;
+                const auto& request = history[index];
 
                 auto request_target = request["title"].toString();
-                request_target += (request_target.isEmpty() ? "" : " · ")+
-                                  request["window"].toString();
+                request_target +=
+                    (request_target.isEmpty() ? "" : " · ")+
+                    request["window"].toString();
+
                 if(!commands.isEmpty() && target != request_target)
                     add_activity();
                 target = request_target;
 
-                auto command = "<code>"+to_html(request["text"].toString())+"</code>";
-                if(end+1 < history.size())
+                auto command =
+                    "<code>"+to_html(request["text"].toString())+"</code>";
+
+                if(index+1 < history.size())
                 {
                     if(auto duration = QDateTime::fromString(
-                            request["time"].toString(),Qt::ISODate).msecsTo(
-                            QDateTime::fromString(history[end+1]["time"].toString(),
-                                                  Qt::ISODate));duration >= 0)
+                                            request["time"].toString(),Qt::ISODate).msecsTo(
+                                                QDateTime::fromString(
+                                                    history[index+1]["time"].toString(),
+                                                    Qt::ISODate));duration >= 0)
                     {
-                        auto seconds = QString::number(duration/1000.0,'f',1);
+                        auto seconds =
+                            QString::number(duration/1000.0,'f',1);
                         if(seconds.endsWith(".0"))
                             seconds.chop(2);
                         command += " ("+seconds+"s)";
                     }
                 }
+
                 commands << command;
             }
-            add_activity();
 
-            if(entry["type"] == "user")
-            {
-                append(entry);
-                if(!activities.isEmpty())
-                    append(QJsonObject{{"type","assistant"},{"time",entry["time"]}},
-                           activities);
-            }
-            else
-                append(entry,activities);
+            add_activity();
+            append(owner,activities);
         }
     }
     else
