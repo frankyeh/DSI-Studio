@@ -1516,6 +1516,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
         if(!slice.get() || slice->source_images.empty() || tractWidget->tract_models.empty())
             return run->failed("mark_tracts_on_slices requires a loaded custom slice and tract");
+        if(tractWidget->get_checked_tracks().empty())
+            return run->failed("no tract is selected; use show_only_tracts first");
         double ratio = 1.0;
         if(cmd[1].empty())
         {
