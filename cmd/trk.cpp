@@ -12,6 +12,10 @@
 
 
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
+bool get_tract_overlap_statistics(std::shared_ptr<fib_data> handle,
+                                  TractModel& tract,
+                                  const std::string& atlas_name,
+                                  std::string& result);
 bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     if(!other_slices.empty() || !po.has("other_slices"))
@@ -302,6 +306,26 @@ int trk_post(tipl::program_option<tipl::out>& po,
     tipl::progress prog("post-tracking analysis");
     if(!tract_model->get_visible_track_count())
         return tipl::out() << "no tract for post-track analysis",0;
+    if(po.has("overlap"))
+    {
+        std::string result;
+        auto atlas_name = po.get("overlap");
+
+        tipl::out() << "calculating tract overlap statistics with "
+                    << atlas_name << std::endl;
+
+        if(!get_tract_overlap_statistics(
+                handle,*tract_model,atlas_name,result))
+            return tipl::error() << handle->error_msg,1;
+
+        auto file_name = tract_file_name;
+        file_name += ".overlap.txt";
+
+        tipl::out() << "output overlap statistics to " << file_name << std::endl;
+
+        if(!tipl::write_text_file(file_name,result,tipl::error()))
+            return 1;
+    }
     if(po.has("delete_repeat") || po.get("action") == "atk" ||
        po.has("track_id"))
         tract_model->delete_repeated(
