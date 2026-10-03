@@ -70,7 +70,7 @@ class AIAgent : public QMainWindow
     QJsonObject current_model_info;
     void update_agent_status_label();
     bool can_start_agent(const QString& provider,const QJsonObject& model_info) const;
-    void try_set_current_model(const QString& name); // name is always written as-is, even if unknown to profiles (the model combo is editable, so a typed name is meaningful, not a mistake); writes the app-wide default above, not any chat's own model
+    void try_set_current_model(const QString& name); // writes the selected model, or an empty name for the default, to the app-wide settings above
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
     QNetworkAccessManager github_manager;
