@@ -102,7 +102,7 @@ class AIAgent : public QMainWindow
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     bool setup_github_token();
     void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
-    ai_info* start_new_local_chat(); // shared by new_chat_dialog() and Send-with-nothing-selected: creates a chat with the current default agent/model (current_agent/current_model_name) and prepares the compose box for it
+    void start_new_local_chat(); // creates a chat with the current default agent/model (current_agent/current_model_name) and prepares the compose box for it
     ai_info* create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
                               QString& provider,QString& value); // value: model name for a local agent, issue URL for the GitHub agent
