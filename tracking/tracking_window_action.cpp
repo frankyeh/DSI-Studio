@@ -1680,6 +1680,15 @@ bool tracking_window::command(std::vector<std::string> cmd)
         return run->succeed();
     }
 
+    if(cmd[0] == "save_3d_model")
+    {
+        if(cmd[1].empty())
+            return run->failed("filename required");
+        if(!save_3d_model(QString(cmd[1].c_str())))
+            return run->failed(error_msg);
+        return run->succeed();
+    }
+
     if(tipl::begins_with(cmd[0],"add_surface"))
     {
         // cmd[1] : slice index
@@ -2426,24 +2435,31 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
 
 void tracking_window::on_actionSave_3D_Model_triggered()
 {
+    QString filename = QFileDialog::getSaveFileName(
+                this,"Save tracts as",QFileInfo(windowTitle()).baseName()+".model.obj","3D files (*.obj);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(!save_3d_model(filename))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    else
+        QMessageBox::information(this,QApplication::applicationName(),"File Saved");
+}
+
+bool tracking_window::save_3d_model(QString filename)
+{
     auto tracts = tractWidget->get_checked_tracks();
     auto regions = regionWidget->get_checked_regions();
     if(tracts.empty() && regions.empty())
     {
-        QMessageBox::critical(this,"ERROR","No visible tract or region to export");
-        return;
+        error_msg = "No visible tract or region to export";
+        return false;
     }
     for(auto& each_tract : tracts)
         if(each_tract->get_visible_track_count() > 3000)
         {
-            QMessageBox::critical(this,"ERROR","Too many tracts. Please reduce the each tract count to less than 3,000 using [Tract Misc][Delete Repeated Tracks]");
-            return;
+            error_msg = "Too many tracts. Please reduce the each tract count to less than 3,000 using [Tract Misc][Delete Repeated Tracks]";
+            return false;
         }
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",QFileInfo(windowTitle()).baseName()+".model.obj","3D files (*.obj);;All files (*)");
-    if(filename.isEmpty())
-        return;
     tipl::progress prog("exporting models",true);
     size_t total_prog = 3 + tracts.size() + regions.size()+1;
     size_t cur_prog = 0;
@@ -2525,7 +2541,7 @@ void tracking_window::on_actionSave_3D_Model_triggered()
         out << each_tract->get_obj(coordinate_count,1/*tube*/,(*this)["tube_diameter"].toFloat(),0/*coarse*/) << std::endl;
     }
     if(prog.aborted())
-        return;
+        return false;
     size_t render_count = 0;
     float region_alpha = (*this)["region_alpha"].toFloat();
     for(auto& each_region : regions)
@@ -2538,7 +2554,7 @@ void tracking_window::on_actionSave_3D_Model_triggered()
         out << each_region->region_render->get_obj(coordinate_count,handle->vs) << std::endl;
     }
     if(prog.aborted())
-        return;
+        return false;
 
     if (glWidget->surface.get() && (*this)["show_surface"].toInt())
     {
@@ -2546,7 +2562,7 @@ void tracking_window::on_actionSave_3D_Model_triggered()
         out << glWidget->surface->get_obj(coordinate_count,handle->vs) << std::endl;
     }
     if(prog.aborted())
-        return;
-    QMessageBox::information(this,QApplication::applicationName(),"File Saved");
+        return false;
+    return true;
 }
 
