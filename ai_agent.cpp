@@ -1809,7 +1809,12 @@ bool AIAgent::try_connect_github_issue(const QString& url)
         // web_agent_session_id (not sidebar selection) is the reliable way to find the chat this connection
         // belongs to; the caller guarantees it already refers to a real chat (created fresh, or being resumed)
         if(auto* info = ai_info::find(web_agent_session_id))
-            set_ai_status(info->sessions,session_status::Failed,
+            // A fresh, never-established placeholder stays New even on failure, so a later retry
+            // can still establish the session on the first real request. (Status is New here only
+            // for a never-established chat -- the "Connecting..." update above moved an established
+            // reconnecting chat to Thinking.)
+            set_ai_status(info->sessions,
+                          info->status == session_status::New ? session_status::New : session_status::Failed,
                           "GitHub issue connection failed: "+error);
         return false;
     }
