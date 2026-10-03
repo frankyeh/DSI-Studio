@@ -1847,6 +1847,10 @@ bool AIAgent::try_connect_github_issue(const QString& url)
         // bound the moment the connection succeeds, not deferred until a request happens to arrive
         // (poll_github_issue() also does this for the reactive/resume case) -- the chat's own record is
         // now always current, so update_agent_status_label() never needs to prefer github_issue_api over it
+        if(fresh)
+            add_ai_history(*info,"activity",
+                           "Connected to GitHub issue: "+url);
+
         info->model_settings["github_issue_url"] =
             QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
         info->save_config();
