@@ -276,6 +276,7 @@ private slots:
     void on_tract_target_0_currentIndexChanged(int index);
     void on_tract_target_1_currentIndexChanged(int index);
 
+    void on_actionSave_3D_Model_triggered();
     void on_actionEdit_Slices_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
 

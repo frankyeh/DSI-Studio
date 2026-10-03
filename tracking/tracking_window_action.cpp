@@ -1673,6 +1673,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
         return run->succeed();
     }
 
+void tracking_window::on_actionSave_3D_Model_triggered()
+{
+    run_command("save_3d_model");
+}
+
     if(cmd[0] == "save_3d_model")
     {
 

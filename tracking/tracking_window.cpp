@@ -359,7 +359,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     ui->setupUi(this);
     ui->thread_count->setValue(tipl::max_thread_count >> 1);
-    connect(ui->actionSave_3D_Model, &QAction::triggered, [this](){ run_command("save_3d_model"); });
 
     // setup GUI
     {
