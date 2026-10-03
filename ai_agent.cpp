@@ -3000,6 +3000,16 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                 while(process->canReadLine())
                 {
                     auto event = next_json_line(process);
+                    if(event.contains("error"))
+                    {
+                        // any error payload (e.g. system/api_retry): dump the full details
+                        // to the status button; transient, no history -- the finished
+                        // handler reports the terminal error
+                        if(auto* info = ai_info::find(process->objectName()))
+                            set_ai_status(info->sessions,session_status::Thinking,
+                                "Error: "+QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact)));
+                        continue;
+                    }
                     auto event_type = event["type"].toString();
                     if(event_type == "system")
                     {
