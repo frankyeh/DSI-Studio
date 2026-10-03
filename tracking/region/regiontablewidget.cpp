@@ -301,6 +301,10 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
 }
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             std::string& result);
+bool get_region_overlap_statistics(std::shared_ptr<fib_data> handle,
+                                   const ROIRegion& region,
+                                   const std::string& atlas_name,
+                                   std::string& result);
 void get_devices_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<Device> >& devices,
                             std::string& result);
 void get_tract_statistics(std::shared_ptr<fib_data> handle,
@@ -1087,6 +1091,56 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 cmd[0][1] = 'a';cmd[0][2] = 'v';cmd[0][3] = 'e';
             }
         }
+        return run->succeed();
+    }
+    if(cmd[0] == "show_region_overlap_statistics")
+    {
+        // cmd[1] : region index (default current)
+        // cmd[2] : atlas name
+
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+
+        if(cmd[2].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed(
+                    "usage: show_region_overlap_statistics <region index> <atlas name>");
+
+            QStringList atlas_names;
+            for(const auto& at : cur_tracking_window.handle->atlas_list)
+                atlas_names << at->name.c_str();
+
+            if(atlas_names.empty())
+                return run->failed("no atlas available");
+
+            bool okay = false;
+            auto atlas_name = QInputDialog::getItem(
+                this,QApplication::applicationName(),
+                "Atlas:",atlas_names,0,false,&okay);
+
+            if(!okay)
+                return run->canceled();
+
+            cmd[2] = atlas_name.toStdString();
+        }
+
+        std::string result;
+        if(!get_region_overlap_statistics(
+                cur_tracking_window.handle,
+                *regions[cur_row],cmd[2],result))
+            return run->failed(cur_tracking_window.handle->error_msg);
+
+        if(run->source == command_source::AI)
+            tipl::out() << result;
+        else
+            show_info_dialog(
+                "Region-Atlas Intersection Statistics",
+                result,
+                cur_tracking_window.history.file_stem(false) +
+                    "_region_overlap_stat.txt");
+
         return run->succeed();
     }
 
