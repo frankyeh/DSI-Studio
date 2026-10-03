@@ -1457,6 +1457,201 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         return run->succeed();
     }
+    if(cmd[0] == "mark_region_on_slices")
+    {
+        auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+        if(!slice.get() || slice->source_images.empty())
+            return run->failed("mark_region_on_slices requires a loaded custom slice");
+        int region_index = regionWidget->currentRow();
+        if(cmd[1].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: mark_region_on_slices <region index> <intensity ratio>");
+        }
+        else
+        {
+            bool ok;
+            region_index = QString::fromStdString(cmd[1]).toInt(&ok);
+            if(!ok)
+                return run->failed("invalid region index: " + cmd[1]);
+        }
+        if(region_index < 0 || region_index >= regionWidget->rowCount())
+            return run->failed("invalid region index: " + std::to_string(region_index));
+
+        double ratio = 1.0;
+        if(cmd[2].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: mark_region_on_slices <region index> <intensity ratio>");
+            bool ok = true;
+            ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
+                    "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
+            if(!ok)
+                return run->canceled();
+        }
+        else
+            ratio = run->from_cmd(2,1.0);
+
+        auto current_region = regionWidget->regions[size_t(region_index)];
+        float mark_value = slice->get_value_range().second*float(ratio);
+        auto mask = current_region->to_mask();
+        if(current_region->to_diffusion_space != slice->to_dif)
+        {
+            tipl::image<3,unsigned char> new_mask(slice->dim);
+            tipl::resample<tipl::interpolation::majority>(mask,new_mask,
+                tipl::transformation_matrix<float>(tipl::from_space(slice->to_dif).to(current_region->to_diffusion_space)));
+            mask.swap(new_mask);
+        }
+        for(size_t i = 0,sz = mask.size();i < sz;++i)
+            if(mask[i])
+                slice->source_images[i] = mark_value;
+        slice_need_update |= image_updated;
+        glWidget->update();
+        return run->succeed();
+    }
+    if(cmd[0] == "mark_tracts_on_slices")
+    {
+        auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+        if(!slice.get() || slice->source_images.empty() || tractWidget->tract_models.empty())
+            return run->failed("mark_tracts_on_slices requires a loaded custom slice and tract");
+        double ratio = 1.0;
+        if(cmd[1].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: mark_tracts_on_slices <intensity ratio>");
+            bool ok = true;
+            ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
+                    "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
+            if(!ok)
+                return run->canceled();
+        }
+        else
+            ratio = run->from_cmd(1,1.0);
+
+        tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
+        for(auto checked_tracks : tractWidget->get_checked_tracks())
+        {
+            const auto& all_tracts = checked_tracks->get_tracts();
+            tipl::par_for(all_tracts.size(),[&](unsigned int i)
+            {
+                auto tracks = all_tracts[i];
+                for(size_t k = 0;k < tracks.size();k +=3)
+                {
+                    tipl::vector<3> p(&tracks[0] + k);
+                    p.to(slice->to_slice);
+                    tracks[k] = p[0];
+                    tracks[k+1] = p[1];
+                    tracks[k+2] = p[2];
+                }
+                for(size_t j = 0;j < tracks.size();j += 3)
+                {
+                    tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),t_mask.shape());
+                    if(t_mask.shape().is_valid(p))
+                        t_mask[p.index()] = 1;
+                    if(j)
+                    {
+                        for(float r = 0.2f;r < 1.0f;r += 0.2f)
+                        {
+                            tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
+                                                     std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
+                                                     std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),t_mask.shape());
+                            if(t_mask.shape().is_valid(p2))
+                                t_mask[p2.index()] = 1;
+                        }
+                    }
+                }
+            });
+        }
+        float mark_value = slice->get_value_range().second*float(ratio);
+        for(size_t i = 0,sz = t_mask.size();i < sz;++i)
+            if(t_mask[i])
+                slice->source_images[i] = mark_value;
+        slice_need_update |= image_updated;
+        glWidget->update();
+        return run->succeed();
+    }
+    if(cmd[0] == "save_slices_to_dicom")
+    {
+        auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+        if(!slice.get() || slice->source_files.empty())
+            return run->failed("save_slices_to_dicom requires original DICOM files loaded from the Slices menu");
+
+        if(cmd[1].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: save_slices_to_dicom <output directory>");
+            QMessageBox::information(this,QApplication::applicationName(),"Please assign the output directory");
+            cmd[1] = QFileDialog::getExistingDirectory(this,"Assign output directory",
+                        tipl::qt::to_qstring(slice->source_files[0].parent_path())).toStdString();
+            if(cmd[1].empty())
+                return run->canceled();
+        }
+        QString dir = QString::fromStdString(cmd[1]);
+        tipl::io::dicom_volume volume;
+        if(!volume.load_from_files(slice->source_files))
+            return run->failed("failed to load the original DICOM files");
+
+        {
+            tipl::image<3> I;
+            volume >> I;
+            if(I.shape() != slice->source_images.shape())
+                return run->failed("selected DICOM files do not match the original slices; please check for missing files");
+        }
+
+        tipl::image<3> out;
+        {
+            uint8_t new_dim_order[3];
+            uint8_t new_flip[3];
+            for(uint8_t i = 0;i < 3; ++i)
+            {
+                new_dim_order[uint8_t(volume.dim_order[i])] = i;
+                new_flip[uint8_t(volume.dim_order[i])] = uint8_t(volume.flip[i]);
+            }
+            tipl::reorder(slice->source_images,out,new_dim_order,new_flip);
+        }
+
+        size_t read_size = 0;
+        {
+            tipl::io::dicom header;
+            if(!header.load_from_file(slice->source_files[0]))
+                return run->failed("invalid DICOM files");
+            read_size = header.width()*header.height();
+        }
+
+        tipl::progress prog("output dicom",true);
+        for(int i = 0,pos = 0;prog(i,slice->source_files.size());++i,pos += read_size)
+        {
+            std::vector<char> buf;
+            {
+                std::ifstream in(slice->source_files[i],std::ios::binary | std::ios::ate);
+                if(!in)
+                    return run->failed("failed to load the original DICOM file: " + slice->source_files[i].u8string());
+                buf.resize(size_t(in.tellg()));
+                in.seekg(0,in.beg);
+                if(read_size*sizeof(short) > buf.size())
+                    return run->failed("compressed DICOM is not supported; please convert DICOM to uncompressed format");
+                if(!in.read(buf.data(),int64_t(buf.size())))
+                    return run->failed("read DICOM failed");
+            }
+            std::copy_n(out.begin()+pos,read_size,reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
+
+            QString output_name = dir + "/mod_" + tipl::qt::to_qstring(slice->source_files[i].stem()) + ".dcm";
+            if(i == 0 && QFileInfo(output_name).exists())
+            {
+                if(run->source != command_source::User)
+                    return run->failed("output DICOM already exists: " + output_name.toStdString());
+                if(QMessageBox::information(this,QApplication::applicationName(),"Previous modifications found. Overwrite?",
+                   QMessageBox::Yes|QMessageBox::Cancel) == QMessageBox::Cancel)
+                    return run->canceled();
+            }
+
+            std::ofstream out(tipl::qt::to_path(output_name),std::ios::binary);
+            if(!out)
+                return run->failed("cannot output DICOM; please check disk space or output permission");
+            out.write(&buf[0],int64_t(buf.size()));
+        }
+        return run->succeed();
+    }
     if(cmd[0] == "delete_slice")
     {
         // cmd[1] : slice index
@@ -1772,7 +1967,6 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QString("There are %1 values in the file. The matrix in the text file is not a square matrix.").arg(buf.size()));
             return;
         }
-        glWidget->connectivity.resize(tipl::shape<2>(dim,dim));
         std::copy(buf.begin(),buf.end(),glWidget->connectivity.begin());
     }
 
@@ -2010,100 +2204,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
 
 void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 {
-    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!slice.get() || slice->source_files.empty())
-    {
-        QMessageBox::critical(this,"ERROR","This function needs original DICOM files (loading them at the[Slices] menu)");
-        return;
-    }
-
-    QMessageBox::information(this,QApplication::applicationName(),"Please assign the output directory");
-    QString dir = QFileDialog::getExistingDirectory(this,"Assign output directory",tipl::qt::to_qstring(slice->source_files[0].parent_path()));
-    if(dir.isEmpty())
-        return;
-    tipl::io::dicom_volume volume;
-    if(!volume.load_from_files(slice->source_files))
-    {
-        QMessageBox::critical(this,"ERROR","Failed to load the original DICOM files");
-        return;
-    }
-
-    {
-        tipl::image<3> I;
-        volume >> I;
-        if(I.shape() != slice->source_images.shape())
-        {
-            QMessageBox::critical(this,"ERROR","Selected DICOM files does not match the original slices. Please check if missing any files.");
-            return;
-        }
-    }
-
-
-    tipl::image<3> out;
-    {
-        uint8_t new_dim_order[3];
-        uint8_t new_flip[3];
-        for(uint8_t i = 0;i < 3; ++i)
-        {
-            new_dim_order[uint8_t(volume.dim_order[i])] = i;
-            new_flip[uint8_t(volume.dim_order[i])] = uint8_t(volume.flip[i]);
-        }
-        tipl::reorder(slice->source_images,out,new_dim_order,new_flip);
-    }
-
-    size_t read_size = 0;
-    {
-        tipl::io::dicom header;
-        if(!header.load_from_file(slice->source_files[0]))
-        {
-            QMessageBox::critical(this,"ERROR","Invalid DICOM files");
-            return;
-        }
-        read_size = header.width()*header.height();
-    }
-
-    tipl::progress prog("output dicom",true);
-    for(int i = 0,pos = 0;prog(i,slice->source_files.size());++i,pos += read_size)
-    {
-        std::vector<char> buf;
-        {
-            std::ifstream in(slice->source_files[i],std::ios::binary | std::ios::ate);
-            if(!in)
-            {
-                QMessageBox::critical(this,"ERROR",QString("Failed to load the original DICOM files: ") + tipl::qt::to_qstring(slice->source_files[i]));
-                return;
-            }
-            buf.resize(size_t(in.tellg()));
-            in.seekg(0,in.beg);
-            if(read_size*sizeof(short) > buf.size())
-            {
-                QMessageBox::critical(this,"ERROR","Compressed DICOM is not supported. Please convert DICOM to uncompressed format.");
-                return;
-            }
-            if(!in.read(buf.data(),int64_t(buf.size())))
-            {
-                QMessageBox::critical(this,"ERROR","Read DICOM failed");
-                return;
-            }
-        }
-        std::copy_n(out.begin()+pos,read_size,reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
-
-        QString output_name = dir + "/mod_" + tipl::qt::to_qstring(slice->source_files[i].stem()) + ".dcm";
-
-        if(i == 0 && QFileInfo(output_name).exists() &&
-           QMessageBox::information(this,QApplication::applicationName(),"Previous modifications found. Overwrite?",
-           QMessageBox::Yes|QMessageBox::Cancel) == QMessageBox::Cancel)
-                return;
-
-        std::ofstream out(tipl::qt::to_path(output_name),std::ios::binary);
-        if(!out)
-        {
-            QMessageBox::critical(this,"ERROR","Cannot output DICOM. Please check disk space or output permission.");
-            return;
-        }
-        out.write(&buf[0],int64_t(buf.size()));
-    }
-    QMessageBox::information(this,QApplication::applicationName(),"File Saved");
+    run_command("save_slices_to_dicom");
 }
 
 void tracking_window::on_tract_target_0_currentIndexChanged(int index)
@@ -2191,7 +2292,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     if(!handle->map_to_mni())
     {
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
+        return ;
     }
 
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
@@ -2282,91 +2383,15 @@ void tracking_window::on_alt_mapping_currentIndexChanged(int index)
 }
 
 
-void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<std::vector<float> >& all_tracts,
-                           std::shared_ptr<SliceModel> slice)
-{
-    tipl::par_for(all_tracts.size(),[&](unsigned int i)
-    {
-        auto tracks = all_tracts[i];
-        for(size_t k = 0;k < tracks.size();k +=3)
-        {
-            tipl::vector<3> p(&tracks[0] + k);
-            p.to(slice->to_slice);
-            tracks[k] = p[0];
-            tracks[k+1] = p[1];
-            tracks[k+2] = p[2];
-        }
-        for(size_t j = 0;j < tracks.size();j += 3)
-        {
-            tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.shape());
-            if(track_map.shape().is_valid(p))
-                track_map[p.index()] = 1;
-            if(j)
-            {
-                for(float r = 0.2f;r < 1.0f;r += 0.2f)
-                {
-                    tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
-                                             std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
-                                             std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.shape());
-                    if(track_map.shape().is_valid(p2))
-                        track_map[p2.index()] = 1;
-                }
-            }
-        }
-    });
-}
-
-
-
-
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
 {
-    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!slice.get() || slice->source_images.empty())
-        return;
-    bool ok = true;
-    double ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
-            "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
-    if(!ok)
-        return;
-    auto current_region = regionWidget->regions[uint32_t(regionWidget->currentRow())];
-    float mark_value = slice->get_value_range().second*float(ratio);
-    auto mask = current_region->to_mask();
-    if(current_region->to_diffusion_space != slice->to_dif)
-    {
-        tipl::image<3,unsigned char> new_mask(slice->dim);
-        tipl::resample<tipl::interpolation::majority>(mask,new_mask,
-            tipl::transformation_matrix<float>(tipl::from_space(slice->to_dif).to(current_region->to_diffusion_space)));
-        mask.swap(new_mask);
-    }
-
-    for(size_t i = 0,sz = mask.size();i < sz;++i)
-        if(mask[i])
-            slice->source_images[i] = mark_value;
-    slice_need_update |= image_updated;
-    glWidget->update();
+    run_command("mark_region_on_slices");
 }
 
 
 void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
 {
-    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!slice.get() || slice->source_images.empty() || tractWidget->tract_models.empty())
-        return;
-    bool ok = true;
-    double ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
-            "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
-    if(!ok)
-        return;
-    tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
-    for(auto checked_tracks : tractWidget->get_checked_tracks())
-        paint_track_on_volume(t_mask,checked_tracks->get_tracts(),slice);
-    float mark_value = slice->get_value_range().second*float(ratio);
-    for(size_t i = 0,sz = t_mask.size();i < sz;++i)
-        if(t_mask[i])
-            slice->source_images[i] = mark_value;
-    slice_need_update |= image_updated;
-    glWidget->update();
+    run_command("mark_tracts_on_slices");
 }
 
 
