@@ -1680,6 +1680,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
         return run->succeed();
     }
 
+void tracking_window::on_actionSave_3D_Model_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,"Save tracts as",QFileInfo(windowTitle()).baseName()+".model.obj","3D files (*.obj);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(!command({"save_3d_model", filename.toStdString()}))
+    {
+        if(!error_msg.empty() && error_msg != "canceled")
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    }
+    else
+        QMessageBox::information(this,QApplication::applicationName(),"File Saved");
+}
+
     if(cmd[0] == "save_3d_model")
     {
         if(cmd[1].empty())

@@ -359,20 +359,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     ui->setupUi(this);
     ui->thread_count->setValue(tipl::max_thread_count >> 1);
-    connect(ui->actionSave_3D_Model, &QAction::triggered, this, [this](){
-        QString filename = QFileDialog::getSaveFileName(
-            this, "Save tracts as", QFileInfo(windowTitle()).baseName()+".model.obj",
-            "3D files (*.obj);;All files (*)");
-        if(filename.isEmpty())
-            return;
-        if(!command({"save_3d_model", filename.toStdString()}))
-        {
-            if(!error_msg.empty() && error_msg != "canceled")
-                QMessageBox::critical(this, "ERROR", error_msg.c_str());
-        }
-        else
-            QMessageBox::information(this, QApplication::applicationName(), "file saved");
-    });
 
     // setup GUI
     {
