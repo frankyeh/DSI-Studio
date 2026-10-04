@@ -1170,8 +1170,8 @@ void AIAgent::update_agent_models(
         else
             ++i;
     for(const auto& name : names)
-        profiles[name] = ollama ?
-            QJsonObject{{"provider",true}} : previous[name].toObject();
+        profiles[name] = ollama ? // "url": the server this model was discovered on, so a chat stays pinned to it
+            QJsonObject{{"provider",true},{"url",ai_ollama_url(settings).first.toString()}} : previous[name].toObject();
 
     if(current_agent == agent)
     {
@@ -1383,13 +1383,12 @@ void AIAgent::refresh_antigravity_models()
 }
 void AIAgent::refresh_ollama_models()
 {
-    // Claude only: configure_codex() has no app-server equivalent yet for routing a turn through Ollama (the
-    // old codex exec launch used --oss/--local-provider=ollama), so offering these in Codex's own model
-    // selector would let a user pick a selection that's silently ignored at connect time
+    // one discovery feeds every agent that can route to Ollama: Claude (Anthropic API) and Codex (Responses API)
     auto set_models = [this](const QStringList& models)
     {
-        if(!agent_entries["Claude"].executable.isEmpty())
-            update_agent_models("Claude",models,true);
+        for(const auto& agent : {QString("Claude"),QString("Codex")})
+            if(!agent_entries[agent].executable.isEmpty())
+                update_agent_models(agent,models,true);
     };
 
     auto ollama = ai_ollama_url(settings);
@@ -1861,7 +1860,8 @@ void AIAgent::update_agent_status_label()
             QString text = agent + dot +
                            (model_name.isEmpty() ? QString("default") : model_name);
             if(model_info.contains("provider"))
-                text += dot+"Ollama@"+ai_ollama_url(settings).first.host();
+                text += dot+"Ollama@"+(model_info.contains("url") ? QUrl(model_info["url"].toString()).host() :
+                                                                    ai_ollama_url(settings).first.host());
             return text;
         };
         ui->ai_agent_status->setText(info ?
@@ -2081,13 +2081,12 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     {
         const auto& entry = agent_entries[provider];
         bool ollama = false;
-        if(provider == "Claude")
-            for(auto profile = entry.profiles.begin();profile != entry.profiles.end();++profile)
-                if(profile.value().toObject().contains("provider"))
-                {
-                    ollama = true;
-                    break;
-                }
+        for(auto profile = entry.profiles.begin();profile != entry.profiles.end();++profile)
+            if(profile.value().toObject().contains("provider"))
+            {
+                ollama = true;
+                break;
+            }
         return !entry.executable.isEmpty() &&
                (entry.status == ai_agent_status::Ready || ollama);
     };
@@ -2290,8 +2289,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
             const auto& entry = agent_entries[provider];
             if(entry.executable.isEmpty() ||
                (entry.status != ai_agent_status::Ready &&
-                (provider != "Claude" ||
-                 !model.currentData().toJsonObject().contains("provider"))))
+                !model.currentData().toJsonObject().contains("provider")))
             {
                 dialog.reject();
                 on_ai_quick_settings_clicked();
@@ -2700,9 +2698,11 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
         project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
     info.launch_model = info.model_settings["model"].toString().trimmed();
-    if(info.model_settings["info"].toObject().contains("provider"))
+    if(auto model_info = info.model_settings["info"].toObject();model_info.contains("provider"))
     {
-        auto [url,configured] = ai_ollama_url(settings);
+        // the chat's own Ollama server, saved with its model; chats saved before servers were recorded use the current setting
+        auto [url,configured] = model_info.contains("url") ? QPair<QUrl,bool>{QUrl(model_info["url"].toString()),true} :
+                                                             ai_ollama_url(settings);
         info.launch_model_url = url;
         info.launch_name += "/Ollama("+info.launch_model_url.host()+")";
         if(!configured)
@@ -2720,6 +2720,9 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
                                  ui->ai_work_dir->text() :
                                  QApplication::applicationDirPath()+"/ai");
     auto env = agent_environment(provider);
+    if(!info.launch_model_url.isEmpty()) // agents inherit HTTP(S)_PROXY; keep LAN Ollama traffic direct
+        env.insert("NO_PROXY",info.launch_model_url.host()+
+                   (env.contains("NO_PROXY") ? ","+env.value("NO_PROXY") : QString()));
     env.insert("DSI_STUDIO_AGENT",provider);
     if(provider == "Muse")
         env.insert("MUSE_SESSION_ID",session);
@@ -3254,8 +3257,18 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
     auto model = info.launch_model;
     auto work_dir = ui->ai_work_dir->text(); // NOT the thread's cwd (that stays prepare_ai()'s applicationDirPath()+"/ai", where AGENTS.md lives) -- granted as extra sandbox access instead, same role "--add-dir" played for the old codex exec launch
     bool resuming = info.status != session_status::New; // pre-launch status: New means never established (open a fresh thread), anything else means session already names a real Codex thread id to resume
-    if(!info.launch_model_url.isEmpty()) // Ollama routing (CODEX_OSS_BASE_URL/--oss) has no app-server equivalent yet -- not part of this first migration step
-        ai_log("Codex/Ollama routing is not yet supported over app-server; connecting to the default model instead.");
+    QStringList args;
+    if(!info.launch_model_url.isEmpty()) // Ollama: a custom provider id -- Codex forces localhost for its reserved "ollama"/"oss" ids (openai/codex#8240)
+    {
+        auto endpoint = info.launch_model_url;
+        endpoint.setPath("/v1");
+        // every -c goes before app-server
+        args << "-c" << "model_providers.dsi_ollama.name=\"DSI Studio Ollama\""
+             << "-c" << "model_providers.dsi_ollama.base_url=\""+endpoint.toString()+"\""
+             << "-c" << "model_providers.dsi_ollama.wire_api=\"responses\""
+             << "-c" << "model_providers.dsi_ollama.requires_openai_auth=false"
+             << "-c" << "model_provider=\"dsi_ollama\"";
+    }
 
     auto write_message = [process](QJsonObject msg)
     {
@@ -3429,7 +3442,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                 {"name","DSI Studio"},{"version","1.0"}}}}}});
     });
 
-    return {"app-server"};
+    return args << "app-server";
 }
 
 void AIAgent::start_ai(ai_info& info,const QString& text)
