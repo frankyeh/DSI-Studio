@@ -1038,7 +1038,8 @@ void AIAgent::show_ai_history(ai_info& info,QJsonObject added_entry)
             content += QString("<div style=\"margin:0;color:#5f6368;font-size:9pt;\">") +
                        activities.join("<br>") + "</div>";
 
-        auto color = user ? "#e8f0fe" : "#e8f5e9";
+        auto type = entry["type"].toString();
+        auto color = user ? "#e8f0fe" : type == "error" ? "#fce8e6" : type == "activity" ? "#f1f3f4" : "#e8f5e9";
         auto time = QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
                     toString("MM/dd HH:mm:ss");
         auto cell = QString(
@@ -1809,7 +1810,7 @@ bool AIAgent::try_connect_github_issue(const QString& url)
             set_ai_status(info->sessions,
                           info->status == session_status::New ? session_status::New : session_status::Failed,
                           error_msg);
-            add_ai_history(*info,"activity",error_msg);
+            add_ai_history(*info,"error",error_msg);
         }
         return false;
     }
@@ -2690,7 +2691,7 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
             message.prepend("ERROR: ");
         set_ai_status(session,info.status == session_status::New ?
                       session_status::New : session_status::Failed,message);
-        add_ai_history(info,"activity",message);
+        add_ai_history(info,"error",message);
         info.save_config();
         return QString();
     };
@@ -2780,7 +2781,7 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
         {
             info->processes = nullptr;
             set_ai_status(info->sessions,session_status::New,message);
-            add_ai_history(*info,"activity",message);
+            add_ai_history(*info,message.startsWith("ERROR:") ? "error" : "activity",message);
             info->save_config(); // projects is non-empty now (the recorded messages), so this actually
                                   // writes -- without it, the .jsonl this just wrote would have no config.json
                                   // to explain its agent/provider on the next reload
@@ -2838,7 +2839,7 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
                item && item->data(Qt::UserRole).toString() == session &&
                ui->ai_chat_input->toPlainText().trimmed().isEmpty())
                 ui->ai_chat_input->setPlainText(text);
-            add_ai_history(info,"activity",message);
+            add_ai_history(info,"error",message);
         }
         update_send_button();
         process->deleteLater();
@@ -2878,7 +2879,7 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
             {
                 set_ai_status(session,failed ? session_status::Failed : session_status::Completed,
                               error_message);
-                add_ai_history(info,"activity",error_message);
+                add_ai_history(info,failed ? "error" : "activity",error_message);
             }
             else if(!process->property("had_reply").toBool())
             {
@@ -2934,8 +2935,8 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                         if(auto* info = ai_info::find(process->objectName()))
                         {
                             auto details = "Error: "+QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact));
-                            set_ai_status(info->sessions,session_status::Thinking,details);
-                            add_ai_history(*info,"activity",details);
+                            set_ai_status(info->sessions,session_status::Failed,details); // red dot; a later reply restores the status
+                            add_ai_history(*info,"error",details);
                             // an expired OAuth login is not detected by "claude auth status"; require sign-in before the next launch
                             if(event["error"].toString() == "authentication_failed" &&
                                details.contains("OAuth",Qt::CaseInsensitive))
@@ -3054,7 +3055,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 {
                     message.prepend("ERROR: ");
                     set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"activity",message);
+                    add_ai_history(*current,"error",message);
                 }
                 continue;
             }
@@ -3146,7 +3147,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                             error = params["reason"].toString();
                         error = "ERROR: "+(error.isEmpty() ? QString("Muse turn failed.") : error);
                         set_ai_status(current->sessions,session_status::Failed,error);
-                        add_ai_history(*current,"activity",error);
+                        add_ai_history(*current,"error",error);
                     }
                     else if(terminal == "cancelled")
                         set_ai_status(current->sessions,session_status::WaitingUser,"Stopped by user.");
@@ -3246,7 +3247,7 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
                                     (terminal.isEmpty() ? QString("request failed.") :
                                      terminal.toLower()+".") : error);
                     set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"activity",message);
+                    add_ai_history(*current,"error",message);
                 }
             }
         }
@@ -3324,7 +3325,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                     process->setProperty("stderr",process->property("stderr").toByteArray()+'\n'+message.toUtf8());
                     return process->kill();
                 }
-                add_ai_history(*info,"activity",message);
+                add_ai_history(*info,"error",message);
             }
             return;
         }
@@ -3415,7 +3416,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                 {
                     auto err = turn["error"].toObject()["message"].toString();
                     set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
-                    add_ai_history(*info,"activity",info->status_message);
+                    add_ai_history(*info,"error",info->status_message);
                 }
                 else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
                     set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
@@ -3431,7 +3432,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             {
                 // An error notification can precede recovery; turn/completed owns the final status.
                 set_ai_status(info->sessions,info->status,message);
-                add_ai_history(*info,"activity",message);
+                add_ai_history(*info,"error",message);
             }
         }
     };
