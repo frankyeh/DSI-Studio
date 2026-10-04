@@ -78,10 +78,6 @@ void start_process(QProcess& process,const QString& executable,QStringList args)
 #endif
     process.start(executable,args);
 }
-bool is_valid_session_id(const QString& id)
-{
-    return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
-}
 QString muse_uuid_v7()
 {
     auto bytes = QUuid::createUuid().toRfc4122();
@@ -788,10 +784,8 @@ void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
-    refresh_codex_models();
-    refresh_ollama_models();
-    refresh_muse_models();
-    refresh_antigravity_models();
+    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
+        refresh_agent_models(provider);
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
@@ -1225,6 +1219,14 @@ void AIAgent::update_agent_models(
 }
 void AIAgent::refresh_agent_executables() // re-run discovery so an install completed after DSI Studio was already running (e.g. via the sidebar's Install button) is picked up without a restart -- called from the constructor and showEvent()
 {
+    auto set_executable = [this](const QString& provider,QString path)
+    {
+        if(!QFileInfo::exists(path))
+            path.clear();
+        agent_entries[provider].executable = path;
+        ai_log(path.isEmpty() ? provider+" not found" : provider+": "+path);
+    };
+
     QString codex_path = QStandardPaths::findExecutable("codex");
     if(codex_path.isEmpty())
     {
@@ -1235,16 +1237,14 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
             if(QFileInfo::exists(codex_path = dir.filePath(name+"/codex.exe")))
                 break;
     }
-    if(!QFileInfo::exists(codex_path))
-        codex_path.clear();
+    set_executable("Codex",codex_path);
 
     QString claude_path = QStandardPaths::findExecutable("claude");
 #ifdef Q_OS_WIN
     if(claude_path.isEmpty())
         claude_path = QDir::homePath()+"/.local/bin/claude.exe";
 #endif
-    if(!QFileInfo::exists(claude_path))
-        claude_path.clear();
+    set_executable("Claude",claude_path);
 
     QString muse_path = QStandardPaths::findExecutable("muse");
     if(muse_path.isEmpty())
@@ -1257,8 +1257,7 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
         muse_path = QDir::homePath()+"/.local/bin/muse";
 #endif
     }
-    if(!QFileInfo::exists(muse_path))
-        muse_path.clear();
+    set_executable("Muse",muse_path);
 
     QString antigravity_path = QStandardPaths::findExecutable("agy");
     if(antigravity_path.isEmpty())
@@ -1269,25 +1268,26 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
         antigravity_path = QDir::homePath()+"/.local/bin/agy";
 #endif
     }
-    if(!QFileInfo::exists(antigravity_path))
-        antigravity_path.clear();
+    set_executable("Antigravity",antigravity_path);
 
-    agent_entries["Codex"].executable = codex_path;
-    agent_entries["Claude"].executable = claude_path;
-    agent_entries["Muse"].executable = muse_path;
-    agent_entries["Antigravity"].executable = antigravity_path;
-    ai_log(codex_path.isEmpty() ? "Codex not found" : "Codex: "+codex_path);
-    ai_log(claude_path.isEmpty() ? "Claude not found" : "Claude: "+claude_path);
-    ai_log(muse_path.isEmpty() ? "Muse not found" : "Muse: "+muse_path);
-    ai_log(antigravity_path.isEmpty() ? "Antigravity not found" : "Antigravity: "+antigravity_path);
-
-    if(!claude_path.isEmpty())
+    if(!agent_entries["Claude"].executable.isEmpty())
     {
         // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
         static const QStringList claude_models{"sonnet","fable","opus","haiku"};
         update_agent_models("Claude",claude_models,false);
         ai_log("Claude models: "+claude_models.join(", "));
     }
+}
+void AIAgent::refresh_agent_models(const QString& provider)
+{
+    if(provider == "Codex")
+        refresh_codex_models();
+    else if(provider == "Claude")
+        refresh_ollama_models();
+    else if(provider == "Muse")
+        refresh_muse_models();
+    else if(provider == "Antigravity")
+        refresh_antigravity_models();
 }
 void AIAgent::refresh_codex_models()
 {
@@ -2503,14 +2503,22 @@ void AIAgent::on_ai_quick_settings_clicked()
     title->setObjectName("ai_dialog_title");
     root->addWidget(title);
 
-    auto* agent_card = new QFrame;
-    agent_card->setObjectName("ai_step_card");
-    auto* agent_layout = new QVBoxLayout(agent_card);
-    agent_layout->setContentsMargins(14,12,14,12);
-    agent_layout->setSpacing(8);
-    auto* agent_heading = new QLabel("Local agents");
-    agent_heading->setObjectName("ai_step_heading");
-    agent_layout->addWidget(agent_heading);
+    // a titled settings card appended to the dialog; returns its layout for the section-specific controls
+    auto add_card = [root](const QString& heading)
+    {
+        auto* card = new QFrame;
+        card->setObjectName("ai_step_card");
+        auto* layout = new QVBoxLayout(card);
+        layout->setContentsMargins(14,12,14,12);
+        layout->setSpacing(8);
+        auto* label = new QLabel(heading);
+        label->setObjectName("ai_step_heading");
+        layout->addWidget(label);
+        root->addWidget(card);
+        return layout;
+    };
+
+    auto* agent_layout = add_card("Local agents");
 
     // one row per agent: name and colored status on the left, a single action button on the right
     QHash<QString,QPair<QLabel*,QPushButton*> > agent_rows;
@@ -2572,14 +2580,7 @@ void AIAgent::on_ai_quick_settings_clicked()
                 else
                 {
                     refresh_agent_status(provider);
-                    if(provider == "Codex")
-                        refresh_codex_models();
-                    else if(provider == "Claude")
-                        refresh_ollama_models();
-                    else if(provider == "Muse")
-                        refresh_muse_models();
-                    else if(provider == "Antigravity")
-                        refresh_antigravity_models();
+                    refresh_agent_models(provider);
                 }
             }
             else if(status == ai_agent_status::SignInRequired ||
@@ -2598,16 +2599,8 @@ void AIAgent::on_ai_quick_settings_clicked()
         if(auto it = agent_rows.find(provider);it != agent_rows.end())
             refresh_agent_row(provider,it->first,it->second);
     });
-    root->addWidget(agent_card);
 
-    auto* ollama_card = new QFrame;
-    ollama_card->setObjectName("ai_step_card");
-    auto* ollama_layout = new QVBoxLayout(ollama_card);
-    ollama_layout->setContentsMargins(14,12,14,12);
-    ollama_layout->setSpacing(8);
-    auto* ollama_heading = new QLabel("Ollama connection");
-    ollama_heading->setObjectName("ai_step_heading");
-    ollama_layout->addWidget(ollama_heading);
+    auto* ollama_layout = add_card("Ollama connection");
     auto* ollama_form = new QFormLayout;
     ollama_form->setContentsMargins(0,0,0,0);
     QLineEdit host(settings.value("ai/ollama_host","localhost").toString());
@@ -2665,26 +2658,16 @@ void AIAgent::on_ai_quick_settings_clicked()
         });
     });
 
-    root->addWidget(ollama_card);
-
-    auto* github_card = new QFrame;
-    github_card->setObjectName("ai_step_card");
-    auto* github_layout = new QVBoxLayout(github_card);
-    github_layout->setContentsMargins(14,12,14,12);
-    github_layout->setSpacing(8);
-    auto* github_heading = new QLabel("GitHub access");
-    github_heading->setObjectName("ai_step_heading");
+    auto* github_layout = add_card("GitHub access");
     auto* github_body = new QLabel("Required to connect an AI agent session through a GitHub issue.");
     github_body->setObjectName("ai_step_body");
     github_body->setWordWrap(true);
-    github_layout->addWidget(github_heading);
     github_layout->addWidget(github_body);
     QPushButton github_button("Set up GitHub token"); // stays enabled even once configured -- unlike Codex/Claude sign-in, a token can't be re-checked live, so re-opening this is the only way to replace/reset it
     auto* github_button_row = new QHBoxLayout;
     github_button_row->addWidget(&github_button);
     github_button_row->addStretch();
     github_layout->addLayout(github_button_row);
-    root->addWidget(github_card);
 
     auto update_github_button = [&]
     {
@@ -2698,14 +2681,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         update_github_button();
     });
 
-    auto* chat_card = new QFrame;
-    chat_card->setObjectName("ai_step_card");
-    auto* chat_layout = new QVBoxLayout(chat_card);
-    chat_layout->setContentsMargins(14,12,14,12);
-    chat_layout->setSpacing(8);
-    auto* chat_heading = new QLabel("Chat behavior");
-    chat_heading->setObjectName("ai_step_heading");
-    chat_layout->addWidget(chat_heading);
+    auto* chat_layout = add_card("Chat behavior");
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox show_reasoning("Show reasoning");
@@ -2723,7 +2699,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     debug_row->addWidget(debug_label);
     debug_row->addWidget(&debug,1);
     chat_layout->addLayout(debug_row);
-    root->addWidget(chat_card);
 
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
     buttons.button(QDialogButtonBox::Save)->setObjectName("ai_primary_button");

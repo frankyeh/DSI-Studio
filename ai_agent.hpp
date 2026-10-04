@@ -115,6 +115,7 @@ class AIAgent : public QMainWindow
     void update_agent_models(const QString&,const QStringList&,bool);
     void refresh_agent_executables(); // re-runs local-agent executable discovery into agent_entries[agent].executable
     void refresh_agent_status(const QString& provider = {});
+    void refresh_agent_models(const QString& provider); // the one caller-facing model refresh; dispatches to the provider-specific refresh below
     void refresh_ollama_models();
     void refresh_codex_models();
     void refresh_muse_models();

@@ -19,6 +19,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
+#include <QUuid>
 #include <QWidget>
 
 #include <algorithm>
@@ -30,6 +31,11 @@
 
 std::unordered_map<QString,ai_info> ai_infos;
 extern QString ai_project_dir;
+
+bool is_valid_session_id(const QString& id)
+{
+    return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
+}
 
 QString session_status_text(session_status status)
 {
