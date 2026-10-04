@@ -2530,7 +2530,8 @@ void AIAgent::on_ai_quick_settings_clicked()
                 {
                     refresh_agent_status(provider);
                     refresh_agent_models(provider);
-                    refresh_ollama_models(); // a newly found Claude or Codex also gets the Ollama models
+                    if(provider == "Claude" || provider == "Codex") // the agents that can use Ollama; a failed query would clear their Ollama models
+                        refresh_ollama_models();
                 }
             }
             else if(status == ai_agent_status::SignInRequired || status == ai_agent_status::Ready)
