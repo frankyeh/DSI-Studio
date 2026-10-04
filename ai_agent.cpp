@@ -2531,9 +2531,9 @@ void AIAgent::on_ai_quick_settings_clicked()
             button->setText("Sign in to "+provider+"...");
             return;
         case ai_agent_status::Ready:
-            button->setEnabled(provider == "Claude");
+            button->setEnabled(true);
             button->setText(provider+": "+(entry.status_info.isEmpty() ? "Ready" : entry.status_info)+
-                            (provider == "Claude" ? " (click to sign in again)" : ""));
+                            " (click to sign in again)");
             return;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
