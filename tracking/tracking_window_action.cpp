@@ -2005,7 +2005,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 return run->canceled();
         }
         QString filename = QString::fromStdString(cmd[1]);
-        if(filename.endsWith(".mat"))
+        if(!filename.endsWith(".mat",Qt::CaseInsensitive) && !filename.endsWith(".txt",Qt::CaseInsensitive))
+            return run->failed("usage: open_connectivity_matrix <.mat or .txt file>");
+        if(!QFileInfo::exists(filename))
+            return run->failed("cannot find " + cmd[1]);
+        if(filename.endsWith(".mat",Qt::CaseInsensitive))
         {
             tipl::io::mat_read in;
             if(!in.load_from_file(cmd[1]))
@@ -2036,7 +2040,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         if(regionWidget->regions.empty())
             return run->failed("Please load the regions first for visualization");
-        if(filename.endsWith(".txt"))
+        if(filename.endsWith(".txt",Qt::CaseInsensitive))
         {
             std::vector<float> buf;
             std::ifstream in(tipl::qt::to_path(filename));
@@ -2063,18 +2067,23 @@ bool tracking_window::command(std::vector<std::string> cmd)
                                arg(glWidget->connectivity.width()).
                                arg(glWidget->connectivity.height()).
                                arg(regionWidget->regions.size()).toStdString());
-        for(size_t i = 0,pos = 0;i < glWidget->connectivity.height();++i)
-        {
-            std::string line;
-            for(size_t j = 0;j < glWidget->connectivity.width();++j,++pos)
-            {
-                line += std::to_string(glWidget->connectivity[pos]);
-                line += " ";
-            }
-            tipl::out() << line;
-        }
         glWidget->pos_max_connectivity = tipl::max_value(glWidget->connectivity);
         glWidget->neg_max_connectivity = tipl::min_value(glWidget->connectivity);
+        if(run->source == command_source::AI) // a full matrix can exceed the GitHub issue channel's 60 KB result cap
+            tipl::out() << "connectivity matrix " << glWidget->connectivity.width() << "x" << glWidget->connectivity.height()
+                        << " loaded (values " << glWidget->neg_max_connectivity << " to " << glWidget->pos_max_connectivity
+                        << "); graph display enabled";
+        else
+            for(size_t i = 0,pos = 0;i < glWidget->connectivity.height();++i)
+            {
+                std::string line;
+                for(size_t j = 0;j < glWidget->connectivity.width();++j,++pos)
+                {
+                    line += std::to_string(glWidget->connectivity[pos]);
+                    line += " ";
+                }
+                tipl::out() << line;
+            }
         if(glWidget->pos_max_connectivity == 0.0f)
             glWidget->pos_max_connectivity = 1.0f;
         if(glWidget->neg_max_connectivity == 0.0f)
