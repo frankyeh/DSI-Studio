@@ -3939,7 +3939,7 @@ Tracking</string>
     <string>Load Color Map...</string>
    </property>
    <property name="toolTip">
-    <string>Load Color Map</string>
+    <string>run load_color_map</string>
    </property>
   </action>
   <action name="actionRestore_Tracking_Settings">
@@ -4169,6 +4169,9 @@ Tracking</string>
    <property name="text">
     <string>Visualize Graph...</string>
    </property>
+   <property name="toolTip">
+    <string>run open_connectivity_matrix</string>
+   </property>
   </action>
   <action name="actionOpen_MNI_Region">
    <property name="icon">
@@ -4304,6 +4307,9 @@ Tracking</string>
   <action name="actionFIB_protocol">
    <property name="text">
     <string>FIB Protocol...</string>
+   </property>
+   <property name="toolTip">
+    <string>run show_fib_protocol</string>
    </property>
   </action>
   <action name="actionMark_Region_on_T1W_T2W">
@@ -4447,6 +4453,9 @@ Tracking</string>
   <action name="actionLoad_Parameter_ID">
    <property name="text">
     <string>Load Parameter ID...</string>
+   </property>
+   <property name="toolTip">
+    <string>run load_parameter_id</string>
    </property>
   </action>
   <action name="actionMove_Objects">
