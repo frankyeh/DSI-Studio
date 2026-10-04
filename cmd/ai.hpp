@@ -73,7 +73,7 @@ extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, befo
 
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
-ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to
+ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to; nullptr (nothing changed) if to already exists or from is missing
 QUrl agent_install_url(const QString& provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
 void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status

@@ -67,7 +67,6 @@ class AIAgent : public QMainWindow
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
     void update_agent_status_label();
-    void try_set_current_model(const QString& name); // writes the selected model, or an empty name for the default, to the app-wide settings above
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
     QNetworkAccessManager github_manager;
@@ -100,7 +99,7 @@ class AIAgent : public QMainWindow
     void new_chat_dialog(); // New Chat: a local agent/model, or a GitHub issue channel bound to the new chat for its lifetime
     void create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(const QString& title,const QString& accept_text,
-                              QString& provider,QString& value); // value: model name for a local agent, issue URL for the GitHub agent
+                              QString& provider,QString& value,QJsonObject& info); // value: model name for a local agent, issue URL for the GitHub agent; info: the chosen model's profile (empty for GitHub)
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);

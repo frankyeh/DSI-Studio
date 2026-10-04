@@ -54,10 +54,11 @@ ai_info* assign_ai_session(const QString& from,const QString& to)
 {
     if(from == to)
         return ai_info::find(to);
+    if(ai_info::find(to)) // never re-key onto an existing chat: the failed insert would destroy the source
+        return nullptr;
     auto node = ai_infos.extract(from);
     if(node.empty())
-        return ai_info::find(to);
-    Q_ASSERT(!ai_info::find(to));
+        return nullptr;
     node.key() = to;
     node.mapped().sessions = to;
     if(node.mapped().project_items)
@@ -253,7 +254,8 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
     auto target = selected.isEmpty() ? fallback : selected;
     int selected_index = -1;
     for(int i = 0;i < model.count() && selected_index < 0;++i)
-        if(model.itemText(i) == target || model.itemText(i).startsWith(target+" ("))
+        if((model.itemText(i) == target || model.itemText(i).startsWith(target+" (")) &&
+           (selected_info.isEmpty() || model.itemData(i).toJsonObject().value("url") == selected_info.value("url"))) // same name on another Ollama server is a different model
             selected_index = i;
     if(selected_index < 0 && !selected.isEmpty())
     {
@@ -378,4 +380,4 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
     return record_history(entry);
-}
+}

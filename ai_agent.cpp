@@ -629,18 +629,26 @@ void AIAgent::poll_github_issue()
         request_obj.remove("id");
         request_obj.remove("include_log");
 
-        bool set_title = !ai_info::find(session_id);
+        // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
+        // "https://api.github.com/repos/<owner>/<repo>/issues/<number>", built by DSI Studio itself
+        auto issue_url = QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
+        // the session UUID is external input: an existing chat is reused only if it is this issue's own GitHub chat
+        auto* existing = ai_info::find(session_id);
+        if(existing && (existing->provider != "GitHub" ||
+                        existing->model_settings["github_issue_url"].toString() != issue_url))
+            return publish_github_result(stamp(QJsonObject{
+                {"state","error"},
+                {"response",QJsonObject{{"status","error"},
+                    {"error","session belongs to another chat; use a new session UUID"}}}}));
+        bool set_title = !existing;
         auto* web_info = ai_info::find(web_agent_session_id);
-        if(web_info && web_info->status == session_status::New)
+        if(!existing && web_info && web_info->status == session_status::New)
             assign_ai_session(web_agent_session_id,session_id);
         web_agent_session_id = session_id;
         if(auto* info = ai_info::create(session_id,"GitHub","GitHub")) // records which issue this session is bound to so Resume can reconnect it
         {
             set_ai_status(info->sessions,session_status::Thinking,"GitHub request received");
-            // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
-            // "https://api.github.com/repos/<owner>/<repo>/issues/<number>", built by DSI Studio itself
-            info->model_settings["github_issue_url"] =
-                QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
+            info->model_settings["github_issue_url"] = issue_url;
             info->save_config();
         }
 
@@ -1267,10 +1275,14 @@ void AIAgent::refresh_codex_models()
 
     auto* process = new QProcess(this);
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-            this,[=]
+            this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
-        QStringList models;
+        process->deleteLater();
         auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
+        // a failed/timed-out/unrecognized query says nothing about the account: keep the last valid list
+        if(exit_code || exit_status != QProcess::NormalExit || !(doc.isArray() || doc.object().value("models").isArray()))
+            return;
+        QStringList models;
         auto list = doc.isArray() ? doc.array() :
                         doc.object()["models"].toArray();
         for(const auto& value : list)
@@ -1283,7 +1295,6 @@ void AIAgent::refresh_codex_models()
         }
 
         update_agent_models("Codex",models,false);
-        process->deleteLater();
     });
 
     start_process(*process,path,{"debug","models"});
@@ -1408,13 +1419,12 @@ void AIAgent::refresh_ollama_models()
             [=]
             {
                 QStringList models;
-                bool okay = reply->error() == QNetworkReply::NoError;
-                if(okay)
-                    for(const auto& value :
-                         QJsonDocument::fromJson(reply->readAll()).
-                         object()["models"].toArray())
-                        models << value.toObject()["name"].toString();
-                ai_log("Ollama "+url.toString()+" "+ (okay ? "connected" : reply->errorString()));
+                auto list = QJsonDocument::fromJson(reply->readAll()).object().value("models");
+                bool okay = reply->error() == QNetworkReply::NoError && list.isArray(); // the list means "models on the current server": a failed or non-Ollama reply clears it
+                for(const auto& value : list.toArray())
+                    if(auto name = value.toObject()["name"].toString();!name.isEmpty())
+                        models << name;
+                ai_log("Ollama "+url.toString()+" "+ (okay ? "connected" : reply->error() ? reply->errorString() : QString("is not an Ollama server")));
                 if(ai_ollama_url(settings).first == ollama.first) // drop a stale reply after the host changed
                     set_models(okay ? models : QStringList());
                 reply->deleteLater();
@@ -1875,13 +1885,6 @@ void AIAgent::update_agent_status_label()
     update_send_button();
 }
 
-void AIAgent::try_set_current_model(const QString& name) // writes the app-wide default (see the member declaration); name is empty for "default" (model_combo_key()'s data value, not the "default" UI label) or a specific model name -- both are always meaningful, never a no-op
-{
-    const auto& profiles = agent_entries[current_agent].profiles;
-    current_model_name = name;
-    current_model_info = profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
-}
-
 ai_info* AIAgent::selected_info() const
 {
     auto* item = ui->ai_project_list->currentItem();
@@ -2061,7 +2064,7 @@ bool AIAgent::setup_github_token()
 }
 
 bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_text,
-                                   QString& provider,QString& value)
+                                   QString& provider,QString& value,QJsonObject& info)
 {
     QDialog dialog(this);
     dialog.setWindowTitle(title);
@@ -2227,7 +2230,8 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
         else
             set_model_selector(model,agent_entries[provider].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
-                provider == current_agent ? current_model_name : QString());
+                provider == current_agent ? current_model_name : QString(),{},
+                provider == current_agent ? current_model_info : QJsonObject());
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
@@ -2274,8 +2278,8 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
         update_agent(provider);
         if(models_changed && agent.currentData().toString() == provider)
         {
-            auto selected = model_combo_key(model);
-            set_model_selector(model,agent_entries[provider].profiles,selected);
+            set_model_selector(model,agent_entries[provider].profiles,model_combo_key(model),{},
+                               model.currentData().toJsonObject());
         }
     };
     connect(this,&AIAgent::agent_status_changed,&dialog,
@@ -2316,6 +2320,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
 
     provider = agent.currentData().toString();
     value = provider == "GitHub" ? issue_url_edit.text().trimmed() : model_combo_key(model);
+    info = provider == "GitHub" ? QJsonObject() : model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
     return true;
 }
 
@@ -2351,7 +2356,8 @@ void AIAgent::create_new_chat(const QString& provider,const QString& agent)
 void AIAgent::new_chat_dialog()
 {
     QString provider,value;
-    if(!run_new_chat_dialog("New Chat","Start",provider,value))
+    QJsonObject info;
+    if(!run_new_chat_dialog("New Chat","Start",provider,value,info))
         return;
     // Keep web_agent_session_id until disconnect_github_issue() marks the old chat Completed.
     disconnect_github_issue();
@@ -2364,7 +2370,8 @@ void AIAgent::new_chat_dialog()
     }
 
     current_agent = provider;
-    try_set_current_model(value);
+    current_model_name = value;
+    current_model_info = info;
     web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
     // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
@@ -2384,12 +2391,15 @@ void AIAgent::on_ai_agent_status_clicked()
     {
         if(info->provider == "GitHub" || info->provider == "AgentServer") // bound to its one issue / a log record: no agent or model to change
             return;
+        if(info->processes) // a running agent keeps the model it was launched with
+            return void(QMessageBox::information(this,"Change Model","Stop the agent before changing its model."));
         QDialog dialog(this);
         dialog.setWindowTitle("Change Model");
         QFormLayout layout(&dialog);
         QLabel agent_label(info->provider);
         QComboBox model;
-        set_model_selector(model,agent_entries[info->provider].profiles,info->model_settings["model"].toString());
+        set_model_selector(model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
+                           info->model_settings["info"].toObject());
         layout.addRow("Agent:",&agent_label);
         layout.addRow("Model:",&model);
         QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
@@ -2399,18 +2409,16 @@ void AIAgent::on_ai_agent_status_clicked()
         if(dialog.exec() != QDialog::Accepted)
             return;
 
-        auto name = model_combo_key(model);
-        auto profiles = agent_entries.value(info->provider).profiles;
-        info->model_settings["model"] = name;
-        info->model_settings["info"] =
-            profiles.contains(name) ? profiles[name].toObject() : QJsonObject();
+        info->model_settings["model"] = model_combo_key(model);
+        info->model_settings["info"] = model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
         info->save_config();
         update_agent_status_label();
         return;
     }
 
     QString provider,value;
-    if(!run_new_chat_dialog("Change Agent/Model","Save",provider,value))
+    QJsonObject info;
+    if(!run_new_chat_dialog("Change Agent/Model","Save",provider,value,info))
         return;
 
     if(provider == "GitHub")
@@ -2424,7 +2432,8 @@ void AIAgent::on_ai_agent_status_clicked()
     }
 
     current_agent = provider;
-    try_set_current_model(value);
+    current_model_name = value;
+    current_model_info = info;
     update_agent_status_label();
 }
 
@@ -2712,6 +2721,8 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
         info.launch_name += "/Ollama("+info.launch_model_url.host()+")";
         if(!configured)
             return fail_launch("Set the Ollama host/IP in AI Settings first.");
+        if(url.host().isEmpty()) // never let a damaged Ollama profile fall through to native/cloud routing
+            return fail_launch("This chat's saved Ollama server is invalid; choose its model again in Change Model.");
     }
     else if(agent_entries[provider].status == ai_agent_status::SignInRequired)
     {
@@ -3085,7 +3096,10 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 auto* current = old_session == new_session ? ai_info::find(old_session) :
                                 assign_ai_session(old_session,new_session);
                 if(!current)
-                    current = ai_info::create(new_session,"Muse");
+                {
+                    fail_agent_process(process,"Muse session could not be assigned.");
+                    continue;
+                }
                 set_ai_status(current->sessions,session_status::Thinking,
                               "Session started; waiting for Muse");
                 current->save_config();
@@ -3346,13 +3360,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             // Codex's own protocol contract broke -- do not let a malformed id corrupt ai_infos'
             // keying; surface it immediately instead of silently accepting it
             ai_log("invalid thread id from Codex app-server (not a UUID): "+new_session);
-            if(auto* info = ai_info::find(old_session))
-            {
-                set_ai_status(info->sessions,resuming ? session_status::Failed : session_status::New,
-                              "Codex returned an invalid thread ID.");
-                show_ai_project(*info);
-            }
-            return process->kill();
+            return fail_agent_process(process,"Codex returned an invalid thread ID.");
         }
         // a resume must keep its thread id; a fresh start renames DSI Studio's placeholder to Codex's id
         if(resuming && new_session != old_session)
