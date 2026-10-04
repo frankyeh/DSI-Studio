@@ -483,7 +483,6 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     github_etag.clear();
     github_last_id = last_id;
     github_pending_result = QJsonObject();
-    github_timer.start(500);
 
     // a request already in the body was posted while the channel was down, or DSI Studio stopped before
     // publishing its result -- never execute it on connect; report its outcome as unknown instead
@@ -497,7 +496,10 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
             {"response",QJsonObject{{"status","error"},
                 {"error","outcome unknown: this request was posted while the channel was down, or DSI Studio stopped "
                          "before publishing its result; verify state before resending with a higher id"}}}});
+        // no poll timer here: send_pending_result() restarts polling after this PATCH (or backs off), so only one request is ever in flight
     }
+    else
+        github_timer.start(500);
     return true;
 }
 
