@@ -430,29 +430,21 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         return error = "issue title must start with \"DSI Studio session\"",false;
 
     ai_log("github connect: fetching comments");
-    QJsonArray comments;
-    for(int page = 1;;++page)
+    // comments come oldest first and DSI Studio creates its result comment at the first connect, so one page suffices
+    auto comments = QJsonDocument::fromJson(
+        github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
+                         "GET",{},ok,error)).array();
+    if(!ok)
     {
-        auto batch = QJsonDocument::fromJson(
-            github_blocking(github_manager,github_request(QUrl(
-                issue_api.toString()+"/comments?per_page=100&page="+QString::number(page))),
-                "GET",{},ok,error)).array();
-        if(!ok)
-        {
-            ai_log("github connect: fetching comments failed: "+error);
-            error += " (check that this token has access to this specific repository)";
-            return false;
-        }
-        for(const auto& comment : batch)
-            comments.append(comment);
-        if(batch.size() < 100)
-            break;
+        ai_log("github connect: fetching comments failed: "+error);
+        error += " (check that this token has access to this specific repository)";
+        return false;
     }
     ai_log("github connect: "+QString::number(comments.size())+" comment(s) fetched");
 
-    // find our own result comment (author must match the token's identity); if more than one matches, keep the highest last_id rather than just the first
+    // find our own result comment (author must match the token's identity)
     QUrl result_api;
-    qint64 last_id = -1;
+    qint64 last_id = 0;
     for(const auto& each : comments)
     {
         auto comment = each.toObject();
@@ -461,16 +453,12 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         auto body = QJsonDocument::fromJson(comment["body"].toString().toUtf8());
         if(!body.isObject() || !body.object()["dsi_session_result"].toBool())
             continue;
-        auto candidate_id = body.object()["last_id"].toInteger();
-        if(candidate_id > last_id)
-        {
-            last_id = candidate_id;
-            result_api = QUrl(comment["url"].toString());
-        }
+        last_id = body.object()["last_id"].toInteger();
+        result_api = QUrl(comment["url"].toString());
+        break;
     }
     if(result_api.isEmpty())
     {
-        last_id = 0; // fresh session, no matching comment found
         QJsonObject initial{{"state","idle"},{"last_id",0},{"dsi_session_result",true},{"issue",issue_number}};
         QJsonObject post_body{{"body",QString::fromUtf8(QJsonDocument(initial).toJson(QJsonDocument::Compact))}};
         auto post_request = github_request(QUrl(issue_api.toString()+"/comments"));
@@ -497,26 +485,18 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     github_pending_result = QJsonObject();
     github_timer.start(500);
 
-    // a request can have been executed (side effects already ran) without its result ever being
-    // confirmed published, e.g. DSI Studio exited in between; the durable marker written just before
-    // execution survives that, so report the outcome as unknown here instead of silently re-running it
+    // a request already in the body was posted while the channel was down, or DSI Studio stopped before
+    // publishing its result -- never execute it on connect; report its outcome as unknown instead
+    if(auto body_id = QJsonDocument::fromJson(issue["body"].toString().toUtf8()).object()["id"].toInteger();
+       body_id > last_id)
     {
-        QSettings settings;
-        auto pending_issue = settings.value("ai/github_pending_issue").toString();
-        auto pending_id = settings.value("ai/github_pending_id",0).toLongLong();
-        if(!pending_issue.isEmpty() && pending_issue == issue_api.toString() && pending_id > last_id)
-        {
-            ai_log("github connect: request "+QString::number(pending_id)+
-                   " was executing when DSI Studio last stopped; publishing an unknown-outcome result instead of re-running it");
-            settings.remove("ai/github_pending_issue");
-            settings.remove("ai/github_pending_id");
-            publish_github_result(QJsonObject{
-                {"id",pending_id},{"last_id",pending_id},{"dsi_session_result",true},{"issue",issue_number},
-                {"state","error"},
-                {"response",QJsonObject{{"status","error"},
-                    {"error","previous execution outcome unknown after a DSI Studio restart; "
-                             "the command may or may not have completed - verify manually before resending"}}}});
-        }
+        ai_log("github connect: request "+QString::number(body_id)+" predates this connection; reporting it instead of running it");
+        publish_github_result(QJsonObject{
+            {"id",body_id},{"last_id",body_id},{"dsi_session_result",true},{"issue",issue_number},
+            {"state","error"},
+            {"response",QJsonObject{{"status","error"},
+                {"error","outcome unknown: this request was posted while the channel was down, or DSI Studio stopped "
+                         "before publishing its result; verify state before resending with a higher id"}}}});
     }
     return true;
 }
@@ -552,10 +532,10 @@ bool AIAgent::handle_github_reply(QNetworkReply* reply,quint64 connection_id,int
 
     status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     data = reply->readAll();
-    if(auto delay = github_retry_delay(reply,data))
+    if(status == 429 || (status == 403 && data.contains("rate limit")))
     {
         if(!github_issue_api.isEmpty())
-            github_timer.start(delay); // rate limited (429, or 403 that means the same thing)
+            github_timer.start(60000); // rate limited: fixed one-minute back-off
         return false;
     }
     if(github_permanent_failure(status))
@@ -662,12 +642,6 @@ void AIAgent::poll_github_issue()
             info->save_config();
         }
 
-        // durable marker, survives a crash: if DSI Studio exits before the result below is confirmed
-        // published, the next connect_github_issue() sees this and reports the outcome as unknown
-        // instead of re-executing the same request
-        QSettings().setValue("ai/github_pending_issue",github_issue_api.toString());
-        QSettings().setValue("ai/github_pending_id",id);
-
         auto started = QDateTime::currentMSecsSinceEpoch();
         QByteArray reply_bytes;
         ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
@@ -756,14 +730,6 @@ void AIAgent::send_pending_result()
         bool closed = github_pending_result["state"].toString() == "closed";
         github_last_id = pending_id;
         github_pending_result = QJsonObject();
-        {
-            QSettings settings;
-            if(settings.value("ai/github_pending_id",0).toLongLong() == pending_id)
-            {
-                settings.remove("ai/github_pending_issue");
-                settings.remove("ai/github_pending_id");
-            }
-        }
         if(closed)
             return disconnect_github_issue();
         if(!github_issue_api.isEmpty())
@@ -799,13 +765,13 @@ void AIAgent::closeEvent(QCloseEvent* event)
 {
     // let each process's own QProcess::finished handler (in prepare_ai()) run the real finish lifecycle --
     // it already knows how to tell a fresh, never-established launch (reverts to New) from an established
-    // session being stopped (Completed) or a genuine crash (Failed), and handles pending prompts/history/UI.
+    // session being stopped (Completed) or a genuine crash (Failed), and handles history/UI.
     // Setting this window's ai_infos to Completed unconditionally here bypassed all of that, e.g. wrongly
     // marking a still-New placeholder (never a real Codex/Claude thread) as resumable
     for(auto& entry : ai_infos)
         if(auto* process = entry.second.processes)
         {
-            process->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message right after this window tried to shut everything down
+            process->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
             process->closeWriteChannel();
             QTimer::singleShot(5000,process,[process]
             {
@@ -913,13 +879,10 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
                       "Request completed; waiting for next request.");
 
     auto entry = info.record_reply(chat,reasoning);
-    if(!info.prompts.isEmpty())
-        result["prompt"] = QJsonArray::fromStringList(info.prompts);
     reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
     ai_log(QString("reply for %1@%2: %3 ...")
                .arg(info.agent_name,session,
                     QString::fromUtf8(reply).left(32)));
-    info.prompts.clear();
     show_ai_project(info,entry);
 }
 
@@ -1944,10 +1907,8 @@ AIAgent::send_action AIAgent::current_send_action() const
         return has_input ? send_action::Send : send_action::Disabled;
     if(!has_input)
         return send_action::Stop;
-    // a process exists (either provider): always Send from the user's point of view -- start_ai() itself buffers
-    // the message internally if the process hasn't finished starting yet, same as it always has, but that's no
-    // longer a distinct state worth surfacing on the button
-    return send_action::Send;
+    // a message can only be written to a running process; while it is starting or exiting, Send waits
+    return info->processes->state() == QProcess::Running ? send_action::Send : send_action::Disabled;
 }
 
 void AIAgent::update_send_button()
@@ -2096,8 +2057,7 @@ bool AIAgent::setup_github_token()
     return dialog.exec() == QDialog::Accepted;
 }
 
-// resume only ever applies to the web agent: the Agent combo is locked to GitHub and disabled, only the issue URL (defaulted to the last one) can still be changed
-bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
+bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_text,
                                    QString& provider,QString& value)
 {
     QDialog dialog(this);
@@ -2149,9 +2109,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
                                 QString("Antigravity")})
         update_agent(provider);
 
-    agent.setCurrentIndex(
-        agent.findData(resume ? QString("GitHub") : current_agent));
-    agent.setEnabled(!resume);
+    agent.setCurrentIndex(agent.findData(current_agent));
     layout.addRow("Agent:",&agent);
 
     QWidget field_container,local,web; // declared before their would-be children below, so they are destroyed after them
@@ -2162,9 +2120,6 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
     local_layout->addRow("Model:",&model);
-    // web_agent_session_id (not sidebar selection) is the reliable way to find which chat is being resumed
-    auto* resume_info = resume ? ai_info::find(web_agent_session_id) : nullptr;
-    auto resume_issue_path = resume_info ? resume_info->model_settings["github_issue_url"].toString() : QString();
     auto* web_layout = new QVBoxLayout(&web);
     web_layout->setContentsMargins(0,0,0,0);
     web_layout->setSpacing(10);
@@ -2217,7 +2172,7 @@ bool AIAgent::run_new_chat_dialog(bool resume,const QString& title,const QString
     issue_field_frame->setObjectName("ai_field_frame");
     auto* issue_row = new QHBoxLayout(issue_field_frame);
     issue_row->setContentsMargins(10,2,4,2);
-    QLineEdit issue_url_edit(resume_issue_path.isEmpty() ? QString() : "https://github.com/"+resume_issue_path);
+    QLineEdit issue_url_edit;
     issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
     QPushButton paste_issue("Paste");
     issue_row->addWidget(&issue_url_edit,1);
@@ -2392,28 +2347,17 @@ void AIAgent::create_new_chat(const QString& provider,const QString& agent)
     ui->ai_project_list->setCurrentItem(info->project_items);
 }
 
-void AIAgent::new_chat_dialog(bool resume)
+void AIAgent::new_chat_dialog()
 {
-    // resuming an already-known chat: reconnect with its saved issue link directly, no dialog
-    if(resume)
-        if(auto* info = ai_info::find(web_agent_session_id))
-            if(auto path = info->model_settings["github_issue_url"].toString();!path.isEmpty())
-            {
-                try_connect_github_issue("https://github.com/"+path);
-                return;
-            }
-
     QString provider,value;
-    if(!run_new_chat_dialog(resume,resume ? "Resume Chat" : "New Chat",resume ? "Resume" : "Start",
-                             provider,value))
+    if(!run_new_chat_dialog("New Chat","Start",provider,value))
         return;
     // Keep web_agent_session_id until disconnect_github_issue() marks the old chat Completed.
     disconnect_github_issue();
 
     if(provider == "GitHub")
     {
-        if(!resume)
-            create_new_chat("GitHub","GitHub (ChatGPT, Muse, ...)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
+        create_new_chat("GitHub","GitHub (ChatGPT, Muse, ...)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
         try_connect_github_issue(value);
         return;
     }
@@ -2430,24 +2374,14 @@ void AIAgent::new_chat_dialog(bool resume)
 
 void AIAgent::on_ai_new_chat_clicked()
 {
-    new_chat_dialog(false);
+    new_chat_dialog();
 }
 
 void AIAgent::on_ai_agent_status_clicked()
 {
     if(auto* info = selected_info())
     {
-        if(info->provider == "GitHub") // change or reconnect using a possibly different issue link
-        {
-            web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
-            QString provider,value;
-            if(!run_new_chat_dialog(true,"Change Issue Link","Reconnect",provider,value))
-                return;
-            disconnect_github_issue(); // leave the old channel cleanly before attempting a different one
-            try_connect_github_issue(value);
-            return;
-        }
-        if(info->provider == "AgentServer") // no local agent/model of its own to change
+        if(info->provider == "GitHub" || info->provider == "AgentServer") // bound to its one issue / a log record: no agent or model to change
             return;
         QDialog dialog(this);
         dialog.setWindowTitle("Change Model");
@@ -2475,7 +2409,7 @@ void AIAgent::on_ai_agent_status_clicked()
     }
 
     QString provider,value;
-    if(!run_new_chat_dialog(false,"Change Agent/Model","Save",provider,value))
+    if(!run_new_chat_dialog("Change Agent/Model","Save",provider,value))
         return;
 
     if(provider == "GitHub")
@@ -2727,7 +2661,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-QString AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
+QString AIAgent::prepare_ai(ai_info& info,const QString& text)
 {
     // fresh state each attempt -- a field this attempt doesn't set (e.g. launch_model_url when not using Ollama) must not carry over a stale value from the last one
     info.launch_name.clear();
@@ -2740,9 +2674,6 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     {
         if(!message.startsWith("ERROR:"))
             message.prepend("ERROR: ");
-        // A failed launch still owes a pending message a home so the next successful run picks it up.
-        if(input == ai_input::Pending)
-            info.prompts.append(text);
         set_ai_status(session,info.status == session_status::New ?
                       session_status::New : session_status::Failed,message);
         add_ai_history(info,"activity",message);
@@ -2807,18 +2738,15 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     auto name = info.launch_name; // a plain value copy for the async handlers below -- never info itself
     const bool first_launch = info.status == session_status::New; // pre-launch status: a never-established chat returns to New, not Failed
 
-    if(input == ai_input::User)
-    {
-        // recorded here, once, unconditionally, the moment it's sent -- not deferred to whichever async
-        // establishment event (Codex app-server "thread/start"/"thread/resume", Claude stream-json "system"/"init") happens to
-        // confirm the session later. That deferral was the actual bug: it required stashing this text in
-        // the async handler's own closure to "replay" once establishment confirmed, and if the backend ever
-        // sent that one-time event more than once (observed with an Ollama-routed session), the stale
-        // stashed text got replayed again too, duplicating the opening message into the chat history
-        add_ai_history(info,"user",text);
-        info.save_config();
-        ui->ai_chat_input->clear();
-    }
+    // recorded here, once, unconditionally, the moment it's sent -- not deferred to whichever async
+    // establishment event (Codex app-server "thread/start"/"thread/resume", Claude stream-json "system"/"init") happens to
+    // confirm the session later. That deferral was the actual bug: it required stashing this text in
+    // the async handler's own closure to "replay" once establishment confirmed, and if the backend ever
+    // sent that one-time event more than once (observed with an Ollama-routed session), the stale
+    // stashed text got replayed again too, duplicating the opening message into the chat history
+    add_ai_history(info,"user",text);
+    info.save_config();
+    ui->ai_chat_input->clear();
 
     // this session was never established, so it has no real id worth preserving -- back to New entirely,
     // as if this attempt never happened, rather than left marked Failed. The message itself stays recorded
@@ -2885,11 +2813,9 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             auto& info = *found;
             info.processes = nullptr;
             set_ai_status(session,session_status::Failed,message);
-            if(input == ai_input::Pending)
-                info.prompts.append(text);
-            else if(auto* item = ui->ai_project_list->currentItem();
-                    item && item->data(Qt::UserRole).toString() == session &&
-                    ui->ai_chat_input->toPlainText().trimmed().isEmpty())
+            if(auto* item = ui->ai_project_list->currentItem();
+               item && item->data(Qt::UserRole).toString() == session &&
+               ui->ai_chat_input->toPlainText().trimmed().isEmpty())
                 ui->ai_chat_input->setPlainText(text);
             add_ai_history(info,"activity",message);
         }
@@ -2927,13 +2853,7 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
             auto& info = *found;
             info.processes = nullptr;
 
-            if(user_stopped) // stop means stop: no auto-continue into a queued message -- caller only marks
-                info.prompts.clear(); // the process user_stopped and kills it, this is the one place that decides what that implies for queued prompts
-            auto pending = info.prompts.join("\n\n");
-            info.prompts.clear();
-            if(!pending.isEmpty())
-                start_ai(info,pending,ai_input::Pending);
-            else if(failed || user_stopped)
+            if(failed || user_stopped)
             {
                 set_ai_status(session,failed ? session_status::Failed : session_status::Completed,
                               error_message);
@@ -3510,7 +3430,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
     return {"app-server"};
 }
 
-void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
+void AIAgent::start_ai(ai_info& info,const QString& text)
 {
     Q_ASSERT(info.provider == "Codex" || info.provider == "Claude" ||
              info.provider == "Muse" || info.provider == "Antigravity");
@@ -3523,12 +3443,6 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         add_ai_history(info,"user",text);
         ui->ai_chat_input->clear();
 
-        if(info.processes->state() != QProcess::Running)
-        {
-            info.prompts.append(text);
-            set_ai_status(info.sessions,info.status,"Message queued for the AI agent.");
-            return;
-        }
         if(info.provider == "Claude")
             info.processes->write(claude_input(text));
         else if(info.provider == "Muse")
@@ -3546,7 +3460,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         return;
     }
 
-    auto executable = prepare_ai(info,text,input);
+    auto executable = prepare_ai(info,text);
     if(executable.isEmpty()) // prepare_ai() failed before ever creating a process
         return;
     QStringList args;
@@ -3581,7 +3495,8 @@ void AIAgent::on_ai_send_message_clicked()
         return;
     case send_action::Resume: // only reachable when info exists, see current_send_action()
         web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
-        new_chat_dialog(true);
+        // one chat, one issue: always its saved link -- an unbound or unreachable issue simply fails
+        try_connect_github_issue("https://github.com/"+info->model_settings["github_issue_url"].toString());
         return;
     case send_action::Stop: // only reachable when info exists, see current_send_action()
         if(info->provider == "GitHub")
@@ -3595,12 +3510,12 @@ void AIAgent::on_ai_send_message_clicked()
             info->processes->write(codex_turn_interrupt(info->processes->objectName(),turn_id));
         else
         {
-            info->processes->setProperty("user_stopped",true); // finished()'s own handler clears queued prompts for a user_stopped session -- no auto-continue into a queued message
+            info->processes->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
             info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
         }
         return;
     case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
-        start_ai(*info,text,ai_input::User);
+        start_ai(*info,text);
         update_send_button();
         return;
     }

@@ -38,7 +38,6 @@ struct ai_info{
     QString sessions,agent_name,provider,project_titles;
     QProcess* processes = nullptr;
     QList<QJsonObject> projects;
-    QStringList prompts;
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "github_issue_url": bound issue, GitHub agent sessions only
     quint64 log_position = quint64(-1);
@@ -80,7 +79,6 @@ void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink 
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
 QString ai_dialog_style(); // shared stylesheet for the GitHub-setup/new-chat dialogs
 bool github_permanent_failure(int http_status); // true iff retrying this GitHub HTTP status can't ever succeed (bad token/permissions/resource)
-int github_retry_delay(QNetworkReply* reply,const QByteArray& data); // wait time in ms if GitHub signals rate limiting (429, or 403 meaning the same), else 0
 QByteArray github_blocking(QNetworkAccessManager& manager,const QNetworkRequest& request,
                             const char* verb,const QByteArray& body,bool& ok,QString& error); // blocking GET/POST/PATCH: connect_github_issue() is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
 QByteArray claude_input(const QString& text); // wraps text in Claude's stream-json stdin message format

@@ -151,30 +151,11 @@ QString ai_dialog_style()
         "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
 }
 
-// 401/403/404/410/422 mean the token/permissions/resource is wrong (retrying can't fix it); checked after github_retry_delay() since 403 can also mean rate limiting
+// 401/403/404/410/422 mean the token/permissions/resource is wrong (retrying can't fix it); checked after handle_github_reply()'s rate-limit test since 403 can also mean rate limiting
 bool github_permanent_failure(int status)
 {
     return status == 401 || status == 403 || status == 404 ||
            status == 410 || status == 422;
-}
-
-// returns the wait time in ms if GitHub signals rate limiting (429, or 403 meaning the same), else 0
-int github_retry_delay(QNetworkReply* reply,const QByteArray& data)
-{
-    bool ok = false;
-    int seconds = reply->rawHeader("Retry-After").toInt(&ok);
-    if(ok && seconds > 0)
-        return seconds*1000;
-    if(reply->rawHeader("X-RateLimit-Remaining") == "0")
-    {
-        qint64 reset = reply->rawHeader("X-RateLimit-Reset").toLongLong(&ok);
-        if(ok)
-            return int(std::max<qint64>(1000,reset*1000-QDateTime::currentMSecsSinceEpoch()));
-    }
-    auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if(status == 429 || (status == 403 && data.contains("rate limit")))
-        return 60000;
-    return 0;
 }
 
 // blocking helper: connect_github_issue is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state

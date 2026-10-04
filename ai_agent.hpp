@@ -26,8 +26,6 @@ namespace Ui {
 class AIAgent;
 }
 
-enum class ai_input {User,Pending};
-
 enum class ai_agent_status
 {
     Unknown = 0,
@@ -99,9 +97,9 @@ class AIAgent : public QMainWindow
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
     bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
     bool setup_github_token();
-    void new_chat_dialog(bool resume); // shared by New Chat and Resume; resume locks the mode and disables the local agent/model panel
+    void new_chat_dialog(); // New Chat: a local agent/model, or a GitHub issue channel bound to the new chat for its lifetime
     void create_new_chat(const QString& provider,const QString& agent = {});
-    bool run_new_chat_dialog(bool resume,const QString& title,const QString& accept_text,
+    bool run_new_chat_dialog(const QString& title,const QString& accept_text,
                               QString& provider,QString& value); // value: model name for a local agent, issue URL for the GitHub agent
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
@@ -120,12 +118,12 @@ class AIAgent : public QMainWindow
     void refresh_codex_models();
     void refresh_muse_models();
     void refresh_antigravity_models();
-    void start_ai(ai_info&,const QString&,ai_input);
+    void start_ai(ai_info&,const QString&);
     QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
     QStringList configure_claude(const ai_info&,const QString&);
     QStringList configure_muse(const ai_info&,const QString&);
     QStringList configure_antigravity(const ai_info&,const QString&);
-    QString prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
+    QString prepare_ai(ai_info&,const QString&); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
     explicit AIAgent(MainWindow*);
