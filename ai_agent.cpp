@@ -2493,7 +2493,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         case ai_agent_status::Ready:
             color = "#34a853";
             text = entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info;
-            action = provider == "Claude" ? "Sign In Again" : "Signed In";
+            action = "Sign In Again"; // switch accounts or recover stale credentials
             break;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
@@ -2505,8 +2505,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         label->setText("<b>"+provider+"</b><br><span style='color:"+color+";'>&#9679;</span> "
                        "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>");
         button->setText(action);
-        button->setEnabled(entry.status != ai_agent_status::Checking &&
-                           (entry.status != ai_agent_status::Ready || provider == "Claude"));
+        button->setEnabled(entry.status != ai_agent_status::Checking);
     };
     for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
     {
@@ -2533,8 +2532,7 @@ void AIAgent::on_ai_quick_settings_clicked()
                     refresh_agent_models(provider);
                 }
             }
-            else if(status == ai_agent_status::SignInRequired ||
-                    (status == ai_agent_status::Ready && provider == "Claude"))
+            else if(status == ai_agent_status::SignInRequired || status == ai_agent_status::Ready)
             {
                 if(run_agent_login(provider))
                     refresh_agent_status(provider);
