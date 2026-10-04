@@ -2512,39 +2512,54 @@ void AIAgent::on_ai_quick_settings_clicked()
     agent_heading->setObjectName("ai_step_heading");
     agent_layout->addWidget(agent_heading);
 
-    QPushButton codex,claude,muse,antigravity;
-    auto refresh_agent_button = [this](const QString& provider,QPushButton* button)
+    // one row per agent: name and colored status on the left, a single action button on the right
+    QHash<QString,QPair<QLabel*,QPushButton*> > agent_rows;
+    auto refresh_agent_row = [this](const QString& provider,QLabel* label,QPushButton* button)
     {
         const auto& entry = agent_entries[provider];
+        QString color = "#9aa0a6",text = "Not installed",action = "Install";
         switch(entry.status)
         {
         case ai_agent_status::NotInstalled:
-            button->setEnabled(true);
-            button->setText("Install "+provider);
-            return;
+            break;
         case ai_agent_status::Checking:
-            button->setEnabled(false);
-            button->setText("Checking "+provider+" status...");
-            return;
+            color = "#4285f4";
+            text = "Checking...";
+            action = "Sign In";
+            break;
         case ai_agent_status::SignInRequired:
-            button->setEnabled(true);
-            button->setText("Sign in to "+provider+"...");
-            return;
+            color = "#f9ab00";
+            text = "Not signed in";
+            action = "Sign In";
+            break;
         case ai_agent_status::Ready:
-            button->setEnabled(true);
-            button->setText(provider+": "+(entry.status_info.isEmpty() ? "Ready" : entry.status_info)+
-                            " (click to sign in again)");
-            return;
+            color = "#34a853";
+            text = entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info;
+            action = "Sign In";
+            break;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
-            button->setEnabled(true);
-            button->setText("Check "+provider+" status");
-            return;
+            color = "#ea4335";
+            text = "Status unavailable";
+            action = "Check Status";
+            break;
         }
+        label->setText("<b>"+provider+"</b><br><span style='color:"+color+";'>&#9679;</span> "
+                       "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>");
+        button->setText(action);
+        button->setEnabled(entry.status != ai_agent_status::Checking);
     };
-    auto setup_agent_button = [&](const QString& provider,QPushButton* button)
+    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
     {
-        refresh_agent_button(provider,button);
+        auto* label = new QLabel;
+        auto* button = new QPushButton;
+        button->setMinimumWidth(110);
+        auto* row = new QHBoxLayout;
+        row->addWidget(label,1);
+        row->addWidget(button);
+        agent_layout->addLayout(row);
+        agent_rows[provider] = {label,button};
+        refresh_agent_row(provider,label,button);
         connect(button,&QPushButton::clicked,&dialog,[&,provider]
         {
             auto status = agent_entries[provider].status;
@@ -2574,21 +2589,12 @@ void AIAgent::on_ai_quick_settings_clicked()
             else if(status == ai_agent_status::Unknown || status == ai_agent_status::Error)
                 refresh_agent_status(provider);
         });
-        agent_layout->addWidget(button);
-    };
-    setup_agent_button("Codex",&codex);
-    setup_agent_button("Claude",&claude);
-    setup_agent_button("Muse",&muse);
-    setup_agent_button("Antigravity",&antigravity);
+    }
     connect(this,&AIAgent::agent_status_changed,&dialog,
-            [&,refresh_agent_button](const QString& provider)
+            [&,refresh_agent_row](const QString& provider)
     {
-        auto* button = provider == "Codex" ? &codex :
-                       provider == "Claude" ? &claude :
-                       provider == "Muse" ? &muse :
-                       provider == "Antigravity" ? &antigravity : nullptr;
-        if(button)
-            refresh_agent_button(provider,button);
+        if(auto it = agent_rows.find(provider);it != agent_rows.end())
+            refresh_agent_row(provider,it->first,it->second);
     });
     root->addWidget(agent_card);
 
