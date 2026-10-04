@@ -252,20 +252,16 @@ private slots:
     void on_rendering_efficiency_currentIndexChanged(int index);
 
     void on_actionAdjust_Mapping_triggered();
-    void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
 
-    void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
 
 
-    void on_actionFIB_protocol_triggered();
 
     void on_actionMark_Region_on_T1W_T2W_triggered();
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
     void on_actionSave_Slices_to_DICOM_triggered();
 
-    void on_actionLoad_Parameter_ID_triggered();
 
     void insertPicture();
 
