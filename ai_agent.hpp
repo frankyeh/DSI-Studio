@@ -125,7 +125,7 @@ class AIAgent : public QMainWindow
     QStringList configure_claude(const ai_info&,const QString&);
     QStringList configure_muse(const ai_info&,const QString&);
     QStringList configure_antigravity(const ai_info&,const QString&);
-    void prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes -- check info.processes to see whether it succeeded; the process callbacks advance info.status
+    QString prepare_ai(ai_info&,const QString&,ai_input); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
     explicit AIAgent(MainWindow*);

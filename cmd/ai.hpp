@@ -50,7 +50,7 @@ struct ai_info{
     // overwritten before the next launch reads them. Kept on ai_info itself (not a separate parameter) so
     // configure_codex()/configure_claude() can read it straight off the chat, and so a not-yet-renamed old
     // placeholder's launch data stays reachable via ai_info::find() alone
-    QString launch_name,launch_executable,launch_model;
+    QString launch_name,launch_model;
     QUrl launch_model_url;
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString,QString = {}); // session, provider, optional display agent name

@@ -78,6 +78,11 @@ void start_process(QProcess& process,const QString& executable,QStringList args)
 #endif
     process.start(executable,args);
 }
+void fail_agent_process(QProcess* process,const QString& message) // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
+{
+    process->setProperty("fatal_error",message);
+    process->kill();
+}
 QString muse_uuid_v7()
 {
     auto bytes = QUuid::createUuid().toRfc4122();
@@ -2722,11 +2727,10 @@ void AIAgent::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
+QString AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 {
     // fresh state each attempt -- a field this attempt doesn't set (e.g. launch_model_url when not using Ollama) must not carry over a stale value from the last one
     info.launch_name.clear();
-    info.launch_executable.clear();
     info.launch_model.clear();
     info.launch_model_url.clear();
     auto provider = info.provider;
@@ -2743,14 +2747,15 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
                       session_status::New : session_status::Failed,message);
         add_ai_history(info,"activity",message);
         info.save_config();
+        return QString();
     };
 
     // Resolve agent
     info.launch_name = provider;
     if(agent_entries[provider].executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
         refresh_agent_executables();
-    info.launch_executable = agent_entries[provider].executable;
-    if(info.launch_executable.isEmpty())
+    auto executable = agent_entries[provider].executable;
+    if(executable.isEmpty())
     {
         QDesktopServices::openUrl(agent_install_url(provider)); // same as the sidebar's Install button
         return fail_launch(info.launch_name+" is not installed. Opening the install page...");
@@ -2800,6 +2805,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
     info.processes = process;
     auto name = info.launch_name; // a plain value copy for the async handlers below -- never info itself
+    const bool first_launch = info.status == session_status::New; // pre-launch status: a never-established chat returns to New, not Failed
 
     if(input == ai_input::User)
     {
@@ -2839,7 +2845,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         process->setProperty("stderr",error.right(8*1024));
     });
 
-    connect(process,&QProcess::started,this,[=,status = info.status]
+    connect(process,&QProcess::started,this,[=]
     {
         // stdin stays open for every local provider: Codex app-server, Claude stream-json, and Muse MSP
         auto session = process->objectName();
@@ -2853,8 +2859,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         // wrongly persist established:false over it (see save_config())
         if(auto* info = ai_info::find(session))
         {
-            set_ai_status(session,status == session_status::New ?
-                          session_status::New : session_status::Thinking,
+            set_ai_status(session,first_launch ? session_status::New : session_status::Thinking,
                           "Waiting for "+name+" connection");
             show_ai_project(*info);
         }
@@ -2862,7 +2867,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
     });
 
     connect(process,&QProcess::errorOccurred,this,
-            [=,status = info.status](QProcess::ProcessError error)
+            [=](QProcess::ProcessError error)
     {
         if(error != QProcess::FailedToStart)
             return;
@@ -2873,7 +2878,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
         auto* found = ai_info::find(session);
         // A first launch that was never established has no real id to preserve; a reconnect keeps its id.
-        if(!found || (status == session_status::New && found->status == session_status::New))
+        if(!found || (first_launch && found->status == session_status::New))
             restore_new_chat(message);
         else
         {
@@ -2894,8 +2899,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
     connect(process,
             QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-            this,[=,status = info.status]
-            (int exit_code,QProcess::ExitStatus exit_status)
+            this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
         bool user_stopped = process->property("user_stopped").toBool();
         auto session = process->objectName();
@@ -2914,7 +2918,7 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
 
         auto* found = ai_info::find(session);
         // Same reasoning as errorOccurred: only an unestablished first launch returns to New.
-        if(!found || (status == session_status::New && found->status == session_status::New))
+        if(!found || (first_launch && found->status == session_status::New))
             restore_new_chat(user_stopped ? "Stopped by user." :
                              failed ? error_message :
                              "AI agent ended before creating a new chat.");
@@ -2949,12 +2953,12 @@ void AIAgent::prepare_ai(ai_info& info,const QString& text,ai_input input)
         update_send_button();
         process->deleteLater();
     });
+    return executable;
 }
 
 QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
 {
     auto* process = info.processes;
-    auto session = info.sessions; // captured by value into the async handlers below -- never info itself
     static const char* ollama_model_vars[] = {
         "ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
         "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"};
@@ -3068,7 +3072,7 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
         "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
-        info.status == session_status::New ? "--session-id" : "--resume",session};
+        info.status == session_status::New ? "--session-id" : "--resume",info.sessions};
     // an absent --model falls back to whatever the Claude CLI last remembered from an unrelated session, not a real default
     args << "--model" << (info.launch_model.isEmpty() ? "sonnet" : info.launch_model);
     return args;
@@ -3104,12 +3108,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 auto message = msg["error"].toObject()["message"].toString().trimmed();
                 message = "Muse "+(message.isEmpty() ? QString("request failed.") : message);
                 if(id == "initialize" || id == session_request)
-                {
-                    process->setProperty("fatal_error",message);
-                    process->setProperty("stderr",process->property("stderr").toByteArray()+
-                                         '\n'+message.toUtf8());
-                    process->kill();
-                }
+                    fail_agent_process(process,message);
                 else if(auto* current = ai_info::find(process->objectName()))
                 {
                     message.prepend("ERROR: ");
@@ -3149,11 +3148,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 auto new_session = msg["result"].toObject()["session"].toObject()["sessionId"].toString();
                 if(!is_valid_session_id(new_session))
                 {
-                    auto message = QString("Muse returned an invalid session ID.");
-                    process->setProperty("fatal_error",message);
-                    process->setProperty("stderr",process->property("stderr").toByteArray()+
-                                         '\n'+message.toUtf8());
-                    process->kill();
+                    fail_agent_process(process,"Muse returned an invalid session ID.");
                     continue;
                 }
                 auto old_session = process->objectName();
@@ -3231,8 +3226,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
 QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& text)
 {
     auto* process = info.processes;
-    auto session = info.sessions;
-    auto status = info.status;
+    bool resuming = info.status != session_status::New;
     auto workspace = ui->ai_work_dir->text();
     auto ai_dir = QDir::cleanPath(QApplication::applicationDirPath()+"/ai");
     auto prompt = "Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+
@@ -3251,23 +3245,20 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
                 auto new_session = msg["conversation_id"].toString();
                 if(!is_valid_session_id(new_session))
                 {
-                    process->setProperty("fatal_error","Antigravity returned an invalid conversation ID.");
-                    process->kill();
+                    fail_agent_process(process,"Antigravity returned an invalid conversation ID.");
                     continue;
                 }
                 auto old_session = process->objectName();
-                if(status != session_status::New && old_session != new_session)
+                if(resuming && old_session != new_session)
                 {
-                    process->setProperty("fatal_error","Antigravity resumed a different conversation ID.");
-                    process->kill();
+                    fail_agent_process(process,"Antigravity resumed a different conversation ID.");
                     continue;
                 }
                 auto* current = old_session == new_session ? ai_info::find(old_session) :
                                 assign_ai_session(old_session,new_session);
                 if(!current)
                 {
-                    process->setProperty("fatal_error","Antigravity session could not be assigned.");
-                    process->kill();
+                    fail_agent_process(process,"Antigravity session could not be assigned.");
                     continue;
                 }
                 if(old_session != new_session)
@@ -3323,8 +3314,8 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
                      "--add-dir",workspace};
     if(!info.launch_model.isEmpty())
         args << "--model" << info.launch_model;
-    if(status != session_status::New)
-        args << "--conversation" << session;
+    if(resuming)
+        args << "--conversation" << info.sessions;
     return args;
 }
 
@@ -3338,7 +3329,6 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
     // content), same as Claude's own complete "assistant" event -- no delta accumulation needed.
     auto* process = info.processes;
     auto session = info.sessions; // captured by value into the async handler below -- never info itself (Codex renames/rekeys the session there)
-    auto name = info.launch_name;
     auto model = info.launch_model;
     auto work_dir = ui->ai_work_dir->text(); // NOT the thread's cwd (that stays prepare_ai()'s applicationDirPath()+"/ai", where AGENTS.md lives) -- granted as extra sandbox access instead, same role "--add-dir" played for the old codex exec launch
     bool resuming = info.status != session_status::New; // pre-launch status: New means never established (open a fresh thread), anything else means session already names a real Codex thread id to resume
@@ -3362,7 +3352,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
     };
 
     // our own request's reply: {"id":...,"result":...} or {"id":...,"error":...}, never has "method"
-    auto handle_response = [=,status = info.status](const QJsonObject& msg)
+    auto handle_response = [=](const QJsonObject& msg)
     {
         auto id = msg["id"].toString();
         if(msg.contains("error"))
@@ -3418,31 +3408,25 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             ai_log("invalid thread id from Codex app-server (not a UUID): "+new_session);
             if(auto* info = ai_info::find(old_session))
             {
-                set_ai_status(info->sessions,status == session_status::New ?
-                              session_status::New : session_status::Failed,
+                set_ai_status(info->sessions,resuming ? session_status::Failed : session_status::New,
                               "Codex returned an invalid thread ID.");
                 show_ai_project(*info);
             }
             return process->kill();
         }
-        auto* old_info = ai_info::find(old_session);
-        // never established before -- still just DSI Studio's own placeholder, safe to rename in place
-        bool still_placeholder = status == session_status::New && old_info &&
-                                 old_info->status == session_status::New;
-        auto* info = still_placeholder ?
-            assign_ai_session(old_session,new_session) :
-            ai_info::create(new_session,"Codex",name); // this whole handler is Codex-specific
-        if(info)
-        {
-            set_ai_status(info->sessions,session_status::Thinking,
-                          "Session started; waiting for agent input");
-            if(!still_placeholder) // a genuinely different/new entry -- old_info (still alive, just not renamed) is the only place its settings still exist
-                info->model_settings = old_info ? old_info->model_settings : QJsonObject();
-            info->save_config();
-        }
+        // a resume must keep its thread id; a fresh start renames DSI Studio's placeholder to Codex's id
+        if(resuming && new_session != old_session)
+            return fail_agent_process(process,"Codex resumed a different thread ID.");
+        auto* info = resuming ? ai_info::find(old_session) :
+                                assign_ai_session(old_session,new_session);
+        if(!info) // the chat was deleted while launching -- deletion stays deleted
+            return process->kill();
+        set_ai_status(info->sessions,session_status::Thinking,
+                      "Session started; waiting for agent input");
+        info->save_config();
         // status/rename only -- the opening message was already recorded, once, synchronously, when
         // it was sent (see prepare_ai()); this event has no content-recording role at all anymore
-        if(info && old_session != new_session)
+        if(old_session != new_session)
         {
             process->setObjectName(new_session);
             info->processes = process;
@@ -3539,33 +3523,31 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         add_ai_history(info,"user",text);
         ui->ai_chat_input->clear();
 
-        bool send = info.processes->state() == QProcess::Running;
-        if(send)
+        if(info.processes->state() != QProcess::Running)
         {
-            if(info.provider == "Claude")
-                info.processes->write(claude_input(text));
-            else if(info.provider == "Muse")
-                info.processes->write(muse_turn_start(info.processes->objectName(),text));
-            else if(info.provider == "Antigravity")
-                info.processes->write(antigravity_input(text));
-            else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
-            {
-                auto turn_id = info.processes->property("turn_id").toString();
-                info.processes->write(turn_id.isEmpty() ?
-                    codex_turn_start("turn_start",info.processes->objectName(),text) :
-                    codex_turn_steer(info.processes->objectName(),turn_id,text));
-            }
-        }
-        else
             info.prompts.append(text);
-
-        set_ai_status(info.sessions,send ? session_status::Thinking : info.status,send ?
-                      "Message sent; waiting for agent" : "Message queued for the AI agent.");
+            set_ai_status(info.sessions,info.status,"Message queued for the AI agent.");
+            return;
+        }
+        if(info.provider == "Claude")
+            info.processes->write(claude_input(text));
+        else if(info.provider == "Muse")
+            info.processes->write(muse_turn_start(info.processes->objectName(),text));
+        else if(info.provider == "Antigravity")
+            info.processes->write(antigravity_input(text));
+        else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
+        {
+            auto turn_id = info.processes->property("turn_id").toString();
+            info.processes->write(turn_id.isEmpty() ?
+                codex_turn_start("turn_start",info.processes->objectName(),text) :
+                codex_turn_steer(info.processes->objectName(),turn_id,text));
+        }
+        set_ai_status(info.sessions,session_status::Thinking,"Message sent; waiting for agent");
         return;
     }
 
-    prepare_ai(info,text,input);
-    if(!info.processes) // prepare_ai() failed before ever creating a process
+    auto executable = prepare_ai(info,text,input);
+    if(executable.isEmpty()) // prepare_ai() failed before ever creating a process
         return;
     QStringList args;
     if(info.provider == "Codex")
@@ -3576,7 +3558,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
         args = configure_antigravity(info,text);
     else
         args = configure_claude(info,text);
-    ai_log("start " + info.launch_executable +
+    ai_log("start " + executable +
            " args: " + args.join(" ").remove("\n"));
     // New only for a genuinely never-established launch; an already-established session being resumed (info.status
     // here is still the pre-launch value -- configure_codex()/configure_claude() above only read it) shows
@@ -3584,7 +3566,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text,ai_input input)
     set_ai_status(info.sessions,info.status == session_status::New ?
                   session_status::New : session_status::Thinking,
                   "Starting "+info.launch_name);
-    start_process(*info.processes,info.launch_executable,args);
+    start_process(*info.processes,executable,args);
 }
 
 void AIAgent::on_ai_send_message_clicked()
