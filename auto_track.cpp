@@ -113,6 +113,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     size_t yield_check_count = 10.0f/yield_rate;
     bool overwrite = po.get("overwrite",0);
     uint32_t thread_count = tipl::max_thread_count;
+    bool debug = po.has("debug"); // diagnostics only expose state; they never change registration or tracking
     {
         if(!po.has("export"))
             po.set("export","stat");
@@ -182,6 +183,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         scan_names.push_back(fib_file_name.filename().u8string());
         tipl::out() << "processing " << fib_file_name.filename().u8string();
         std::shared_ptr<fib_data> handle;
+        bool debug_template_saved = false; // registration QC is written once per FIB
 
         tipl::progress prog1("tracking pathways");
         for(size_t j = 0;prog1(j,tract_name_list.size());++j)
@@ -236,6 +238,14 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 if(tolerance.empty())
                     return "invalid value in --tolerance";
 
+                std::ofstream debug_out; // one row per tolerance attempt
+                if(debug)
+                {
+                    debug_out.open(std::filesystem::path(trk_base) += ".debug.tsv");
+                    debug_out << "attempt\ttolerance\teffective_tolerance\tmin_length\tmax_length\ttip_iteration\t"
+                                 "seeds\tgenerated\tpre_tip\tpost_tip\ttip_undone\tselected\toutcome\n";
+                }
+
                 // each iteration increases tolerance
                 for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
                                                   !tract_model->get_visible_track_count();++tracking_iteration)
@@ -244,6 +254,27 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     {
                         if(!handle->load_track_atlas(true/*symmetric*/))
                             return handle->error_msg + " at " + fib_file_name.u8string();
+
+                        if(debug && !debug_template_saved) // this run's own mapping and atlas, now that load_track_atlas() has created them
+                        {
+                            debug_template_saved = true;
+                            auto debug_base = work_dir/fib_base;
+                            auto save_template = [&](tipl::image<3> I,const char* suffix) // by value: mni2sub() swaps the warped result into its argument
+                            {
+                                auto file = std::filesystem::path(debug_base) += suffix;
+                                if(!I.empty() && handle->mni2sub(I,handle->template_to_mni) &&
+                                   tipl::io::gz_nifti(file,std::ios::out) << handle->vs << handle->trans_to_mni << handle->is_mni << I)
+                                    tipl::out() << "saved " << file;
+                            };
+                            save_template(handle->template_I,".debug.template_qa.nii.gz");
+                            save_template(handle->template_I2,".debug.template_iso.nii.gz");
+                            auto atlas_file = std::filesystem::path(debug_base) += ".debug.atlas.tt.gz";
+                            std::string names;
+                            for(const auto& each : handle->tractography_name_list)
+                                names += each + "\n";
+                            if(handle->track_atlas->save_tracts_to_file(atlas_file)) // the symmetric subject-space atlas AutoTrack uses; .txt names its clusters
+                                tipl::write_text_file(std::filesystem::path(atlas_file) += ".txt",names,tipl::error());
+                        }
 
                         if (po.has("threshold_index") && !handle->dir.set_tracking_index(po.get("threshold_index")))
                             return std::string("invalid threshold index");
@@ -314,14 +345,23 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         }
 
                     }
-                    if(po.has("debug"))
+                    auto debug_row = [&](const std::string& tip,const char* outcome)
+                    {
+                        if(debug)
+                            debug_out << tracking_iteration << '\t' << tolerance[tracking_iteration] << '\t'
+                                      << thread.roi_mgr->tolerance_dis_in_icbm152_mm << '\t' << thread.param.min_length << '\t'
+                                      << thread.param.max_length << '\t' << thread.param.tip_iteration << '\t'
+                                      << thread.get_total_seed_count() << '\t' << thread.get_total_tract_count() << '\t'
+                                      << tip << '\t' << outcome << '\n';
+                    };
+                    if(debug)
                     {
                         auto save_region = [&](std::string name,auto& points)
                         {
                             if(points.empty())
                                 return;
                             auto f = trk_base;
-                            f += "." + name + ".nii.gz";
+                            f += ".debug" + std::to_string(tracking_iteration) + "." + name + ".nii.gz";
                             ROIRegion region(thread.roi_mgr->handle);
                             region.add_points(std::move(points));
                             tipl::out() << "saving " << name << " region to " << f;
@@ -335,16 +375,25 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         save_region("roa",thread.roi_mgr->atlas_roa);
                     }
                     if(no_result)
+                    {
+                        debug_row("\t\t\t0","low_yield"); // nothing fetched: TIP counts left blank
                         continue;
+                    }
                     // fetch both front and back buffer
                     thread.fetchTracks(tract_model.get());
                     thread.fetchTracks(tract_model.get());
                     if(thread.param.step_size != 0.0f)
                         tract_model->resample(1.0f);
+                    auto pre_tip = tract_model->get_visible_track_count();
                     tract_model->trim(thread.param.tip_iteration);
+                    auto post_tip = tract_model->get_visible_track_count();
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
-                    if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
+                    bool tip_undone = thread.param.tip_iteration && post_tip == 0;
+                    if(tip_undone)
                         tract_model->undo();
+                    bool selected = tract_model->get_visible_track_count();
+                    debug_row(std::to_string(pre_tip)+'\t'+std::to_string(post_tip)+'\t'+std::to_string(tip_undone)+'\t'+std::to_string(selected),
+                              !selected ? "no_tracks" : tip_undone ? "tip_undone" : "selected");
                     if(prog2.aborted())
                         return std::string("aborted.");
                 }
