@@ -1415,7 +1415,8 @@ void AIAgent::refresh_ollama_models()
                          object()["models"].toArray())
                         models << value.toObject()["name"].toString();
                 ai_log("Ollama "+url.toString()+" "+ (okay ? "connected" : reply->errorString()));
-                set_models(okay ? models : QStringList());
+                if(ai_ollama_url(settings).first == ollama.first) // drop a stale reply after the host changed
+                    set_models(okay ? models : QStringList());
                 reply->deleteLater();
                 network->deleteLater();
             });
