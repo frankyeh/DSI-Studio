@@ -2531,8 +2531,9 @@ void AIAgent::on_ai_quick_settings_clicked()
             button->setText("Sign in to "+provider+"...");
             return;
         case ai_agent_status::Ready:
-            button->setEnabled(false);
-            button->setText(provider+": "+(entry.status_info.isEmpty() ? "Ready" : entry.status_info));
+            button->setEnabled(provider == "Claude");
+            button->setText(provider+": "+(entry.status_info.isEmpty() ? "Ready" : entry.status_info)+
+                            (provider == "Claude" ? " (click to sign in again)" : ""));
             return;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
@@ -2565,7 +2566,7 @@ void AIAgent::on_ai_quick_settings_clicked()
                         refresh_antigravity_models();
                 }
             }
-            else if(status == ai_agent_status::SignInRequired)
+            else if(status == ai_agent_status::SignInRequired || status == ai_agent_status::Ready)
             {
                 if(run_agent_login(provider))
                     refresh_agent_status(provider);
