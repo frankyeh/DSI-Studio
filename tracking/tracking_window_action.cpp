@@ -1939,6 +1939,186 @@ bool tracking_window::command(std::vector<std::string> cmd)
         return run->succeed();
     }
 
+    if(cmd[0] == "load_parameter_id")
+    {
+        if(cmd[1].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: load_parameter_id <parameter id>");
+            if((cmd[1] = QInputDialog::getText(this,QApplication::applicationName(),
+                                               "Please assign parameter ID").toStdString()).empty())
+                return run->canceled();
+        }
+        TrackingParam param;
+        param.set_code(cmd[1]);
+        set_data("fa_threshold",float(param.threshold));
+        set_data("dt_threshold",float(param.dt_threshold));
+        set_data("turning_angle",float(std::acos(param.cull_cos_angle)*180.0f/3.14159265358979323846f));
+        set_data("step_size",float(param.step_size));
+        set_data("smoothing",float(param.smooth_fraction));
+        set_data("min_length",float(param.min_length));
+        set_data("max_length",float(param.max_length));
+
+        set_data("tracking_method",int(param.tracking_method));
+        set_data("check_ending",int(param.check_ending));
+        set_data("max_tract_count",int(param.max_tract_count));
+        set_data("max_seed_count",int(param.max_seed_count));
+        set_data("track_voxel_ratio",float(param.track_voxel_ratio));
+
+        set_data("otsu_threshold",float(param.default_otsu));
+        set_data("tip_iteration",int(param.tip_iteration));
+        return run->succeed();
+    }
+    if(cmd[0] == "get_parameter_id") // cmd[1]: include_tip, default 1 so that load_parameter_id restores tip_iteration
+    {
+        tipl::out() << get_parameter_id(run->from_cmd(1,1));
+        return run->succeed();
+    }
+    if(cmd[0] == "load_color_map") // applies to the current slice
+    {
+        if(cmd[1].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: load_color_map <color map file>");
+            if((cmd[1] = QFileDialog::getOpenFileName(this,"Load color map",
+                    QCoreApplication::applicationDirPath()+"/color_map/",
+                    "Text files (*.txt);;All files|(*)").toStdString()).empty())
+                return run->canceled();
+        }
+        tipl::color_map_rgb new_color_map;
+        if(!new_color_map.load_from_file(cmd[1]))
+            return run->failed("invalid color map format");
+        current_slice->view->v2c.set_color_map(new_color_map);
+        slice_need_update |= image_updated;
+        glWidget->update_slice();
+        return run->succeed();
+    }
+    if(cmd[0] == "open_connectivity_matrix")
+    {
+        if(cmd[1].empty())
+        {
+            if(run->source != command_source::User)
+                return run->failed("usage: open_connectivity_matrix <.mat or .txt file>");
+            if((cmd[1] = QFileDialog::getOpenFileName(
+                    this,"Open Connectivity Matrices files",QFileInfo(work_path).absolutePath(),
+                    "Connectivity file (*.mat *.txt);;All files (*)").toStdString()).empty())
+                return run->canceled();
+        }
+        QString filename = QString::fromStdString(cmd[1]);
+        if(filename.endsWith(".mat"))
+        {
+            tipl::io::mat_read in;
+            if(!in.load_from_file(cmd[1]))
+                return run->failed(in.error_msg);
+            unsigned int row,col;
+            const float* buf = nullptr;
+            if(!in.read("connectivity",row,col,buf))
+                return run->failed("Cannot find a matrix named connectivity");
+            if(row != col)
+                return run->failed("The connectivity matrix should be a square matrix");
+            glWidget->connectivity.resize(tipl::shape<2>(row,col));
+            std::copy_n(buf,row*col,glWidget->connectivity.begin());
+
+            if(in.has("atlas") && in.read<std::string>("atlas") != "roi")
+            {
+                std::string atlas = in.read<std::string>("atlas");
+                for(size_t i = 0;i < handle->atlas_list.size();++i)
+                    if(atlas == handle->atlas_list[i]->name)
+                    {
+                        if(handle->atlas_list[i]->get_list().size() != row)
+                            return run->failed("The atlas of connectivity matrix does not match the parcellation number");
+                        command({"delete_all_regions"});
+                        command({"add_region_from_atlas",std::to_string(handle->template_id)+" "+std::to_string(i)});
+                        set_data("region_graph",1);
+                        break;
+                    }
+            }
+        }
+        if(regionWidget->regions.empty())
+            return run->failed("Please load the regions first for visualization");
+        if(filename.endsWith(".txt"))
+        {
+            std::vector<float> buf;
+            std::ifstream in(tipl::qt::to_path(filename));
+            while(in)
+            {
+                std::string v;
+                in >> v;
+                if(v.empty())
+                    break;
+                std::istringstream ss(v);
+                buf.push_back(0.0f);
+                ss >> buf.back();
+            }
+            size_t dim = size_t(std::sqrt(buf.size()));
+            if(dim*dim != buf.size())
+                return run->failed("There are " + std::to_string(buf.size()) +
+                                   " values in the file. The matrix in the text file is not a square matrix.");
+            glWidget->connectivity.resize(tipl::shape<2>(dim,dim));
+            std::copy(buf.begin(),buf.end(),glWidget->connectivity.begin());
+        }
+
+        if(int(regionWidget->regions.size()) != glWidget->connectivity.width())
+            return run->failed(QString("The connectivity matrix is %1-by-%2, but there are %3 regions. Please make sure the sizes are matched.").
+                               arg(glWidget->connectivity.width()).
+                               arg(glWidget->connectivity.height()).
+                               arg(regionWidget->regions.size()).toStdString());
+        for(size_t i = 0,pos = 0;i < glWidget->connectivity.height();++i)
+        {
+            std::string line;
+            for(size_t j = 0;j < glWidget->connectivity.width();++j,++pos)
+            {
+                line += std::to_string(glWidget->connectivity[pos]);
+                line += " ";
+            }
+            tipl::out() << line;
+        }
+        glWidget->pos_max_connectivity = tipl::max_value(glWidget->connectivity);
+        glWidget->neg_max_connectivity = tipl::min_value(glWidget->connectivity);
+        if(glWidget->pos_max_connectivity == 0.0f)
+            glWidget->pos_max_connectivity = 1.0f;
+        if(glWidget->neg_max_connectivity == 0.0f)
+            glWidget->neg_max_connectivity = -1.0f;
+
+        set_data("region_graph",1);
+        command({"check_all_regions"});
+        return run->succeed();
+    }
+    if(cmd[0] == "show_fib_protocol" || cmd[0] == "save_fib_protocol")
+    {
+        // cmd[1] : file name to save
+        if(cmd[1].empty() && tipl::begins_with(cmd[0],"save_"))
+            return run->failed("usage: "+cmd[0]+" <output file path>");
+        std::istringstream in(handle->steps);
+        std::ostringstream out;
+        std::string line;
+        for(int i = 1;std::getline(in,line);++i)
+        {
+            if(line.find('=') != std::string::npos)
+                line = std::string("Set ") + line;
+            else
+            if(std::count(line.begin(),line.end(),']') >= 3)
+                line = std::string("At the top menu, select ") + line;
+            else
+                line = std::string("Click ") + line;
+            out << "(" << i << ") " << line << std::endl;
+        }
+        if(!cmd[1].empty()) // save_X <path>: always write to file, no dialog, regardless of source
+        {
+            tipl::out() << "save " << cmd[1];
+            if(!tipl::write_text_file(cmd[1],out.str(),tipl::error()))
+                return run->failed("cannot write to " + cmd[1]);
+        }
+        else if(run->source == command_source::AI) // show_X from the AI: return the text directly, no dialog, no file
+            tipl::out() << out.str();
+        else if(!(cmd[1] = show_info_dialog("FIB Protocol",out.str(),history.file_stem(false)+"_fib_protocol.txt")).empty())
+        {
+            // saved from the dialog: record as save_fib_protocol for replay
+            cmd[0][1] = 'a';cmd[0][2] = 'v';cmd[0][3] = 'e';
+        }
+        return run->succeed();
+    }
+
     return run->failed("unknown command: " + cmd[0]);
 }
 bool tracking_window::command(std::vector<std::string> cmd,
@@ -1981,33 +2161,6 @@ std::string tracking_window::get_parameter_id(bool auto_track)
 }
 
 
-void tracking_window::on_actionLoad_Parameter_ID_triggered()
-{
-    QString id = QInputDialog::getText(this,QApplication::applicationName(),"Please assign parameter ID");
-    if(id.isEmpty())
-        return;
-    TrackingParam param;
-    param.set_code(id.toStdString());
-    set_data("fa_threshold",float(param.threshold));
-    set_data("dt_threshold",float(param.dt_threshold));
-    set_data("turning_angle",float(std::acos(param.cull_cos_angle)*180.0f/3.14159265358979323846f));
-    set_data("step_size",float(param.step_size));
-    set_data("smoothing",float(param.smooth_fraction));
-    set_data("min_length",float(param.min_length));
-    set_data("max_length",float(param.max_length));
-
-    set_data("tracking_method",int(param.tracking_method));
-    set_data("check_ending",int(param.check_ending));
-    set_data("max_tract_count",int(param.max_tract_count));
-    set_data("max_seed_count",int(param.max_seed_count));
-    set_data("track_voxel_ratio",float(param.track_voxel_ratio));
-
-    set_data("otsu_threshold",float(param.default_otsu));
-    set_data("tip_iteration",int(param.tip_iteration));
-
-}
-
-
 
 void tracking_window::on_actionTract_Analysis_Report_triggered()
 {
@@ -2031,135 +2184,6 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
 }
 
 
-void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-        this,"Open Connectivity Matrices files",QFileInfo(work_path).absolutePath(),
-                "Connectivity file (*.mat *.txt);;All files (*)" );
-    if(filename.isEmpty())
-        return;
-    if(filename.endsWith(".mat"))
-    {
-        tipl::io::mat_read in;
-        if(!in.load_from_file(filename.toStdString()))
-        {
-            QMessageBox::critical(this,"ERROR",in.error_msg.c_str());
-            return;
-        }
-        unsigned int row,col;
-        const float* buf = nullptr;
-        if(!in.read("connectivity",row,col,buf))
-        {
-            QMessageBox::critical(this,"ERROR","Cannot find a matrix named connectivity");
-            return;
-        }
-        if(row != col)
-        {
-            QMessageBox::critical(this,"ERROR","The connectivity matrix should be a square matrix");
-            return;
-        }
-        glWidget->connectivity.resize(tipl::shape<2>(row,col));
-        std::copy_n(buf,row*col,glWidget->connectivity.begin());
-
-
-
-        if(in.has("atlas") && in.read<std::string>("atlas") != "roi")
-        {
-            std::string atlas = in.read<std::string>("atlas");
-            for(size_t i = 0;i < handle->atlas_list.size();++i)
-                if(atlas == handle->atlas_list[i]->name)
-                {
-                    if(handle->atlas_list[i]->get_list().size() != row)
-                    {
-                        QMessageBox::critical(this,"ERROR","The atlas of connectivity matrix does not match the parcellation number");
-                        return;
-                    }
-                    command({"delete_all_regions"});
-                    command({"add_region_from_atlas",std::to_string(handle->template_id)+" "+std::to_string(i)});
-                    set_data("region_graph",1);
-                    break;
-                }
-        }
-    }
-    if(regionWidget->regions.empty())
-    {
-        QMessageBox::critical(this,"ERROR","Please load the regions first for visualization");
-        return;
-    }
-    if(filename.endsWith(".txt"))
-    {
-        std::vector<float> buf;
-        std::ifstream in(tipl::qt::to_path(filename));
-        while(in)
-        {
-            std::string v;
-            in >> v;
-            if(v.empty())
-                break;
-            std::istringstream ss(v);
-            buf.push_back(0.0f);
-            ss >> buf.back();
-        }
-        size_t dim = size_t(std::sqrt(buf.size()));
-        if(dim*dim != buf.size())
-        {
-            QMessageBox::critical(this,"ERROR",
-            QString("There are %1 values in the file. The matrix in the text file is not a square matrix.").arg(buf.size()));
-            return;
-        }
-        glWidget->connectivity.resize(tipl::shape<2>(dim,dim));
-        std::copy(buf.begin(),buf.end(),glWidget->connectivity.begin());
-    }
-
-    if(int(regionWidget->regions.size()) != glWidget->connectivity.width())
-    {
-        QMessageBox::critical(this,"ERROR",
-            QString("The connectivity matrix is %1-by-%2, but there are %3 regions. Please make sure the sizes are matched.").
-                arg(glWidget->connectivity.width()).
-                arg(glWidget->connectivity.height()).
-                arg(regionWidget->regions.size()));
-        return;
-    }
-    for(size_t i = 0,pos = 0;i < glWidget->connectivity.height();++i)
-    {
-        std::string line;
-        for(size_t j = 0;j < glWidget->connectivity.width();++j,++pos)
-        {
-            line += std::to_string(glWidget->connectivity[pos]);
-            line += " ";
-        }
-        tipl::out() << line;
-    }
-    glWidget->pos_max_connectivity = tipl::max_value(glWidget->connectivity);
-    glWidget->neg_max_connectivity = tipl::min_value(glWidget->connectivity);
-    if(glWidget->pos_max_connectivity == 0.0f)
-        glWidget->pos_max_connectivity = 1.0f;
-    if(glWidget->neg_max_connectivity == 0.0f)
-        glWidget->neg_max_connectivity = -1.0f;
-
-    set_data("region_graph",1);
-    command({"check_all_regions"});
-}
-
-
-void tracking_window::on_actionFIB_protocol_triggered()
-{
-    std::istringstream in(handle->steps);
-    std::ostringstream out;
-    std::string line;
-    for(int i = 1;std::getline(in,line);++i)
-    {
-        if(line.find('=') != std::string::npos)
-            line = std::string("Set ") + line;
-        else
-        if(std::count(line.begin(),line.end(),']') >= 3)
-            line = std::string("At the top menu, select ") + line;
-        else
-            line = std::string("Click ") + line;
-        out << "(" << i << ") " << line << std::endl;
-    }
-    show_info_dialog("FIB",out.str());
-}
 
 
 void tracking_window::check_reg(void)
@@ -2533,27 +2557,6 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
 void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
 {
     run_command("mark_tracts_on_slices");
-}
-
-
-
-void tracking_window::on_actionLoad_Color_Map_triggered()
-{
-    QString filename;
-    filename = QFileDialog::getOpenFileName(this,
-                "Load color map",QCoreApplication::applicationDirPath()+"/color_map/",
-                "Text files (*.txt);;All files|(*)");
-    if(filename.isEmpty())
-        return;
-    tipl::color_map_rgb new_color_map;
-    if(!new_color_map.load_from_file(filename.toStdString()))
-    {
-          QMessageBox::critical(this,"ERROR","Invalid color map format");
-          return;
-    }
-    current_slice->view->v2c.set_color_map(new_color_map);
-    slice_need_update |= image_updated;
-    glWidget->update_slice();
 }
 
 
