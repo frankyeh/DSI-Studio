@@ -2535,7 +2535,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         case ai_agent_status::Ready:
             color = "#34a853";
             text = entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info;
-            action = "Sign In";
+            action = provider == "Claude" ? "Sign In Again" : "Signed In";
             break;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
@@ -2547,7 +2547,8 @@ void AIAgent::on_ai_quick_settings_clicked()
         label->setText("<b>"+provider+"</b><br><span style='color:"+color+";'>&#9679;</span> "
                        "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>");
         button->setText(action);
-        button->setEnabled(entry.status != ai_agent_status::Checking);
+        button->setEnabled(entry.status != ai_agent_status::Checking &&
+                           (entry.status != ai_agent_status::Ready || provider == "Claude"));
     };
     for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
     {
@@ -2581,7 +2582,8 @@ void AIAgent::on_ai_quick_settings_clicked()
                         refresh_antigravity_models();
                 }
             }
-            else if(status == ai_agent_status::SignInRequired || status == ai_agent_status::Ready)
+            else if(status == ai_agent_status::SignInRequired ||
+                    (status == ai_agent_status::Ready && provider == "Claude"))
             {
                 if(run_agent_login(provider))
                     refresh_agent_status(provider);
@@ -3014,6 +3016,16 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                             auto details = "Error: "+QString::fromUtf8(QJsonDocument(event).toJson(QJsonDocument::Compact));
                             set_ai_status(info->sessions,session_status::Thinking,details);
                             add_ai_history(*info,"activity",details);
+                            // an expired OAuth login is not detected by "claude auth status"; require sign-in before the next launch
+                            if(event["error"].toString() == "authentication_failed" &&
+                               details.contains("OAuth",Qt::CaseInsensitive))
+                            {
+                                auto& entry = agent_entries["Claude"];
+                                ++entry.status_check_id;
+                                entry.status = ai_agent_status::SignInRequired;
+                                entry.status_info.clear();
+                                emit agent_status_changed("Claude");
+                            }
                         }
                         continue;
                     }
