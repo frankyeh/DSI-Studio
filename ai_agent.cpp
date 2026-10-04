@@ -2585,15 +2585,19 @@ void AIAgent::on_ai_quick_settings_clicked()
         connect(reply,&QNetworkReply::finished,&dialog,[&,reply]
         {
             check_ollama.setEnabled(true);
-            if(reply->error() != QNetworkReply::NoError)
+            auto doc = QJsonDocument::fromJson(reply->readAll());
+            auto models = doc.object().value("models");
+            // setTransferTimeout() aborts the reply; depending on the Qt version this reports TimeoutError or OperationCanceledError
+            if(reply->error() == QNetworkReply::TimeoutError || reply->error() == QNetworkReply::OperationCanceledError)
+                ollama_status.setText("No response within 10 s (server asleep or port blocked?)");
+            else if(reply->error() != QNetworkReply::NoError)
                 ollama_status.setText("Unavailable: "+reply->errorString());
+            else if(!doc.isObject() || !models.isArray())
+                ollama_status.setText("Reachable, but not an Ollama server");
+            else if(models.toArray().isEmpty())
+                ollama_status.setText("Connected · no models installed");
             else
-            {
-                auto models = QJsonDocument::fromJson(reply->readAll()).
-                              object()["models"].toArray();
-                ollama_status.setText(
-                    "Connected · "+QString::number(models.size())+" models");
-            }
+                ollama_status.setText("Connected · "+QString::number(models.toArray().size())+" models");
             reply->deleteLater();
         });
     });
