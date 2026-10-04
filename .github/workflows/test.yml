@@ -442,15 +442,12 @@ jobs:
         run: |
           set -euxo pipefail
           chmod +x dsi-studio/dsi_studio
-          command -v Xvfb || { sudo apt-get update; sudo apt-get install -y xvfb; }
+          command -v xvfb-run || { sudo apt-get update; sudo apt-get install -y xvfb; }
 
-          Xvfb :99 -screen 0 1280x1024x24 >xvfb.log 2>&1 &
-          XVFB_PID=$!
-          export DISPLAY=:99
           export LIBGL_ALWAYS_SOFTWARE=1
-          dsi-studio/dsi_studio >dsi_studio.log 2>&1 &
+          xvfb-run -a -e xvfb.log -s "-screen 0 1280x1024x24" dsi-studio/dsi_studio >dsi_studio.log 2>&1 &
           DSI_PID=$!
-          trap 'kill "$DSI_PID" "$XVFB_PID" 2>/dev/null || true' EXIT
+          trap 'kill "$DSI_PID" 2>/dev/null || true' EXIT
 
           export DSI_STUDIO_AGENT=Muse
           export MUSE_SESSION_ID="$(cat /proc/sys/kernel/random/uuid)"
