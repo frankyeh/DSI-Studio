@@ -304,7 +304,7 @@ QString ai_info::details() const
         auto type = value["type"].toString();
         user += type == "user";
         assistant += type == "assistant";
-        activity += type == "request" || type == "activity";
+        activity += type == "request" || type == "activity" || type == "error";
     }
     auto time = [](const QJsonValue& value) {
         return QDateTime::fromString(value.toString(),Qt::ISODate).toString(
@@ -380,4 +380,4 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
     return record_history(entry);
-}
+}
