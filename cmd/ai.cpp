@@ -242,7 +242,8 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
     auto ollama_host = ai_ollama_url(QSettings()).first.host();
     auto display_text = [&](const QString& name,const QJsonObject& info)
     {
-        return info.contains("provider") ? name+" (Ollama@"+ollama_host+")" : name;
+        return info.contains("provider") ?
+               name+" (Ollama@"+(info.contains("url") ? QUrl(info["url"].toString()).host() : ollama_host)+")" : name;
     };
     model.clear();
     model.addItem("default");
