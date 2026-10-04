@@ -767,6 +767,7 @@ void AIAgent::showEvent(QShowEvent* event)
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
     for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
         refresh_agent_models(provider);
+    refresh_ollama_models(); // one /api/tags request feeds both Claude and Codex
     auto* item = ui->ai_project_list->currentItem();
     stop_blink(item ? ui->ai_project_list->itemWidget(item) : nullptr);
 }
@@ -1259,10 +1260,9 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
 }
 void AIAgent::refresh_agent_models(const QString& provider)
 {
+    // Claude's list is fixed (refresh_agent_executables()); Ollama models are refreshed separately, for every agent that can use them
     if(provider == "Codex")
         refresh_codex_models();
-    else if(provider == "Claude")
-        refresh_ollama_models();
     else if(provider == "Muse")
         refresh_muse_models();
     else if(provider == "Antigravity")
@@ -2530,6 +2530,7 @@ void AIAgent::on_ai_quick_settings_clicked()
                 {
                     refresh_agent_status(provider);
                     refresh_agent_models(provider);
+                    refresh_ollama_models(); // a newly found Claude or Codex also gets the Ollama models
                 }
             }
             else if(status == ai_agent_status::SignInRequired || status == ai_agent_status::Ready)
