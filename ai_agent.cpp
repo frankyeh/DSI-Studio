@@ -765,7 +765,7 @@ void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
-    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
+    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity"),QString("Grok")})
         refresh_agent_models(provider);
     refresh_ollama_models(); // one /api/tags request feeds both Claude and Codex
     auto* item = ui->ai_project_list->currentItem();
@@ -1250,6 +1250,15 @@ void AIAgent::refresh_agent_executables() // re-run discovery so an install comp
     }
     set_executable("Antigravity",antigravity_path);
 
+    QString grok_path = QStandardPaths::findExecutable("grok");
+    if(grok_path.isEmpty())
+#ifdef Q_OS_WIN
+        grok_path = QDir::homePath()+"/.grok/bin/grok.exe";
+#else
+        grok_path = QDir::homePath()+"/.grok/bin/grok";
+#endif
+    set_executable("Grok",grok_path);
+
     if(!agent_entries["Claude"].executable.isEmpty())
     {
         // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
@@ -1267,6 +1276,8 @@ void AIAgent::refresh_agent_models(const QString& provider)
         refresh_muse_models();
     else if(provider == "Antigravity")
         refresh_antigravity_models();
+    else if(provider == "Grok")
+        refresh_grok_models();
 }
 void AIAgent::refresh_codex_models()
 {
@@ -1393,6 +1404,45 @@ void AIAgent::refresh_antigravity_models()
     start_process(*process,path,{"--output-format","json","models"});
     QTimer::singleShot(10000,process,&QProcess::kill);
 }
+void AIAgent::refresh_grok_models() // ACP initialize returns _meta.modelState.availableModels without a session or sign-in
+{
+    auto path = agent_entries["Grok"].executable;
+    if(path.isEmpty())
+        return;
+
+    auto* process = new QProcess(this);
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        while(process->canReadLine())
+        {
+            auto msg = next_json_line(process);
+            if(msg["id"].toString() != "initialize")
+                continue;
+            // a failed or unrecognized reply keeps the last valid list
+            if(auto list = msg["result"].toObject()["_meta"].toObject()["modelState"].toObject().value("availableModels");list.isArray())
+            {
+                QStringList models;
+                for(const auto& value : list.toArray())
+                    if(auto model = value.toObject()["modelId"].toString();!model.isEmpty())
+                        models << model;
+                update_agent_models("Grok",models,false);
+                ai_log("Grok models: "+models.join(", "));
+            }
+            process->kill(); // one reply is all this probe needs
+            return;
+        }
+    });
+    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+            process,&QObject::deleteLater);
+    connect(process,&QProcess::started,process,[=]
+    {
+        process->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+            {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}}).toJson(QJsonDocument::Compact)+'\n');
+    });
+
+    start_process(*process,path,{"agent","stdio"});
+    QTimer::singleShot(15000,process,&QProcess::kill);
+}
 void AIAgent::refresh_ollama_models()
 {
     // one discovery feeds every agent that can route to Ollama: Claude (Anthropic API) and Codex (Responses API)
@@ -1441,10 +1491,43 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
 {
     info.clear();
     if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
-       provider != "Antigravity")
+       provider != "Antigravity" && provider != "Grok")
         return ai_agent_status::Error;
     if(executable.isEmpty())
         return ai_agent_status::NotInstalled;
+
+    if(provider == "Grok") // ACP initialize reports the agent's own credential choice: _meta.defaultAuthMethodId, null when none is usable
+    {
+        QProcess process;
+        start_process(process,executable,{"agent","stdio"});
+        if(!process.waitForStarted(3000))
+            return ai_agent_status::Error;
+        process.write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+            {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}}).toJson(QJsonDocument::Compact)+'\n');
+        QJsonObject reply;
+        for(auto deadline = QDateTime::currentMSecsSinceEpoch()+10000;reply.isEmpty() &&
+            (process.state() != QProcess::NotRunning || process.canReadLine()) && QDateTime::currentMSecsSinceEpoch() < deadline;)
+        {
+            if(!process.canReadLine())
+                process.waitForReadyRead(int(deadline-QDateTime::currentMSecsSinceEpoch()));
+            while(process.canReadLine() && reply.isEmpty())
+                if(auto msg = QJsonDocument::fromJson(process.readLine()).object();msg["id"].toString() == "initialize")
+                    reply = msg;
+        }
+        process.closeWriteChannel();
+        if(!process.waitForFinished(1000))
+        {
+            process.kill();
+            process.waitForFinished(1000);
+        }
+        if(!reply.contains("result"))
+            return ai_agent_status::Error;
+        auto method = reply["result"].toObject()["_meta"].toObject()["defaultAuthMethodId"].toString();
+        if(method.isEmpty())
+            return ai_agent_status::SignInRequired;
+        info = method == "xai.api_key" ? "API key" : "Signed in";
+        return ai_agent_status::Ready;
+    }
 
     if(provider == "Antigravity")
     {
@@ -1630,14 +1713,14 @@ void AIAgent::refresh_agent_status(const QString& provider)
         return;
     }
     for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),
-                                QString("Antigravity")})
+                                QString("Antigravity"),QString("Grok")})
         check(provider);
 }
 
 bool AIAgent::run_agent_login(const QString& provider)
 {
     if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
-       provider != "Antigravity")
+       provider != "Antigravity" && provider != "Grok")
         return false;
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
@@ -1784,6 +1867,8 @@ bool AIAgent::run_agent_login(const QString& provider)
         refresh_codex_models();
     else if(provider == "Muse")
         refresh_muse_models();
+    else if(provider == "Grok")
+        refresh_grok_models();
     return succeeded;
 }
 
@@ -2507,7 +2592,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         button->setText(action);
         button->setEnabled(entry.status != ai_agent_status::Checking);
     };
-    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity")})
+    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity"),QString("Grok")})
     {
         auto* label = new QLabel;
         auto* button = new QPushButton;
