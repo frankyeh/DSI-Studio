@@ -3358,8 +3358,13 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
     bool resuming = info.status != session_status::New;
     auto model = info.launch_model;
     auto cwd = process->workingDirectory(); // the fixed ai folder: Grok groups persisted sessions by cwd
+    auto workspace = info.model_settings["cwd"].toString().trimmed(); // context only: the session cwd stays the ai folder
+    if(workspace.isEmpty())
+        workspace = ui->ai_work_dir->text().trimmed();
     auto prompt = "Read and follow "+QDir::toNativeSeparators(cwd+"/AGENTS.md")+
-                  " before handling this request. Use `bash ./dsi.sh` for DSI Studio commands.\n\n"+text;
+                  " before handling this request. Use `bash ./dsi.sh` for DSI Studio commands."+
+                  (workspace.isEmpty() ? QString() : " The selected DSI Studio work directory is "+QDir::toNativeSeparators(workspace)+".")+
+                  "\n\n"+text;
     auto write = [process](const QJsonObject& msg)
     {
         process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
