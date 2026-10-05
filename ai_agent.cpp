@@ -199,7 +199,8 @@ AIAgent::AIAgent(MainWindow* parent):
     if(agent_entries["Codex"].executable.isEmpty())
         current_agent = !agent_entries["Claude"].executable.isEmpty() ? "Claude" :
                         !agent_entries["Muse"].executable.isEmpty() ? "Muse" :
-                        !agent_entries["Antigravity"].executable.isEmpty() ? "Antigravity" : "Codex";
+                        !agent_entries["Antigravity"].executable.isEmpty() ? "Antigravity" :
+                        !agent_entries["Grok"].executable.isEmpty() ? "Grok" : "Codex";
     update_agent_status_label();
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
@@ -2165,6 +2166,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     agent.addItem("Claude",QString("Claude"));
     agent.addItem("Muse",QString("Muse"));
     agent.addItem("Antigravity",QString("Antigravity"));
+    agent.addItem("Grok",QString("Grok"));
     agent.addItem("GitHub (ChatGPT, Muse, ...)",QString("GitHub"));
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
     auto ready = [&](const QString& provider)
@@ -2197,7 +2199,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
                          "Open Settings (⚙) to install or sign in.");
     };
     for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),
-                                QString("Antigravity")})
+                                QString("Antigravity"),QString("Grok")})
         update_agent(provider);
 
     agent.setCurrentIndex(agent.findData(current_agent));
@@ -3349,6 +3351,152 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
     return args;
 }
 
+QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
+{
+    auto* process = info.processes;
+    auto session = info.sessions; // DSI Studio's chat ID becomes Grok's session ID (_meta.sessionId), exported to tools as GROK_SESSION_ID
+    bool resuming = info.status != session_status::New;
+    auto model = info.launch_model;
+    auto cwd = process->workingDirectory(); // the fixed ai folder: Grok groups persisted sessions by cwd
+    auto prompt = "Read and follow "+QDir::toNativeSeparators(cwd+"/AGENTS.md")+
+                  " before handling this request. Use `bash ./dsi.sh` for DSI Studio commands.\n\n"+text;
+    auto write = [process](const QJsonObject& msg)
+    {
+        process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
+    };
+    auto send_prompt = [=](const QString& value)
+    {
+        process->setProperty("grok_turn",true); // Stop sends session/cancel only while a prompt is in flight
+        write({{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
+            {"params",QJsonObject{{"sessionId",session},
+                {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",value}}}}}}});
+    };
+
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        while(process->canReadLine())
+        {
+            auto msg = next_json_line(process);
+            auto method = msg["method"].toString();
+            if(method == "session/update")
+            {
+                // streamed chunks are collected and recorded once per turn: each add_ai_reply() is a persisted history entry
+                auto update = msg["params"].toObject()["update"].toObject();
+                auto type = update["sessionUpdate"].toString();
+                auto value = update["content"].toObject()["text"].toString();
+                if(type == "agent_message_chunk" || type == "agent_thought_chunk")
+                {
+                    auto key = type == "agent_message_chunk" ? "grok_chat" : "grok_reasoning";
+                    process->setProperty(key,process->property(key).toString()+value);
+                }
+                else if(auto title = update["title"].toString().trimmed();type == "tool_call" && !title.isEmpty())
+                    set_ai_status(process->objectName(),session_status::Thinking,title);
+                continue;
+            }
+            if(method == "session/request_permission") // not expected with --always-approve; an unanswered reverse request would stall the turn
+            {
+                write({{"jsonrpc","2.0"},{"id",msg.value("id")},
+                       {"result",QJsonObject{{"outcome",QJsonObject{{"outcome","cancelled"}}}}}});
+                if(auto* current = ai_info::find(process->objectName()))
+                    add_ai_history(*current,"error","ERROR: Grok requested an interactive permission; the request was cancelled.");
+                continue;
+            }
+            auto id = msg["id"].toString();
+            if(id.isEmpty())
+                continue; // other Grok notifications are not used
+            if(msg.contains("error"))
+            {
+                auto error = msg["error"].toObject()["message"].toString().trimmed();
+                auto message = "Grok "+id+" failed: "+(error.isEmpty() ? QString("request failed.") : error);
+                if(id != "prompt")
+                    fail_agent_process(process,message);
+                else if(auto* current = ai_info::find(process->objectName()))
+                {
+                    process->setProperty("grok_turn",false);
+                    process->setProperty("grok_chat",QString());
+                    process->setProperty("grok_reasoning",QString());
+                    message.prepend("ERROR: ");
+                    set_ai_status(current->sessions,session_status::Failed,message);
+                    add_ai_history(*current,"error",message);
+                }
+                continue;
+            }
+            if(id == "initialize") // authenticate as Grok's own headless client does, failing closed without a usable credential
+            {
+                auto auth = msg["result"].toObject()["_meta"].toObject()["defaultAuthMethodId"].toString();
+                if(auth.isEmpty())
+                {
+                    auto& entry = agent_entries["Grok"];
+                    ++entry.status_check_id;
+                    entry.status = ai_agent_status::SignInRequired;
+                    entry.status_info.clear();
+                    emit agent_status_changed("Grok");
+                    fail_agent_process(process,"Grok is not signed in.");
+                    continue;
+                }
+                write({{"jsonrpc","2.0"},{"id","authenticate"},{"method","authenticate"},
+                       {"params",QJsonObject{{"methodId",auth}}}});
+            }
+            else if(id == "authenticate")
+            {
+                QJsonObject meta{{"sessionId",session}};
+                if(resuming)
+                    meta = QJsonObject{{"noReplay",true}}; // DSI Studio already holds the transcript
+                else if(!model.isEmpty())
+                    meta["modelId"] = model;
+                QJsonObject params{{"cwd",cwd},{"mcpServers",QJsonArray()},{"_meta",meta}};
+                if(resuming)
+                    params["sessionId"] = session;
+                write({{"jsonrpc","2.0"},{"id","session"},{"method",resuming ? "session/load" : "session/new"},{"params",params}});
+            }
+            else if(id == "session")
+            {
+                if(!resuming && msg["result"].toObject()["sessionId"].toString() != session)
+                {
+                    fail_agent_process(process,"Grok returned a different session ID.");
+                    continue;
+                }
+                if(auto* current = ai_info::find(process->objectName()))
+                {
+                    set_ai_status(current->sessions,session_status::Thinking,"Session started; waiting for Grok");
+                    current->save_config();
+                }
+                if(resuming && !model.isEmpty()) // a new session got its model through _meta.modelId
+                    write({{"jsonrpc","2.0"},{"id","set_model"},{"method","session/set_config_option"},
+                           {"params",QJsonObject{{"sessionId",session},{"configId","model"},{"value",model}}}});
+                else
+                    send_prompt(prompt);
+            }
+            else if(id == "set_model")
+                send_prompt(prompt);
+            else if(id == "prompt")
+            {
+                auto chat = process->property("grok_chat").toString().trimmed();
+                auto reasoning = process->property("grok_reasoning").toString().trimmed();
+                process->setProperty("grok_turn",false);
+                process->setProperty("grok_chat",QString());
+                process->setProperty("grok_reasoning",QString());
+                if(auto* current = ai_info::find(process->objectName()))
+                {
+                    if(!chat.isEmpty() || !reasoning.isEmpty())
+                    {
+                        process->setProperty("had_reply",true);
+                        add_ai_reply(*current,chat,reasoning);
+                    }
+                    set_ai_status(current->sessions,session_status::WaitingUser,
+                                  msg["result"].toObject()["stopReason"].toString() == "cancelled" ?
+                                  "Stopped by user." : "Waiting for user");
+                }
+            }
+        }
+    });
+    connect(process,&QProcess::started,process,[=]
+    {
+        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+               {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}});
+    });
+    return {"agent","--always-approve","stdio"};
+}
 QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 {
     // app-server: a persistent JSON-RPC session over stdio (same shape as Claude's stream-json stdin protocol),
@@ -3547,9 +3695,9 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 void AIAgent::start_ai(ai_info& info,const QString& text)
 {
     Q_ASSERT(info.provider == "Codex" || info.provider == "Claude" ||
-             info.provider == "Muse" || info.provider == "Antigravity");
+             info.provider == "Muse" || info.provider == "Antigravity" || info.provider == "Grok");
     if(info.provider != "Codex" && info.provider != "Claude" &&
-       info.provider != "Muse" && info.provider != "Antigravity")
+       info.provider != "Muse" && info.provider != "Antigravity" && info.provider != "Grok")
         return;
 
     if(info.processes)
@@ -3563,6 +3711,13 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
             info.processes->write(muse_turn_start(info.processes->objectName(),text));
         else if(info.provider == "Antigravity")
             info.processes->write(antigravity_input(text));
+        else if(info.provider == "Grok")
+        {
+            info.processes->setProperty("grok_turn",true);
+            info.processes->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
+                {"params",QJsonObject{{"sessionId",info.sessions},
+                    {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).toJson(QJsonDocument::Compact)+'\n');
+        }
         else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
         {
             auto turn_id = info.processes->property("turn_id").toString();
@@ -3584,6 +3739,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
         args = configure_muse(info,text);
     else if(info.provider == "Antigravity")
         args = configure_antigravity(info,text);
+    else if(info.provider == "Grok")
+        args = configure_grok(info,text);
     else
         args = configure_claude(info,text);
     ai_log("start " + executable +
@@ -3622,6 +3779,9 @@ void AIAgent::on_ai_send_message_clicked()
                 info->processes->property("turn_id").toString() : QString();
                 !turn_id.isEmpty()) // Codex mid-turn: interrupt it in place rather than ending the whole session
             info->processes->write(codex_turn_interrupt(info->processes->objectName(),turn_id));
+        else if(info->provider == "Grok" && info->processes->property("grok_turn").toBool()) // mid-turn: cancel in place; the prompt reply then reports "cancelled"
+            info->processes->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"method","session/cancel"},
+                {"params",QJsonObject{{"sessionId",info->sessions}}}}).toJson(QJsonDocument::Compact)+'\n');
         else
         {
             info->processes->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
