@@ -85,6 +85,7 @@ QUrl agent_install_url(const QString& provider) // shared by the sidebar's Insta
                 provider == "Claude" ? "https://claude.com/product/claude-code" :
                 provider == "Muse" ? "https://dev.meta.ai/docs/muse-code" :
                 provider == "Antigravity" ? "https://antigravity.google/docs/cli/install/" :
+                provider == "Grok" ? "https://github.com/xai-org/grok-build" :
                 QString());
 }
 
