@@ -2247,15 +2247,17 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     issue_card_layout->addWidget(step2_body);
     QPushButton open_chatgpt("Open ChatGPT");
     QPushButton open_muse("Open Muse");
+    QPushButton open_grok("Open Grok");
     auto* step2_row = new QHBoxLayout;
     step2_row->addWidget(&open_chatgpt);
     step2_row->addWidget(&open_muse);
+    step2_row->addWidget(&open_grok);
     step2_row->addStretch();
     issue_card_layout->addLayout(step2_row);
 
     auto* step3_heading = new QLabel("Step 3 — Paste the reply link");
     step3_heading->setObjectName("ai_step_heading");
-    auto* step3_body = new QLabel("Paste the Issue URL from ChatGPT/Muse's reply below.");
+    auto* step3_body = new QLabel("Paste the Issue URL from the AI agent's reply below.");
     step3_body->setObjectName("ai_step_body");
     step3_body->setWordWrap(true);
     issue_card_layout->addWidget(step3_heading);
@@ -2296,6 +2298,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
         for(auto* widget : {static_cast<QWidget*>(&copy_prompt),
                             static_cast<QWidget*>(&open_chatgpt),
                             static_cast<QWidget*>(&open_muse),
+                            static_cast<QWidget*>(&open_grok),
                             static_cast<QWidget*>(&issue_url_edit),
                             static_cast<QWidget*>(&paste_issue)})
             widget->setEnabled(has_token);
@@ -2357,6 +2360,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     });
     connect(&open_chatgpt,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://chatgpt.com/")); });
     connect(&open_muse,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://muse.ai")); });
+    connect(&open_grok,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://grok.com/")); });
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
@@ -2395,7 +2399,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
                 return setup_token.click();
             if(issue_url_edit.text().trimmed().isEmpty())
             {
-                set_helper("Choose ChatGPT or Muse below to create the session issue, then paste its URL.");
+                set_helper("Copy the setup prompt into an AI chat to create the session issue, then paste its URL.");
                 return;
             }
         }
