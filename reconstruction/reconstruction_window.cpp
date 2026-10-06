@@ -537,6 +537,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     bool result = handle->command({cmd,param});
     if(!result)
         fail();
+    else
+        ui->report->setText(check_citation(handle->voxel.report.c_str()));
 
     update_dimension();
     load_b_table();
