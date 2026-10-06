@@ -340,6 +340,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     reg.Ivs = reg.Itvs = target_vs;
     reg.IR = reg.ItR = target_R;
     reg.skip_linear = true; // linear_reg still needed to populate J
+    reg.param.gradient_type = "y"; // AP-PA: displacement along y only
     if(!run_reg(reg,true))
         return false;
     voxel.R2 = reg.r[0];
