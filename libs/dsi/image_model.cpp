@@ -254,6 +254,11 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
                !tipl::command<void,tipl::io::gz_nifti>(target_mask,mask_vs,mask_R,is_mni,"regrid",std::to_string(target_resolution),false,error_msg))
                 return false;
         }
+        if(debug_t1w)
+        {
+            tipl::out() << "save pseudo-T1 b0 in dwi space: " << t1w_filename << ".b0.nii.gz";
+            tipl::io::gz_nifti(t1w_filename + ".b0.nii.gz",std::ios::out) << target_vs << target_R << b0;
+        }
     }
 
     // brain-extracted T1w
