@@ -392,7 +392,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     update_dwi_sum();
     tipl::out() << "update mask from the corrected dwi sum";
     update_mask();
-    voxel.recon_report << msg;
+    voxel.report += msg;
     return true;
 }
 
