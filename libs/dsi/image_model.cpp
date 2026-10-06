@@ -224,7 +224,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
 {
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping an inverted b0 image to the T1-weighted image.";
     tipl::progress p("distortion correction using t1w image",true);
-    bool debug_t1w = true;
+    bool debug_t1w = false;
     auto native_dim = voxel.dim;
     auto native_R = voxel.trans_to_mni;
 
