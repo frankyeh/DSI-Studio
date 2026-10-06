@@ -224,6 +224,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
 {
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping an inverted b0 image to the T1-weighted image.";
     tipl::progress p("distortion correction using t1w image",true);
+    bool debug_t1w = true;
     auto native_dim = voxel.dim;
     auto native_R = voxel.trans_to_mni;
 
@@ -318,6 +319,11 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
             return false;
         t1w = rigid_reg.apply_warping<true,tipl::interpolation::cubic>(t1w);
         tipl::lower_threshold(t1w,0.0f);
+        if(debug_t1w)
+        {
+            tipl::out() << "save preprocessed T1w in dwi space: " << t1w_filename << ".dwi.nii.gz";
+            tipl::io::gz_nifti(t1w_filename + ".dwi.nii.gz",std::ios::out) << target_vs << target_R << t1w;
+        }
     }
 
     // stage 2: free nonlinear cdm on the target dwi grid
@@ -359,17 +365,17 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
             this_new_dwi[index] = new_I;
             new_src_dwi_data[index] = this_new_dwi[index].data();
         });
-        auto new_mask = reg.apply_warping<true,tipl::interpolation::majority>(voxel.mask);
         if(prog.aborted())
             return false;
         this_new_dwi.swap(new_dwi);
         new_src_dwi_data.swap(src_dwi_data);
-        voxel.mask.swap(new_mask);
     }
     voxel.dim = reg.Its;
     voxel.vs = reg.Itvs;
     voxel.trans_to_mni = reg.ItR;
     update_dwi_sum();
+    tipl::out() << "update mask from the corrected dwi sum";
+    update_mask();
     voxel.recon_report << msg;
     return true;
 }
