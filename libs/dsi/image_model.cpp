@@ -219,40 +219,117 @@ bool src_data::mask_from_unet(void)
 }
 
 
-bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
+bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float target_resolution)
 {
-    std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
-    if(tipl::contains(voxel.report,msg))
-        return true;
+    std::string msg = " Susceptibility distortion was corrected by nonlinearly warping an inverted b0 image to the T1-weighted image.";
+    tipl::progress p("distortion correction using t1w image",true);
+    auto native_dim = voxel.dim;
+    auto native_R = voxel.trans_to_mni;
 
-    if(!apply_mask)
+    // pseudo-T1 b0 and dwi mask on the target grid
+    tipl::image<3> b0;
+    tipl::image<3,unsigned char> target_mask(voxel.mask);
+    auto target_vs = voxel.vs;
+    auto target_R = native_R;
     {
-        if(!mask_from_template())
+        std::vector<tipl::image<3> > b0s;
+        if(!read_b0(b0s))
             return false;
-    }
-
-
-    tipl::reg::mm_reg<tipl::out> r;
-    if(!r.load_template<tipl::io::gz_nifti>(0,t2w_filename))
-    {
-        error_msg = r.error_msg;
-        return false;
-    }
-    if(r.Itvs[2] > r.Itvs[0]*1.1f)
-    {
-        tipl::out() << "nonisotropic image found: regrid images applied";
-        if(!tipl::command<void,tipl::io::gz_nifti>(r.It[0],r.Itvs,r.ItR,r.It_is_mni,
-                "regrid","1",true,error_msg))
+        b0.swap(b0s[0]);
+        for(size_t i = 1;i < b0s.size();++i)
+            b0 += b0s[i];
+        b0 /= float(b0s.size());
+        if(target_resolution > 0.0f)
+        {
+            bool is_mni = false;
+            auto mask_vs = target_vs;
+            auto mask_R = target_R;
+            if(!tipl::command<void,tipl::io::gz_nifti>(b0,target_vs,target_R,is_mni,"regrid",std::to_string(target_resolution),true,error_msg) ||
+               !tipl::command<void,tipl::io::gz_nifti>(target_mask,mask_vs,mask_R,is_mni,"regrid",std::to_string(target_resolution),false,error_msg))
+                return false;
+        }
+        tipl::segmentation::normalize_otsu_median(b0);
+        tipl::upper_threshold(b0,1.0f);
+        if(!tipl::equation(b0,"(1-x)*(x>0)",error_msg))
             return false;
-        r.Its = r.It[0].shape();
+        tipl::image<3,unsigned char> dilated_mask(target_mask);
+        tipl::morphology::dilation(dilated_mask);
+        b0 *= dilated_mask;
     }
 
-    tipl::progress p("distortion correction using t2w image",true);
-    tipl::filter::gaussian(r.It[0]);
-    r.linear_param.reg_type = tipl::reg::rigid_body;
-    if(!warp_b0_to_image(r))
+    // brain-extracted T1w
+    tipl::image<3> t1w;
+    tipl::vector<3> t1w_vs;
+    tipl::matrix<4,4> t1w_R;
+    {
+        if(!(tipl::io::gz_nifti(t1w_filename,std::ios::in) >> t1w >> t1w_vs >> t1w_R >>
+             [&](const std::string& e){tipl::error() << (error_msg = e);}))
+            return false;
+        tipl::ml3d::tissue_seg unet;
+        if(!download_unet_model(unet,"human_tissue") || !unet.forward(t1w,t1w_vs))
+            return error_msg = unet.error_msg,false;
+        auto t1w_mask = unet.data.fg_prob > 0.5f;
+        if(t1w_mask.shape() != t1w.shape() || tipl::max_value(t1w_mask) == 0)
+            return error_msg = "cannot extract brain from the T1w image",false;
+        tipl::segmentation::normalize_otsu_median(t1w);
+        tipl::upper_threshold(t1w,1.0f);
+        t1w *= t1w_mask;
+    }
+
+    auto run_reg = [&](auto& r,bool nonlinear)
+    {
+        bool ended = false;
+        std::thread thread([&](void)
+        {
+            r.linear_reg(tipl::prog_aborted);
+            if(nonlinear)
+                r.nonlinear_reg(tipl::prog_aborted);
+            ended = true;
+        });
+        while(!ended)
+            p(0,1);
+        thread.join();
+        return !p.aborted();
+    };
+
+    // stage 1: rigid T1w -> target dwi grid
+    {
+        tipl::reg::mm_reg<tipl::out> rigid_reg;
+        rigid_reg.I[0] = tipl::reg::subject_image_pre(t1w);
+        rigid_reg.Is = t1w.shape();
+        rigid_reg.Ivs = t1w_vs;
+        rigid_reg.IR = t1w_R;
+        rigid_reg.It[0] = tipl::reg::template_image_pre(b0);
+        rigid_reg.Its = b0.shape();
+        rigid_reg.Itvs = target_vs;
+        rigid_reg.ItR = target_R;
+        rigid_reg.linear_param.reg_type = tipl::reg::rigid_body;
+        if(!run_reg(rigid_reg,false))
+            return false;
+        t1w = rigid_reg.apply_warping<true,tipl::interpolation::cubic>(t1w);
+        tipl::lower_threshold(t1w,0.0f);
+    }
+
+    // stage 2: free nonlinear cdm on the target dwi grid
+    tipl::reg::mm_reg<tipl::out> reg;
+    reg.I[0] = tipl::reg::subject_image_pre(b0);
+    reg.It[0] = tipl::reg::template_image_pre(t1w);
+    reg.Is = reg.Its = b0.shape();
+    reg.Ivs = reg.Itvs = target_vs;
+    reg.IR = reg.ItR = target_R;
+    reg.skip_linear = true; // linear_reg still needed to populate J
+    if(!run_reg(reg,true))
         return false;
-    voxel.R2 = r.r[0];
+    voxel.R2 = reg.r[0];
+
+    // jacobian of the nonlinear deformation on the target grid
+    tipl::image<3> jdet;
+    tipl::jacobian_determinant_dis(reg.t2f_dis,jdet);
+    for(size_t i = 0;i < jdet.size();++i)
+        if(target_mask[i] && jdet[i] <= 0.0f)
+            return error_msg = "folding found in the nonlinear deformation",false;
+
+    reg.to_I_space(native_dim,native_R);
     {
         std::vector<tipl::image<3,unsigned short> > this_new_dwi(src_dwi_data.size());
         std::vector<const unsigned short*> new_src_dwi_data(src_dwi_data.size());
@@ -263,20 +340,22 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
             if(prog.aborted())
                 return;
             prog(p++,src_dwi_data.size());
-            auto new_I = r.apply_warping<true,tipl::interpolation::cubic>(tipl::image<3>(dwi_at(index)));
+            auto new_I = reg.apply_warping<true,tipl::interpolation::cubic>(tipl::image<3>(dwi_at(index)));
+            new_I *= jdet;
             tipl::lower_threshold(new_I,0.0f);
             this_new_dwi[index] = new_I;
             new_src_dwi_data[index] = this_new_dwi[index].data();
         });
-        voxel.mask = r.apply_warping<true,tipl::interpolation::majority>(voxel.mask);
+        auto new_mask = reg.apply_warping<true,tipl::interpolation::majority>(voxel.mask);
         if(prog.aborted())
             return false;
         this_new_dwi.swap(new_dwi);
         new_src_dwi_data.swap(src_dwi_data);
+        voxel.mask.swap(new_mask);
     }
-    voxel.dim = r.Its;
-    voxel.vs = r.Itvs;
-    voxel.trans_to_mni = r.ItR;
+    voxel.dim = reg.Its;
+    voxel.vs = reg.Itvs;
+    voxel.trans_to_mni = reg.ItR;
     update_dwi_sum();
     voxel.recon_report << msg;
     return true;
@@ -791,6 +870,7 @@ std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2][Corrections][EDDY]","eddy"},
     {"[Step T2][Corrections][Motion Correction]","motion_correction"},
     {"[Step T2][Corrections][Bias Field]","bias_field_correction"},
+    {"[Step T2][Corrections][By T1w]","correct_by_t1w"},
     {"[Step T2][Corrections][By T2w]","correct_by_t2w"},
     {"[Step T2][Corrections][Volume Orientation Correction]","orientation_correction"},
     {"[Step T2][Reconstruction]","reconstruction"},
@@ -1291,9 +1371,10 @@ bool src_data::command(std::vector<std::string> cmds)
         return log_step();
     }
 
-    if(cmd == "correct_by_t2w")
+    if(cmd == "correct_by_t1w" || cmd == "correct_by_t2w")
     {
-        if(!correct_distortion_by_t2w(param))
+        auto pos = param.find_last_of('|');
+        if(!correct_distortion_by_t1w(param.substr(0,pos),pos == std::string::npos ? 0.0f : std::stof(param.substr(pos+1))))
             return false;
         return log_step();
     }
