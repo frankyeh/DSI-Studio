@@ -482,13 +482,22 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if((cmd == "probabilistic_masking" || cmd == "correct_by_t2w") && param.empty())
+    if((cmd == "probabilistic_masking" || cmd == "correct_by_t1w" || cmd == "correct_by_t2w") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
             return fail("canceled");
         param = filename.toStdString();
+    }
+    if(cmd == "correct_by_t1w" && source == command_source::User && param.find('|') == std::string::npos)
+    {
+        bool ok;
+        QStringList items{"Native","1.5 mm isotropic","1.0 mm isotropic"};
+        auto item = QInputDialog::getItem(this,QApplication::applicationName(),"Output resolution:",items,1,false,&ok);
+        if(!ok)
+            return fail("canceled");
+        param += std::vector<std::string>{"|0","|1.5","|1.0"}[size_t(items.indexOf(item))];
     }
     if(cmd == "save_src" && param.empty())
     {
