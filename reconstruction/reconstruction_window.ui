@@ -1399,9 +1399,9 @@ Reconstruction</string>
     </property>
     <addaction name="actionRun_FSL_Topup"/>
     <addaction name="actionTOPUP_only"/>
+    <addaction name="actionT1w_Distortion_Correction"/>
     <addaction name="actionEDDY"/>
     <addaction name="separator"/>
-    <addaction name="actionCorrect_Distortion_by_T2w"/>
     <addaction name="actionCorrect_Bias_Field"/>
     <addaction name="actionEddy_Motion_Correction"/>
     <addaction name="actionVolume_Orientation_Correction"/>
@@ -1777,12 +1777,12 @@ Reconstruction</string>
     <string>run probabilistic_masking</string>
    </property>
   </action>
-  <action name="actionCorrect_Distortion_by_T2w">
+  <action name="actionT1w_Distortion_Correction">
    <property name="text">
-    <string>T2w Distortion Correction...</string>
+    <string>T1w Distortion Correction...</string>
    </property>
    <property name="toolTip">
-    <string>run correct_by_t2w</string>
+    <string>run correct_by_t1w</string>
    </property>
   </action>
   <action name="actionCorrect_Bias_Field">
