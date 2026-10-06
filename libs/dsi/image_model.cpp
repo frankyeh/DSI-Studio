@@ -219,6 +219,7 @@ bool src_data::mask_from_unet(void)
 }
 
 
+bool estimate_bias_field(tipl::image<3> I,tipl::image<3,unsigned char> mask,tipl::image<3>& log_bias_field,const tipl::vector<3>& spacing);
 bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float target_resolution)
 {
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping an inverted b0 image to the T1-weighted image.";
@@ -236,9 +237,11 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
         if(!read_b0(b0s))
             return false;
         b0.swap(b0s[0]);
-        for(size_t i = 1;i < b0s.size();++i)
-            b0 += b0s[i];
-        b0 /= float(b0s.size());
+        b0 *= voxel.mask;
+        tipl::segmentation::normalize_otsu_median(b0);
+        tipl::upper_threshold(b0,1.0f);
+        if(!tipl::equation(b0,"(1-x)*(x>0)",error_msg))
+            return false;
         if(target_resolution > 0.0f)
         {
             bool is_mni = false;
@@ -248,13 +251,6 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
                !tipl::command<void,tipl::io::gz_nifti>(target_mask,mask_vs,mask_R,is_mni,"regrid",std::to_string(target_resolution),false,error_msg))
                 return false;
         }
-        tipl::segmentation::normalize_otsu_median(b0);
-        tipl::upper_threshold(b0,1.0f);
-        if(!tipl::equation(b0,"(1-x)*(x>0)",error_msg))
-            return false;
-        tipl::image<3,unsigned char> dilated_mask(target_mask);
-        tipl::morphology::dilation(dilated_mask);
-        b0 *= dilated_mask;
     }
 
     // brain-extracted T1w
@@ -271,9 +267,17 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
         auto t1w_mask = unet.data.fg_prob > 0.5f;
         if(t1w_mask.shape() != t1w.shape() || tipl::max_value(t1w_mask) == 0)
             return error_msg = "cannot extract brain from the T1w image",false;
+        t1w *= t1w_mask;
+        {
+            tipl::image<3> bias_field;
+            if(!estimate_bias_field(t1w,t1w_mask,bias_field,tipl::vector<3>(1.0f,t1w_vs[0]/t1w_vs[1],t1w_vs[0]/t1w_vs[2])))
+                return error_msg = "cannot correct bias field in the T1w image",false;
+            for(auto& each : bias_field)
+                each = std::exp(-each);
+            t1w *= bias_field;
+        }
         tipl::segmentation::normalize_otsu_median(t1w);
         tipl::upper_threshold(t1w,1.0f);
-        t1w *= t1w_mask;
     }
 
     auto run_reg = [&](auto& r,bool nonlinear)
