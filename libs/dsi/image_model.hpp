@@ -225,7 +225,7 @@ public:
     void crop(tipl::vector<3,int> range_min,tipl::vector<3,int> range_max);
     void trim(size_t border = 0);
 public:
-    bool correct_distortion_by_t2w(const std::string& t2w_filename);
+    bool correct_distortion_by_t1w(const std::string& t1w_filename,float target_resolution = 0.0f);
     void correction_axis(void);
     bool correct_motion(void);
     bool correct_bias_field(bool need_update_mask = true);
