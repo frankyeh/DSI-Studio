@@ -352,26 +352,36 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
         if(target_mask[i] && jdet[i] <= 0.0f)
             return error_msg = "folding found in the nonlinear deformation",false;
 
-    tipl::out() << "warp dwi to " << reg.Its << " at " << reg.Itvs << " mm with jacobian modulation";
+    tipl::out() << "warp dwi to " << reg.Its << " at " << reg.Itvs << " mm using t1w-guided interpolation and jacobian modulation";
     reg.to_I_space(native_dim,native_R);
+    auto t1w_native = reg.apply_warping<false,tipl::interpolation::linear>(t1w);
     {
-        std::vector<tipl::image<3,unsigned short> > this_new_dwi(src_dwi_data.size());
+        std::vector<tipl::image<3,unsigned short> > this_new_dwi(src_dwi_data.size(),tipl::image<3,unsigned short>(reg.Its));
         std::vector<const unsigned short*> new_src_dwi_data(src_dwi_data.size());
         tipl::progress prog("warping");
         std::atomic<size_t> p = 0;
-        tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+        tipl::par_for(reg.Its.depth(),[&](unsigned int z)
         {
             if(prog.aborted())
                 return;
-            prog(p++,src_dwi_data.size());
-            auto new_I = reg.apply_warping<true,tipl::interpolation::cubic>(tipl::image<3>(dwi_at(index)));
-            new_I *= jdet;
-            tipl::lower_threshold(new_I,0.0f);
-            this_new_dwi[index] = new_I;
-            new_src_dwi_data[index] = this_new_dwi[index].data();
+            prog(p++,reg.Its.depth());
+            for(size_t i = z*reg.Its.plane_size(),end = i+reg.Its.plane_size();i < end;++i)
+            {
+                tipl::interpolator::linear<3> interp;
+                if(!interp.get_location_with_ref(native_dim,t1w_native,t1w[i],reg.to2from[i],3.0f))
+                    continue;
+                for(size_t v = 0;v < src_dwi_data.size();++v)
+                {
+                    float value = 0.0f;
+                    interp.estimate(dwi_at(v),value);
+                    this_new_dwi[v][i] = (unsigned short)std::max<float>(0.0f,value*jdet[i]);
+                }
+            }
         });
         if(prog.aborted())
             return false;
+        for(size_t v = 0;v < src_dwi_data.size();++v)
+            new_src_dwi_data[v] = this_new_dwi[v].data();
         this_new_dwi.swap(new_dwi);
         new_src_dwi_data.swap(src_dwi_data);
     }
