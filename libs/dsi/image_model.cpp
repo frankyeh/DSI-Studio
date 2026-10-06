@@ -236,6 +236,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
         std::vector<tipl::image<3> > b0s;
         if(!read_b0(b0s))
             return false;
+        tipl::out() << "generate pseudo-T1 from masked b0";
         b0.swap(b0s[0]);
         b0 *= voxel.mask;
         tipl::segmentation::normalize_otsu_median(b0);
@@ -244,6 +245,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
             return false;
         if(target_resolution > 0.0f)
         {
+            tipl::out() << "regrid pseudo-T1 b0 and mask to " << target_resolution << " mm";
             bool is_mni = false;
             auto mask_vs = target_vs;
             auto mask_R = target_R;
@@ -258,9 +260,11 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     tipl::vector<3> t1w_vs;
     tipl::matrix<4,4> t1w_R;
     {
+        tipl::out() << "load T1w: " << t1w_filename;
         if(!(tipl::io::gz_nifti(t1w_filename,std::ios::in) >> t1w >> t1w_vs >> t1w_R >>
              [&](const std::string& e){tipl::error() << (error_msg = e);}))
             return false;
+        tipl::out() << "extract T1w brain using unet";
         tipl::ml3d::tissue_seg unet;
         if(!download_unet_model(unet,"human_tissue") || !unet.forward(t1w,t1w_vs))
             return error_msg = unet.error_msg,false;
@@ -269,6 +273,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
             return error_msg = "cannot extract brain from the T1w image",false;
         t1w *= t1w_mask;
         {
+            tipl::out() << "correct T1w bias field";
             tipl::image<3> bias_field;
             if(!estimate_bias_field(t1w,t1w_mask,bias_field,tipl::vector<3>(1.0f,t1w_vs[0]/t1w_vs[1],t1w_vs[0]/t1w_vs[2])))
                 return error_msg = "cannot correct bias field in the T1w image",false;
@@ -298,6 +303,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
 
     // stage 1: rigid T1w -> target dwi grid
     {
+        tipl::out() << "rigid registration of T1w to pseudo-T1 b0";
         tipl::reg::mm_reg<tipl::out> rigid_reg;
         rigid_reg.I[0] = tipl::reg::subject_image_pre(t1w);
         rigid_reg.Is = t1w.shape();
@@ -315,6 +321,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     }
 
     // stage 2: free nonlinear cdm on the target dwi grid
+    tipl::out() << "nonlinear registration of pseudo-T1 b0 to T1w";
     tipl::reg::mm_reg<tipl::out> reg;
     reg.I[0] = tipl::reg::subject_image_pre(b0);
     reg.It[0] = tipl::reg::template_image_pre(t1w);
@@ -327,12 +334,14 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     voxel.R2 = reg.r[0];
 
     // jacobian of the nonlinear deformation on the target grid
+    tipl::out() << "compute jacobian determinant";
     tipl::image<3> jdet;
     tipl::jacobian_determinant_dis(reg.t2f_dis,jdet);
     for(size_t i = 0;i < jdet.size();++i)
         if(target_mask[i] && jdet[i] <= 0.0f)
             return error_msg = "folding found in the nonlinear deformation",false;
 
+    tipl::out() << "warp dwi to " << reg.Its << " at " << reg.Itvs << " mm with jacobian modulation";
     reg.to_I_space(native_dim,native_R);
     {
         std::vector<tipl::image<3,unsigned short> > this_new_dwi(src_dwi_data.size());
