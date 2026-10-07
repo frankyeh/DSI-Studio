@@ -89,7 +89,6 @@ void kill_process_tree(QProcess* process) // kill(): a windowless console child 
     if(process->state() != QProcess::NotRunning)
         process->kill();
 }
-static QSet<QString> removed_agent_sessions; // explicitly removed chats: reject stale pipe requests rather than recreating them
 void fail_agent_process(QProcess* process,const QString& message) // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
 {
     process->setProperty("fatal_error",message);
@@ -271,7 +270,6 @@ AIAgent::AIAgent(MainWindow* parent):
         if(row < 0)
             return;
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
-        removed_agent_sessions.insert(session); // first: stale requests are rejected even while the row still exists
         if(auto* found = ai_info::find(session);found && found->processes)
         {
             auto* process = found->processes;
@@ -865,23 +863,10 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
     if(!is_valid_session_id(session))
         return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
-    if(removed_agent_sessions.contains(session))
-        return void(reply = status_reply("error","session removed by user"));
 
     auto* found = ai_info::find(session);
-    if(!found)
-    {
-        auto agent = request["agent"].toString().trimmed();
-        if(agent.isEmpty())
-            return void(reply = status_reply("error","missing agent for new session"));
-        // AgentServer, never derived from the calling agent's own name: a pipe-dispatched session is always a
-        // log/routing record for this dispatcher, never a real local Codex/Claude subprocess, regardless of
-        // what the caller names itself -- it can't send a live chat message or have its model changed from
-        // the GUI (see current_send_action()/on_ai_agent_status_clicked())
-        found = ai_info::create(session,"AgentServer",agent);
-        if(auto model = request["model"].toString().trimmed();!model.isEmpty())
-            found->model_settings["model"] = model;
-    }
+    if(!found) // a pipe request must match an existing chat; a removed chat's orphan fails here instead of recreating it
+        return void(reply = status_reply("error","session not found"));
     ai_info& info = *found;
     set_ai_status(session,session_status::Thinking,"Processing agent request");
 
