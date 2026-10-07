@@ -2959,6 +2959,20 @@ bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active 
         return false;
     return true;
 }
+void AIAgent::finish_agent_turn(QProcess* process,QString error,bool cancelled) // one turn-end rule for every agent whose protocol reports it
+{
+    process->setProperty("turn_active",false);
+    process->setProperty("turn_id",QString());
+    auto* info = ai_info::find(process->objectName());
+    if(!info)
+        return;
+    if(error.isEmpty())
+        return set_ai_status(info->sessions,session_status::WaitingUser,cancelled ? "Stopped by user." : "Waiting for user");
+    if(!error.startsWith("ERROR:"))
+        error.prepend("ERROR: ");
+    set_ai_status(info->sessions,session_status::Failed,error);
+    add_ai_history(*info,"error",error);
+}
 ai_info* AIAgent::establish_agent_session(QProcess* process,QString new_session)
 {
     // a fresh launch adopts the agent's own id (empty: the agent runs under DSI Studio's id); a resume must keep its id
@@ -3120,12 +3134,8 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
                 message = "Muse "+(message.isEmpty() ? QString("request failed.") : message);
                 if(id == "initialize" || id == session_request)
                     fail_agent_process(process,message);
-                else if(auto* current = ai_info::find(process->objectName()))
-                {
-                    message.prepend("ERROR: ");
-                    set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"error",message);
-                }
+                else
+                    finish_agent_turn(process,message);
                 continue;
             }
 
@@ -3183,25 +3193,13 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
             }
             else if(method == "turn/completed")
             {
-                process->setProperty("turn_id",QString());
-                if(auto* current = ai_info::find(process->objectName()))
-                {
-                    auto params = msg["params"].toObject();
-                    auto terminal = params["terminal"].toString();
-                    if(terminal == "failed")
-                    {
-                        auto error = params["error"].toObject()["message"].toString();
-                        if(error.isEmpty())
-                            error = params["reason"].toString();
-                        error = "ERROR: "+(error.isEmpty() ? QString("Muse turn failed.") : error);
-                        set_ai_status(current->sessions,session_status::Failed,error);
-                        add_ai_history(*current,"error",error);
-                    }
-                    else if(terminal == "cancelled")
-                        set_ai_status(current->sessions,session_status::WaitingUser,"Stopped by user.");
-                    else
-                        set_ai_status(current->sessions,session_status::WaitingUser,"Waiting for user");
-                }
+                auto params = msg["params"].toObject();
+                auto terminal = params["terminal"].toString();
+                auto error = params["error"].toObject()["message"].toString();
+                if(error.isEmpty())
+                    error = params["reason"].toString();
+                finish_agent_turn(process,terminal != "failed" ? QString() : error.isEmpty() ? "Muse turn failed." : error,
+                                  terminal == "cancelled");
             }
         }
     });
@@ -3239,34 +3237,18 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
 
             auto result = msg["result"].toObject();
             auto terminal = result["status"].toString();
-            if(auto* current = ai_info::find(process->objectName()))
+            bool cancelled = terminal == "CANCELED" || terminal == "INTERRUPTED";
+            auto reply = result["response"].toString().trimmed();
+            auto* current = ai_info::find(process->objectName());
+            if(current && terminal == "SUCCESS" && !reply.isEmpty())
             {
-                if(terminal == "SUCCESS")
-                {
-                    auto reply = result["response"].toString().trimmed();
-                    if(!reply.isEmpty())
-                    {
-                        process->setProperty("had_reply",true);
-                        add_ai_reply(*current,reply,QString());
-                    }
-                    else
-                        set_ai_status(current->sessions,session_status::WaitingUser,
-                                      "Waiting for user");
-                }
-                else if(terminal == "CANCELED" || terminal == "INTERRUPTED")
-                    set_ai_status(current->sessions,session_status::WaitingUser,
-                                  "Stopped by user.");
-                else
-                {
-                    auto error = result["error"].toString().trimmed();
-                    auto message = "ERROR: Antigravity "+
-                                   (error.isEmpty() ?
-                                    (terminal.isEmpty() ? QString("request failed.") :
-                                     terminal.toLower()+".") : error);
-                    set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"error",message);
-                }
+                process->setProperty("had_reply",true);
+                add_ai_reply(*current,reply,QString());
             }
+            auto error = result["error"].toString().trimmed();
+            finish_agent_turn(process,terminal == "SUCCESS" || cancelled ? QString() :
+                              "Antigravity "+(!error.isEmpty() ? error : terminal.isEmpty() ? QString("request failed.") : terminal.toLower()+"."),
+                              cancelled);
         }
     });
 
@@ -3336,14 +3318,11 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
                 auto message = "Grok "+id+" failed: "+(error.isEmpty() ? QString("request failed.") : error);
                 if(id != "prompt")
                     fail_agent_process(process,message);
-                else if(auto* current = ai_info::find(process->objectName()))
+                else
                 {
-                    process->setProperty("turn_active",false);
                     process->setProperty("grok_chat",QString());
                     process->setProperty("grok_reasoning",QString());
-                    message.prepend("ERROR: ");
-                    set_ai_status(current->sessions,session_status::Failed,message);
-                    add_ai_history(*current,"error",message);
+                    finish_agent_turn(process,message);
                 }
                 continue;
             }
@@ -3391,20 +3370,14 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
             {
                 auto chat = process->property("grok_chat").toString().trimmed();
                 auto reasoning = process->property("grok_reasoning").toString().trimmed();
-                process->setProperty("turn_active",false);
                 process->setProperty("grok_chat",QString());
                 process->setProperty("grok_reasoning",QString());
-                if(auto* current = ai_info::find(process->objectName()))
+                if(auto* current = ai_info::find(process->objectName());current && (!chat.isEmpty() || !reasoning.isEmpty()))
                 {
-                    if(!chat.isEmpty() || !reasoning.isEmpty())
-                    {
-                        process->setProperty("had_reply",true);
-                        add_ai_reply(*current,chat,reasoning);
-                    }
-                    set_ai_status(current->sessions,session_status::WaitingUser,
-                                  msg["result"].toObject()["stopReason"].toString() == "cancelled" ?
-                                  "Stopped by user." : "Waiting for user");
+                    process->setProperty("had_reply",true);
+                    add_ai_reply(*current,chat,reasoning);
                 }
+                finish_agent_turn(process,{},msg["result"].toObject()["stopReason"].toString() == "cancelled");
             }
         }
     });
@@ -3533,22 +3506,12 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
         }
         else if(method == "turn/completed")
         {
-            process->setProperty("turn_id",QString()); // idle again -- start_ai()'s next Codex send should start a fresh turn, not steer into this one
-            if(auto* info = ai_info::find(process->objectName()))
-            {
-                auto turn = msg["params"].toObject()["turn"].toObject();
-                auto turn_status = turn["status"].toString();
-                if(turn_status == "failed")
-                {
-                    auto err = turn["error"].toObject()["message"].toString();
-                    set_ai_status(info->sessions,session_status::Failed,err.isEmpty() ? "Turn failed" : err);
-                    add_ai_history(*info,"error",info->status_message);
-                }
-                else if(turn_status == "interrupted") // Stop's turn/interrupt (see on_ai_send_message_clicked()) -- session stays alive, just idle again
-                    set_ai_status(info->sessions,session_status::WaitingUser,"Stopped by user.");
-                else
-                    set_ai_status(info->sessions,session_status::WaitingUser,"Waiting for user");
-            }
+            // idle again: the next Codex send starts a fresh turn instead of steering into this one
+            auto turn = msg["params"].toObject()["turn"].toObject();
+            auto turn_status = turn["status"].toString();
+            auto error = turn["error"].toObject()["message"].toString();
+            finish_agent_turn(process,turn_status != "failed" ? QString() : error.isEmpty() ? "Turn failed" : error,
+                              turn_status == "interrupted");
         }
         else if(method == "error")
         {
