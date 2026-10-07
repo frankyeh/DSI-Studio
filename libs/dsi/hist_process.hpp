@@ -130,8 +130,8 @@ public:
         dyy = std::move(hist.other_maps[HistData::dyy]);
         dxy = std::move(hist.other_maps[HistData::dxy]);
 
-        tipl::image<3> hist_fa_sub({dxx.width(),dxx.height(),1});
-        tipl::image<3,tipl::vector<3> > hist_dir_sub({dxx.width(),dxx.height(),1});
+        tipl::image<3> hist_fa_sub(tipl::shape<3>(dxx.width(),dxx.height(),1));
+        tipl::image<3,tipl::vector<3> > hist_dir_sub(tipl::shape<3>(dxx.width(),dxx.height(),1));
 
         for(size_t i = 0;i < dxx.size();++i)
             if(dxx[i] != 0.0f)
