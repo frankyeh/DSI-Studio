@@ -91,7 +91,10 @@ void kill_process_tree(QProcess* process) // kill(): a windowless console child 
     }
 #endif
     if(process->state() != QProcess::NotRunning)
+    {
         process->kill();
+        process->waitForFinished(1000); // reap it: a QProcess destroyed while still running warns on the console
+    }
 }
 void fail_agent_process(QProcess* process,const QString& message) // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
 {
@@ -1505,7 +1508,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         QProcess process;
         start_process(process,executable,{"agent","stdio"});
         if(!process.waitForStarted(3000))
-            return ai_agent_status::Error;
+            return kill_process_tree(&process),ai_agent_status::Error;
         process.write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
             {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}}).toJson(QJsonDocument::Compact)+'\n');
         QJsonObject reply;
@@ -1520,10 +1523,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         }
         process.closeWriteChannel();
         if(!process.waitForFinished(1000))
-        {
             kill_process_tree(&process);
-            process.waitForFinished(1000);
-        }
         if(!reply.contains("result"))
             return ai_agent_status::Error;
         auto method = reply["result"].toObject()["_meta"].toObject()["defaultAuthMethodId"].toString();
@@ -1538,14 +1538,13 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         QProcess process;
         start_process(process,executable,{"--output-format","json","models"});
         if(!process.waitForStarted(3000))
-            return ai_agent_status::Error;
+            return kill_process_tree(&process),ai_agent_status::Error;
         process.closeWriteChannel();
         // agy started, so a failed or stalled "models" means no usable credential (after /logout it waits for a browser sign-in);
         // Sign In then opens agy in a terminal, which shows any other error itself
         if(!process.waitForFinished(10000))
         {
             kill_process_tree(&process);
-            process.waitForFinished(1000);
             return ai_agent_status::SignInRequired;
         }
         if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
@@ -1560,7 +1559,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         process.setProcessEnvironment(agent_environment(provider));
         start_process(process,executable,{"serve"});
         if(!process.waitForStarted(3000))
-            return ai_agent_status::Error;
+            return kill_process_tree(&process),ai_agent_status::Error;
 
         auto write = [&](const QJsonObject& msg)
         {
@@ -1615,24 +1614,15 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         }
         process.closeWriteChannel();
         if(!process.waitForFinished(1000))
-        {
             kill_process_tree(&process);
-            process.waitForFinished(1000);
-        }
         return status;
     }
 
     bool is_codex = provider == "Codex";
     QProcess process;
     start_process(process,executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
-    if(!process.waitForStarted(3000))
-        return ai_agent_status::Error;
-    if(!process.waitForFinished(10000))
-    {
-        kill_process_tree(&process); // the stack QProcess destructor would kill only the .cmd wrapper
-        process.waitForFinished(1000);
-        return ai_agent_status::Error;
-    }
+    if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
+        return kill_process_tree(&process),ai_agent_status::Error; // the stack QProcess destructor would kill only the .cmd wrapper
     if(is_codex)
     {
         if(process.exitStatus() != QProcess::NormalExit)
@@ -1751,7 +1741,8 @@ bool AIAgent::run_agent_login(const QString& provider)
         muse_login.setProcessEnvironment(agent_environment(provider)); // Muse's file credential backend must match status/chat
         muse_login.setProcessChannelMode(QProcess::MergedChannels);
         start_process(muse_login,executable,args);
-        started = muse_login.waitForStarted(3000);
+        if(!(started = muse_login.waitForStarted(3000)))
+            kill_process_tree(&muse_login);
     }
     else
     {
