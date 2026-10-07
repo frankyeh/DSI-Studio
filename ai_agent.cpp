@@ -1723,8 +1723,8 @@ bool AIAgent::run_agent_login(const QString& provider)
     if(executable.isEmpty())
         return false;
 
-    QString info; // agy reuses a stored credential silently; its only sign-out is the interactive /logout
-    if(provider == "Antigravity" && check_agent_status(provider,executable,info) == ai_agent_status::Ready)
+    // agy reuses a stored credential silently; its only sign-out is the interactive /logout
+    if(provider == "Antigravity" && agent_entries[provider].status == ai_agent_status::Ready)
     {
         QMessageBox::information(this,"AI Agent","Antigravity is currently signed in. In the terminal, run agy, "
                                  "and type /logout, and come back to sign in again here.");
@@ -1787,6 +1787,7 @@ bool AIAgent::run_agent_login(const QString& provider)
     layout.addWidget(&buttons);
     connect(done,&QPushButton::clicked,&dialog,[&]
     {
+        QString info;
         auto agent_status = check_agent_status(provider,executable,info);
         if(agent_status == ai_agent_status::Ready)
             dialog.accept();
