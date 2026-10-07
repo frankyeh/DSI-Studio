@@ -2708,7 +2708,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-QString AIAgent::prepare_ai(ai_info& info,const QString& text)
+QString AIAgent::prepare_ai(ai_info& info)
 {
     // fresh state each attempt -- a field this attempt doesn't set (e.g. launch_model_url when not using Ollama) must not carry over a stale value from the last one
     info.launch_name.clear();
@@ -2792,15 +2792,6 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
     auto name = info.launch_name; // a plain value copy for the async handlers below -- never info itself
     const bool first_launch = info.status == session_status::New; // pre-launch status: a never-established chat returns to New, not Failed
 
-    // recorded here, once, unconditionally, the moment it's sent -- not deferred to whichever async
-    // establishment event (Codex app-server "thread/start"/"thread/resume", Claude stream-json "system"/"init") happens to
-    // confirm the session later. That deferral was the actual bug: it required stashing this text in
-    // the async handler's own closure to "replay" once establishment confirmed, and if the backend ever
-    // sent that one-time event more than once (observed with an Ollama-routed session), the stale
-    // stashed text got replayed again too, duplicating the opening message into the chat history
-    add_ai_history(info,"user",text);
-    info.save_config();
-    ui->ai_chat_input->clear();
 
     // this session was never established, so it has no real id worth preserving -- back to New entirely,
     // as if this attempt never happened, rather than left marked Failed. The message itself stays recorded
@@ -2867,10 +2858,6 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
             auto& info = *found;
             info.processes = nullptr;
             set_ai_status(session,session_status::Failed,message);
-            if(auto* item = ui->ai_project_list->currentItem();
-               item && item->data(Qt::UserRole).toString() == session &&
-               ui->ai_chat_input->toPlainText().trimmed().isEmpty())
-                ui->ai_chat_input->setPlainText(text);
             add_ai_history(info,"error",message);
         }
         update_send_button();
@@ -2930,6 +2917,30 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
     return executable;
 }
 
+void write_agent_input(const ai_info& info,const QString& text) // the one stdin boundary for every local agent's user input; records nothing
+{
+    auto* process = info.processes;
+    auto session = process->objectName(); // the established id, in case establishment renamed it
+    if(info.provider == "Claude")
+        process->write(claude_input(text));
+    else if(info.provider == "Muse")
+        process->write(muse_turn_start(session,text));
+    else if(info.provider == "Antigravity")
+        process->write(antigravity_input(text));
+    else if(info.provider == "Grok")
+    {
+        process->setProperty("grok_turn",true); // Stop sends session/cancel only while a prompt is in flight
+        process->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
+            {"params",QJsonObject{{"sessionId",session},
+                {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).toJson(QJsonDocument::Compact)+'\n');
+    }
+    else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
+    {
+        auto turn_id = process->property("turn_id").toString();
+        process->write(turn_id.isEmpty() ? codex_turn_start("turn_start",session,text) :
+                                           codex_turn_steer(session,turn_id,text));
+    }
+}
 ai_info* AIAgent::establish_agent_session(QProcess* process,QString new_session)
 {
     // a fresh launch adopts the agent's own id (empty: the agent runs under DSI Studio's id); a resume must keep its id
@@ -3047,10 +3058,11 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                         add_ai_reply(*info,chat_text,reasoning_text);
                 }
             });
-    // Prepend a system prompt to the initial text here if needed.
-    connect(process,&QProcess::started,process,
-            [process,text]
-            {process->write(claude_input(text));});
+    connect(process,&QProcess::started,process,[process,text] // Claude's system/init only arrives after its first input
+    {
+        if(auto* info = ai_info::find(process->objectName()))
+            write_agent_input(*info,text);
+    });
     QStringList args{
         "-p",
         "--input-format","stream-json",
@@ -3072,11 +3084,6 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
     auto workspace = info.model_settings["cwd"].toString();
     if(workspace.isEmpty())
         workspace = ui->ai_work_dir->text();
-    auto prompt = text;
-    auto ai_dir = QApplication::applicationDirPath()+"/ai";
-    if(QDir::cleanPath(workspace) != QDir::cleanPath(ai_dir))
-        prompt.prepend("Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+
-                       " before handling this request.\n\n");
     auto write = [process](const QJsonObject& msg)
     {
         process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
@@ -3132,7 +3139,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
             if(id == session_request)
             {
                 if(auto* current = establish_agent_session(process,msg["result"].toObject()["session"].toObject()["sessionId"].toString()))
-                    process->write(muse_turn_start(current->sessions,prompt));
+                    write_agent_input(*current,text);
                 continue;
             }
 
@@ -3196,11 +3203,6 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
     auto* process = info.processes;
     bool resuming = info.status != session_status::New;
     auto workspace = ui->ai_work_dir->text();
-    auto ai_dir = QDir::cleanPath(QApplication::applicationDirPath()+"/ai");
-    auto prompt = "Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+
-                  " before handling this request. Use `bash \""+
-                  QDir::fromNativeSeparators(ai_dir+"/dsi.sh")+
-                  "\"` for DSI Studio commands.\n\n"+text;
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
@@ -3210,8 +3212,8 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
             auto event = msg["event"].toString();
             if(event == "init")
             {
-                if(establish_agent_session(process,msg["conversation_id"].toString()))
-                    process->write(antigravity_input(prompt));
+                if(auto* current = establish_agent_session(process,msg["conversation_id"].toString()))
+                    write_agent_input(*current,text);
                 continue;
             }
             if(event != "result")
@@ -3268,23 +3270,14 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
     bool resuming = info.status != session_status::New;
     auto model = info.launch_model;
     auto cwd = process->workingDirectory(); // the fixed ai folder: Grok groups persisted sessions by cwd
-    auto workspace = info.model_settings["cwd"].toString().trimmed(); // context only: the session cwd stays the ai folder
-    if(workspace.isEmpty())
-        workspace = ui->ai_work_dir->text().trimmed();
-    auto prompt = "Read and follow "+QDir::toNativeSeparators(cwd+"/AGENTS.md")+
-                  " before handling this request. Use `bash ./dsi.sh` for DSI Studio commands."+
-                  (workspace.isEmpty() ? QString() : " The selected DSI Studio work directory is "+QDir::toNativeSeparators(workspace)+".")+
-                  "\n\n"+text;
     auto write = [process](const QJsonObject& msg)
     {
         process->write(QJsonDocument(msg).toJson(QJsonDocument::Compact)+'\n');
     };
-    auto send_prompt = [=](const QString& value)
+    auto send_prompt = [=]
     {
-        process->setProperty("grok_turn",true); // Stop sends session/cancel only while a prompt is in flight
-        write({{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
-            {"params",QJsonObject{{"sessionId",process->objectName()}, // the established id, in case session/new renamed it
-                {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",value}}}}}}});
+        if(auto* current = ai_info::find(process->objectName()))
+            write_agent_input(*current,text);
     };
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
@@ -3372,10 +3365,10 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
                     write({{"jsonrpc","2.0"},{"id","set_model"},{"method","session/set_config_option"},
                            {"params",QJsonObject{{"sessionId",process->objectName()},{"configId","model"},{"value",model}}}});
                 else
-                    send_prompt(prompt);
+                    send_prompt();
             }
             else if(id == "set_model")
-                send_prompt(prompt);
+                send_prompt();
             else if(id == "prompt")
             {
                 auto chat = process->property("grok_chat").toString().trimmed();
@@ -3495,7 +3488,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
             return;
 
         if(auto* info = establish_agent_session(process,msg["result"].toObject()["thread"].toObject()["id"].toString()))
-            process->write(codex_turn_start("turn_start",info->sessions,text));
+            write_agent_input(*info,text);
     };
 
     // a server-initiated notification: {"method":...,"params":...}, no "id", no reply expected
@@ -3582,49 +3575,41 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
        info.provider != "Muse" && info.provider != "Antigravity" && info.provider != "Grok")
         return;
 
-    if(info.processes)
-    {
-        add_ai_history(info,"user",text);
-        ui->ai_chat_input->clear();
+    bool launching = !info.processes;
+    QString executable;
+    if(launching && (executable = prepare_ai(info)).isEmpty()) // failed before creating a process: nothing was sent
+        return;
 
-        if(info.provider == "Claude")
-            info.processes->write(claude_input(text));
-        else if(info.provider == "Muse")
-            info.processes->write(muse_turn_start(info.processes->objectName(),text));
-        else if(info.provider == "Antigravity")
-            info.processes->write(antigravity_input(text));
-        else if(info.provider == "Grok")
-        {
-            info.processes->setProperty("grok_turn",true);
-            info.processes->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
-                {"params",QJsonObject{{"sessionId",info.sessions},
-                    {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).toJson(QJsonDocument::Compact)+'\n');
-        }
-        else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
-        {
-            auto turn_id = info.processes->property("turn_id").toString();
-            info.processes->write(turn_id.isEmpty() ?
-                codex_turn_start("turn_start",info.processes->objectName(),text) :
-                codex_turn_steer(info.processes->objectName(),turn_id,text));
-        }
+    // recorded here, once, the moment it is sent -- never replayed from an async establishment event
+    add_ai_history(info,"user",text);
+    info.save_config();
+    ui->ai_chat_input->clear();
+    if(!launching)
+    {
+        write_agent_input(info,text);
         set_ai_status(info.sessions,session_status::Thinking,"Message sent; waiting for agent");
         return;
     }
 
-    auto executable = prepare_ai(info,text);
-    if(executable.isEmpty()) // prepare_ai() failed before ever creating a process
-        return;
+    // the first message of every launch/resume carries the same instructions; later messages are the raw text
+    auto ai_dir = QApplication::applicationDirPath()+"/ai";
+    auto workspace = info.model_settings["cwd"].toString().trimmed();
+    if(workspace.isEmpty())
+        workspace = ui->ai_work_dir->text().trimmed();
+    auto prompt = "Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+" before handling this request. "
+                  "Use `bash \""+ai_dir+"/dsi.sh\"` for DSI Studio commands. "
+                  "The selected DSI Studio work directory is "+QDir::toNativeSeparators(workspace)+".\n\n"+text;
     QStringList args;
     if(info.provider == "Codex")
-        args = configure_codex(info,text);
+        args = configure_codex(info,prompt);
     else if(info.provider == "Muse")
-        args = configure_muse(info,text);
+        args = configure_muse(info,prompt);
     else if(info.provider == "Antigravity")
-        args = configure_antigravity(info,text);
+        args = configure_antigravity(info,prompt);
     else if(info.provider == "Grok")
-        args = configure_grok(info,text);
+        args = configure_grok(info,prompt);
     else
-        args = configure_claude(info,text);
+        args = configure_claude(info,prompt);
     ai_log("start " + executable +
            " args: " + args.join(" ").remove("\n"));
     // New only for a genuinely never-established launch; an already-established session being resumed (info.status
