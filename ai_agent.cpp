@@ -849,6 +849,7 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
     ui->ai_status->setText(QFontMetrics(ui->ai_status->font()).elidedText(
         text,Qt::ElideRight,ui->ai_status->maximumWidth()-30)); // truncate -- an unbounded message here was pushing the whole window wider
     ui->ai_status->repaint();
+    update_send_button(); // Stop/Send now follow the session status
 }
 
 void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
@@ -1939,10 +1940,11 @@ AIAgent::send_action AIAgent::current_send_action() const
         return github_connected(*info) ? send_action::Stop : send_action::Resume;
     if(!info->processes) // never launched (or a prior attempt cleanly ended): a fresh launch, always a real send
         return has_input ? send_action::Send : send_action::Disabled;
-    if(!has_input)
-        return send_action::Stop;
-    // a message can only be written to a running process; while it is starting or exiting, Send waits
-    return info->processes->state() == QProcess::Running ? send_action::Send : send_action::Disabled;
+    if(!has_input) // an idle (WaitingUser) agent has nothing to stop
+        return info->is_running() ? send_action::Stop : send_action::Disabled;
+    // a message can only be written to a running process with an established session; while starting or exiting, Send waits
+    return info->processes->state() == QProcess::Running && info->status != session_status::New ?
+           send_action::Send : send_action::Disabled;
 }
 
 void AIAgent::update_send_button()
@@ -2929,7 +2931,7 @@ void write_agent_input(const ai_info& info,const QString& text) // the one stdin
         process->write(antigravity_input(text));
     else if(info.provider == "Grok")
     {
-        process->setProperty("grok_turn",true); // Stop sends session/cancel only while a prompt is in flight
+        process->setProperty("turn_active",true); // Grok has no turn id: Stop cancels in-protocol only while a prompt is in flight
         process->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
             {"params",QJsonObject{{"sessionId",session},
                 {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).toJson(QJsonDocument::Compact)+'\n');
@@ -2940,6 +2942,22 @@ void write_agent_input(const ai_info& info,const QString& text) // the one stdin
         process->write(turn_id.isEmpty() ? codex_turn_start("turn_start",session,text) :
                                            codex_turn_steer(session,turn_id,text));
     }
+}
+bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active turn; false when there is none to cancel (Claude, Antigravity, idle)
+{
+    auto* process = info.processes;
+    auto session = process->objectName();
+    auto turn_id = process->property("turn_id").toString();
+    if(info.provider == "Muse" && !turn_id.isEmpty())
+        process->write(muse_turn_cancel(session,turn_id));
+    else if(info.provider == "Codex" && !turn_id.isEmpty())
+        process->write(codex_turn_interrupt(session,turn_id));
+    else if(info.provider == "Grok" && process->property("turn_active").toBool()) // the prompt reply then reports "cancelled"
+        process->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"method","session/cancel"},
+            {"params",QJsonObject{{"sessionId",session}}}}).toJson(QJsonDocument::Compact)+'\n');
+    else
+        return false;
+    return true;
 }
 ai_info* AIAgent::establish_agent_session(QProcess* process,QString new_session)
 {
@@ -3320,7 +3338,7 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
                     fail_agent_process(process,message);
                 else if(auto* current = ai_info::find(process->objectName()))
                 {
-                    process->setProperty("grok_turn",false);
+                    process->setProperty("turn_active",false);
                     process->setProperty("grok_chat",QString());
                     process->setProperty("grok_reasoning",QString());
                     message.prepend("ERROR: ");
@@ -3373,7 +3391,7 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
             {
                 auto chat = process->property("grok_chat").toString().trimmed();
                 auto reasoning = process->property("grok_reasoning").toString().trimmed();
-                process->setProperty("grok_turn",false);
+                process->setProperty("turn_active",false);
                 process->setProperty("grok_chat",QString());
                 process->setProperty("grok_reasoning",QString());
                 if(auto* current = ai_info::find(process->objectName()))
@@ -3642,17 +3660,7 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Stop: // only reachable when info exists, see current_send_action()
         if(info->provider == "GitHub")
             disconnect_github_issue();
-        else if(auto turn_id = info->processes->property("turn_id").toString();
-                info->provider == "Muse" && !turn_id.isEmpty())
-            info->processes->write(muse_turn_cancel(info->processes->objectName(),turn_id));
-        else if(auto turn_id = info->provider == "Codex" ?
-                info->processes->property("turn_id").toString() : QString();
-                !turn_id.isEmpty()) // Codex mid-turn: interrupt it in place rather than ending the whole session
-            info->processes->write(codex_turn_interrupt(info->processes->objectName(),turn_id));
-        else if(info->provider == "Grok" && info->processes->property("grok_turn").toBool()) // mid-turn: cancel in place; the prompt reply then reports "cancelled"
-            info->processes->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"method","session/cancel"},
-                {"params",QJsonObject{{"sessionId",info->sessions}}}}).toJson(QJsonDocument::Compact)+'\n');
-        else
+        else if(!cancel_agent_turn(*info))
         {
             info->processes->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
             kill_process_tree(info->processes);
