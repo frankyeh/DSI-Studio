@@ -84,7 +84,11 @@ void kill_process_tree(QProcess* process) // kill(): a windowless console child 
         return;
 #ifdef Q_OS_WIN
     if(auto pid = process->processId()) // taskkill /T first: it walks descendants (e.g. node under the cmd.exe wrapper) only while the parent PID lives
-        QProcess::execute("taskkill",{"/PID",QString::number(pid),"/T","/F"});
+    {
+        QProcess taskkill; // not QProcess::execute(): that forwards taskkill's "SUCCESS: ..." lines to DSI Studio's console
+        taskkill.start("taskkill",{"/PID",QString::number(pid),"/T","/F"});
+        taskkill.waitForFinished();
+    }
 #endif
     if(process->state() != QProcess::NotRunning)
         process->kill();
