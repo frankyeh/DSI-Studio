@@ -2941,6 +2941,30 @@ QString AIAgent::prepare_ai(ai_info& info,const QString& text)
     return executable;
 }
 
+ai_info* AIAgent::establish_agent_session(QProcess* process,QString new_session)
+{
+    // a fresh launch adopts the agent's own id (empty: the agent runs under DSI Studio's id); a resume must keep its id
+    auto old_session = process->objectName();
+    auto* info = ai_info::find(old_session);
+    if(!info) // the chat was deleted while launching -- deletion stays deleted
+        return kill_process_tree(process),nullptr;
+    if(new_session.isEmpty())
+        new_session = old_session;
+    if(!is_valid_session_id(new_session))
+        return fail_agent_process(process,"Agent returned an invalid session ID."),nullptr;
+    if(new_session != old_session)
+    {
+        if(info->status != session_status::New)
+            return fail_agent_process(process,"Agent resumed a different session."),nullptr;
+        if(!(info = assign_ai_session(old_session,new_session)))
+            return fail_agent_process(process,"Agent session could not be assigned."),nullptr;
+        process->setObjectName(new_session);
+        info->processes = process;
+    }
+    set_ai_status(info->sessions,session_status::Thinking,"Session started; waiting for agent");
+    info->save_config();
+    return info;
+}
 QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
 {
     auto* process = info.processes;
@@ -2997,20 +3021,8 @@ QStringList AIAgent::configure_claude(const ai_info& info,const QString& text)
                     if(event_type == "system")
                     {
                         auto subtype = event["subtype"].toString();
-                        if(subtype == "init")
-                        {
-                            // the session-established event: Claude's own stream-json protocol confirms the
-                            // conversation actually initialized, not just that the OS process started -- the
-                            // Codex equivalent is the "thread/start"/"thread/resume" response in configure_codex(). Status/config only --
-                            // the opening message was already recorded, once, synchronously, when it was sent
-                            // (see prepare_ai()); this event has no content-recording role at all anymore
-                            if(auto* info = ai_info::find(process->objectName()))
-                            {
-                                set_ai_status(info->sessions,session_status::Thinking,
-                                              "Session started; waiting for agent input");
-                                info->save_config();
-                            }
-                        }
+                        if(subtype == "init") // the session-established event; Claude runs under DSI Studio's own --session-id/--resume id
+                            establish_agent_session(process);
                         else if(subtype == "thinking_tokens")
                         {
                             if(auto* info = ai_info::find(process->objectName());
@@ -3130,29 +3142,8 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
 
             if(id == session_request)
             {
-                auto new_session = msg["result"].toObject()["session"].toObject()["sessionId"].toString();
-                if(!is_valid_session_id(new_session))
-                {
-                    fail_agent_process(process,"Muse returned an invalid session ID.");
-                    continue;
-                }
-                auto old_session = process->objectName();
-                auto* current = old_session == new_session ? ai_info::find(old_session) :
-                                assign_ai_session(old_session,new_session);
-                if(!current)
-                {
-                    fail_agent_process(process,"Muse session could not be assigned.");
-                    continue;
-                }
-                set_ai_status(current->sessions,session_status::Thinking,
-                              "Session started; waiting for Muse");
-                current->save_config();
-                if(old_session != new_session)
-                {
-                    process->setObjectName(new_session);
-                    current->processes = process;
-                }
-                process->write(muse_turn_start(new_session,prompt));
+                if(auto* current = establish_agent_session(process,msg["result"].toObject()["session"].toObject()["sessionId"].toString()))
+                    process->write(muse_turn_start(current->sessions,prompt));
                 continue;
             }
 
@@ -3230,34 +3221,8 @@ QStringList AIAgent::configure_antigravity(const ai_info& info,const QString& te
             auto event = msg["event"].toString();
             if(event == "init")
             {
-                auto new_session = msg["conversation_id"].toString();
-                if(!is_valid_session_id(new_session))
-                {
-                    fail_agent_process(process,"Antigravity returned an invalid conversation ID.");
-                    continue;
-                }
-                auto old_session = process->objectName();
-                if(resuming && old_session != new_session)
-                {
-                    fail_agent_process(process,"Antigravity resumed a different conversation ID.");
-                    continue;
-                }
-                auto* current = old_session == new_session ? ai_info::find(old_session) :
-                                assign_ai_session(old_session,new_session);
-                if(!current)
-                {
-                    fail_agent_process(process,"Antigravity session could not be assigned.");
-                    continue;
-                }
-                if(old_session != new_session)
-                {
-                    process->setObjectName(new_session);
-                    current->processes = process;
-                }
-                set_ai_status(current->sessions,session_status::Thinking,
-                              "Session started; waiting for Antigravity");
-                current->save_config();
-                process->write(antigravity_input(prompt));
+                if(establish_agent_session(process,msg["conversation_id"].toString()))
+                    process->write(antigravity_input(prompt));
                 continue;
             }
             if(event != "result")
@@ -3329,7 +3294,7 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
     {
         process->setProperty("grok_turn",true); // Stop sends session/cancel only while a prompt is in flight
         write({{"jsonrpc","2.0"},{"id","prompt"},{"method","session/prompt"},
-            {"params",QJsonObject{{"sessionId",session},
+            {"params",QJsonObject{{"sessionId",process->objectName()}, // the established id, in case session/new renamed it
                 {"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",value}}}}}}});
     };
 
@@ -3412,19 +3377,11 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
             }
             else if(id == "session")
             {
-                if(!resuming && msg["result"].toObject()["sessionId"].toString() != session)
-                {
-                    fail_agent_process(process,"Grok returned a different session ID.");
+                if(!establish_agent_session(process,msg["result"].toObject()["sessionId"].toString()))
                     continue;
-                }
-                if(auto* current = ai_info::find(process->objectName()))
-                {
-                    set_ai_status(current->sessions,session_status::Thinking,"Session started; waiting for Grok");
-                    current->save_config();
-                }
                 if(resuming && !model.isEmpty()) // a new session got its model through _meta.modelId
                     write({{"jsonrpc","2.0"},{"id","set_model"},{"method","session/set_config_option"},
-                           {"params",QJsonObject{{"sessionId",session},{"configId","model"},{"value",model}}}});
+                           {"params",QJsonObject{{"sessionId",process->objectName()},{"configId","model"},{"value",model}}}});
                 else
                     send_prompt(prompt);
             }
@@ -3548,33 +3505,8 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
         if(id != "thread_start" && id != "thread_resume")
             return;
 
-        auto old_session = process->objectName();
-        auto new_session = msg["result"].toObject()["thread"].toObject()["id"].toString();
-        if(!is_valid_session_id(new_session))
-        {
-            // Codex's own protocol contract broke -- do not let a malformed id corrupt ai_infos'
-            // keying; surface it immediately instead of silently accepting it
-            ai_log("invalid thread id from Codex app-server (not a UUID): "+new_session);
-            return fail_agent_process(process,"Codex returned an invalid thread ID.");
-        }
-        // a resume must keep its thread id; a fresh start renames DSI Studio's placeholder to Codex's id
-        if(resuming && new_session != old_session)
-            return fail_agent_process(process,"Codex resumed a different thread ID.");
-        auto* info = resuming ? ai_info::find(old_session) :
-                                assign_ai_session(old_session,new_session);
-        if(!info) // the chat was deleted while launching -- deletion stays deleted
-            return kill_process_tree(process);
-        set_ai_status(info->sessions,session_status::Thinking,
-                      "Session started; waiting for agent input");
-        info->save_config();
-        // status/rename only -- the opening message was already recorded, once, synchronously, when
-        // it was sent (see prepare_ai()); this event has no content-recording role at all anymore
-        if(old_session != new_session)
-        {
-            process->setObjectName(new_session);
-            info->processes = process;
-        }
-        process->write(codex_turn_start("turn_start",new_session,text));
+        if(auto* info = establish_agent_session(process,msg["result"].toObject()["thread"].toObject()["id"].toString()))
+            process->write(codex_turn_start("turn_start",info->sessions,text));
     };
 
     // a server-initiated notification: {"method":...,"params":...}, no "id", no reply expected
