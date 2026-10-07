@@ -3596,8 +3596,11 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
     auto workspace = info.model_settings["cwd"].toString().trimmed();
     if(workspace.isEmpty())
         workspace = ui->ai_work_dir->text().trimmed();
+    // relative wherever the agent runs in the ai folder: Claude's --allowedTools pre-approves only "bash ./dsi.sh"
+    auto dsi_sh = QDir::cleanPath(info.processes->workingDirectory()) == QDir::cleanPath(ai_dir) ?
+                  QString("./dsi.sh") : "\""+ai_dir+"/dsi.sh\"";
     auto prompt = "Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+" before handling this request. "
-                  "Use `bash \""+ai_dir+"/dsi.sh\"` for DSI Studio commands. "
+                  "Use `bash "+dsi_sh+"` for DSI Studio commands. "
                   "The selected DSI Studio work directory is "+QDir::toNativeSeparators(workspace)+".\n\n"+text;
     QStringList args;
     if(info.provider == "Codex")
