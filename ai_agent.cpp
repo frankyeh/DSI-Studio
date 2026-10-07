@@ -1633,6 +1633,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
     if(!process.waitForFinished(10000))
     {
         kill_process_tree(&process); // the stack QProcess destructor would kill only the .cmd wrapper
+        process.waitForFinished(1000);
         return ai_agent_status::Error;
     }
     if(is_codex)
@@ -1735,21 +1736,17 @@ bool AIAgent::run_agent_login(const QString& provider)
     if(executable.isEmpty())
         return false;
 
+    QString info; // agy reuses a stored credential silently; its only sign-out is the interactive /logout
+    if(provider == "Antigravity" && check_agent_status(provider,executable,info) == ai_agent_status::Ready)
+    {
+        QMessageBox::information(this,"AI Agent","Antigravity is currently signed in. In the terminal, run agy, "
+                                 "and type /logout, and come back to sign in again here.");
+        return false;
+    }
+
     // every agent but Muse signs in through its own CLI in a visible terminal; Antigravity's CLI starts its sign-in on launch
     auto args = provider == "Claude" ? QStringList{"auth","login"} :
                 provider == "Antigravity" ? QStringList() : QStringList{"login"};
-    if(provider == "Antigravity") // a stored session signs in silently; agy has no logout command, only its /logout slash command
-    {
-        QProcess logout;
-        start_process(logout,executable,{"--input-format","stream-json","--output-format","stream-json"});
-        if(logout.waitForStarted(3000))
-        {
-            logout.write(antigravity_input("/logout"));
-            logout.closeWriteChannel();
-        }
-        if(!logout.waitForFinished(10000))
-            kill_process_tree(&logout);
-    }
     QProcess terminal,muse_login; // muse login prints a device-code URL instead of opening the browser
     bool started = false;
     if(provider == "Muse")
@@ -1802,7 +1799,6 @@ bool AIAgent::run_agent_login(const QString& provider)
     layout.addWidget(&buttons);
     connect(done,&QPushButton::clicked,&dialog,[&]
     {
-        QString info;
         auto agent_status = check_agent_status(provider,executable,info);
         if(agent_status == ai_agent_status::Ready)
             dialog.accept();
