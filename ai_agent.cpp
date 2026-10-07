@@ -78,10 +78,22 @@ void start_process(QProcess& process,const QString& executable,QStringList args)
 #endif
     process.start(executable,args);
 }
+void kill_process_tree(QProcess* process) // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+{
+    if(!process || process->state() == QProcess::NotRunning)
+        return;
+#ifdef Q_OS_WIN
+    if(auto pid = process->processId()) // taskkill /T first: it walks descendants (e.g. node under the cmd.exe wrapper) only while the parent PID lives
+        QProcess::execute("taskkill",{"/PID",QString::number(pid),"/T","/F"});
+#endif
+    if(process->state() != QProcess::NotRunning)
+        process->kill();
+}
+static QSet<QString> removed_agent_sessions; // explicitly removed chats: reject stale pipe requests rather than recreating them
 void fail_agent_process(QProcess* process,const QString& message) // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
 {
     process->setProperty("fatal_error",message);
-    process->kill();
+    kill_process_tree(process);
 }
 QString muse_uuid_v7()
 {
@@ -259,10 +271,11 @@ AIAgent::AIAgent(MainWindow* parent):
         if(row < 0)
             return;
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
+        removed_agent_sessions.insert(session); // first: stale requests are rejected even while the row still exists
         if(auto* found = ai_info::find(session);found && found->processes)
         {
             auto* process = found->processes;
-            process->disconnect(); process->kill(); process->deleteLater(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+            process->disconnect(); kill_process_tree(process); process->deleteLater();
         }
         if(session == web_agent_session_id)
             disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
@@ -787,8 +800,7 @@ void AIAgent::closeEvent(QCloseEvent* event)
             process->closeWriteChannel();
             QTimer::singleShot(5000,process,[process]
             {
-                if(process->state() != QProcess::NotRunning)
-                    process->kill();
+                kill_process_tree(process);
             });
         }
     disconnect_github_issue();
@@ -853,6 +865,8 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
     if(!is_valid_session_id(session))
         return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
+    if(removed_agent_sessions.contains(session))
+        return void(reply = status_reply("error","session removed by user"));
 
     auto* found = ai_info::find(session);
     if(!found)
@@ -3794,7 +3808,7 @@ void AIAgent::on_ai_send_message_clicked()
         else
         {
             info->processes->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
-            info->processes->kill(); // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+            kill_process_tree(info->processes);
         }
         return;
     case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
