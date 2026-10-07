@@ -105,6 +105,7 @@ class AIAgent : public QMainWindow
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     bool run_agent_login(const QString& provider);
+    void finish_agent_turn(QProcess* process,QString error = {},bool cancelled = false); // one turn-end rule: idle (WaitingUser) or Failed with an error entry
     ai_info* establish_agent_session(QProcess* process,QString new_session = {}); // the one session-identity rule for every local agent; nullptr when the launch must stop
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
