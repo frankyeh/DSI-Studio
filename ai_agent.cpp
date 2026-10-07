@@ -1735,36 +1735,58 @@ bool AIAgent::run_agent_login(const QString& provider)
     if(executable.isEmpty())
         return false;
 
-    // every agent signs in through its own CLI in a visible terminal; Antigravity's CLI starts its sign-in on launch
+    // every agent but Muse signs in through its own CLI in a visible terminal; Antigravity's CLI starts its sign-in on launch
     auto args = provider == "Claude" ? QStringList{"auth","login"} :
                 provider == "Antigravity" ? QStringList() : QStringList{"login"};
-    QProcess terminal;
-    terminal.setProcessEnvironment(agent_environment(provider)); // e.g. Muse's file credential backend must match status/chat
-    terminal.setWorkingDirectory(ui->ai_work_dir->text());
-    auto start_terminal = [&](const QString& program,const QStringList& terminal_args)
+    if(provider == "Antigravity") // a stored session signs in silently; agy has no logout command, only its /logout slash command
     {
-        terminal.setProgram(program);
-        terminal.setArguments(terminal_args);
-        return terminal.startDetached();
-    };
+        QProcess logout;
+        start_process(logout,executable,{"--input-format","stream-json","--output-format","stream-json"});
+        if(logout.waitForStarted(3000))
+        {
+            logout.write(antigravity_input("/logout"));
+            logout.closeWriteChannel();
+        }
+        if(!logout.waitForFinished(10000))
+            kill_process_tree(&logout);
+    }
+    QProcess terminal,muse_login; // muse login prints a device-code URL instead of opening the browser
     bool started = false;
+    if(provider == "Muse")
+    {
+        muse_login.setProcessEnvironment(agent_environment(provider)); // Muse's file credential backend must match status/chat
+        muse_login.setProcessChannelMode(QProcess::MergedChannels);
+        start_process(muse_login,executable,args);
+        started = muse_login.waitForStarted(3000);
+    }
+    else
+    {
+        terminal.setProcessEnvironment(agent_environment(provider));
+        terminal.setWorkingDirectory(ui->ai_work_dir->text());
+        auto start_terminal = [&](const QString& program,const QStringList& terminal_args)
+        {
+            terminal.setProgram(program);
+            terminal.setArguments(terminal_args);
+            return terminal.startDetached();
+        };
 #ifdef Q_OS_WIN
-    started = start_terminal(qEnvironmentVariable("ComSpec","cmd.exe"),
-                             QStringList{"/k",QDir::toNativeSeparators(executable)}+args);
+        started = start_terminal(qEnvironmentVariable("ComSpec","cmd.exe"),
+                                 QStringList{"/k",QDir::toNativeSeparators(executable)}+args);
 #elif defined(Q_OS_MACOS)
-    auto command = "'"+executable+"' "+args.join(" ");
-    command.replace("\\","\\\\").replace("\"","\\\"");
-    started = start_terminal("osascript",{"-e","tell application \"Terminal\" to do script \""+command+"\""});
+        auto command = "'"+executable+"' "+args.join(" ");
+        command.replace("\\","\\\\").replace("\"","\\\"");
+        started = start_terminal("osascript",{"-e","tell application \"Terminal\" to do script \""+command+"\""});
 #else
-    for(const auto& name : {QString("x-terminal-emulator"),QString("gnome-terminal"),
-                            QString("konsole"),QString("xterm")})
-        if(auto program = QStandardPaths::findExecutable(name);!program.isEmpty() &&
-           (started = start_terminal(program,QStringList{name == "gnome-terminal" ? "--" : "-e",executable}+args)))
-            break;
+        for(const auto& name : {QString("x-terminal-emulator"),QString("gnome-terminal"),
+                                QString("konsole"),QString("xterm")})
+            if(auto program = QStandardPaths::findExecutable(name);!program.isEmpty() &&
+               (started = start_terminal(program,QStringList{name == "gnome-terminal" ? "--" : "-e",executable}+args)))
+                break;
 #endif
+    }
     if(!started)
     {
-        QMessageBox::warning(this,"AI Agent","Cannot open a terminal for "+provider+" sign-in.");
+        QMessageBox::warning(this,"AI Agent","Cannot start "+provider+" sign-in.");
         return false;
     }
 
@@ -1790,7 +1812,18 @@ bool AIAgent::run_agent_login(const QString& provider)
                 "Could not verify "+provider+" sign-in.");
     });
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
-    if(dialog.exec() != QDialog::Accepted)
+    connect(&muse_login,&QProcess::readyRead,&dialog,[&]
+    {
+        auto text = QString::fromUtf8(muse_login.readAll());
+        if(auto match = QRegularExpression("https?://\\S+").match(text);match.hasMatch())
+        {
+            QDesktopServices::openUrl(QUrl(match.captured()));
+            status.setText(text.trimmed()); // the code the browser page must match
+        }
+    });
+    bool accepted = dialog.exec() == QDialog::Accepted;
+    kill_process_tree(&muse_login); // no-op when muse login already finished or never started
+    if(!accepted)
         return false;
     refresh_agent_models(provider);
     return true;
