@@ -1310,7 +1310,7 @@ void AIAgent::refresh_codex_models()
     });
 
     start_process(*process,path,{"debug","models"});
-    QTimer::singleShot(5000,process,&QProcess::kill);
+    QTimer::singleShot(5000,process,[process]{kill_process_tree(process);});
 }
 void AIAgent::refresh_muse_models()
 {
@@ -1335,7 +1335,7 @@ void AIAgent::refresh_muse_models()
             {
                 if(msg.contains("error"))
                 {
-                    process->kill();
+                    kill_process_tree(process);
                     return;
                 }
                 write({{"jsonrpc","2.0"},{"method","initialized"}});
@@ -1371,7 +1371,7 @@ void AIAgent::refresh_muse_models()
     });
 
     start_process(*process,path,{"serve"});
-    QTimer::singleShot(15000,process,&QProcess::kill);
+    QTimer::singleShot(15000,process,[process]{kill_process_tree(process);});
 }
 void AIAgent::refresh_antigravity_models()
 {
@@ -1402,7 +1402,7 @@ void AIAgent::refresh_antigravity_models()
     connect(process,&QProcess::started,process,&QProcess::closeWriteChannel);
 
     start_process(*process,path,{"--output-format","json","models"});
-    QTimer::singleShot(10000,process,&QProcess::kill);
+    QTimer::singleShot(10000,process,[process]{kill_process_tree(process);});
 }
 void AIAgent::refresh_grok_models() // ACP initialize returns _meta.modelState.availableModels without a session or sign-in
 {
@@ -1428,7 +1428,7 @@ void AIAgent::refresh_grok_models() // ACP initialize returns _meta.modelState.a
                 update_agent_models("Grok",models,false);
                 ai_log("Grok models: "+models.join(", "));
             }
-            process->kill(); // one reply is all this probe needs
+            kill_process_tree(process); // one reply is all this probe needs
             return;
         }
     });
@@ -1441,7 +1441,7 @@ void AIAgent::refresh_grok_models() // ACP initialize returns _meta.modelState.a
     });
 
     start_process(*process,path,{"agent","stdio"});
-    QTimer::singleShot(15000,process,&QProcess::kill);
+    QTimer::singleShot(15000,process,[process]{kill_process_tree(process);});
 }
 void AIAgent::refresh_ollama_models()
 {
@@ -1517,7 +1517,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         process.closeWriteChannel();
         if(!process.waitForFinished(1000))
         {
-            process.kill();
+            kill_process_tree(&process);
             process.waitForFinished(1000);
         }
         if(!reply.contains("result"))
@@ -1538,7 +1538,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         process.closeWriteChannel();
         if(!process.waitForFinished(10000))
         {
-            process.kill();
+            kill_process_tree(&process);
             process.waitForFinished(1000);
             return ai_agent_status::Error;
         }
@@ -1615,7 +1615,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         process.closeWriteChannel();
         if(!process.waitForFinished(1000))
         {
-            process.kill();
+            kill_process_tree(&process);
             process.waitForFinished(1000);
         }
         return status;
@@ -1624,8 +1624,13 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
     bool is_codex = provider == "Codex";
     QProcess process;
     start_process(process,executable,is_codex ? QStringList{"login","status"} : QStringList{"auth","status"});
-    if(!process.waitForStarted(3000) || !process.waitForFinished(10000))
+    if(!process.waitForStarted(3000))
         return ai_agent_status::Error;
+    if(!process.waitForFinished(10000))
+    {
+        kill_process_tree(&process); // the stack QProcess destructor would kill only the .cmd wrapper
+        return ai_agent_status::Error;
+    }
     if(is_codex)
     {
         if(process.exitStatus() != QProcess::NormalExit)
@@ -1832,7 +1837,7 @@ bool AIAgent::run_agent_login(const QString& provider)
     });
     connect(&cancel,&QPushButton::clicked,&dialog,[&]
     {
-        process->kill();
+        kill_process_tree(process);
         dialog.reject();
     });
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),&dialog,
@@ -1856,7 +1861,7 @@ bool AIAgent::run_agent_login(const QString& provider)
     dialog.exec();
     if(process->state() != QProcess::NotRunning)
     {
-        process->kill();
+        kill_process_tree(process);
         process->waitForFinished(3000);
     }
     process->deleteLater();
@@ -3564,7 +3569,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
                 {
                     // The finish handler records the failure and releases the process for a fresh attempt.
                     process->setProperty("stderr",process->property("stderr").toByteArray()+'\n'+message.toUtf8());
-                    return process->kill();
+                    return kill_process_tree(process);
                 }
                 add_ai_history(*info,"error",message);
             }
@@ -3610,7 +3615,7 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
         auto* info = resuming ? ai_info::find(old_session) :
                                 assign_ai_session(old_session,new_session);
         if(!info) // the chat was deleted while launching -- deletion stays deleted
-            return process->kill();
+            return kill_process_tree(process);
         set_ai_status(info->sessions,session_status::Thinking,
                       "Session started; waiting for agent input");
         info->save_config();
