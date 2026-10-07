@@ -117,6 +117,17 @@ QByteArray muse_command(const QString& id,const QString& method,QJsonObject para
     return QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id",id},
         {"method",method},{"params",params}}).toJson(QJsonDocument::Compact)+'\n';
 }
+QByteArray muse_initialize() // one handshake for the status probe, model list and chat; the probe checks experimentalApi in the reply
+{
+    return QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+        {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
+            {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}}}}).toJson(QJsonDocument::Compact)+'\n';
+}
+QByteArray grok_initialize()
+{
+    return QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
+        {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}}).toJson(QJsonDocument::Compact)+'\n';
+}
 QByteArray muse_turn_start(const QString& session,const QString& text)
 {
     auto id = muse_uuid_v7();
@@ -1372,10 +1383,7 @@ void AIAgent::refresh_muse_models()
             process,&QObject::deleteLater);
     connect(process,&QProcess::started,process,[=]
     {
-        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
-            {"params",QJsonObject{{"clientInfo",QJsonObject{
-                {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
-                {"capabilities",QJsonObject{{"userInputDialogs",false}}}}}});
+        process->write(muse_initialize());
     });
 
     start_process(*process,path,{"serve"});
@@ -1444,8 +1452,7 @@ void AIAgent::refresh_grok_models() // ACP initialize returns _meta.modelState.a
             process,&QObject::deleteLater);
     connect(process,&QProcess::started,process,[=]
     {
-        process->write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
-            {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}}).toJson(QJsonDocument::Compact)+'\n');
+        process->write(grok_initialize());
     });
 
     start_process(*process,path,{"agent","stdio"});
@@ -1510,8 +1517,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         start_process(process,executable,{"agent","stdio"});
         if(!process.waitForStarted(3000))
             return kill_process_tree(&process),ai_agent_status::Error;
-        process.write(QJsonDocument(QJsonObject{{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
-            {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}}).toJson(QJsonDocument::Compact)+'\n');
+        process.write(grok_initialize());
         QJsonObject reply;
         for(auto deadline = QDateTime::currentMSecsSinceEpoch()+10000;reply.isEmpty() &&
             (process.state() != QProcess::NotRunning || process.canReadLine()) && QDateTime::currentMSecsSinceEpoch() < deadline;)
@@ -1584,10 +1590,7 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
             return QJsonObject();
         };
 
-        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
-            {"params",QJsonObject{{"clientInfo",QJsonObject{
-                {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
-                {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}}}});
+        process.write(muse_initialize());
         auto initialized = read_response("initialize");
         auto status = ai_agent_status::Error;
         if(initialized["result"].toObject()["experimentalApi"].toBool())
@@ -3206,10 +3209,7 @@ QStringList AIAgent::configure_muse(const ai_info& info,const QString& text)
 
     connect(process,&QProcess::started,process,[=]
     {
-        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
-            {"params",QJsonObject{{"clientInfo",QJsonObject{
-                {"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
-                {"capabilities",QJsonObject{{"userInputDialogs",false}}}}}});
+        process->write(muse_initialize());
     });
     return {"serve","--trust-workspace","--disable-sandbox"};
 }
@@ -3383,8 +3383,7 @@ QStringList AIAgent::configure_grok(const ai_info& info,const QString& text)
     });
     connect(process,&QProcess::started,process,[=]
     {
-        write({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
-               {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}});
+        process->write(grok_initialize());
     });
     return {"agent","--always-approve","stdio"};
 }
