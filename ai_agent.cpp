@@ -1731,150 +1731,65 @@ bool AIAgent::run_agent_login(const QString& provider)
     if(executable.isEmpty())
         return false;
 
-    if(provider == "Antigravity")
+    // every agent signs in through its own CLI in a visible terminal; Antigravity's CLI starts its sign-in on launch
+    auto args = provider == "Claude" ? QStringList{"auth","login"} :
+                provider == "Antigravity" ? QStringList() : QStringList{"login"};
+    QProcess terminal;
+    terminal.setProcessEnvironment(agent_environment(provider)); // e.g. Muse's file credential backend must match status/chat
+    terminal.setWorkingDirectory(ui->ai_work_dir->text());
+    auto start_terminal = [&](const QString& program,const QStringList& terminal_args)
     {
-        bool started = false;
-        auto work_dir = ui->ai_work_dir->text();
+        terminal.setProgram(program);
+        terminal.setArguments(terminal_args);
+        return terminal.startDetached();
+    };
+    bool started = false;
 #ifdef Q_OS_WIN
-        started = QProcess::startDetached(qEnvironmentVariable("ComSpec","cmd.exe"),
-                                          {"/k",QDir::toNativeSeparators(executable)},
-                                          work_dir);
+    started = start_terminal(qEnvironmentVariable("ComSpec","cmd.exe"),
+                             QStringList{"/k",QDir::toNativeSeparators(executable)}+args);
 #elif defined(Q_OS_MACOS)
-        auto command = executable;
-        command.replace("\\","\\\\").replace("\"","\\\"");
-        started = QProcess::startDetached("osascript",
-            {"-e","tell application \"Terminal\" to do script \""+command+"\""});
+    auto command = "'"+executable+"' "+args.join(" ");
+    command.replace("\\","\\\\").replace("\"","\\\"");
+    started = start_terminal("osascript",{"-e","tell application \"Terminal\" to do script \""+command+"\""});
 #else
-        for(const auto& terminal : {QString("x-terminal-emulator"),QString("gnome-terminal"),
-                                    QString("konsole"),QString("xterm")})
-        {
-            auto program = QStandardPaths::findExecutable(terminal);
-            if(program.isEmpty())
-                continue;
-            auto args = terminal == "gnome-terminal" ? QStringList{"--",executable} :
-                                                       QStringList{"-e",executable};
-            if(started = QProcess::startDetached(program,args,work_dir))
-                break;
-        }
+    for(const auto& name : {QString("x-terminal-emulator"),QString("gnome-terminal"),
+                            QString("konsole"),QString("xterm")})
+        if(auto program = QStandardPaths::findExecutable(name);!program.isEmpty() &&
+           (started = start_terminal(program,QStringList{name == "gnome-terminal" ? "--" : "-e",executable}+args)))
+            break;
 #endif
-        if(!started)
-            return false;
-
-        QDialog dialog(this);
-        dialog.setWindowTitle("Antigravity Sign In");
-        QVBoxLayout layout(&dialog);
-        QLabel status("Complete sign-in in the Antigravity terminal/browser, then click Done.");
-        status.setWordWrap(true);
-        status.setFixedWidth(420);
-        layout.addWidget(&status);
-        QDialogButtonBox buttons(QDialogButtonBox::Cancel);
-        auto* done = buttons.addButton("Done",QDialogButtonBox::AcceptRole);
-        layout.addWidget(&buttons);
-        connect(done,&QPushButton::clicked,&dialog,[&]
-        {
-            QString info;
-            auto agent_status = check_agent_status(provider,executable,info);
-            if(agent_status == ai_agent_status::Ready)
-                dialog.accept();
-            else
-                status.setText(agent_status == ai_agent_status::SignInRequired ?
-                    "Sign-in not detected yet. Complete sign-in, then click Done again." :
-                    "Could not verify Antigravity sign-in.");
-        });
-        connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
-        if(dialog.exec() != QDialog::Accepted)
-            return false;
-        refresh_antigravity_models();
-        return true;
+    if(!started)
+    {
+        QMessageBox::warning(this,"AI Agent","Cannot open a terminal for "+provider+" sign-in.");
+        return false;
     }
 
-    bool needs_code = provider == "Claude";
-    auto* process = new QProcess(this);
-    if(provider == "Muse")
-        process->setProcessEnvironment(agent_environment(provider));
-    process->setProcessChannelMode(QProcess::MergedChannels);
-
     QDialog dialog(this);
-    dialog.setWindowTitle(provider+" Login");
+    dialog.setWindowTitle(provider+" Sign In");
     QVBoxLayout layout(&dialog);
-    QLabel status("Starting sign-in...");
+    QLabel status("Complete sign-in in the "+provider+" terminal/browser, then click Done.");
     status.setWordWrap(true);
     status.setFixedWidth(420);
     layout.addWidget(&status);
-
-    QLineEdit code;
-    code.setPlaceholderText("Paste the code here after signing in");
-    QPushButton submit("Submit Code");
-    code.setVisible(false);
-    submit.setVisible(false);
-    if(needs_code)
+    QDialogButtonBox buttons(QDialogButtonBox::Cancel);
+    auto* done = buttons.addButton("Done",QDialogButtonBox::AcceptRole);
+    layout.addWidget(&buttons);
+    connect(done,&QPushButton::clicked,&dialog,[&]
     {
-        layout.addWidget(&code);
-        layout.addWidget(&submit);
-    }
-    QPushButton cancel("Cancel");
-    layout.addWidget(&cancel);
-
-    bool opened_url = false,succeeded = false;
-    connect(process,&QProcess::readyReadStandardOutput,&dialog,[&]
-    {
-        auto text = QString::fromUtf8(process->readAllStandardOutput());
-        status.setText(status.text()+text);
-        static const QRegularExpression url_pattern("https?://\\S+");
-        if(auto match = url_pattern.match(text);!opened_url && match.hasMatch())
-        {
-            QDesktopServices::openUrl(QUrl(match.captured()));
-            opened_url = true;
-            code.setVisible(needs_code);
-            submit.setVisible(needs_code);
-        }
+        QString info;
+        auto agent_status = check_agent_status(provider,executable,info);
+        if(agent_status == ai_agent_status::Ready)
+            dialog.accept();
+        else
+            status.setText(agent_status == ai_agent_status::SignInRequired ?
+                "Sign-in not detected yet. Complete sign-in, then click Done again." :
+                "Could not verify "+provider+" sign-in.");
     });
-    connect(&submit,&QPushButton::clicked,&dialog,[&]
-    {
-        process->write(code.text().trimmed().toUtf8()+"\n");
-        code.setEnabled(false);
-        submit.setEnabled(false);
-    });
-    connect(&cancel,&QPushButton::clicked,&dialog,[&]
-    {
-        kill_process_tree(process);
-        dialog.reject();
-    });
-    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),&dialog,
-        [&](int exit_code,QProcess::ExitStatus exit_status)
-    {
-        succeeded = exit_code == 0 && exit_status == QProcess::NormalExit;
-        dialog.accept();
-    });
-    connect(process,&QProcess::errorOccurred,&dialog,[&](QProcess::ProcessError error)
-    {
-        if(error != QProcess::FailedToStart)
-            return;
-        status.setText("Cannot start "+executable+": "+process->errorString());
-        succeeded = false;
-        dialog.reject();
-    });
-
-    start_process(*process,executable,
-                  needs_code ? QStringList{"auth","login"} : QStringList{"login"});
-
-    dialog.exec();
-    if(process->state() != QProcess::NotRunning)
-    {
-        kill_process_tree(process);
-        process->waitForFinished(3000);
-    }
-    process->deleteLater();
-
-    if(!succeeded)
-        QMessageBox::warning(this,"AI Agent",provider+" sign-in was not completed.");
-    else if(provider == "Codex")
-        refresh_codex_models();
-    else if(provider == "Muse")
-        refresh_muse_models();
-    else if(provider == "Grok")
-        refresh_grok_models();
-    return succeeded;
+    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+    if(dialog.exec() != QDialog::Accepted)
+        return false;
+    refresh_agent_models(provider);
+    return true;
 }
 
 bool AIAgent::try_connect_github_issue(const QString& url)
