@@ -1540,21 +1540,18 @@ static ai_agent_status check_agent_status(const QString& provider,const QString&
         if(!process.waitForStarted(3000))
             return ai_agent_status::Error;
         process.closeWriteChannel();
+        // agy started, so a failed or stalled "models" means no usable credential (after /logout it waits for a browser sign-in);
+        // Sign In then opens agy in a terminal, which shows any other error itself
         if(!process.waitForFinished(10000))
         {
             kill_process_tree(&process);
             process.waitForFinished(1000);
-            return ai_agent_status::Error;
+            return ai_agent_status::SignInRequired;
         }
-        if(process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0)
-        {
-            info = "Signed in";
-            return ai_agent_status::Ready;
-        }
-        auto error = QString::fromUtf8(process.readAllStandardError()+
-                                       process.readAllStandardOutput());
-        return error.contains("authentication required",Qt::CaseInsensitive) ?
-               ai_agent_status::SignInRequired : ai_agent_status::Error;
+        if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+            return ai_agent_status::SignInRequired;
+        info = "Signed in";
+        return ai_agent_status::Ready;
     }
 
     if(provider == "Muse")
