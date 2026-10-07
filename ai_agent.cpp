@@ -54,6 +54,7 @@
 #include "TIPL/tipl.hpp"
 
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
+static const QStringList local_agents{"Codex","Claude","Muse","Antigravity","Grok"}; // every local CLI agent, in settings order
 QProcessEnvironment agent_environment(const QString& provider)
 {
     auto env = QProcessEnvironment::systemEnvironment();
@@ -795,7 +796,7 @@ void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     refresh_agent_executables(); // picks up a CLI installed since the window was last shown, before the refreshes below read agent_entries[...].executable
-    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity"),QString("Grok")})
+    for(const auto& provider : local_agents)
         refresh_agent_models(provider);
     refresh_ollama_models(); // one /api/tags request feeds both Claude and Codex
     auto* item = ui->ai_project_list->currentItem();
@@ -1505,8 +1506,7 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
 static ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
 {
     info.clear();
-    if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
-       provider != "Antigravity" && provider != "Grok")
+    if(!local_agents.contains(provider))
         return ai_agent_status::Error;
     if(executable.isEmpty())
         return ai_agent_status::NotInstalled;
@@ -1713,15 +1713,13 @@ void AIAgent::refresh_agent_status(const QString& provider)
         check(provider);
         return;
     }
-    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),
-                                QString("Antigravity"),QString("Grok")})
+    for(const auto& provider : local_agents)
         check(provider);
 }
 
 bool AIAgent::run_agent_login(const QString& provider)
 {
-    if(provider != "Codex" && provider != "Claude" && provider != "Muse" &&
-       provider != "Antigravity" && provider != "Grok")
+    if(!local_agents.contains(provider))
         return false;
     const auto& executable = agent_entries[provider].executable;
     if(executable.isEmpty())
@@ -2144,8 +2142,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
                          "Checking local agent status..." :
                          "Open Settings (⚙) to install or sign in.");
     };
-    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),
-                                QString("Antigravity"),QString("Grok")})
+    for(const auto& provider : local_agents)
         update_agent(provider);
 
     agent.setCurrentIndex(agent.findData(current_agent));
@@ -2544,7 +2541,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         button->setText(action);
         button->setEnabled(entry.status != ai_agent_status::Checking);
     };
-    for(const auto& provider : {QString("Codex"),QString("Claude"),QString("Muse"),QString("Antigravity"),QString("Grok")})
+    for(const auto& provider : local_agents)
     {
         auto* label = new QLabel;
         auto* button = new QPushButton;
@@ -3549,10 +3546,8 @@ QStringList AIAgent::configure_codex(const ai_info& info,const QString& text)
 
 void AIAgent::start_ai(ai_info& info,const QString& text)
 {
-    Q_ASSERT(info.provider == "Codex" || info.provider == "Claude" ||
-             info.provider == "Muse" || info.provider == "Antigravity" || info.provider == "Grok");
-    if(info.provider != "Codex" && info.provider != "Claude" &&
-       info.provider != "Muse" && info.provider != "Antigravity" && info.provider != "Grok")
+    Q_ASSERT(local_agents.contains(info.provider));
+    if(!local_agents.contains(info.provider))
         return;
 
     bool launching = !info.processes;
