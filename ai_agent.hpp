@@ -83,7 +83,7 @@ class AIAgent : public QMainWindow
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
     void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
-    void create_web_session(const QString& agent); // signs in and resolves the folder when needed, then creates the Doc and the chat
+    void create_web_session(); // signs in and resolves the folder when needed, then creates the Doc and the chat
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
     void stop_web(); // stops polling; the Doc and session stay
     QString google_doc_url() const; // documents.get for the connected Doc, trimmed to the mailbox fields
@@ -97,7 +97,7 @@ class AIAgent : public QMainWindow
     void new_chat_dialog(); // New Chat: a local agent/model, or a Web agent
     void create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(const QString& title,const QString& accept_text,
-                              QString& provider,QString& value,QJsonObject& info); // value: model name for a local agent, agent name for Web; info: the chosen model's profile (empty for Web)
+                              QString& provider,QString& value,QJsonObject& info); // value: model name for a local agent, empty for Web; info: the chosen model's profile (empty for Web)
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);
