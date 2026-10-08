@@ -998,6 +998,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
        cmd[0] == "show_tract_recognition" || cmd[0] == "save_tract_recognition")
     {
         // cmd[1] : file name to save
+        if(cmd[0] == "show_tract_recognition" && cmd[2].empty()) // a lone argument is the tract index, not a file
+            std::swap(cmd[1],cmd[2]);
         if(cmd[1].empty() && tipl::begins_with(cmd[0],"save_"))
             return run->failed("usage: "+cmd[0]+" <output file path>");
         auto regions = get_checked_regions();
@@ -1036,13 +1038,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 int cur_row = run->from_cmd(2,std::max(0,cur_tracking_window.tractWidget->currentRow()));
                 if(cur_row < 0 || cur_row >= int(cur_tracking_window.tractWidget->tract_models.size()))
                     return run->failed("invalid tract index: " + cmd[2]);
+                if(!cur_tracking_window.tractWidget->tract_models[cur_row]->get_visible_track_count())
+                    return run->failed("tract " + cmd[2] + " has no tracks");
                 if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
                     return run->failed(cur_tracking_window.handle->error_msg);
 
                 auto lock = cur_tracking_window.tractWidget->tract_rendering[cur_row]->start_reading();
                 auto sorted_list = cur_tracking_window.handle->recognize_and_sort(cur_tracking_window.tractWidget->tract_models[cur_row]);
                 if(sorted_list.empty())
-                    return run->failed("cannot recognize tracks.");
+                    return run->failed("cannot recognize tracks in tract " + cmd[2]);
                 std::ostringstream out;
                 for(const auto& each : sorted_list)
                     if(each.first != 0.0f)
