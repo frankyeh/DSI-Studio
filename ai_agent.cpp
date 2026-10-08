@@ -2051,7 +2051,7 @@ bool AIAgent::sign_in_google()
             {"access_type","offline"},{"prompt","consent"}}) // consent on every sign-in: Google returns a refresh token (for the chosen account) only with consent
         query.addQueryItem(key,QUrl::toPercentEncoding(value));
     QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
-    url.setQuery(query.toString(QUrl::FullyEncoded));
+    url.setQuery(query);
 
     QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
     QString error;
