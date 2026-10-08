@@ -4,6 +4,7 @@
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDialog>
@@ -26,8 +27,10 @@
 #include <QNetworkProxy>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QPointer>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QRandomGenerator>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QScrollBar>
@@ -37,12 +40,15 @@
 #include <QSpinBox>
 #include <QStandardItemModel>
 #include <QStandardPaths>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QTextFrame>
 #include <QThread>
 #include <QTimer>
 #include <QToolButton>
 #include <QUuid>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -446,7 +452,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     // identify who the token belongs to (need not be the repo owner); result-comment ownership is checked against this identity, not the issue's owner
     bool ok = false;
     auto authenticated_user = QJsonDocument::fromJson(
-        github_blocking(github_manager,github_request(QUrl("https://api.github.com/user")),
+        github_blocking(web_manager,github_request(QUrl("https://api.github.com/user")),
                          "GET",{},ok,error)).object()["login"].toString();
     if(!ok)
         return error = "cannot verify GitHub token: "+error,false;
@@ -455,7 +461,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     ai_log("github connect: token belongs to "+authenticated_user+"; fetching issue "+issue_api.toString());
 
     auto issue = QJsonDocument::fromJson(
-        github_blocking(github_manager,github_request(issue_api),"GET",{},ok,error)).object();
+        github_blocking(web_manager,github_request(issue_api),"GET",{},ok,error)).object();
     if(!ok)
     {
         ai_log("github connect: fetching issue failed: "+error);
@@ -477,7 +483,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
     ai_log("github connect: fetching comments");
     // comments come oldest first and DSI Studio creates its result comment at the first connect, so one page suffices
     auto comments = QJsonDocument::fromJson(
-        github_blocking(github_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
+        github_blocking(web_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
                          "GET",{},ok,error)).array();
     if(!ok)
     {
@@ -509,7 +515,7 @@ bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
         auto post_request = github_request(QUrl(issue_api.toString()+"/comments"));
         post_request.setRawHeader("Content-Type","application/json");
         auto created = QJsonDocument::fromJson(
-            github_blocking(github_manager,post_request,"POST",
+            github_blocking(web_manager,post_request,"POST",
                              QJsonDocument(post_body).toJson(QJsonDocument::Compact),ok,error)).object();
         if(!ok)
         {
@@ -611,7 +617,7 @@ void AIAgent::poll_github_issue()
         request.setRawHeader("If-None-Match",github_etag);
 
     auto connection_id = github_connection_id;
-    auto* reply = github_manager.get(request);
+    auto* reply = web_manager.get(request);
     connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id]()
     {
         int status = 0;
@@ -765,7 +771,7 @@ void AIAgent::send_pending_result()
     auto request = github_request(github_result_api);
     request.setRawHeader("Content-Type","application/json");
 
-    auto* reply = github_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
+    auto* reply = web_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id,pending_id]()
     {
         int status = 0;
@@ -1987,6 +1993,85 @@ void AIAgent::update_send_button()
         action == send_action::Resume ? "Resume" : "Send");
 }
 
+void AIAgent::google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString)> done)
+{
+    form.emplaceBack("client_id",GOOGLE_CLIENT_ID);
+    form.emplaceBack("client_secret",GOOGLE_CLIENT_SECRET); // bundled in a desktop binary, so not confidential: PKCE + state protect the flow
+    QByteArray body;
+    for(const auto& [key,value] : form)
+        body += key.toUtf8()+"="+QUrl::toPercentEncoding(value)+"&";
+    QNetworkRequest request(QUrl("https://oauth2.googleapis.com/token"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
+    auto* reply = web_manager.post(request,body);
+    connect(reply,&QNetworkReply::finished,this,[this,reply,done]
+    {
+        reply->deleteLater();
+        auto json = QJsonDocument::fromJson(reply->readAll()).object();
+        google_access_token = json["access_token"].toString(); // empty on failure: a revoked refresh token signs out
+        google_refresh_token = json["refresh_token"].toString(google_access_token.isEmpty() ? QString() : google_refresh_token);
+        google_token_expiry = QDateTime::currentDateTimeUtc().addSecs(json["expires_in"].toInt());
+        done(google_access_token.isEmpty() ? json["error"].toString(reply->errorString()) : QString());
+    });
+}
+void AIAgent::with_google_token(std::function<void(QString)> call)
+{
+    if(QDateTime::currentDateTimeUtc().secsTo(google_token_expiry) > 60 || google_refresh_token.isEmpty())
+        return call(google_access_token);
+    google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},
+                      [this,call](QString){call(google_access_token);});
+}
+bool AIAgent::sign_in_google()
+{
+    auto random_text = [](int bytes)
+    {
+        QByteArray data(bytes,0);
+        for(auto& c : data)
+            c = char(QRandomGenerator::system()->bounded(256));
+        return QString(data.toBase64(QByteArray::Base64UrlEncoding|QByteArray::OmitTrailingEquals));
+    };
+    auto state = random_text(16),verifier = random_text(48);
+    QTcpServer server; // lives only for this sign-in
+    server.listen(QHostAddress::LocalHost);
+    auto redirect = QString("http://127.0.0.1:%1/").arg(server.serverPort());
+    QUrlQuery query;
+    for(const auto& [key,value] : QList<QPair<QString,QString>>{
+            {"client_id",GOOGLE_CLIENT_ID},{"redirect_uri",redirect},{"response_type","code"},
+            {"scope","https://www.googleapis.com/auth/drive.file"},{"state",state},{"code_challenge_method","S256"},
+            {"code_challenge",QCryptographicHash::hash(verifier.toUtf8(),QCryptographicHash::Sha256).toBase64(
+                QByteArray::Base64UrlEncoding|QByteArray::OmitTrailingEquals)},
+            {"access_type","offline"},{"prompt","consent"}}) // memory-only tokens: consent each sign-in returns a refresh token
+        query.addQueryItem(key,QUrl::toPercentEncoding(value));
+    QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
+    url.setQuery(query.toString(QUrl::FullyEncoded));
+
+    QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
+    QString error;
+    connect(&server,&QTcpServer::newConnection,&dialog,[&]
+    {
+        auto* socket = server.nextPendingConnection();
+        connect(socket,&QTcpSocket::readyRead,&dialog,[&,socket]
+        {
+            QUrlQuery params(QUrl(QString::fromLatin1(socket->readLine()).section(' ',1,1)).query()); // "GET /?state=..&code=.. HTTP/1.1"
+            socket->write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nYou may close this window.");
+            socket->disconnectFromHost();
+            if(params.queryItemValue("state",QUrl::FullyDecoded) != state) // also skips the favicon request
+                return;
+            google_token_post({{"grant_type","authorization_code"},{"code",params.queryItemValue("code",QUrl::FullyDecoded)},
+                               {"code_verifier",verifier},{"redirect_uri",redirect}},
+                              [&,alive = QPointer<QMessageBox>(&dialog)](QString token_error)
+            {
+                if(alive) // a reply after Cancel must not touch these locals
+                    error = token_error,dialog.done(0);
+            });
+        });
+    });
+    QDesktopServices::openUrl(url);
+    if(dialog.exec() == QMessageBox::Cancel)
+        return false;
+    if(!error.isEmpty())
+        QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error);
+    return error.isEmpty();
+}
 bool AIAgent::setup_github_token()
 {
     QDialog dialog(this);
@@ -2697,6 +2782,20 @@ void AIAgent::on_ai_quick_settings_clicked()
     {
         setup_github_token();
         update_github_button();
+    });
+
+    auto* google_layout = add_card("Google Drive access");
+    QPushButton google_button;
+    google_layout->addWidget(&google_button);
+    auto update_google_button = [&]
+    {
+        google_button.setText(google_refresh_token.isEmpty() ? "Sign in with Google" : "Google ready ✓ · Sign In Again");
+    };
+    update_google_button();
+    connect(&google_button,&QPushButton::clicked,&dialog,[&]
+    {
+        sign_in_google();
+        update_google_button();
     });
 
     auto* chat_layout = add_card("Chat behavior");

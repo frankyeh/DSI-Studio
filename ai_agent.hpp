@@ -2,6 +2,7 @@
 #define AI_AGENT_HPP
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QHash>
 #include <QJsonObject>
 #include <QMainWindow>
@@ -10,6 +11,7 @@
 #include <QStringList>
 #include <QTimer>
 #include <QUrl>
+#include <functional>
 
 
 class MainWindow;
@@ -69,7 +71,7 @@ class AIAgent : public QMainWindow
     void update_agent_status_label();
 
     // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
-    QNetworkAccessManager github_manager;
+    QNetworkAccessManager web_manager; // shared by the GitHub channel and Google OAuth
     QTimer github_timer;
     QUrl github_issue_api,github_result_api;
     QByteArray github_etag;
@@ -78,6 +80,13 @@ class AIAgent : public QMainWindow
     QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
     quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
     QString web_agent_session_id; // the actual chat this GitHub connection belongs to, independent of sidebar selection; survives Stop/Resume, cleared only on a fresh (non-resume) start
+
+    // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens live in memory only -- never logged, persisted or written to chat history
+    QString google_access_token,google_refresh_token;
+    QDateTime google_token_expiry;
+    bool sign_in_google(); // system-browser sign-in; true once a token is held
+    void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
+    void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
 
     QNetworkRequest github_request(const QUrl&) const;
     bool connect_github_issue(const QString&,QString& error);
