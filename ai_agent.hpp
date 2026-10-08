@@ -86,6 +86,7 @@ class AIAgent : public QMainWindow
     void create_web_session(const QString& agent); // signs in and resolves the folder when needed, then creates the Doc and the chat
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
     void stop_web(); // stops polling; the Doc and session stay
+    QString google_doc_url() const; // documents.get for the connected Doc, trimmed to the mailbox fields
     void poll_web();
     void publish_web_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
