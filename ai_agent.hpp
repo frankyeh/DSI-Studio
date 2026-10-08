@@ -91,7 +91,6 @@ class AIAgent : public QMainWindow
     QTimer google_timer;
     QString google_file_id,google_session_id,google_pending_comment;
     qint64 google_last_id = 0;
-    int google_poll_ms = 500; // grows linearly while idle, back to 500 on activity
     QJsonObject google_pending_result; // staged until its reply is confirmed; retried, never re-executed
     void google_drive(const QByteArray& verb,const QString& path,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive v3 call; an empty object means failure
     void create_google_session();
