@@ -74,7 +74,7 @@ class AIAgent : public QMainWindow
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, polled directly
+    // Web channel: each Web chat's raw JSON file (in the "DSI Studio AI" folder) is a single-slot mailbox, polled directly
     QTimer web_timer;
     QString google_folder_id = settings.value("ai/google_folder_id").toString();
     QString google_file_id,web_session_id; // the connected chat's Doc (empty when stopped) and session
@@ -82,11 +82,10 @@ class AIAgent : public QMainWindow
     QElapsedTimer web_idle; // polling stops after 3 minutes without a request
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
-    void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
+    void write_web_file(const QString& file,const QJsonObject& message,std::function<void(bool)> done); // replaces the session file's content
     void create_web_session(); // signs in and resolves the folder when needed, then creates the Doc and the chat
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
-    QString google_doc_url() const; // documents.get for the connected Doc, trimmed to the mailbox fields
     void poll_web();
     void publish_web_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
