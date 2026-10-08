@@ -2071,7 +2071,6 @@ void AIAgent::create_google_session()
             return void(QMessageBox::warning(this,"AI Agent","Cannot create the Google Doc."));
         google_file_id = file["id"].toString();
         google_session_id = session;
-        google_seen_version.clear();
         google_last_id = 0;
         google_pending_result = QJsonObject();
         write_google_doc({},{{"dsi_bridge",true},{"session",session},{"from","dsi"},{"state","ready"}},[](bool){});
@@ -2090,48 +2089,34 @@ void AIAgent::poll_google_drive()
         return;
     if(!google_pending_result.isEmpty())
         return publish_google_result(); // a previous result write failed; retry it, never re-execute
-    // file.version changes on every write (ours too); only then is the Doc body worth reading
-    google_api("GET","https://www.googleapis.com/drive/v3/files/"+google_file_id+"?fields=version",{},[this](QJsonObject file)
+    // the body is one tiny JSON message, so it is read directly (Drive file.version proved an unreliable doorbell)
+    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this](QJsonObject doc)
     {
-        if(file["version"].toString() == google_seen_version)
-            return google_timer.start(500);
-        google_seen_version = file["version"].toString();
-        google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this](QJsonObject doc)
+        QString text;
+        for(const auto& block : doc["body"].toObject()["content"].toArray())
+            for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
+                text += element.toObject()["textRun"].toObject()["content"].toString();
+        auto request = QJsonDocument::fromJson(text.trimmed().toUtf8()).object();
+        auto id = request["id"].toInteger();
+        if(request["session"].toString() != google_session_id || request["from"].toString() != "agent" ||
+           request["state"].toString() != "request" || id <= google_last_id)
+            return google_timer.start(500); // our own write, a failed read, or nothing new
+        // claim with the revision we read: a crash after it never re-runs the command
+        write_google_doc(doc,{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
+                         [this,id,request](bool claimed)
         {
-            if(doc.isEmpty()) // read failed: look again
-            {
-                google_seen_version.clear();
+            if(!claimed) // not claimed, so not executed: read again
                 return google_timer.start(5000);
-            }
-            QString text;
-            for(const auto& block : doc["body"].toObject()["content"].toArray())
-                for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
-                    text += element.toObject()["textRun"].toObject()["content"].toString();
-            auto request = QJsonDocument::fromJson(text.trimmed().toUtf8()).object();
-            auto id = request["id"].toInteger();
-            if(request["session"].toString() != google_session_id || request["from"].toString() != "agent" ||
-               request["state"].toString() != "request" || id <= google_last_id)
-                return google_timer.start(500); // our own write, or nothing new
-            // claim with the revision we read: a crash after it never re-runs the command
-            write_google_doc(doc,{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
-                             [this,id,request](bool claimed)
-            {
-                if(!claimed)
-                {
-                    google_seen_version.clear(); // re-read: not claimed, so not executed
-                    return google_timer.start(5000);
-                }
-                google_last_id = id;
-                auto forwarded = request;
-                for(auto key : {"dsi_bridge","id","from","state"})
-                    forwarded.remove(key);
-                QByteArray reply_bytes;
-                ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
-                auto response = QJsonDocument::fromJson(reply_bytes).object();
-                google_pending_result = QJsonObject{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},
-                    {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
-                publish_google_result();
-            });
+            google_last_id = id;
+            auto forwarded = request;
+            for(auto key : {"dsi_bridge","id","from","state"})
+                forwarded.remove(key);
+            QByteArray reply_bytes;
+            ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
+            auto response = QJsonDocument::fromJson(reply_bytes).object();
+            google_pending_result = QJsonObject{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},
+                {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
+            publish_google_result();
         });
     });
 }
