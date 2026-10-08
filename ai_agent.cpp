@@ -1815,12 +1815,8 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     layout.setContentsMargins(20,18,20,16);
 
     QComboBox agent;
-    agent.addItem("Codex",QString("Codex"));
-    agent.addItem("Claude",QString("Claude"));
-    agent.addItem("Muse",QString("Muse"));
-    agent.addItem("Antigravity",QString("Antigravity"));
-    agent.addItem("Grok",QString("Grok"));
-    agent.addItem("Web",QString("Web"));
+    for(auto name : {"Codex","Claude","Muse","Antigravity","Grok","Web"})
+        agent.addItem(name,name);
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
     auto ready = [&](const QString& provider)
     {
