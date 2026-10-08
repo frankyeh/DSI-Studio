@@ -87,6 +87,16 @@ class AIAgent : public QMainWindow
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
+    // Google Drive channel: comments on one DSI-created Doc carry requests/results; the title suffix [N] is the cheap doorbell
+    QTimer google_timer;
+    QString google_file_id,google_session_id,google_pending_comment;
+    qint64 google_last_id = 0;
+    int google_poll_ms = 500; // grows linearly while idle, back to 500 on activity
+    QJsonObject google_pending_result; // staged until its reply is confirmed; retried, never re-executed
+    void google_drive(const QByteArray& verb,const QString& path,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive v3 call; an empty object means failure
+    void create_google_session();
+    void poll_google_drive();
+    void publish_google_result();
 
     QNetworkRequest github_request(const QUrl&) const;
     bool connect_github_issue(const QString&,QString& error);
