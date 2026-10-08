@@ -2057,7 +2057,6 @@ void AIAgent::create_google_session()
         google_file_id = file["id"].toString();
         google_session_id = session;
         google_last_id = 0;
-        google_poll_ms = 500;
         google_pending_result = QJsonObject();
         auto url = "https://docs.google.com/document/d/"+google_file_id+"/edit";
         auto* info = ai_info::create(session,"AgentServer","Google Drive"); // a log record: no local process to Send/Stop
@@ -2078,9 +2077,8 @@ void AIAgent::poll_google_drive()
     google_drive("GET","files/"+google_file_id+"?fields=name",{},[this](QJsonObject file)
     {
         auto id = file["name"].toString().section('[',-1).section(']',0,0).toLongLong();
-        if(id <= google_last_id) // idle: +0.5 s per empty poll, capped at 30 s
-            return google_timer.start(google_poll_ms = std::min(google_poll_ms+500,30000));
-        google_poll_ms = 500;
+        if(id <= google_last_id)
+            return google_timer.start(500);
         google_drive("GET","files/"+google_file_id+"/comments?pageSize=100&fields=comments(id,content)",{},[this,id](QJsonObject list)
         {
             for(const auto& value : list["comments"].toArray())
