@@ -2010,6 +2010,7 @@ void AIAgent::google_token_post(QList<QPair<QString,QString>> form,std::function
         google_access_token = json["access_token"].toString(); // empty on failure: a revoked refresh token signs out
         google_refresh_token = json["refresh_token"].toString(google_access_token.isEmpty() ? QString() : google_refresh_token);
         google_token_expiry = QDateTime::currentDateTimeUtc().addSecs(json["expires_in"].toInt());
+        settings.setValue("ai/google_refresh_token",google_refresh_token);
         done(google_access_token.isEmpty() ? json["error"].toString(reply->errorString()) : QString());
     });
 }
@@ -2039,7 +2040,7 @@ bool AIAgent::sign_in_google()
             {"scope","https://www.googleapis.com/auth/drive.file"},{"state",state},{"code_challenge_method","S256"},
             {"code_challenge",QCryptographicHash::hash(verifier.toUtf8(),QCryptographicHash::Sha256).toBase64(
                 QByteArray::Base64UrlEncoding|QByteArray::OmitTrailingEquals)},
-            {"access_type","offline"},{"prompt","consent"}}) // memory-only tokens: consent each sign-in returns a refresh token
+            {"access_type","offline"},{"prompt","consent"}}) // consent on every sign-in: Google returns a refresh token (for the chosen account) only with consent
         query.addQueryItem(key,QUrl::toPercentEncoding(value));
     QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
     url.setQuery(query.toString(QUrl::FullyEncoded));
