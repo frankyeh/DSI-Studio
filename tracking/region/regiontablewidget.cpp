@@ -1032,8 +1032,10 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("please specify tract(s)");
             if(tipl::ends_with(cmd[0],"recognition"))
             {
-                // cmd[2] : tract id for recognition
-                int cur_row = run->from_cmd(2,cur_tracking_window.tractWidget->currentRow());
+                // cmd[2] : tract id for recognition (default: the selected tract, or the first one when none is selected)
+                int cur_row = run->from_cmd(2,std::max(0,cur_tracking_window.tractWidget->currentRow()));
+                if(cur_row < 0 || cur_row >= int(cur_tracking_window.tractWidget->tract_models.size()))
+                    return run->failed("invalid tract index: " + cmd[2]);
                 if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
                     return run->failed(cur_tracking_window.handle->error_msg);
 
@@ -1080,9 +1082,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(!tipl::write_text_file(cmd[1],result,tipl::error()))
                 return run->failed("cannot write to " + cmd[1]);
         }
-        else if(run->source == command_source::AI) // show_X from the AI: return the text directly, no dialog, no file
+        else if(run->source != command_source::User) // show_X from the AI or an internal call: return the text, no dialog
             tipl::out() << result;
-        else // show_X from a local user: unchanged interactive dialog
+        else // show_X from a local user: interactive dialog
         {
             cmd[1] = show_info_dialog(title,result,default_file);
             if(!cmd[1].empty())
