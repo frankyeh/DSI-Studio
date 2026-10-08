@@ -1639,7 +1639,7 @@ void AIAgent::create_web_session(const QString& agent)
         ui->ai_project_list->setCurrentItem(info->project_items);
         QApplication::clipboard()->setText(
             "Connect to DSI Studio. First read the public GitHub file "
-            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GOOGLE_DOC_SESSION.md and follow it. "
+            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
             "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit");
         QDesktopServices::openUrl(QUrl("https://chatgpt.com/"));
         QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into "+agent+" and send.");
