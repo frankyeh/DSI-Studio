@@ -1169,6 +1169,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     }
     if(cmds.empty())
         return no_command_or_fail();
+    // each hub_open creates a full data window: a batch of them is a cohort download that belongs to hub_download
+    if(std::count_if(cmds.begin(),cmds.end(),[](const auto& cmd){return cmd[0] == "hub_open";}) > 1)
+        return fail("multiple hub_open commands are not allowed in one request; use hub_download for bulk files");
 
     QJsonArray results;
 
