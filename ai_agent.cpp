@@ -1820,7 +1820,6 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     agent.addItem("Muse",QString("Muse"));
     agent.addItem("Antigravity",QString("Antigravity"));
     agent.addItem("Grok",QString("Grok"));
-    agent.insertSeparator(agent.count());
     agent.addItem("Web",QString("Web"));
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
     auto ready = [&](const QString& provider)
