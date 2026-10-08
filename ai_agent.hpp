@@ -10,14 +10,11 @@
 #include <QSettings>
 #include <QStringList>
 #include <QTimer>
-#include <QUrl>
 #include <functional>
 
 
 class MainWindow;
 class QMenu;
-class QNetworkReply;
-class QNetworkRequest;
 class QProcess;
 class QShowEvent;
 class QCloseEvent;
@@ -70,55 +67,36 @@ class AIAgent : public QMainWindow
     QJsonObject current_model_info;
     void update_agent_status_label();
 
-    // GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
-    QNetworkAccessManager web_manager; // shared by the GitHub channel and Google OAuth
-    QTimer github_timer;
-    QUrl github_issue_api,github_result_api;
-    QByteArray github_etag;
-    QString github_token; // snapshot taken at connect time so a mid-session Settings change cannot swap the identity underneath a poll
-    qint64 github_last_id = 0;
-    QJsonObject github_pending_result; // staged until its PATCH is confirmed; retried, never re-executed
-    quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
-    QString web_agent_session_id; // the actual chat this GitHub connection belongs to, independent of sidebar selection; survives Stop/Resume, cleared only on a fresh (non-resume) start
+    QNetworkAccessManager web_manager; // Google OAuth and API calls
 
     // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens are never logged or written to chat history
-    QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved like the GitHub token, so a restart stays signed in
+    QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved, so a restart stays signed in
     QDateTime google_token_expiry;
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    // Google Doc channel: the Doc body is a single-slot JSON mailbox, polled directly
-    QTimer google_timer;
-    QString google_file_id,google_session_id;
-    qint64 google_last_id = 0;
-    QJsonObject google_pending_result; // staged until its reply is confirmed; retried, never re-executed
+    // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, polled directly
+    QTimer web_timer;
+    QString google_folder_id = settings.value("ai/google_folder_id").toString();
+    QString google_file_id,web_session_id; // the connected chat's Doc (empty when stopped) and session
+    qint64 web_last_id = 0;
+    QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
     void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
-    void create_google_session();
-    void poll_google_drive();
-    void publish_google_result();
-
-    QNetworkRequest github_request(const QUrl&) const;
-    bool connect_github_issue(const QString&,QString& error);
-    void disconnect_github_issue();
-    // shared QNetworkReply::finished preamble for the poll/publish channels: consumes reply (deleteLater, reads
-    // body into data), checks for a superseded connection / rate limiting / a permanent auth failure. Returns
-    // false if the caller should stop (reply already handled).
-    bool handle_github_reply(QNetworkReply* reply,quint64 connection_id,int& status,QByteArray& data);
-    void poll_github_issue();
-    void publish_github_result(QJsonObject);
-    void send_pending_result();
+    void create_web_session(const QString& agent); // signs in and resolves the folder when needed, then creates the Doc and the chat
+    void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
+    void stop_web(); // stops polling; the Doc and session stay
+    void poll_web();
+    void publish_web_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
-    bool github_connected(const ai_info&) const; // true iff this specific chat is the one the live GitHub issue channel is currently bound to (web_agent_session_id + a non-empty github_issue_api) -- a chat can be GitHub-provider without being the connection's current owner (e.g. a different/older web chat)
+    bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
-    bool try_connect_github_issue(const QString& url); // connect_github_issue() plus the shared success/failure UI feedback; always targets web_agent_session_id, which the caller guarantees already refers to a real chat
-    bool setup_github_token();
-    void new_chat_dialog(); // New Chat: a local agent/model, or a GitHub issue channel bound to the new chat for its lifetime
+    void new_chat_dialog(); // New Chat: a local agent/model, or a Web agent
     void create_new_chat(const QString& provider,const QString& agent = {});
     bool run_new_chat_dialog(const QString& title,const QString& accept_text,
-                              QString& provider,QString& value,QJsonObject& info); // value: model name for a local agent, issue URL for the GitHub agent; info: the chosen model's profile (empty for GitHub)
+                              QString& provider,QString& value,QJsonObject& info); // value: model name for a local agent, agent name for Web; info: the chosen model's profile (empty for Web)
         // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
 
     void add_ai_history(ai_info&,const QString&,const QString&);

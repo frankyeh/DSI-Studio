@@ -230,10 +230,8 @@ AIAgent::AIAgent(MainWindow* parent):
     });
     ui->ai_status->hide();
 
-    github_timer.setSingleShot(true);
-    connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
-    google_timer.setSingleShot(true);
-    connect(&google_timer,&QTimer::timeout,this,&AIAgent::poll_google_drive);
+    web_timer.setSingleShot(true);
+    connect(&web_timer,&QTimer::timeout,this,&AIAgent::poll_web);
 
     refresh_agent_executables();
     refresh_agent_status();
@@ -305,8 +303,11 @@ AIAgent::AIAgent(MainWindow* parent):
             auto* process = found->processes;
             process->disconnect(); kill_process_tree(process); process->waitForFinished(1000); process->deleteLater();
         }
-        if(session == web_agent_session_id)
-            disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
+        if(session == web_session_id)
+            stop_web();
+        if(auto* found = ai_info::find(session);found && found->provider == "Web") // trash its mailbox Doc so "DSI Studio AI" does not accumulate them
+            google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+found->model_settings["google_file_id"].toString(),
+                       {{"trashed",true}},[](QJsonObject){});
         QFile::remove(ai_info::history_file(session));
         QFile::remove(ai_info::config_file(session));
         settings.remove("ai/title/"+session);
@@ -394,7 +395,7 @@ AIAgent::AIAgent(MainWindow* parent):
         ui->ai_chat_input->setEnabled(false);
         update_send_button();
     }
-    // GitHub issue channels are never auto-reconnected at startup; use Resume to reconnect a chat explicitly
+    // Web chats are never auto-reconnected at startup; use Resume to reconnect a chat explicitly
 }
 
 AIAgent::~AIAgent()
@@ -411,399 +412,6 @@ AIAgent::~AIAgent()
             entry.second.processes = nullptr; // ai_infos outlives this window; its child QProcess does not
         }
     delete ui;
-}
-
-// GitHub issue channel: the issue body carries the next request; one pinned comment (marked "dsi_session_result":true) carries the result
-QNetworkRequest AIAgent::github_request(const QUrl& url) const
-{
-    QNetworkRequest request(url);
-    request.setRawHeader("Authorization",("Bearer "+github_token).toUtf8());
-    request.setRawHeader("Accept","application/vnd.github+json");
-    request.setRawHeader("X-GitHub-Api-Version","2022-11-28");
-    request.setRawHeader("User-Agent","DSI-Studio");
-    request.setTransferTimeout(15000); // applies to every GET/POST/PATCH, blocking or async
-    return request;
-}
-
-
-bool AIAgent::connect_github_issue(const QString& url_text,QString& error)
-{
-    // snapshot now, so a later new-chat edit cannot swap the identity mid-poll (github_request() uses this member for the whole session)
-    github_token = settings.value("ai/github_token").toString().trimmed();
-    if(github_token.isEmpty())
-        return error = "no GitHub token configured; set one when starting the GitHub agent "
-                        "(GitHub requires an authenticated request for every write, "
-                        "including editing a comment on a public issue)",false;
-
-    QUrl url(url_text.trimmed());
-    if(!url.isValid() || url.scheme().compare("https",Qt::CaseInsensitive) ||
-       url.host().compare("github.com",Qt::CaseInsensitive))
-        return error = "expected an https://github.com/... issue link",false;
-
-    auto parts = url.path().split('/',Qt::SkipEmptyParts);
-    bool number_ok = false;
-    qint64 issue_number = parts.size() == 4 ? parts[3].toLongLong(&number_ok) : 0;
-    if(parts.size() != 4 || parts[2] != "issues" || !number_ok || issue_number <= 0)
-        return error = "expected the form https://github.com/<owner>/<repository>/issues/<number>",false;
-
-    QString owner = parts[0];
-    QUrl issue_api("https://api.github.com/repos/"+owner+"/"+parts[1]+
-                   "/issues/"+QString::number(issue_number));
-    ai_log("github connect: verifying token");
-
-    // identify who the token belongs to (need not be the repo owner); result-comment ownership is checked against this identity, not the issue's owner
-    bool ok = false;
-    auto authenticated_user = QJsonDocument::fromJson(
-        github_blocking(web_manager,github_request(QUrl("https://api.github.com/user")),
-                         "GET",{},ok,error)).object()["login"].toString();
-    if(!ok)
-        return error = "cannot verify GitHub token: "+error,false;
-    if(authenticated_user.isEmpty())
-        return error = "cannot verify GitHub token: unexpected response from GitHub",false;
-    ai_log("github connect: token belongs to "+authenticated_user+"; fetching issue "+issue_api.toString());
-
-    auto issue = QJsonDocument::fromJson(
-        github_blocking(web_manager,github_request(issue_api),"GET",{},ok,error)).object();
-    if(!ok)
-    {
-        ai_log("github connect: fetching issue failed: "+error);
-        error += " (check that this token has access to this specific repository, e.g. a fine-grained PAT scoped to a different repo)";
-        return false;
-    }
-    ai_log("github connect: issue fetched, state="+issue["state"].toString()+
-           " owner="+issue["user"].toObject()["login"].toString());
-
-    if(issue.contains("pull_request"))
-        return error = "the link points to a pull request, not an issue",false;
-    if(issue["state"].toString() != "open")
-        return error = "issue is not open",false;
-    if(issue["user"].toObject()["login"].toString().compare(owner,Qt::CaseInsensitive))
-        return error = "issue creator must be the repository owner",false;
-    if(!issue["title"].toString().startsWith("DSI Studio session"))
-        return error = "issue title must start with \"DSI Studio session\"",false;
-
-    ai_log("github connect: fetching comments");
-    // comments come oldest first and DSI Studio creates its result comment at the first connect, so one page suffices
-    auto comments = QJsonDocument::fromJson(
-        github_blocking(web_manager,github_request(QUrl(issue_api.toString()+"/comments?per_page=100")),
-                         "GET",{},ok,error)).array();
-    if(!ok)
-    {
-        ai_log("github connect: fetching comments failed: "+error);
-        error += " (check that this token has access to this specific repository)";
-        return false;
-    }
-    ai_log("github connect: "+QString::number(comments.size())+" comment(s) fetched");
-
-    // find our own result comment (author must match the token's identity)
-    QUrl result_api;
-    qint64 last_id = 0;
-    for(const auto& each : comments)
-    {
-        auto comment = each.toObject();
-        if(comment["user"].toObject()["login"].toString().compare(authenticated_user,Qt::CaseInsensitive))
-            continue;
-        auto body = QJsonDocument::fromJson(comment["body"].toString().toUtf8());
-        if(!body.isObject() || !body.object()["dsi_session_result"].toBool())
-            continue;
-        last_id = body.object()["last_id"].toInteger();
-        result_api = QUrl(comment["url"].toString());
-        break;
-    }
-    if(result_api.isEmpty())
-    {
-        QJsonObject initial{{"state","idle"},{"last_id",0},{"dsi_session_result",true},{"issue",issue_number}};
-        QJsonObject post_body{{"body",QString::fromUtf8(QJsonDocument(initial).toJson(QJsonDocument::Compact))}};
-        auto post_request = github_request(QUrl(issue_api.toString()+"/comments"));
-        post_request.setRawHeader("Content-Type","application/json");
-        auto created = QJsonDocument::fromJson(
-            github_blocking(web_manager,post_request,"POST",
-                             QJsonDocument(post_body).toJson(QJsonDocument::Compact),ok,error)).object();
-        if(!ok)
-        {
-            ai_log("github connect: creating result comment failed: "+error);
-            error += " (check that this token has write access to this specific repository)";
-            return false;
-        }
-        result_api = QUrl(created["url"].toString()); // GitHub's canonical .../issues/comments/<id> form
-        if(result_api.isEmpty())
-            return error = "cannot create the result comment",false;
-    }
-
-    ++github_connection_id; // supersedes any callback still in flight from before
-    github_issue_api = issue_api;
-    github_result_api = result_api;
-    github_etag.clear();
-    github_last_id = last_id;
-    github_pending_result = QJsonObject();
-
-    // a request already in the body was posted while the channel was down, or DSI Studio stopped before
-    // publishing its result -- never execute it on connect; report its outcome as unknown instead
-    if(auto body_id = QJsonDocument::fromJson(issue["body"].toString().toUtf8()).object()["id"].toInteger();
-       body_id > last_id)
-    {
-        ai_log("github connect: request "+QString::number(body_id)+" predates this connection; reporting it instead of running it");
-        publish_github_result(QJsonObject{
-            {"id",body_id},{"last_id",body_id},{"dsi_session_result",true},{"issue",issue_number},
-            {"state","error"},
-            {"response",QJsonObject{{"status","error"},
-                {"error","outcome unknown: this request was posted while the channel was down, or DSI Studio stopped "
-                         "before publishing its result; verify state before resending with a higher id"}}}});
-        // no poll timer here: send_pending_result() restarts polling after this PATCH (or backs off), so only one request is ever in flight
-    }
-    else
-        github_timer.start(500);
-    return true;
-}
-
-void AIAgent::disconnect_github_issue()
-{
-    if(github_issue_api.isEmpty()) // nothing to do; callers no longer need to check this themselves
-        return;
-    ++github_connection_id; // reject any callback still in flight from this connection
-    github_timer.stop();
-    github_issue_api.clear();
-    github_result_api.clear();
-    github_etag.clear();
-    github_token.clear();
-    github_last_id = 0;
-    github_pending_result = QJsonObject();
-    update_send_button(); // flips to "Resume" if still in a web-agent session
-    if(auto* info = ai_info::find(web_agent_session_id))
-        if(info->status != session_status::Failed) // a deliberate disconnect never replaces a real failure
-            // A fresh, never-established placeholder stays New: the session is only established
-            // by the first real request (see try_connect_github_issue()). Marking it Completed
-            // here would block assign_ai_session() after a resume, duplicating the chat.
-            set_ai_status(info->sessions,
-                          info->status == session_status::New ? session_status::New : session_status::Completed,
-                          "GitHub issue channel stopped.");
-}
-
-bool AIAgent::handle_github_reply(QNetworkReply* reply,quint64 connection_id,int& status,QByteArray& data)
-{
-    reply->deleteLater();
-    if(connection_id != github_connection_id)
-        return false; // this connection was superseded (disconnect, or a fresh reconnect)
-
-    status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    data = reply->readAll();
-    if(status == 429 || (status == 403 && data.contains("rate limit")))
-    {
-        if(!github_issue_api.isEmpty())
-            github_timer.start(60000); // rate limited: fixed one-minute back-off
-        return false;
-    }
-    if(github_permanent_failure(status))
-    {
-        disconnect_github_issue();
-        if(auto* info = ai_info::find(web_agent_session_id)) // disconnect_github_issue() already set Completed -- this is a real failure, not a deliberate stop
-            set_ai_status(info->sessions,session_status::Failed,
-                          "GitHub issue channel authorization failed.");
-        return false;
-    }
-    return true;
-}
-
-void AIAgent::poll_github_issue()
-{
-    if(github_issue_api.isEmpty())
-        return;
-
-    github_timer.stop(); // at most one poll or publish in flight at a time
-
-    if(!github_pending_result.isEmpty())
-        return send_pending_result(); // a previous PATCH failed; retry it, never re-execute
-
-    auto request = github_request(github_issue_api);
-    if(!github_etag.isEmpty())
-        request.setRawHeader("If-None-Match",github_etag);
-
-    auto connection_id = github_connection_id;
-    auto* reply = web_manager.get(request);
-    connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id]()
-    {
-        int status = 0;
-        QByteArray data;
-        if(!handle_github_reply(reply,connection_id,status,data))
-            return;
-
-        auto restart = [this](int delay_ms = 500)
-        {if(!github_issue_api.isEmpty()) github_timer.start(delay_ms);};
-
-        if(reply->error() != QNetworkReply::NoError && status != 304)
-            return restart(5000); // transient network error: back off, retry later
-        if(status == 304)
-            return restart(); // not modified
-
-        if(auto etag = reply->rawHeader("ETag");!etag.isEmpty())
-            github_etag = etag;
-
-        auto issue = QJsonDocument::fromJson(data).object(); // body already read above
-        if(issue["state"].toString() != "open")
-            return disconnect_github_issue(); // closed directly on GitHub; stop without republishing
-
-        auto envelope = QJsonDocument::fromJson(issue["body"].toString().toUtf8());
-        if(!envelope.isObject())
-            return restart(); // no command posted yet
-
-        auto request_obj = envelope.object();
-        auto id = request_obj["id"].toInteger();
-        if(id <= github_last_id)
-            return restart(); // already handled or not a new request
-
-        auto issue_number = issue["number"];
-        auto stamp = [&](QJsonObject result)
-        {
-            result["id"] = id;
-            result["last_id"] = id;
-            result["dsi_session_result"] = true;
-            result["issue"] = issue_number;
-            result["updated_at"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
-            return result;
-        };
-
-        if(request_obj["request"].toString() == "close")
-            // goes through the same retrying publish path as any result; send_pending_result() disconnects once this is confirmed published
-            return publish_github_result(stamp(QJsonObject{{"state","closed"}}));
-
-        auto session_id = request_obj["session"].toString();
-        if(session_id.isEmpty())
-            return publish_github_result(stamp(QJsonObject{
-                {"state","error"},
-                {"response",QJsonObject{{"status","error"},
-                    {"error","malformed request: missing session"}}}}));
-        if(!is_valid_session_id(session_id))
-            return publish_github_result(stamp(QJsonObject{
-                {"state","error"},
-                {"response",QJsonObject{{"status","error"},
-                    {"error","malformed request: session must be a UUID"}}}}));
-
-        bool include_log = request_obj["include_log"].toBool();
-        request_obj.remove("id");
-        request_obj.remove("include_log");
-
-        // stored as "<owner>/<repo>/issues/<number>"; github_issue_api is always
-        // "https://api.github.com/repos/<owner>/<repo>/issues/<number>", built by DSI Studio itself
-        auto issue_url = QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
-        // the session UUID is external input: an existing chat is reused only if it is this issue's own GitHub chat
-        auto* existing = ai_info::find(session_id);
-        if(existing && (existing->provider != "GitHub" ||
-                        existing->model_settings["github_issue_url"].toString() != issue_url))
-            return publish_github_result(stamp(QJsonObject{
-                {"state","error"},
-                {"response",QJsonObject{{"status","error"},
-                    {"error","session belongs to another chat; use a new session UUID"}}}}));
-        bool set_title = !existing;
-        auto* web_info = ai_info::find(web_agent_session_id);
-        if(!existing && web_info && web_info->status == session_status::New)
-            assign_ai_session(web_agent_session_id,session_id);
-        web_agent_session_id = session_id;
-        if(auto* info = ai_info::create(session_id,"GitHub","GitHub")) // records which issue this session is bound to so Resume can reconnect it
-        {
-            set_ai_status(info->sessions,session_status::Thinking,"GitHub request received");
-            info->model_settings["github_issue_url"] = issue_url;
-            info->save_config();
-        }
-
-        auto started = QDateTime::currentMSecsSinceEpoch();
-        QByteArray reply_bytes;
-        ai_request(QJsonDocument(request_obj).toJson(QJsonDocument::Compact),reply_bytes);
-        auto response = QJsonDocument::fromJson(reply_bytes).object();
-
-        auto run_ai_command = [&](const QString& session,const QString& cmd_name,const QJsonValue& param = {})
-        {
-            QJsonObject command{{"cmd",cmd_name}};
-            if(!param.isUndefined())
-                command["param"] = param;
-            QByteArray bytes;
-            ai_request(QJsonDocument(QJsonObject{
-                {"session",session},{"command",command}}).toJson(QJsonDocument::Compact),bytes);
-            return QJsonDocument::fromJson(bytes).object();
-        };
-
-        if(set_title)
-            run_ai_command(session_id,"set_title",issue["title"].toString());
-
-        if(include_log)
-            response["log"] = run_ai_command(session_id,"log");
-
-        auto succeeded = [](const QJsonObject& reply)
-        {
-            if(reply["status"].toString() == "error")
-                return false;
-            for(const auto& value : reply["result"].toArray())
-                if(value.toObject()["status"].toString() == "error")
-                    return false;
-            return true;
-        };
-
-        publish_github_result(stamp(QJsonObject{
-            {"state",succeeded(response) ? "done" : "error"},
-            {"duration_ms",QDateTime::currentMSecsSinceEpoch()-started},
-            {"response",response}}));
-    });
-}
-
-void AIAgent::publish_github_result(QJsonObject result)
-{
-    constexpr qsizetype size_limit = 60*1024;
-    auto original_size = QJsonDocument(result).toJson(QJsonDocument::Compact).size();
-    if(original_size > size_limit)
-    {
-        result["state"] = "error";
-        result["response"] = QJsonObject{
-            {"error","response truncated: exceeds GitHub comment size limit"},
-            {"original_bytes",original_size}};
-    }
-
-    github_pending_result = result; // staged until PATCH is confirmed; retried, never re-executed
-    send_pending_result();
-}
-
-void AIAgent::send_pending_result()
-{
-    if(github_result_api.isEmpty() || github_pending_result.isEmpty())
-        return;
-
-    auto connection_id = github_connection_id;
-    auto pending_id = github_pending_result["id"].toInteger();
-
-    QJsonObject body{{"body",QString::fromUtf8(
-        QJsonDocument(github_pending_result).toJson(QJsonDocument::Compact))}};
-    auto request = github_request(github_result_api);
-    request.setRawHeader("Content-Type","application/json");
-
-    auto* reply = web_manager.sendCustomRequest(request,"PATCH",QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply,&QNetworkReply::finished,this,[this,reply,connection_id,pending_id]()
-    {
-        int status = 0;
-        QByteArray data;
-        if(!handle_github_reply(reply,connection_id,status,data))
-            return;
-
-        if(reply->error() != QNetworkReply::NoError)
-        {
-            tipl::warning() << "cannot publish result to GitHub issue comment: "
-                            << reply->errorString().toStdString();
-            if(!github_issue_api.isEmpty())
-                github_timer.start(5000); // back off; the pending result is retried, not lost
-            return;
-        }
-
-        bool closed = github_pending_result["state"].toString() == "closed";
-        github_last_id = pending_id;
-        github_pending_result = QJsonObject();
-        if(closed)
-            return disconnect_github_issue();
-        if(!github_issue_api.isEmpty())
-        {
-            // published successfully and the channel stays open -- back to idle, waiting for the next
-            // request; otherwise this would sit in Thinking indefinitely with the animation still running
-            if(auto* info = ai_info::find(web_agent_session_id))
-                set_ai_status(info->sessions,session_status::WaitingUser,"Result published; monitoring GitHub issue");
-            github_timer.start(500);
-        }
-    });
 }
 
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
@@ -842,7 +450,7 @@ void AIAgent::closeEvent(QCloseEvent* event)
                 kill_process_tree(process);
             });
         }
-    disconnect_github_issue();
+    stop_web();
     QMainWindow::closeEvent(event);
 }
 
@@ -936,16 +544,13 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     dispatching_info = nullptr;
     // dispatch_cmd() only finished the DSI command itself -- a live local process is still mid-turn (it
     // dispatched this as one of its own tool calls and is waiting on our reply to continue), so that's
-    // still Thinking, not idle. Only a transport with no ongoing turn of its own (GitHub, or nothing at
+    // still Thinking, not idle. Only a transport with no ongoing turn of its own (Web, or nothing at
     // all) settles to WaitingUser here
     if(info.processes && info.processes->state() != QProcess::NotRunning)
         set_ai_status(session,session_status::Thinking,
                       "Command completed; waiting for agent input");
     else
-        set_ai_status(session,session_status::WaitingUser,
-                      github_connected(info) ?
-                      "Request completed; monitoring GitHub issue" :
-                      "Request completed; waiting for next request.");
+        set_ai_status(session,session_status::WaitingUser,"Request completed; waiting for next request.");
 
     auto entry = info.record_reply(chat,reasoning);
     reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
@@ -1017,7 +622,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     // chat also transiently is (see session_status), and shouldn't flash back to this placeholder label for
     auto chat_title = info.projects.isEmpty() && info.project_titles.isEmpty() ?
         "New "+info.agent_name+" Chat" : info.title();
-    title->setText((info.provider == "GitHub" ? QString("🌐 ") : QString())+chat_title);
+    title->setText((info.provider == "Web" ? QString("🌐 ") : QString())+chat_title);
     title->setToolTip(title->text());
     title->repaint();
     item->setSizeHint(QSize(0,row->sizeHint().height()));
@@ -1854,64 +1459,6 @@ bool AIAgent::run_agent_login(const QString& provider)
     return true;
 }
 
-bool AIAgent::try_connect_github_issue(const QString& url)
-{
-    if(auto* info = ai_info::find(web_agent_session_id))
-        // New only for a genuinely never-established chat -- an already-established chat reconnecting stays
-        // "established" (see save_config()) through the attempt, so a save mid-connect can't wrongly persist
-        // established:false over it
-        set_ai_status(info->sessions,info->status == session_status::New ?
-                      session_status::New : session_status::Thinking,
-                      "Connecting to "+url);
-    tipl::out() << "connecting to GitHub issue: " << url.toStdString();
-
-    QString error;
-    if(!connect_github_issue(url,error))
-    {
-        auto error_msg = "connection failed: "+error;
-        tipl::out() << error_msg.toStdString();
-        // web_agent_session_id (not sidebar selection) is the reliable way to find the chat this connection
-        // belongs to; the caller guarantees it already refers to a real chat (created fresh, or being resumed)
-        if(auto* info = ai_info::find(web_agent_session_id))
-        {
-            set_ai_status(info->sessions,
-                          info->status == session_status::New ? session_status::New : session_status::Failed,
-                          error_msg);
-            add_ai_history(*info,"error",error_msg);
-        }
-        return false;
-    }
-    tipl::out() << "connected to GitHub issue: " << url.toStdString();
-    if(auto* info = ai_info::find(web_agent_session_id))
-    {
-        // Channel connected is not session established. A fresh, never-established placeholder
-        // stays New: the first real request (poll_github_issue()) sees New and assigns the
-        // agent's canonical session UUID in place via assign_ai_session(). Flipping it to
-        // WaitingUser here would block that rename, orphaning the placeholder while a duplicate
-        // chat is created for the real session. No GitHub path ever resets an established chat
-        // to New, so New here always means never established (save_config()'s established:false
-        // for it is correct). An already-established reconnecting chat was moved to Thinking
-        // above and settles to WaitingUser here as before.
-        bool fresh = info->status == session_status::New;
-        set_ai_status(info->sessions,
-                      fresh ? session_status::New : session_status::WaitingUser,
-                      fresh ? "Connected; waiting for the agent's first request"
-                            : "Connected; monitoring GitHub issue");
-        // bound the moment the connection succeeds, not deferred until a request happens to arrive
-        // (poll_github_issue() also does this for the reactive/resume case) -- the chat's own record is
-        // now always current, so update_agent_status_label() never needs to prefer github_issue_api over it
-        if(fresh)
-            add_ai_history(*info,"activity",
-                           "Connected to GitHub issue: "+url);
-
-        info->model_settings["github_issue_url"] =
-            QString(github_issue_api.toString()).remove("https://api.github.com/repos/");
-        info->save_config();
-    }
-    update_agent_status_label();
-    return true;
-}
-
 void AIAgent::update_agent_status_label()
 {
     static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
@@ -1923,14 +1470,8 @@ void AIAgent::update_agent_status_label()
         return;
     }
     ui->ai_agent_status->show();
-    if(info && info->provider == "GitHub")
-    {
-        // model_settings["github_issue_url"] is bound the moment a connection succeeds (see
-        // try_connect_github_issue()), so this chat's own record is always current -- no need to prefer
-        // the live github_issue_api over it
-        auto path = info->model_settings["github_issue_url"].toString();
-        ui->ai_agent_status->setText(path.isEmpty() ? "GitHub (ChatGPT, Muse, ...)" : "GitHub (ChatGPT, Muse, ...)"+dot+path);
-    }
+    if(info && info->provider == "Web")
+        ui->ai_agent_status->setText("Web"+dot+info->agent_name);
     else // a local chat (its own model, since it can differ from the app-wide default once changed) or
          // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
     {
@@ -1961,11 +1502,9 @@ ai_info* AIAgent::selected_info() const
     return item ? ai_info::find(item->data(Qt::UserRole).toString()) : nullptr;
 }
 
-bool AIAgent::github_connected(const ai_info& info) const
+bool AIAgent::web_connected(const ai_info& info) const
 {
-    return info.provider == "GitHub" &&
-           info.sessions == web_agent_session_id &&
-           !github_issue_api.isEmpty();
+    return info.sessions == web_session_id && !google_file_id.isEmpty();
 }
 
 AIAgent::send_action AIAgent::current_send_action() const
@@ -1975,8 +1514,8 @@ AIAgent::send_action AIAgent::current_send_action() const
     // New chats start only from the New Chat button; AgentServer is a log/routing record with no local subprocess.
     if(!info || info->provider == "AgentServer")
         return send_action::Disabled;
-    if(info->provider == "GitHub")
-        return github_connected(*info) ? send_action::Stop : send_action::Resume;
+    if(info->provider == "Web")
+        return web_connected(*info) ? send_action::Stop : send_action::Resume;
     if(!info->processes) // never launched (or a prior attempt cleanly ended): a fresh launch, always a real send
         return has_input ? send_action::Send : send_action::Disabled;
     if(!has_input) // a live local process can always be stopped: a reply can arrive (WaitingUser) before its turn ends
@@ -2061,76 +1600,128 @@ void AIAgent::write_google_doc(const QJsonObject& doc,const QJsonObject& message
     google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
                [done](QJsonObject reply){done(!reply.isEmpty());});
 }
-void AIAgent::create_google_session()
+void AIAgent::create_web_session(const QString& agent)
 {
+    if(google_refresh_token.isEmpty() && !sign_in_google())
+        return;
+    if(google_folder_id.isEmpty()) // resolved once (found or created), then reused by its ID
+        return google_api("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
+                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false")),{},[this,agent](QJsonObject found)
+        {
+            auto use = [this,agent](QJsonObject folder)
+            {
+                if(folder["id"].toString().isEmpty())
+                    return void(QMessageBox::warning(this,"AI Agent","Cannot create the DSI Studio AI folder in Google Drive."));
+                settings.setValue("ai/google_folder_id",google_folder_id = folder["id"].toString());
+                create_web_session(agent);
+            };
+            if(auto files = found["files"].toArray();!files.isEmpty())
+                return use(files[0].toObject());
+            google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
+                       {{"name","DSI Studio AI"},{"mimeType","application/vnd.google-apps.folder"}},use);
+        });
     auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
     google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
-               {{"name","DSI Studio "+session},{"mimeType","application/vnd.google-apps.document"}},[this,session](QJsonObject file)
+               {{"name","DSI Studio "+session},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}}},
+               [this,session,agent](QJsonObject file)
     {
         if(file["id"].toString().isEmpty())
-            return void(QMessageBox::warning(this,"AI Agent","Cannot create the Google Doc."));
-        google_file_id = file["id"].toString();
-        google_session_id = session;
-        google_last_id = 0;
-        google_pending_result = QJsonObject();
-        write_google_doc({},{{"dsi_bridge",true},{"session",session},{"from","dsi"},{"state","ready"}},[](bool){});
-        auto url = "https://docs.google.com/document/d/"+google_file_id+"/edit";
-        auto* info = ai_info::create(session,"AgentServer","Google Drive"); // a log record: no local process to Send/Stop
-        add_ai_history(*info,"activity","Google Drive session: "+url);
+        {
+            settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the folder may have been deleted: recreate it next time
+            return void(QMessageBox::warning(this,"AI Agent","Cannot create the Web session."));
+        }
+        auto* info = ai_info::create(session,"Web",agent);
+        info->model_settings["google_file_id"] = file["id"].toString();
+        add_ai_history(*info,"activity","Web session started.");
+        start_web(*info);
         info->save_config();
-        QApplication::clipboard()->setText(url);
-        QDesktopServices::openUrl(QUrl(url));
-        google_timer.start(500);
+        write_google_doc({},{{"dsi_bridge",true},{"session",session},{"from","dsi"},{"state","ready"}},[](bool){});
+        ui->ai_project_list->setCurrentItem(info->project_items);
+        QApplication::clipboard()->setText(
+            "Connect to DSI Studio. First read the public GitHub file "
+            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GOOGLE_DOC_SESSION.md and follow it. "
+            "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit");
+        QDesktopServices::openUrl(QUrl("https://chatgpt.com/"));
+        QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into "+agent+" and send.");
     });
 }
-void AIAgent::poll_google_drive()
+void AIAgent::start_web(ai_info& info)
+{
+    stop_web();
+    if(info.sessions != web_session_id) // a pending result belongs to its own session only
+    {
+        web_session_id = info.sessions;
+        web_last_id = 0; // a claimed request is always overwritten by "processing", so it is never re-run
+        web_pending_result = QJsonObject();
+    }
+    google_file_id = info.model_settings["google_file_id"].toString();
+    set_ai_status(info.sessions,session_status::WaitingUser,"Web connected; waiting for a request.");
+    web_timer.start(0);
+}
+void AIAgent::stop_web()
 {
     if(google_file_id.isEmpty())
         return;
-    if(!google_pending_result.isEmpty())
-        return publish_google_result(); // a previous result write failed; retry it, never re-execute
+    google_file_id.clear(); // callbacks still in flight see this and stop
+    web_timer.stop();
+    set_ai_status(web_session_id,session_status::Completed,"Web stopped.");
+}
+void AIAgent::poll_web()
+{
+    if(google_file_id.isEmpty())
+        return;
+    if(!web_pending_result.isEmpty())
+        return publish_web_result(); // a previous result write failed; retry it, never re-execute
     // the body is one tiny JSON message, so it is read directly (Drive file.version proved an unreliable doorbell)
-    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this](QJsonObject doc)
+    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this,file = google_file_id](QJsonObject doc)
     {
+        if(file != google_file_id) // stopped or switched while in flight
+            return;
         QString text;
         for(const auto& block : doc["body"].toObject()["content"].toArray())
             for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
                 text += element.toObject()["textRun"].toObject()["content"].toString();
         auto request = QJsonDocument::fromJson(text.trimmed().toUtf8()).object();
         auto id = request["id"].toInteger();
-        if(request["session"].toString() != google_session_id || request["from"].toString() != "agent" ||
-           request["state"].toString() != "request" || id <= google_last_id)
-            return google_timer.start(500); // our own write, a failed read, or nothing new
+        if(request["session"].toString() != web_session_id || request["from"].toString() != "agent" ||
+           request["state"].toString() != "request" || id <= web_last_id)
+            return web_timer.start(500); // our own write, a failed read, or nothing new
         // claim with the revision we read: a crash after it never re-runs the command
-        write_google_doc(doc,{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
-                         [this,id,request](bool claimed)
+        write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
+                         [this,file,id,request](bool claimed)
         {
+            if(file != google_file_id)
+                return;
             if(!claimed) // not claimed, so not executed: read again
-                return google_timer.start(5000);
-            google_last_id = id;
+                return web_timer.start(5000);
+            web_last_id = id;
             auto forwarded = request;
             for(auto key : {"dsi_bridge","id","from","state"})
                 forwarded.remove(key);
             QByteArray reply_bytes;
             ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
             auto response = QJsonDocument::fromJson(reply_bytes).object();
-            google_pending_result = QJsonObject{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},
+            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},
                 {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
-            publish_google_result();
+            publish_web_result();
         });
     });
 }
-void AIAgent::publish_google_result()
+void AIAgent::publish_web_result()
 {
-    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this](QJsonObject doc)
+    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this,file = google_file_id](QJsonObject doc)
     {
+        if(file != google_file_id)
+            return;
         if(doc.isEmpty()) // without the current body the write would append instead of replace
-            return google_timer.start(5000);
-        write_google_doc(doc,google_pending_result,[this](bool published)
+            return web_timer.start(5000);
+        write_google_doc(doc,web_pending_result,[this,file](bool published)
         {
+            if(file != google_file_id)
+                return;
             if(published)
-                google_pending_result = QJsonObject();
-            google_timer.start(published ? 500 : 5000);
+                web_pending_result = QJsonObject();
+            web_timer.start(published ? 500 : 5000);
         });
     });
 }
@@ -2153,7 +1744,7 @@ bool AIAgent::sign_in_google()
             {"scope","https://www.googleapis.com/auth/drive.file"},{"state",state},{"code_challenge_method","S256"},
             {"code_challenge",QCryptographicHash::hash(verifier.toUtf8(),QCryptographicHash::Sha256).toBase64(
                 QByteArray::Base64UrlEncoding|QByteArray::OmitTrailingEquals)},
-            {"access_type","offline"},{"prompt","consent"}}) // consent on every sign-in: Google returns a refresh token (for the chosen account) only with consent
+            {"access_type","offline"},{"prompt","select_account consent"}}) // consent on every sign-in: Google returns a refresh token (for the chosen account) only with consent
         query.addQueryItem(key,QUrl::toPercentEncoding(value));
     QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
     url.setQuery(query);
@@ -2183,146 +1774,10 @@ bool AIAgent::sign_in_google()
     if(dialog.exec() == QMessageBox::Cancel)
         return false;
     if(!error.isEmpty())
-        QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error);
-    return error.isEmpty();
+        return QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error),false;
+    settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
+    return true;
 }
-bool AIAgent::setup_github_token()
-{
-    QDialog dialog(this);
-    dialog.setWindowTitle("Set Up GitHub Access");
-    dialog.setMinimumWidth(460);
-    dialog.setStyleSheet(ai_dialog_style());
-
-    auto* root = new QVBoxLayout(&dialog);
-    root->setSpacing(12);
-    root->setContentsMargins(20,20,20,16);
-
-    auto* title = new QLabel("Connect a GitHub issue channel");
-    title->setObjectName("ai_dialog_title");
-    auto* subtitle = new QLabel(
-        "DSI Studio sends and receives GitHub agent (ChatGPT, Muse, ...) requests through a private repository issue. "
-        "Set this up once: a repository, then a token scoped to it.");
-    subtitle->setObjectName("ai_dialog_subtitle");
-    subtitle->setWordWrap(true);
-    root->addWidget(title);
-    root->addWidget(subtitle);
-
-    // a titled, bordered card with a short body line and a single left-aligned action button below it --
-    // used only here, for this dialog's two setup steps
-    auto add_step_card = [root](const QString& heading,const QString& body,
-                                 QPushButton*& action,const QString& action_text)
-    {
-        auto* card = new QFrame;
-        card->setObjectName("ai_step_card");
-        auto* card_layout = new QVBoxLayout(card);
-        card_layout->setContentsMargins(14,12,14,12);
-        card_layout->setSpacing(6);
-        auto* heading_label = new QLabel(heading);
-        heading_label->setObjectName("ai_step_heading");
-        auto* body_label = new QLabel(body);
-        body_label->setObjectName("ai_step_body");
-        body_label->setWordWrap(true);
-        card_layout->addWidget(heading_label);
-        card_layout->addWidget(body_label);
-        action = new QPushButton(action_text);
-        auto* button_row = new QHBoxLayout;
-        button_row->addWidget(action);
-        button_row->addStretch();
-        card_layout->addLayout(button_row);
-        root->addWidget(card);
-    };
-
-    QPushButton* setup_repo = nullptr;
-    add_step_card("Step 1 · Create a private repository",
-        "<ol style='margin-left:-20px;'>"
-        "<li><b>Repository name*</b> = <i>[any name]</i>, e.g. DSI-Studio-Connect</li>"
-        "<li>Choose visibility &rarr; <b>Private</b></li>"
-        "<li>Click <b>Create repository</b></li></ol>",
-        setup_repo,"Create private repository");
-
-    QPushButton* setup_token = nullptr;
-    add_step_card("Step 2 · Create an access token",
-        "<ol style='margin-left:-20px;'>"
-        "<li><b>Token name*</b> = <i>[any name]</i></li>"
-        "<li>Expiration &rarr; select an appropriate duration</li>"
-        "<li>Repository access &rarr; <b>Only select repositories</b> &rarr; the repository you just created</li>"
-        "<li>Permissions &rarr; Add permissions &rarr; check <b>Issues</b></li>"
-        "<li>Issues access &rarr; <b>Read and write</b></li>"
-        "<li>Click <b>Generate token</b></li>"
-        "<li>Copy the token, then click <b>Paste</b> below</li></ol>",
-        setup_token,"Create token");
-
-    auto* token_label = new QLabel("Access token");
-    token_label->setObjectName("ai_dialog_subtitle");
-    root->addWidget(token_label);
-    auto* token_frame = new QFrame;
-    token_frame->setObjectName("ai_field_frame");
-    auto* token_row = new QHBoxLayout(token_frame);
-    token_row->setContentsMargins(10,2,4,2);
-    QLineEdit token(settings.value("ai/github_token").toString()); // declared after dialog/token_frame so it is destroyed before them
-    token.setEchoMode(QLineEdit::Password);
-    token.setPlaceholderText("Paste the token here");
-    QPushButton paste("Paste");
-    token_row->addWidget(&token,1);
-    token_row->addWidget(&paste);
-    root->addWidget(token_frame);
-
-    QLabel helper;
-    helper.setObjectName("ai_helper");
-    helper.setWordWrap(true);
-    root->addWidget(&helper);
-
-    QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
-    buttons.button(QDialogButtonBox::Save)->setObjectName("ai_primary_button");
-    root->addWidget(&buttons);
-
-    auto set_helper = [&](const QString& text)
-    {
-        helper.setText(text);
-        helper.updateGeometry();
-        dialog.adjustSize();
-    };
-    connect(setup_repo,&QPushButton::clicked,&dialog,[&]
-    {
-        QDesktopServices::openUrl(QUrl("https://github.com/new"));
-        set_helper("Create DSI-Studio-Connect as a Private repository, then continue to step 2.");
-    });
-    connect(setup_token,&QPushButton::clicked,&dialog,[&]
-    {
-        QApplication::clipboard()->setText(
-            "Create a fine-grained GitHub personal access token for DSI Studio:\n"
-            "1. Token name*: enter any name.\n"
-            "2. Expiration: select an appropriate duration.\n"
-            "3. Repository access: choose Only select repositories, then select the private repository created for DSI Studio.\n"
-            "4. Permissions: choose Add permissions, then Issues.\n"
-            "5. Issues access: choose Read and write.\n"
-            "6. Click Generate token.\n"
-            "7. Copy the token and click Paste in the DSI Studio dialog.\n"
-            "Never paste the token into the AI agent or a GitHub issue.");
-        QDesktopServices::openUrl(QUrl("https://github.com/settings/personal-access-tokens/new"));
-        set_helper("Instructions copied. Create and copy the token in GitHub, then return here and click Paste.");
-    });
-    connect(&paste,&QPushButton::clicked,&dialog,[&]
-    {
-        auto match = QRegularExpression(
-            R"((github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9]+))").
-            match(QApplication::clipboard()->text());
-        if(match.hasMatch())
-            token.setText(match.captured()),set_helper("Token pasted. Click Save to continue.");
-        else
-            set_helper("No GitHub token was found in the clipboard.");
-    });
-    connect(&buttons,&QDialogButtonBox::accepted,&dialog,[&]
-    {
-        if(token.text().trimmed().isEmpty())
-            return set_helper("Create or paste a GitHub token before saving.");
-        settings.setValue("ai/github_token",token.text().trimmed());
-        dialog.accept();
-    });
-    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
-    return dialog.exec() == QDialog::Accepted;
-}
-
 bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_text,
                                    QString& provider,QString& value,QJsonObject& info)
 {
@@ -2340,7 +1795,8 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     agent.addItem("Muse",QString("Muse"));
     agent.addItem("Antigravity",QString("Antigravity"));
     agent.addItem("Grok",QString("Grok"));
-    agent.addItem("GitHub (ChatGPT, Muse, ...)",QString("GitHub"));
+    agent.insertSeparator(agent.count());
+    agent.addItem("Web · ChatGPT",QString("Web")); // only Web agents that passed the end-to-end validation are listed
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
     auto ready = [&](const QString& provider)
     {
@@ -2377,162 +1833,27 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     agent.setCurrentIndex(agent.findData(current_agent));
     layout.addRow("Agent:",&agent);
 
-    QWidget field_container,local,web; // declared before their would-be children below, so they are destroyed after them
-    auto* field_layout = new QVBoxLayout(&field_container);
-    field_layout->setContentsMargins(0,0,0,0);
+    QWidget local; // declared before its would-be children below, so it is destroyed after them
     QComboBox model; // not editable -- same as the Agent combo above, which never had the popup-visibility problem an editable combo did
     model.setMaximumHeight(model.sizeHint().height());
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
     local_layout->addRow("Model:",&model);
-    auto* web_layout = new QVBoxLayout(&web);
-    web_layout->setContentsMargins(0,0,0,0);
-    web_layout->setSpacing(10);
+    layout.addRow(&local);
 
-    QPushButton setup_token("Set up GitHub token"); // fallback only, visible when no token is set -- see update_web()
-    auto* token_row = new QHBoxLayout;
-    token_row->addWidget(&setup_token);
-    token_row->addStretch();
-    web_layout->addLayout(token_row);
-
-    auto* issue_card = new QFrame;
-    issue_card->setObjectName("ai_step_card");
-    auto* issue_card_layout = new QVBoxLayout(issue_card);
-    issue_card_layout->setContentsMargins(14,12,14,12);
-    issue_card_layout->setSpacing(10);
-
-    auto* step1_heading = new QLabel("Step 1 — Copy the setup prompt");
-    step1_heading->setObjectName("ai_step_heading");
-    issue_card_layout->addWidget(step1_heading);
-    QPushButton copy_prompt("Copy setup prompt");
-    auto* step1_row = new QHBoxLayout;
-    step1_row->addWidget(&copy_prompt);
-    step1_row->addStretch();
-    issue_card_layout->addLayout(step1_row);
-
-    auto* step2_heading = new QLabel("Step 2 — Paste it into an AI chat");
-    step2_heading->setObjectName("ai_step_heading");
-    auto* step2_body = new QLabel("Press Ctrl+V in the chat box and send.");
-    step2_body->setObjectName("ai_step_body");
-    step2_body->setWordWrap(true);
-    issue_card_layout->addWidget(step2_heading);
-    issue_card_layout->addWidget(step2_body);
-    QPushButton open_chatgpt("Open ChatGPT");
-    QPushButton open_muse("Open Muse");
-    QPushButton open_grok("Open Grok");
-    auto* step2_row = new QHBoxLayout;
-    step2_row->addWidget(&open_chatgpt);
-    step2_row->addWidget(&open_muse);
-    step2_row->addWidget(&open_grok);
-    step2_row->addStretch();
-    issue_card_layout->addLayout(step2_row);
-
-    auto* step3_heading = new QLabel("Step 3 — Paste the reply link");
-    step3_heading->setObjectName("ai_step_heading");
-    auto* step3_body = new QLabel("Paste the Issue URL from the AI agent's reply below.");
-    step3_body->setObjectName("ai_step_body");
-    step3_body->setWordWrap(true);
-    issue_card_layout->addWidget(step3_heading);
-    issue_card_layout->addWidget(step3_body);
-
-    auto* issue_field_frame = new QFrame;
-    issue_field_frame->setObjectName("ai_field_frame");
-    auto* issue_row = new QHBoxLayout(issue_field_frame);
-    issue_row->setContentsMargins(10,2,4,2);
-    QLineEdit issue_url_edit;
-    issue_url_edit.setPlaceholderText("https://github.com/owner/repo/issues/1");
-    QPushButton paste_issue("Paste");
-    issue_row->addWidget(&issue_url_edit,1);
-    issue_row->addWidget(&paste_issue);
-    issue_card_layout->addWidget(issue_field_frame);
-    web_layout->addWidget(issue_card);
-
-    QLabel helper;
-    helper.setObjectName("ai_helper");
-    helper.setWordWrap(true);
-    helper.setMinimumWidth(380);
-    web_layout->addWidget(&helper);
-
-    field_layout->addWidget(&local);
-    field_layout->addWidget(&web);
-    layout.addRow(&field_container);
-
-    auto set_helper = [&](const QString& text)
-    {
-        helper.setText(text);
-        helper.updateGeometry();
-        dialog.adjustSize();
-    };
-    auto update_web = [&]
-    {
-        bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
-        setup_token.setVisible(!has_token);
-        for(auto* widget : {static_cast<QWidget*>(&copy_prompt),
-                            static_cast<QWidget*>(&open_chatgpt),
-                            static_cast<QWidget*>(&open_muse),
-                            static_cast<QWidget*>(&open_grok),
-                            static_cast<QWidget*>(&issue_url_edit),
-                            static_cast<QWidget*>(&paste_issue)})
-            widget->setEnabled(has_token);
-        set_helper(has_token ?
-            "GitHub access is ready. Follow the steps below." :
-            "A GitHub token is required. Click Set up GitHub token.");
-    };
     auto update_field = [&]
     {
         auto provider = agent.currentData().toString();
-        bool is_github = provider == "GitHub";
-        local.setVisible(!is_github);
-        web.setVisible(is_github);
-        if(is_github)
-        {
-            if(settings.value("ai/github_token").toString().trimmed().isEmpty())
-                setup_github_token();
-            update_web();
-        }
-        else
+        local.setVisible(provider != "Web"); // Web has no model choice; Google sign-in is asked at Start when needed
+        if(provider != "Web")
             set_model_selector(model,agent_entries[provider].profiles,
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
                 provider == current_agent ? current_model_name : QString(),{},
                 provider == current_agent ? current_model_info : QJsonObject());
+        dialog.adjustSize();
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
-    connect(&setup_token,&QPushButton::clicked,&dialog,[&]
-    {
-        setup_github_token();
-        update_web();
-    });
-    connect(&paste_issue,&QPushButton::clicked,&dialog,[&]
-    {
-        auto match = QRegularExpression(
-            R"(https://github\.com/[^\s/]+/[^\s/]+/issues/\d+)",
-            QRegularExpression::CaseInsensitiveOption).
-            match(QApplication::clipboard()->text());
-        if(match.hasMatch())
-        {
-            issue_url_edit.setText(match.captured());
-            set_helper("Issue URL pasted. Click Start to connect.");
-        }
-        else
-            set_helper("No GitHub issue URL was found in the clipboard.");
-    });
-    connect(&copy_prompt,&QPushButton::clicked,&dialog,[&]
-    {
-        QApplication::clipboard()->setText(
-            "I want to connect an AI agent to DSI Studio.\n\n"
-            "First read the public GitHub file:\n\n"
-            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_GITHUB_ISSUE_SESSION.md\n\n"
-            "Follow its instructions for starting a new AI agent GitHub issue session. "
-            "Use the GitHub tools available to you. If GitHub is unavailable, guide me through enabling it first. "
-            "Create or select an appropriate private personal GitHub repository, preferably DSI-Studio-Connect, "
-            "create the required session issue, and clearly give me the complete Issue URL to paste into DSI Studio.\n\n"
-            "Do not send DSI Studio commands until I confirm that DSI Studio is connected to the issue.");
-        set_helper("Setup prompt copied. Open an AI chat, paste it with Ctrl+V, and send.");
-    });
-    connect(&open_chatgpt,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://chatgpt.com/")); });
-    connect(&open_muse,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://muse.ai")); });
-    connect(&open_grok,&QPushButton::clicked,&dialog,[&]{ QDesktopServices::openUrl(QUrl("https://grok.com/")); });
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
@@ -2553,7 +1874,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
         auto provider = agent.currentData().toString();
-        if(provider != "GitHub")
+        if(provider != "Web")
         {
             const auto& entry = agent_entries[provider];
             if(entry.executable.isEmpty() ||
@@ -2565,16 +1886,6 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
                 return;
             }
         }
-        if(provider == "GitHub")
-        {
-            if(settings.value("ai/github_token").toString().trimmed().isEmpty())
-                return setup_token.click();
-            if(issue_url_edit.text().trimmed().isEmpty())
-            {
-                set_helper("Copy the setup prompt into an AI chat to create the session issue, then paste its URL.");
-                return;
-            }
-        }
         dialog.accept();
     });
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
@@ -2583,8 +1894,8 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
         return false;
 
     provider = agent.currentData().toString();
-    value = provider == "GitHub" ? issue_url_edit.text().trimmed() : model_combo_key(model);
-    info = provider == "GitHub" ? QJsonObject() : model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
+    value = provider == "Web" ? QString("ChatGPT") : model_combo_key(model); // Web: the agent name
+    info = provider == "Web" ? QJsonObject() : model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
     return true;
 }
 
@@ -2607,11 +1918,7 @@ void AIAgent::create_new_chat(const QString& provider,const QString& agent)
     auto* info = ai_info::create(
         provider == "Muse" ? muse_uuid_v7() :
         QUuid::createUuid().toString(QUuid::WithoutBraces),provider,agent); // status defaults to New; no "new:"/other marker on the id itself
-    if(info->provider == "GitHub")
-        web_agent_session_id = info->sessions;
-    else
-        info->model_settings = QJsonObject{
-            {"model",current_model_name},{"info",current_model_info}};
+    info->model_settings = QJsonObject{{"model",current_model_name},{"info",current_model_info}};
     set_ai_status(info->sessions,session_status::New,"Ready for a message.");
     show_ai_project(*info);
     ui->ai_project_list->setCurrentItem(info->project_items);
@@ -2623,20 +1930,12 @@ void AIAgent::new_chat_dialog()
     QJsonObject info;
     if(!run_new_chat_dialog("New Chat","Start",provider,value,info))
         return;
-    // Keep web_agent_session_id until disconnect_github_issue() marks the old chat Completed.
-    disconnect_github_issue();
-
-    if(provider == "GitHub")
-    {
-        create_new_chat("GitHub","GitHub (ChatGPT, Muse, ...)"); // exists immediately, even if the connection below fails -- a failed connection is then just this chat's own Error state, like a local chat's own Stop/error state
-        try_connect_github_issue(value);
-        return;
-    }
+    if(provider == "Web")
+        return create_web_session(value);
 
     current_agent = provider;
     current_model_name = value;
     current_model_info = info;
-    web_agent_session_id.clear();
     // update_send_button()/update_agent_status_label() are skipped here: create_new_chat() below selects the
     // new chat, and the sidebar's own currentItemChanged handler already refreshes both for any new selection
     create_new_chat(current_agent);
@@ -2653,7 +1952,7 @@ void AIAgent::on_ai_agent_status_clicked()
 {
     if(auto* info = selected_info())
     {
-        if(info->provider == "GitHub" || info->provider == "AgentServer") // bound to its one issue / a log record: no agent or model to change
+        if(info->provider == "Web" || info->provider == "AgentServer") // bound to its one session Doc / a log record: no agent or model to change
             return;
         if(info->processes) // a running agent keeps the model it was launched with
             return void(QMessageBox::information(this,"Change Model","Stop the agent before changing its model."));
@@ -2685,15 +1984,8 @@ void AIAgent::on_ai_agent_status_clicked()
     if(!run_new_chat_dialog("Change Agent/Model","Save",provider,value,info))
         return;
 
-    if(provider == "GitHub")
-    {
-        // same ownership setup new_chat_dialog() does for a fresh web chat -- try_connect_github_issue()
-        // assumes web_agent_session_id already names a real chat, which nothing else here would have arranged
-        disconnect_github_issue(); // leave any old channel cleanly before attempting a different one
-        create_new_chat("GitHub","GitHub (ChatGPT, Muse, ...)");
-        try_connect_github_issue(value);
-        return;
-    }
+    if(provider == "Web")
+        return create_web_session(value);
 
     current_agent = provider;
     current_model_name = value;
@@ -2875,38 +2167,20 @@ void AIAgent::on_ai_quick_settings_clicked()
         });
     });
 
-    auto* github_layout = add_card("GitHub access");
-    auto* github_body = new QLabel("Required to connect an AI agent session through a GitHub issue.");
-    github_body->setObjectName("ai_step_body");
-    github_body->setWordWrap(true);
-    github_layout->addWidget(github_body);
-    QPushButton github_button("Set up GitHub token"); // stays enabled even once configured -- unlike Codex/Claude sign-in, a token can't be re-checked live, so re-opening this is the only way to replace/reset it
-    auto* github_button_row = new QHBoxLayout;
-    github_button_row->addWidget(&github_button);
-    github_button_row->addStretch();
-    github_layout->addLayout(github_button_row);
-
-    auto update_github_button = [&]
-    {
-        bool has_token = !settings.value("ai/github_token").toString().trimmed().isEmpty();
-        github_button.setText(has_token ? "GitHub token ready ✓ · Configure..." : "Set up GitHub token");
-    };
-    update_github_button();
-    connect(&github_button,&QPushButton::clicked,&dialog,[&]
-    {
-        setup_github_token();
-        update_github_button();
-    });
-
-    auto* google_layout = add_card("Google Drive access");
-    QPushButton google_button,google_session("Create Google Drive test session"); // copies the Doc URL for the web agent
-    google_layout->addWidget(&google_button);
-    google_layout->addWidget(&google_session);
-    connect(&google_session,&QPushButton::clicked,this,&AIAgent::create_google_session);
+    auto* web_layout = add_card("Web");
+    auto* web_body = new QLabel("Web chats use your Google account. Web chat data is stored in the "
+                                "“DSI Studio AI” folder in your Google account.");
+    web_body->setObjectName("ai_step_body");
+    web_body->setWordWrap(true);
+    web_layout->addWidget(web_body);
+    QPushButton google_button;
+    auto* google_button_row = new QHBoxLayout;
+    google_button_row->addWidget(&google_button);
+    google_button_row->addStretch();
+    web_layout->addLayout(google_button_row);
     auto update_google_button = [&]
     {
-        google_button.setText(google_refresh_token.isEmpty() ? "Sign in with Google" : "Google ready ✓ · Sign In Again");
-        google_session.setVisible(!google_refresh_token.isEmpty());
+        google_button.setText(google_refresh_token.isEmpty() ? "Sign in with Google" : "Google account ready ✓ · Change Account");
     };
     update_google_button();
     connect(&google_button,&QPushButton::clicked,&dialog,[&]
@@ -3855,14 +3129,12 @@ void AIAgent::on_ai_send_message_clicked()
     {
     case send_action::Disabled:
         return;
-    case send_action::Resume: // only reachable when info exists, see current_send_action()
-        web_agent_session_id = info->sessions; // resume must target the selected chat, not whatever session was last active
-        // one chat, one issue: always its saved link -- an unbound or unreachable issue simply fails
-        try_connect_github_issue("https://github.com/"+info->model_settings["github_issue_url"].toString());
+    case send_action::Resume: // only reachable for a Web chat, see current_send_action()
+        start_web(*info);
         return;
     case send_action::Stop: // only reachable when info exists, see current_send_action()
-        if(info->provider == "GitHub")
-            disconnect_github_issue();
+        if(info->provider == "Web")
+            stop_web();
         else if(!cancel_agent_turn(*info))
         {
             info->processes->setProperty("user_stopped",true); // finished() reports a user stop, not a failure

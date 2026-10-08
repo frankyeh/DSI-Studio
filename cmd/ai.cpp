@@ -7,15 +7,11 @@
 #include <QColor>
 #include <QComboBox>
 #include <QDateTime>
-#include <QEventLoop>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QListWidgetItem>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
@@ -23,7 +19,6 @@
 #include <QWidget>
 
 #include <algorithm>
-#include <cstring>
 #include <utility>
 
 #include "ai.hpp"
@@ -122,7 +117,7 @@ void update_status_dot(QLabel* dot,session_status status,bool pulse)
     dot->setToolTip(session_status_text(status));
 }
 
-// shared look for the GitHub-setup/new-chat dialogs: Google-style cards/fields/buttons, scoped by objectName
+// shared look for the new-chat/settings dialogs: Google-style cards/fields/buttons, scoped by objectName
 // so it can't bleed into unrelated dialogs. Widgets sharing an objectName (e.g. every step card) all match
 // the same rule -- that's normal Qt stylesheet behavior, not a lookup key.
 QString ai_dialog_style()
@@ -151,34 +146,6 @@ QString ai_dialog_style()
         "QPushButton#ai_primary_button:hover{background-color:#1765cc;}"
         "QPushButton#ai_primary_button:pressed{background-color:#175dc1;}"
         "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
-}
-
-// 401/403/404/410/422 mean the token/permissions/resource is wrong (retrying can't fix it); checked after handle_github_reply()'s rate-limit test since 403 can also mean rate limiting
-bool github_permanent_failure(int status)
-{
-    return status == 401 || status == 403 || status == 404 ||
-           status == 410 || status == 422;
-}
-
-// blocking helper: connect_github_issue is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
-QByteArray github_blocking(QNetworkAccessManager& manager,
-                            const QNetworkRequest& request,
-                            const char* verb,const QByteArray& body,
-                            bool& ok,QString& error)
-{
-    QEventLoop loop;
-    QNetworkReply* reply =
-        !strcmp(verb,"POST") ? manager.post(request,body) :
-        !strcmp(verb,"PATCH") ? manager.sendCustomRequest(request,"PATCH",body) :
-        manager.get(request);
-    QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
-    loop.exec();
-    ok = reply->error() == QNetworkReply::NoError;
-    auto data = reply->readAll();
-    if(!ok)
-        error = reply->errorString();
-    reply->deleteLater();
-    return data;
 }
 
 QByteArray claude_input(const QString& text)
@@ -381,4 +348,4 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
     return record_history(entry);
-}
+}

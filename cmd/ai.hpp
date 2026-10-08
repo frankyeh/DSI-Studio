@@ -12,9 +12,6 @@
 class QComboBox;
 class QLabel;
 class QListWidgetItem;
-class QNetworkAccessManager;
-class QNetworkReply;
-class QNetworkRequest;
 class QProcess;
 class QSettings;
 class QWidget;
@@ -39,7 +36,7 @@ struct ai_info{
     QProcess* processes = nullptr;
     QList<QJsonObject> projects;
     QListWidgetItem* project_items = nullptr;
-    QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "github_issue_url": bound issue, GitHub agent sessions only
+    QJsonObject model_settings; // "model"/"info": local Codex/Claude model choice; "google_file_id": session Doc, Web chats only
     quint64 log_position = quint64(-1);
     QString current_window = "main"; // persists across requests until changed by "set_window"
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
@@ -54,7 +51,7 @@ struct ai_info{
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString,QString = {}); // session, provider, optional display agent name
     static QString history_file(const QString&);
-    static QString config_file(const QString&); // agent/model/github-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
+    static QString config_file(const QString&); // agent/model/Web-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
     void save_config() const;
     bool save_title(QString);
     QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" filled in), not the caller's pre-call copy -- written unconditionally, regardless of status
@@ -71,16 +68,13 @@ struct ai_info{
 extern std::unordered_map<QString,ai_info> ai_infos;
 extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, before any window exists
 
-bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, GitHub issue sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
+bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, Web sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
 ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to; nullptr (nothing changed) if to already exists or from is missing
 QUrl agent_install_url(const QString& provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
 void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
-QString ai_dialog_style(); // shared stylesheet for the GitHub-setup/new-chat dialogs
-bool github_permanent_failure(int http_status); // true iff retrying this GitHub HTTP status can't ever succeed (bad token/permissions/resource)
-QByteArray github_blocking(QNetworkAccessManager& manager,const QNetworkRequest& request,
-                            const char* verb,const QByteArray& body,bool& ok,QString& error); // blocking GET/POST/PATCH: connect_github_issue() is one-shot and user-initiated, so a short local event loop keeps its bool/error interface synchronous without added state
+QString ai_dialog_style(); // shared stylesheet for the new-chat/settings dialogs
 QByteArray claude_input(const QString& text); // wraps text in Claude's stream-json stdin message format
 QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text); // wraps text as a Codex app-server "turn/start" request on an idle thread
 QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text); // wraps text as a Codex app-server "turn/steer" request into the thread's currently active turn
