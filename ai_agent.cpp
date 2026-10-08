@@ -1944,8 +1944,8 @@ AIAgent::send_action AIAgent::current_send_action() const
         return github_connected(*info) ? send_action::Stop : send_action::Resume;
     if(!info->processes) // never launched (or a prior attempt cleanly ended): a fresh launch, always a real send
         return has_input ? send_action::Send : send_action::Disabled;
-    if(!has_input) // an idle (WaitingUser) agent has nothing to stop
-        return info->is_running() ? send_action::Stop : send_action::Disabled;
+    if(!has_input) // a live local process can always be stopped: a reply can arrive (WaitingUser) before its turn ends
+        return send_action::Stop;
     // a message can only be written to a running process with an established session; while starting or exiting, Send waits
     return info->processes->state() == QProcess::Running && info->status != session_status::New ?
            send_action::Send : send_action::Disabled;
@@ -3558,7 +3558,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
     if(launching && (executable = prepare_ai(info)).isEmpty()) // failed before creating a process: nothing was sent
         return;
 
-    // recorded here, once, the moment it is sent -- never replayed from an async establishment event
+    // recorded once, here, before the launch or write -- never replayed from an async establishment event
     add_ai_history(info,"user",text);
     info.save_config();
     ui->ai_chat_input->clear();
