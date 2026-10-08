@@ -391,6 +391,17 @@ AIAgent::AIAgent(MainWindow* parent):
 
 AIAgent::~AIAgent()
 {
+    // app exit can end the event loop before closeEvent()'s 5 s fallback fires: tree-kill whatever is still live.
+    // disconnect first so no finished handler runs into this half-destroyed object; a process whose handler
+    // already ran has processes == nullptr and only awaits deleteLater(), so it is skipped
+    for(auto& entry : ai_infos)
+        if(auto* process = entry.second.processes)
+        {
+            process->disconnect();
+            kill_process_tree(process);
+            process->waitForFinished(1000);
+            entry.second.processes = nullptr; // ai_infos outlives this window; its child QProcess does not
+        }
     delete ui;
 }
 
