@@ -68,28 +68,29 @@ class AIAgent : public QMainWindow
 
     QNetworkAccessManager web_manager; // Google OAuth and API calls
 
-    // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens are never logged or written to chat history
+    // Google OAuth (desktop, PKCE + loopback, full Drive scope for the agent-created Web messages): tokens are never logged or written to chat history
     QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved, so a restart stays signed in
     QDateTime google_token_expiry;
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    // Web channel: each Web chat's raw JSON file (in the "DSI Studio AI" folder) is a single-slot mailbox, polled directly
+    // Web channel: each Web chat has its own folder under "DSI Studio AI" holding immutable agentNNNNNN.json/dsiNNNNNN.json pairs
     QTimer web_timer;
     QString google_folder_id = settings.value("ai/google_folder_id").toString();
-    QString google_file_id,web_session_id; // the connected chat's Doc (empty when stopped) and session
-    qint64 web_last_id = 0;
+    QString web_folder_id,web_session_id; // the connected chat's session folder (empty when stopped) and session
+    qint64 web_last_id = 0; // the last answered sequence number
     QElapsedTimer web_idle; // polling stops after 3 minutes without a request
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
-    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
-    void write_web_file(const QString& file,const QJsonObject& message,std::function<void(bool)> done); // replaces the session file's content
-    void create_web_session(); // signs in and resolves the folder when needed, then creates the Doc and the chat
+    void google_api(const QByteArray& verb,const QString& url,const QByteArray& body,const QByteArray& content_type,std::function<void(QJsonObject)> done); // one Drive call; an empty object means failure
+    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done);
+    QString web_file_query(const char* side,qint64 n) const;
+    void create_web_session(); // signs in and resolves the folder when needed, then creates the session folder and the chat
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
     void poll_web();
     void publish_web_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
-    bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
+    bool web_connected(const ai_info&) const; // true iff this chat's session folder is the one being polled
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
