@@ -174,7 +174,8 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
     const std::string usage =
         "hub_repo | hub_tags <repo> | hub_files <repo> [tag] [text] [offset] [limit] | "
         "hub_open <repo> <tag> <file> | hub_show <repo> <tag> [file] | hub_download <repo> [tag] <file> <dir> "
-        "([tag] and [text] empty means match all; [tag] and [text] are treated as regular expressions; "
+        "(hub_open downloads one file if needed and opens it in a new window; hub_download only downloads, "
+        "so use it for many files; [tag] and [text] empty means match all; [tag] and [text] are treated as regular expressions; "
         "hub_download's <file> is a wildcard pattern (*, ?, [...]), e.g. \"*.qsdr.fz\", matching every "
         "file in every matched tag, so one call can download many files; hub_open and hub_show take "
         "<tag> as an exact, single tag and <file> as an exact filename or the row index returned by hub_files)";
@@ -907,19 +908,19 @@ void FiberDataHub::on_github_open_file_clicked()
         return QMessageBox::critical(this,"ERROR","cannot create a temporary directory to store file"),void();
 
     QString filePath = dir.path()+ "/" + ui->github_release_files->item(row, 0)->text();
-    auto git_open = [this,filePath](void)
+    auto git_open = [this,filePath,mode = ui->github_open_file_mode->currentIndex()](void) // mode now: a deferred open must not see a later selection
     {
         if(filePath.endsWith(".nii.gz") || filePath.endsWith(".nii") ||
            filePath.endsWith(".fib.gz") || filePath.endsWith(".fz") || filePath.endsWith(".dz"))
         {
 
-            if(ui->github_open_file_mode->currentIndex() == 0)
+            if(mode == 0)
                 main_window.loadNii(QStringList() << filePath);
             else
-            if(ui->github_open_file_mode->currentIndex() == 1)
+            if(mode == 1)
                 main_window.loadFib(filePath);
             else
-            if(ui->github_open_file_mode->currentIndex() > 1) // open db
+            if(mode > 1) // open db
             {
                 auto database = std::make_shared<group_connectometry_analysis>();
                 tipl::progress prog("reading connectometry db");
@@ -928,7 +929,7 @@ void FiberDataHub::on_github_open_file_clicked()
                     QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
                     return;
                 }
-                if(ui->github_open_file_mode->currentIndex() == 2)
+                if(mode == 2)
                 {
                     auto db = new db_window(&main_window,database);
                     db->setWindowTitle(filePath);
@@ -946,7 +947,7 @@ void FiberDataHub::on_github_open_file_clicked()
         }
         else
         {
-            if(ui->github_open_file_mode->currentIndex() == 0)
+            if(mode == 0)
                 main_window.loadNii(QStringList() << filePath);
             else
                 main_window.openFile(QStringList() << filePath);
