@@ -94,7 +94,10 @@ void kill_process_tree(QProcess* process) // kill(): a windowless console child 
     if(process->state() != QProcess::NotRunning)
     {
         process->kill();
-        process->waitForFinished(1000); // reap it: a QProcess destroyed while still running warns on the console
+        // reap a parentless (stack) QProcess before it is destroyed; a parented one finishes asynchronously, so its
+        // finished handler never runs in the middle of the caller's own stdout loop
+        if(!process->parent())
+            process->waitForFinished(1000);
     }
 }
 void fail_agent_process(QProcess* process,const QString& message) // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
@@ -292,7 +295,7 @@ AIAgent::AIAgent(MainWindow* parent):
         if(auto* found = ai_info::find(session);found && found->processes)
         {
             auto* process = found->processes;
-            process->disconnect(); kill_process_tree(process); process->deleteLater();
+            process->disconnect(); kill_process_tree(process); process->waitForFinished(1000); process->deleteLater();
         }
         if(session == web_agent_session_id)
             disconnect_github_issue(); // otherwise the channel keeps polling and recreates this chat on the next request
