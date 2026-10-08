@@ -87,12 +87,13 @@ class AIAgent : public QMainWindow
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    // Google Drive channel: comments on one DSI-created Doc carry requests/results; the title suffix [N] is the cheap doorbell
+    // Google Doc channel: the Doc body is a single-slot JSON mailbox; Drive file.version is the cheap doorbell
     QTimer google_timer;
-    QString google_file_id,google_session_id,google_pending_comment;
+    QString google_file_id,google_session_id,google_seen_version;
     qint64 google_last_id = 0;
     QJsonObject google_pending_result; // staged until its reply is confirmed; retried, never re-executed
-    void google_drive(const QByteArray& verb,const QString& path,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive v3 call; an empty object means failure
+    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
+    void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
     void create_google_session();
     void poll_google_drive();
     void publish_google_result();
