@@ -713,7 +713,7 @@ void AIAgent::poll_github_issue()
             return QJsonDocument::fromJson(bytes).object();
         };
 
-        if(set_title) // omits "agent" so set_title itself can never create a session
+        if(set_title)
             run_ai_command(session_id,"set_title",issue["title"].toString());
 
         if(include_log)
@@ -899,7 +899,23 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
         return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
 
     auto* found = ai_info::find(session);
-    if(!found) // a pipe request must match an existing chat; a removed chat's orphan fails here instead of recreating it
+    // a lone `dsi.sh new_chat` (no param, batch or chat text) is the one way an unknown UUID joins: an external agent registers its own session
+    if(auto command = request["command"].toObject();request["command"].isObject() && command.size() == 1 &&
+       command["cmd"].toString() == "new_chat" && !request.contains("chat") && !request.contains("reasoning"))
+    {
+        auto agent = request["agent"].toString().trimmed();
+        if(found)
+            return void(reply = status_reply("error","session already exists"));
+        if(!local_agents.contains(agent))
+            return void(reply = status_reply("error","invalid agent"));
+        found = ai_info::create(session,"AgentServer",agent); // AgentServer: not a DSI-launched process, so no Send/Stop/model control
+        set_ai_status(session,session_status::WaitingUser,"External agent session connected.");
+        add_ai_history(*found,"activity","External agent session connected."); // a recorded entry is what lets save_config() persist it
+        found->save_config();
+        ai_log("external agent session connected: "+agent+"@"+session);
+        return void(reply = status_reply("success"));
+    }
+    if(!found) // any other request must match an existing chat; a removed chat's orphan fails here instead of recreating it
         return void(reply = status_reply("error","session not found"));
     ai_info& info = *found;
     set_ai_status(session,session_status::Thinking,"Processing agent request");
