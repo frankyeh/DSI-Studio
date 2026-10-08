@@ -2118,7 +2118,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(!tipl::write_text_file(cmd[1],out.str(),tipl::error()))
                 return run->failed("cannot write to " + cmd[1]);
         }
-        else if(run->source == command_source::AI) // show_X from the AI: return the text directly, no dialog, no file
+        else if(run->source != command_source::User) // show_X from the AI or an internal call: return the text, no dialog
             tipl::out() << out.str();
         else if(!(cmd[1] = show_info_dialog("FIB Protocol",out.str(),history.file_stem(false)+"_fib_protocol.txt")).empty())
         {
