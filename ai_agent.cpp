@@ -210,7 +210,7 @@ AIAgent::AIAgent(MainWindow* parent):
         for(auto& entry : ai_infos)
         {
             auto& info = entry.second;
-            if(info.is_running())
+            if(info.is_running() || web_connected(info)) // a polling Web chat pulses green
             {
                 running = true;
                 if(auto* row = ui->ai_project_list->itemWidget(info.project_items))
@@ -470,7 +470,7 @@ void AIAgent::set_ai_status(const QString& session,session_status status,QString
 
 void AIAgent::update_ai_status(const ai_info& info,bool pulse)
 {
-    bool running = info.is_running();
+    bool running = info.is_running() || web_connected(info); // a polling Web chat pulses green
     if(info.project_items)
     {
         auto* row = ui->ai_project_list->itemWidget(info.project_items);
@@ -1637,14 +1637,9 @@ void AIAgent::create_web_session()
         auto* info = ai_info::create(session,"Web","Web"); // agent agnostic: any web-based agent can join
         info->model_settings["google_file_id"] = file["id"].toString();
         add_ai_history(*info,"activity","Web session started.");
-        start_web(*info);
-        info->save_config(); // the first poll writes "ready" into the empty Doc
         ui->ai_project_list->setCurrentItem(info->project_items);
-        QApplication::clipboard()->setText(
-            "Connect to DSI Studio. First read the public GitHub file "
-            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
-            "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit");
-        QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
+        start_web(*info); // the first poll writes "ready" into the empty Doc
+        info->save_config(); // after start_web(), so the chat is saved as established
     });
 }
 void AIAgent::start_web(ai_info& info)
@@ -1658,15 +1653,21 @@ void AIAgent::start_web(ai_info& info)
     }
     google_file_id = info.model_settings["google_file_id"].toString();
     set_ai_status(info.sessions,session_status::WaitingUser,"Web connected; waiting for a request.");
+    web_idle.start();
     web_timer.start(0);
+    QApplication::clipboard()->setText( // on every start and Resume: the agent may be a new chat
+        "Connect to DSI Studio. First read the public GitHub file "
+        "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
+        "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit");
+    QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
 }
-void AIAgent::stop_web()
+void AIAgent::stop_web(const QString& message)
 {
     if(google_file_id.isEmpty())
         return;
     google_file_id.clear(); // callbacks still in flight see this and stop
     web_timer.stop();
-    set_ai_status(web_session_id,session_status::Completed,"Web stopped.");
+    set_ai_status(web_session_id,session_status::Completed,message);
 }
 QString AIAgent::google_doc_url() const // only what write_google_doc() and the mailbox need
 {
@@ -1679,6 +1680,8 @@ void AIAgent::poll_web()
         return;
     if(!web_pending_result.isEmpty())
         return publish_web_result(); // a previous result write failed; retry it, never re-execute
+    if(web_idle.hasExpired(180000))
+        return stop_web("Web stopped after 3 minutes without a request; press Resume to continue.");
     // the body is one tiny JSON message, so it is read directly (Drive file.version proved an unreliable doorbell)
     google_api("GET",google_doc_url(),{},[this,file = google_file_id](QJsonObject doc)
     {
@@ -1739,7 +1742,10 @@ void AIAgent::publish_web_result()
             if(file != google_file_id)
                 return;
             if(published)
+            {
                 web_pending_result = QJsonObject();
+                web_idle.start(); // the 3-minute idle limit counts from the last result
+            }
             web_timer.start(published ? 500 : 5000);
         });
     });
