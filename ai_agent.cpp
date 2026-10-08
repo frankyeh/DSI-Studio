@@ -232,6 +232,8 @@ AIAgent::AIAgent(MainWindow* parent):
 
     github_timer.setSingleShot(true);
     connect(&github_timer,&QTimer::timeout,this,&AIAgent::poll_github_issue);
+    google_timer.setSingleShot(true);
+    connect(&google_timer,&QTimer::timeout,this,&AIAgent::poll_google_drive);
 
     refresh_agent_executables();
     refresh_agent_status();
@@ -2029,6 +2031,98 @@ void AIAgent::with_google_token(std::function<void(QString)> call)
     google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},
                       [this,call](QString error){call(error.isEmpty() ? google_access_token : QString());});
 }
+void AIAgent::google_drive(const QByteArray& verb,const QString& path,const QJsonObject& body,std::function<void(QJsonObject)> done)
+{
+    with_google_token([this,verb,path,body,done](QString token)
+    {
+        QNetworkRequest request(QUrl("https://www.googleapis.com/drive/v3/"+path));
+        request.setRawHeader("Authorization","Bearer "+token.toUtf8());
+        request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
+        auto* reply = web_manager.sendCustomRequest(request,verb,body.isEmpty() ? QByteArray() : QJsonDocument(body).toJson(QJsonDocument::Compact));
+        connect(reply,&QNetworkReply::finished,this,[reply,done]
+        {
+            reply->deleteLater();
+            done(reply->error() == QNetworkReply::NoError ? QJsonDocument::fromJson(reply->readAll()).object() : QJsonObject());
+        });
+    });
+}
+void AIAgent::create_google_session()
+{
+    auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    google_drive("POST","files?fields=id",{{"name","DSI Studio "+session+" [0]"},{"mimeType","application/vnd.google-apps.document"}},
+                 [this,session](QJsonObject file)
+    {
+        if(file["id"].toString().isEmpty())
+            return void(QMessageBox::warning(this,"AI Agent","Cannot create the Google Doc."));
+        google_file_id = file["id"].toString();
+        google_session_id = session;
+        google_last_id = 0;
+        google_poll_ms = 500;
+        google_pending_result = QJsonObject();
+        auto url = "https://docs.google.com/document/d/"+google_file_id+"/edit";
+        auto* info = ai_info::create(session,"AgentServer","Google Drive"); // a log record: no local process to Send/Stop
+        add_ai_history(*info,"activity","Google Drive session: "+url);
+        info->save_config();
+        QApplication::clipboard()->setText(url);
+        QDesktopServices::openUrl(QUrl(url));
+        google_timer.start(500);
+    });
+}
+void AIAgent::poll_google_drive()
+{
+    if(google_file_id.isEmpty())
+        return;
+    if(!google_pending_result.isEmpty())
+        return publish_google_result(); // a previous result reply failed; retry it, never re-execute
+    // the agent comments first, then bumps the title suffix [N]: only a new N is worth a comments.list
+    google_drive("GET","files/"+google_file_id+"?fields=name",{},[this](QJsonObject file)
+    {
+        auto id = file["name"].toString().section('[',-1).section(']',0,0).toLongLong();
+        if(id <= google_last_id) // idle: +0.5 s per empty poll, capped at 30 s
+            return google_timer.start(google_poll_ms = std::min(google_poll_ms+500,30000));
+        google_poll_ms = 500;
+        google_drive("GET","files/"+google_file_id+"/comments?pageSize=100&fields=comments(id,content)",{},[this,id](QJsonObject list)
+        {
+            for(const auto& value : list["comments"].toArray())
+            {
+                auto request = QJsonDocument::fromJson(value.toObject()["content"].toString().toUtf8()).object();
+                if(!request["dsi_session_request"].toBool() || request["id"].toInteger() != id ||
+                   request["session"].toString() != google_session_id)
+                    continue;
+                google_pending_comment = value.toObject()["id"].toString();
+                QJsonObject claim{{"dsi_session_result",true},{"id",id},{"state","processing"}};
+                // the claim must be on Google before executing: a crash after it never re-runs the command
+                return google_drive("POST","files/"+google_file_id+"/comments/"+google_pending_comment+"/replies?fields=id",
+                                    {{"content",QString(QJsonDocument(claim).toJson(QJsonDocument::Compact))}},[this,id,request](QJsonObject claimed)
+                {
+                    if(claimed.isEmpty())
+                        return google_timer.start(5000); // not claimed, so not executed: try again
+                    google_last_id = id;
+                    auto forwarded = request;
+                    forwarded.remove("id");
+                    forwarded.remove("dsi_session_request");
+                    QByteArray reply_bytes;
+                    ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
+                    auto response = QJsonDocument::fromJson(reply_bytes).object();
+                    google_pending_result = QJsonObject{{"dsi_session_result",true},{"id",id},
+                        {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
+                    publish_google_result();
+                });
+            }
+            google_timer.start(500); // the request comment is not visible yet
+        });
+    });
+}
+void AIAgent::publish_google_result()
+{
+    google_drive("POST","files/"+google_file_id+"/comments/"+google_pending_comment+"/replies?fields=id",
+                 {{"content",QString(QJsonDocument(google_pending_result).toJson(QJsonDocument::Compact))}},[this](QJsonObject published)
+    {
+        if(!published.isEmpty())
+            google_pending_result = QJsonObject();
+        google_timer.start(published.isEmpty() ? 5000 : 500);
+    });
+}
 bool AIAgent::sign_in_google()
 {
     auto random_text = [](int bytes)
@@ -2794,11 +2888,14 @@ void AIAgent::on_ai_quick_settings_clicked()
     });
 
     auto* google_layout = add_card("Google Drive access");
-    QPushButton google_button;
+    QPushButton google_button,google_session("Create Google Drive test session"); // copies the Doc URL for the web agent
     google_layout->addWidget(&google_button);
+    google_layout->addWidget(&google_session);
+    connect(&google_session,&QPushButton::clicked,this,&AIAgent::create_google_session);
     auto update_google_button = [&]
     {
         google_button.setText(google_refresh_token.isEmpty() ? "Sign in with Google" : "Google ready ✓ · Sign In Again");
+        google_session.setVisible(!google_refresh_token.isEmpty());
     };
     update_google_button();
     connect(&google_button,&QPushButton::clicked,&dialog,[&]
