@@ -519,6 +519,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                         << item(row,3)->text().toStdString();
         return run->succeed();
     }
+    if(cmd[0] == "trim_tract" && cmd[1].empty()) // no index: the selected bundle, not every checked one
+        cmd[1] = std::to_string(currentRow());
     if(cmd[0] == "delete_branch" || cmd[0] == "undo_tract" || cmd[0] == "redo_tract" || cmd[0] == "trim_tract")
     {
         return for_each_bundle([&](unsigned int index)
