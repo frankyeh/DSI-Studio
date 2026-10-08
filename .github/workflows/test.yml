@@ -453,11 +453,14 @@ jobs:
           export MUSE_SESSION_ID="$(cat /proc/sys/kernel/random/uuid)"
           DSI_SH=dsi-studio/ai/dsi.sh
 
+          reply=
           for i in {1..30}; do
-            bash "$DSI_SH" list_window >/dev/null 2>&1 && break
+            reply="$(bash "$DSI_SH" new_chat 2>/dev/null)" && break
             kill -0 "$DSI_PID" || { cat dsi_studio.log; exit 1; }
             sleep 1
           done
+          echo "$reply"
+          grep -q '"status":"success"' <<<"$reply"
           bash "$DSI_SH" list_window
 
           bash "$DSI_SH" open_fib "$PWD/dsi-studio/tract/human.fz"
