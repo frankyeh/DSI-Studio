@@ -55,13 +55,11 @@ class AIAgent : public QMainWindow
     QSettings settings;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
-    int ai_debug_level = 0; // "ai/debug" setting: 0 = disabled, 1 = enabled (truncated), 2 = enabled (complete); read from QSettings in the constructor, kept in sync by AI Settings' own setValue+assign
+    int ai_debug_level = 0; // "ai/debug": 0 = disabled, 1 = truncated, 2 = complete
     void ai_log(QString text);
-    QJsonObject next_json_line(QProcess*); // reads one already-available line via QProcess::readLine(), logs it, parses it as JSON -- shared by configure_claude()/configure_codex()'s stdout handlers; caller loops while(process->canReadLine())
+    QJsonObject next_json_line(QProcess*); // reads, logs and parses one available stdout line; callers loop while(process->canReadLine())
 
-    // app-wide default agent/model: only consulted for a chat that doesn't exist yet (New Chat's pre-fill, and
-    // "Change Agent/Model" with nothing selected) -- an existing chat's own ai_info::model_settings is always
-    // authoritative for that chat once created, never reconciled against these
+    // app-wide default agent/model for the next New Chat; an existing chat uses its own model_settings
     QHash<QString,ai_agent_entry> agent_entries;
     QString current_agent = "Codex";
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
@@ -96,14 +94,12 @@ class AIAgent : public QMainWindow
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
-    void new_chat_dialog(); // New Chat: a local agent/model, or a Web agent
-    void create_new_chat(const QString& provider,const QString& agent = {});
-    bool run_new_chat_dialog(const QString& title,const QString& accept_text,
-                              QString& provider,QString& value,QJsonObject& info); // value: model name for a local agent, empty for Web; info: the chosen model's profile (empty for Web)
-        // builds the Local/Web picker shared by new_chat_dialog() and on_ai_agent_status_clicked(); returns false if cancelled
+    void create_new_chat(const QString& provider);
+    bool run_new_chat_dialog(const QString& title,const QString& accept_text); // the agent/model picker for New Chat and Change Agent/Model: sets current_agent/model on accept; Web starts its own session and returns false
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
+    void add_ai_reply(QProcess*,const QString& chat,const QString& reasoning);
     bool run_agent_login(const QString& provider);
     void finish_agent_turn(QProcess* process,QString error = {},bool cancelled = false); // one turn-end rule: idle (WaitingUser) or Failed with an error entry
     ai_info* establish_agent_session(QProcess* process,QString new_session = {}); // the one session-identity rule for every local agent; nullptr when the launch must stop
@@ -114,12 +110,8 @@ class AIAgent : public QMainWindow
     void update_agent_models(const QString&,const QStringList&,bool);
     void refresh_agent_executables(); // re-runs local-agent executable discovery into agent_entries[agent].executable
     void refresh_agent_status(const QString& provider = {});
-    void refresh_agent_models(const QString& provider); // the one caller-facing model refresh; dispatches to the provider-specific refresh below
+    void refresh_agent_models(const QString& provider); // one model-list probe per local agent
     void refresh_ollama_models();
-    void refresh_codex_models();
-    void refresh_muse_models();
-    void refresh_antigravity_models();
-    void refresh_grok_models();
     void start_ai(ai_info&,const QString&);
     QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
     QStringList configure_claude(const ai_info&,const QString&);

@@ -1,9 +1,4 @@
-// ai_info's own data-layer implementation (declared in ai.hpp): session registry, on-disk history/config
-// persistence, and history-entry recording, plus free helpers with no AIAgent/MainWindow dependency (they
-// take/return plain Qt types like QWidget*/QLabel*, never Ui::AIAgent or an AIAgent member) -- everything that
-// actually touches ui->/agent_entries/etc. stays in ai_agent.cpp (which includes ai_agent.hpp, not this file),
-// and dispatch_cmd() builds "request" entries itself now.
-// Global (free) functions first, ai_info's own member functions at the back.
+// ai_info's data layer (session registry, history/config persistence) and free helpers with no AIAgent/MainWindow dependency
 #include <QColor>
 #include <QComboBox>
 #include <QDateTime>
@@ -96,8 +91,7 @@ void update_status_dot(QLabel* dot,session_status status,bool pulse)
 {
     if(!dot)
         return;
-    // purely presentational: pulse means "advance," its absence means "reset to steady" -- whether that's
-    // actually appropriate for this status is the caller's call (see ai_info::is_running()), not this function's
+    // pulse advances the animation, otherwise it resets; the caller decides when (ai_info::is_running())
     int phase = dot->property("pulse").toInt();
     phase = pulse ? (phase+1)%24 : 0;
     dot->setProperty("pulse",phase);
@@ -117,9 +111,7 @@ void update_status_dot(QLabel* dot,session_status status,bool pulse)
     dot->setToolTip(session_status_text(status));
 }
 
-// shared look for the new-chat/settings dialogs: Google-style cards/fields/buttons, scoped by objectName
-// so it can't bleed into unrelated dialogs. Widgets sharing an objectName (e.g. every step card) all match
-// the same rule -- that's normal Qt stylesheet behavior, not a lookup key.
+// shared look for the new-chat/settings dialogs, scoped by objectName so it cannot bleed into other dialogs
 QString ai_dialog_style()
 {
     return
@@ -148,36 +140,37 @@ QString ai_dialog_style()
         "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
 }
 
+QByteArray json_line(const QJsonObject& message)
+{
+    return QJsonDocument(message).toJson(QJsonDocument::Compact)+'\n';
+}
+
 QByteArray claude_input(const QString& text)
 {
-    return QJsonDocument(QJsonObject{
+    return json_line({
         {"type","user"},{"message",QJsonObject{
             {"role","user"},{"content",QJsonArray{QJsonObject{
-                {"type","text"},{"text",text}}}}}}}).
-        toJson(QJsonDocument::Compact)+'\n';
+                {"type","text"},{"text",text}}}}}}});
 }
 
 QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text)
 {
-    return QJsonDocument(QJsonObject{{"id",id},{"method","turn/start"},
+    return json_line({{"id",id},{"method","turn/start"},
         {"params",QJsonObject{{"threadId",thread_id},
-            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).
-        toJson(QJsonDocument::Compact)+'\n';
+            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}});
 }
 
 QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text)
 {
-    return QJsonDocument(QJsonObject{{"id","turn_steer"},{"method","turn/steer"},
+    return json_line({{"id","turn_steer"},{"method","turn/steer"},
         {"params",QJsonObject{{"threadId",thread_id},{"expectedTurnId",turn_id},
-            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}).
-        toJson(QJsonDocument::Compact)+'\n';
+            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}});
 }
 
 QByteArray codex_turn_interrupt(const QString& thread_id,const QString& turn_id)
 {
-    return QJsonDocument(QJsonObject{{"id","turn_interrupt"},{"method","turn/interrupt"},
-        {"params",QJsonObject{{"threadId",thread_id},{"turnId",turn_id}}}}).
-        toJson(QJsonDocument::Compact)+'\n';
+    return json_line({{"id","turn_interrupt"},{"method","turn/interrupt"},
+        {"params",QJsonObject{{"threadId",thread_id},{"turnId",turn_id}}}});
 }
 
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
@@ -245,12 +238,8 @@ QString ai_info::config_file(const QString& session)
 }
 void ai_info::save_config() const
 {
-    // gated on real content (projects), not live status -- status alone can't tell "never touched, nothing
-    // to persist" apart from "was established, currently New again while reconnecting" (see session_status),
-    // and skipping the latter meant edits made mid-reconnect (rename, cwd change) silently didn't persist,
-    // and a first message that failed before establishing left a history file config.json couldn't explain
-    // on reload. Files written under a still-New Codex placeholder are migrated to its real thread ID by
-    // assign_ai_session(), so writing early under the placeholder id is safe
+    // gated on content, not status: a reconnecting chat is New again but must still save; files under a placeholder
+    // id are migrated by assign_ai_session()
     if(projects.isEmpty() || !QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(config_file(sessions));
@@ -259,8 +248,7 @@ void ai_info::save_config() const
             {"agent",agent_name},
             {"provider",provider},
             {"model_settings",model_settings},
-            // never reverts to false once true (New is the only live status this ever sees) -- reload trusts
-            // this instead of assuming Completed for a session id that never actually got a real backend thread
+            // reload trusts this rather than assuming a never-established id is resumable
             {"established",status != session_status::New}}).toJson(QJsonDocument::Compact));
 }
 
@@ -324,18 +312,14 @@ ai_info* ai_info::create(QString session,QString provider,QString agent) // the 
 
 QJsonObject ai_info::record_history(QJsonObject entry)
 {
-    // written immediately regardless of status -- a message that's actually been recorded is real content,
-    // not provisional. A New session's id is never reused for anything else even before it's confirmed
-    // established (Codex's own placeholder gets renamed, not discarded, and assign_ai_session() already
-    // migrates this exact file to the new name when that happens), so there's no "wrong file" risk to guard
-    // against by waiting
+    // written immediately regardless of status: a placeholder id's file is migrated by assign_ai_session()
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     projects.append(entry);
     if(QSettings().value("ai/keep_history",true).toBool())
     {
         QFile file(history_file(sessions));
         if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
-           file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n') < 0)
+           file.write(json_line(entry)) < 0)
             tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
     }
     return entry;

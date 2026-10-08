@@ -17,19 +17,12 @@ class QSettings;
 class QWidget;
 
 enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declaration order is not meaningful -- ai_info::is_running() classifies by name, not ordinal comparison
-// New: chat created, no launch ever attempted yet, OR a launch/reconnection is currently in flight (the OS
-//   process started, waiting for the agent's own protocol confirmation: Codex app-server "thread/start"/
-//   "thread/resume" response, Claude
-//   stream-json "system"/"init") -- the only value that means "no confirmed real id yet, use --session-id,
-//   not --resume". Animated the same as Thinking (both mean "waiting on the agent"), since a fresh chat is
-//   just as much "nothing to show yet" as one actively connecting.
+// New: no confirmed backend id yet (never launched, or a launch/reconnect awaiting the agent's own confirmation);
+//   the only status that means "start a session, do not resume".
 // Thinking: the session is established and the agent is preparing a response.
 // WaitingUser: the agent finished its response and is waiting for the user's next message.
-// Completed: the process ended normally after having been Thinking/WaitingUser -- the session id remains resumable.
-// Failed: the process ended abnormally after having been Thinking/WaitingUser -- functionally the same as Completed
-//   (still resumable with --resume), it only tells the user something went wrong on the last run.
-// A chat that fails before ever reaching Thinking/WaitingUser (FailedToStart, or a crash while still
-// connecting) never becomes Failed -- it has no real id to preserve, so it reverts all the way back to New.
+// Completed / Failed: the process ended normally / abnormally after the session was established; both stay resumable.
+// A chat that fails before it is established returns to New: it has no real id to preserve.
 
 struct ai_info{
     QString sessions,agent_name,provider,project_titles;
@@ -41,11 +34,7 @@ struct ai_info{
     QString current_window = "main"; // persists across requests until changed by "set_window"
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
     QString status_message;
-    // the most recent (or in-flight) local launch attempt -- meaningful only while prepare_ai()/configure_*()
-    // are actively using it; an idle chat just carries the last attempt's resolved values, always fully
-    // overwritten before the next launch reads them. Kept on ai_info itself (not a separate parameter) so
-    // configure_codex()/configure_claude() can read it straight off the chat, and so a not-yet-renamed old
-    // placeholder's launch data stays reachable via ai_info::find() alone
+    // the latest local launch attempt, set by prepare_ai() and read by configure_*()
     QString launch_name,launch_model;
     QUrl launch_model_url;
     static ai_info* find(const QString&);
@@ -75,6 +64,7 @@ QUrl agent_install_url(const QString& provider); // shared by the sidebar's Inst
 void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
 QString ai_dialog_style(); // shared stylesheet for the new-chat/settings dialogs
+QByteArray json_line(const QJsonObject&); // one compact JSON message per line, the framing every agent protocol and the history file use
 QByteArray claude_input(const QString& text); // wraps text in Claude's stream-json stdin message format
 QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text); // wraps text as a Codex app-server "turn/start" request on an idle thread
 QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text); // wraps text as a Codex app-server "turn/steer" request into the thread's currently active turn
