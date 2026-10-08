@@ -2007,19 +2007,27 @@ void AIAgent::google_token_post(QList<QPair<QString,QString>> form,std::function
     {
         reply->deleteLater();
         auto json = QJsonDocument::fromJson(reply->readAll()).object();
-        google_access_token = json["access_token"].toString(); // empty on failure: a revoked refresh token signs out
-        google_refresh_token = json["refresh_token"].toString(google_access_token.isEmpty() ? QString() : google_refresh_token);
+        if(!json.contains("access_token"))
+        {
+            if(json["error"].toString() == "invalid_grant") // revoked: sign out; a network or server error keeps the saved token
+                settings.setValue("ai/google_refresh_token",google_refresh_token = QString());
+            return done(json["error"].toString(reply->errorString()));
+        }
+        google_access_token = json["access_token"].toString();
         google_token_expiry = QDateTime::currentDateTimeUtc().addSecs(json["expires_in"].toInt());
-        settings.setValue("ai/google_refresh_token",google_refresh_token);
-        done(google_access_token.isEmpty() ? json["error"].toString(reply->errorString()) : QString());
+        if(json.contains("refresh_token")) // returned with consent; a refresh keeps the saved one
+            settings.setValue("ai/google_refresh_token",google_refresh_token = json["refresh_token"].toString());
+        done({});
     });
 }
 void AIAgent::with_google_token(std::function<void(QString)> call)
 {
-    if(QDateTime::currentDateTimeUtc().secsTo(google_token_expiry) > 60 || google_refresh_token.isEmpty())
+    if(QDateTime::currentDateTimeUtc().secsTo(google_token_expiry) > 60)
         return call(google_access_token);
+    if(google_refresh_token.isEmpty()) // signed out: never hand on an expired token
+        return call({});
     google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},
-                      [this,call](QString){call(google_access_token);});
+                      [this,call](QString error){call(error.isEmpty() ? google_access_token : QString());});
 }
 bool AIAgent::sign_in_google()
 {
