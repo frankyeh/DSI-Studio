@@ -1471,7 +1471,7 @@ void AIAgent::update_agent_status_label()
     }
     ui->ai_agent_status->show();
     if(info && info->provider == "Web")
-        ui->ai_agent_status->setText("Web"+dot+info->agent_name);
+        ui->ai_agent_status->setText("Web");
     else // a local chat (its own model, since it can differ from the app-wide default once changed) or
          // nothing selected (the app-wide default that the next New Chat will start with) -- same formatting
     {
@@ -1602,20 +1602,20 @@ void AIAgent::write_google_doc(const QJsonObject& doc,const QJsonObject& message
     google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
                [done](QJsonObject reply){done(!reply.isEmpty());});
 }
-void AIAgent::create_web_session(const QString& agent)
+void AIAgent::create_web_session()
 {
     if(google_refresh_token.isEmpty() && !sign_in_google())
         return;
     if(google_folder_id.isEmpty()) // resolved once (found or created), then reused by its ID
         return google_api("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
-                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false")),{},[this,agent](QJsonObject found)
+                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false")),{},[this](QJsonObject found)
         {
-            auto use = [this,agent](QJsonObject folder)
+            auto use = [this](QJsonObject folder)
             {
                 if(folder["id"].toString().isEmpty())
                     return void(QMessageBox::warning(this,"AI Agent","Cannot create the DSI Studio AI folder in Google Drive."));
                 settings.setValue("ai/google_folder_id",google_folder_id = folder["id"].toString());
-                create_web_session(agent);
+                create_web_session();
             };
             if(!found.contains("files")) // a failed search is not "no folder": never create a duplicate
                 return void(QMessageBox::warning(this,"AI Agent","Cannot reach Google Drive."));
@@ -1627,14 +1627,14 @@ void AIAgent::create_web_session(const QString& agent)
     auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
     google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
                {{"name","DSI Studio "+session},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}}},
-               [this,session,agent](QJsonObject file)
+               [this,session](QJsonObject file)
     {
         if(file["id"].toString().isEmpty())
         {
             settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the folder may have been deleted: recreate it next time
             return void(QMessageBox::warning(this,"AI Agent","Cannot create the Web session."));
         }
-        auto* info = ai_info::create(session,"Web",agent);
+        auto* info = ai_info::create(session,"Web","Web"); // agent agnostic: any web-based agent can join
         info->model_settings["google_file_id"] = file["id"].toString();
         add_ai_history(*info,"activity","Web session started.");
         start_web(*info);
@@ -1644,7 +1644,7 @@ void AIAgent::create_web_session(const QString& agent)
             "Connect to DSI Studio. First read the public GitHub file "
             "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
             "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit");
-        QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into "+agent+" and send.");
+        QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
     });
 }
 void AIAgent::start_web(ai_info& info)
@@ -1815,7 +1815,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     agent.addItem("Antigravity",QString("Antigravity"));
     agent.addItem("Grok",QString("Grok"));
     agent.insertSeparator(agent.count());
-    agent.addItem("Web · ChatGPT",QString("Web")); // only Web agents that passed the end-to-end validation are listed
+    agent.addItem("Web",QString("Web"));
     auto* item_model = qobject_cast<QStandardItemModel*>(agent.model());
     auto ready = [&](const QString& provider)
     {
@@ -1913,7 +1913,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
         return false;
 
     provider = agent.currentData().toString();
-    value = provider == "Web" ? QString("ChatGPT") : model_combo_key(model); // Web: the agent name
+    value = provider == "Web" ? QString() : model_combo_key(model);
     info = provider == "Web" ? QJsonObject() : model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
     return true;
 }
@@ -1950,7 +1950,7 @@ void AIAgent::new_chat_dialog()
     if(!run_new_chat_dialog("New Chat","Start",provider,value,info))
         return;
     if(provider == "Web")
-        return create_web_session(value);
+        return create_web_session();
 
     current_agent = provider;
     current_model_name = value;
@@ -2004,7 +2004,7 @@ void AIAgent::on_ai_agent_status_clicked()
         return;
 
     if(provider == "Web")
-        return create_web_session(value);
+        return create_web_session();
 
     current_agent = provider;
     current_model_name = value;
