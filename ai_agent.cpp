@@ -2029,11 +2029,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     root->setSpacing(14);
     root->setContentsMargins(20,20,20,16);
 
-    auto* title = new QLabel("AI Settings");
-    title->setObjectName("ai_dialog_title");
-    root->addWidget(title);
-
-    // a titled settings card appended to the dialog; returns its layout for the section-specific controls
+    // a settings card appended to the dialog (titled unless heading is empty); returns its layout for the section-specific controls
     auto add_card = [root](const QString& heading)
     {
         auto* card = new QFrame;
@@ -2041,14 +2037,17 @@ void AIAgent::on_ai_quick_settings_clicked()
         auto* layout = new QVBoxLayout(card);
         layout->setContentsMargins(14,12,14,12);
         layout->setSpacing(8);
-        auto* label = new QLabel(heading);
-        label->setObjectName("ai_step_heading");
-        layout->addWidget(label);
+        if(!heading.isEmpty())
+        {
+            auto* label = new QLabel(heading);
+            label->setObjectName("ai_step_heading");
+            layout->addWidget(label);
+        }
         root->addWidget(card);
         return layout;
     };
 
-    auto* agent_layout = add_card("Local agents");
+    auto* agent_layout = add_card("Agents");
 
     // one row per agent: name and colored status on the left, a single action button on the right
     QHash<QString,QPair<QLabel*,QPushButton*> > agent_rows;
@@ -2123,6 +2122,27 @@ void AIAgent::on_ai_quick_settings_clicked()
                 refresh_agent_status(provider);
         });
     }
+    // Web: the last row, signed in through Google like the local agents' own sign-in
+    auto* web_label = new QLabel;
+    auto* web_button = new QPushButton;
+    web_button->setMinimumWidth(110);
+    auto* web_row = new QHBoxLayout;
+    web_row->addWidget(web_label,1);
+    web_row->addWidget(web_button);
+    agent_layout->addLayout(web_row);
+    auto refresh_web_row = [this,web_label,web_button]
+    {
+        bool ready = !google_refresh_token.isEmpty();
+        web_label->setText(QString("<b>Web</b><br><span style='color:%1;'>&#9679;</span> "
+                                   "<span style='color:#5f6368;'>%2</span>").arg(ready ? "#34a853" : "#f9ab00",ready ? "Ready · Google Drive › DSI Studio AI" : "Not signed in · Google"));
+        web_button->setText(ready ? "Sign In Again" : "Sign In");
+    };
+    refresh_web_row();
+    connect(web_button,&QPushButton::clicked,&dialog,[this,refresh_web_row]
+    {
+        sign_in_google();
+        refresh_web_row();
+    });
     connect(this,&AIAgent::agent_status_changed,&dialog,
             [&,refresh_agent_row](const QString& provider)
     {
@@ -2192,29 +2212,7 @@ void AIAgent::on_ai_quick_settings_clicked()
         });
     });
 
-    auto* web_layout = add_card("Web");
-    auto* web_body = new QLabel("Web chats use your Google account. Web chat data is stored in the "
-                                "“DSI Studio AI” folder in your Google account.");
-    web_body->setObjectName("ai_step_body");
-    web_body->setWordWrap(true);
-    web_layout->addWidget(web_body);
-    QPushButton google_button;
-    auto* google_button_row = new QHBoxLayout;
-    google_button_row->addWidget(&google_button);
-    google_button_row->addStretch();
-    web_layout->addLayout(google_button_row);
-    auto update_google_button = [&]
-    {
-        google_button.setText(google_refresh_token.isEmpty() ? "Sign in with Google" : "Google account ready ✓ · Change Account");
-    };
-    update_google_button();
-    connect(&google_button,&QPushButton::clicked,&dialog,[&]
-    {
-        sign_in_google();
-        update_google_button();
-    });
-
-    auto* chat_layout = add_card("Chat behavior");
+    auto* chat_layout = add_card({});
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
     QCheckBox show_reasoning("Show reasoning");
