@@ -2031,11 +2031,11 @@ void AIAgent::with_google_token(std::function<void(QString)> call)
     google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},
                       [this,call](QString error){call(error.isEmpty() ? google_access_token : QString());});
 }
-void AIAgent::google_drive(const QByteArray& verb,const QString& path,const QJsonObject& body,std::function<void(QJsonObject)> done)
+void AIAgent::google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done)
 {
-    with_google_token([this,verb,path,body,done](QString token)
+    with_google_token([this,verb,url,body,done](QString token)
     {
-        QNetworkRequest request(QUrl("https://www.googleapis.com/drive/v3/"+path));
+        QNetworkRequest request{QUrl(url)};
         request.setRawHeader("Authorization","Bearer "+token.toUtf8());
         request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
         auto* reply = web_manager.sendCustomRequest(request,verb,body.isEmpty() ? QByteArray() : QJsonDocument(body).toJson(QJsonDocument::Compact));
@@ -2046,18 +2046,35 @@ void AIAgent::google_drive(const QByteArray& verb,const QString& path,const QJso
         });
     });
 }
+void AIAgent::write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done)
+{
+    auto content = doc["body"].toObject()["content"].toArray();
+    auto end = content.isEmpty() ? 0 : content.last().toObject()["endIndex"].toInt();
+    QJsonArray requests;
+    if(end > 2) // everything except the final newline every Doc keeps
+        requests.append(QJsonObject{{"deleteContentRange",QJsonObject{{"range",QJsonObject{{"startIndex",1},{"endIndex",end-1}}}}}});
+    requests.append(QJsonObject{{"insertText",QJsonObject{{"location",QJsonObject{{"index",1}}},
+        {"text",QString(QJsonDocument(message).toJson(QJsonDocument::Compact))}}}});
+    QJsonObject body{{"requests",requests}};
+    if(doc.contains("revisionId")) // fails instead of overwriting a message written after our read
+        body["writeControl"] = QJsonObject{{"requiredRevisionId",doc["revisionId"]}};
+    google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
+               [done](QJsonObject reply){done(!reply.isEmpty());});
+}
 void AIAgent::create_google_session()
 {
     auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    google_drive("POST","files?fields=id",{{"name","DSI Studio "+session+" [0]"},{"mimeType","application/vnd.google-apps.document"}},
-                 [this,session](QJsonObject file)
+    google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
+               {{"name","DSI Studio "+session},{"mimeType","application/vnd.google-apps.document"}},[this,session](QJsonObject file)
     {
         if(file["id"].toString().isEmpty())
             return void(QMessageBox::warning(this,"AI Agent","Cannot create the Google Doc."));
         google_file_id = file["id"].toString();
         google_session_id = session;
+        google_seen_version.clear();
         google_last_id = 0;
         google_pending_result = QJsonObject();
+        write_google_doc({},{{"dsi_bridge",true},{"session",session},{"from","dsi"},{"state","ready"}},[](bool){});
         auto url = "https://docs.google.com/document/d/"+google_file_id+"/edit";
         auto* info = ai_info::create(session,"AgentServer","Google Drive"); // a log record: no local process to Send/Stop
         add_ai_history(*info,"activity","Google Drive session: "+url);
@@ -2072,53 +2089,64 @@ void AIAgent::poll_google_drive()
     if(google_file_id.isEmpty())
         return;
     if(!google_pending_result.isEmpty())
-        return publish_google_result(); // a previous result reply failed; retry it, never re-execute
-    // the agent comments first, then bumps the title suffix [N]: only a new N is worth a comments.list
-    google_drive("GET","files/"+google_file_id+"?fields=name",{},[this](QJsonObject file)
+        return publish_google_result(); // a previous result write failed; retry it, never re-execute
+    // file.version changes on every write (ours too); only then is the Doc body worth reading
+    google_api("GET","https://www.googleapis.com/drive/v3/files/"+google_file_id+"?fields=version",{},[this](QJsonObject file)
     {
-        auto id = file["name"].toString().section('[',-1).section(']',0,0).toLongLong();
-        if(id <= google_last_id)
+        if(file["version"].toString() == google_seen_version)
             return google_timer.start(500);
-        google_drive("GET","files/"+google_file_id+"/comments?pageSize=100&fields=comments(id,content)",{},[this,id](QJsonObject list)
+        google_seen_version = file["version"].toString();
+        google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this](QJsonObject doc)
         {
-            for(const auto& value : list["comments"].toArray())
+            if(doc.isEmpty()) // read failed: look again
             {
-                auto request = QJsonDocument::fromJson(value.toObject()["content"].toString().toUtf8()).object();
-                if(!request["dsi_session_request"].toBool() || request["id"].toInteger() != id ||
-                   request["session"].toString() != google_session_id)
-                    continue;
-                google_pending_comment = value.toObject()["id"].toString();
-                QJsonObject claim{{"dsi_session_result",true},{"id",id},{"state","processing"}};
-                // the claim must be on Google before executing: a crash after it never re-runs the command
-                return google_drive("POST","files/"+google_file_id+"/comments/"+google_pending_comment+"/replies?fields=id",
-                                    {{"content",QString(QJsonDocument(claim).toJson(QJsonDocument::Compact))}},[this,id,request](QJsonObject claimed)
-                {
-                    if(claimed.isEmpty())
-                        return google_timer.start(5000); // not claimed, so not executed: try again
-                    google_last_id = id;
-                    auto forwarded = request;
-                    forwarded.remove("id");
-                    forwarded.remove("dsi_session_request");
-                    QByteArray reply_bytes;
-                    ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
-                    auto response = QJsonDocument::fromJson(reply_bytes).object();
-                    google_pending_result = QJsonObject{{"dsi_session_result",true},{"id",id},
-                        {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
-                    publish_google_result();
-                });
+                google_seen_version.clear();
+                return google_timer.start(5000);
             }
-            google_timer.start(500); // the request comment is not visible yet
+            QString text;
+            for(const auto& block : doc["body"].toObject()["content"].toArray())
+                for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
+                    text += element.toObject()["textRun"].toObject()["content"].toString();
+            auto request = QJsonDocument::fromJson(text.trimmed().toUtf8()).object();
+            auto id = request["id"].toInteger();
+            if(request["session"].toString() != google_session_id || request["from"].toString() != "agent" ||
+               request["state"].toString() != "request" || id <= google_last_id)
+                return google_timer.start(500); // our own write, or nothing new
+            // claim with the revision we read: a crash after it never re-runs the command
+            write_google_doc(doc,{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
+                             [this,id,request](bool claimed)
+            {
+                if(!claimed)
+                {
+                    google_seen_version.clear(); // re-read: not claimed, so not executed
+                    return google_timer.start(5000);
+                }
+                google_last_id = id;
+                auto forwarded = request;
+                for(auto key : {"dsi_bridge","id","from","state"})
+                    forwarded.remove(key);
+                QByteArray reply_bytes;
+                ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
+                auto response = QJsonDocument::fromJson(reply_bytes).object();
+                google_pending_result = QJsonObject{{"dsi_bridge",true},{"session",google_session_id},{"id",id},{"from","dsi"},
+                    {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
+                publish_google_result();
+            });
         });
     });
 }
 void AIAgent::publish_google_result()
 {
-    google_drive("POST","files/"+google_file_id+"/comments/"+google_pending_comment+"/replies?fields=id",
-                 {{"content",QString(QJsonDocument(google_pending_result).toJson(QJsonDocument::Compact))}},[this](QJsonObject published)
+    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this](QJsonObject doc)
     {
-        if(!published.isEmpty())
-            google_pending_result = QJsonObject();
-        google_timer.start(published.isEmpty() ? 5000 : 500);
+        if(doc.isEmpty()) // without the current body the write would append instead of replace
+            return google_timer.start(5000);
+        write_google_doc(doc,google_pending_result,[this](bool published)
+        {
+            if(published)
+                google_pending_result = QJsonObject();
+            google_timer.start(published ? 500 : 5000);
+        });
     });
 }
 bool AIAgent::sign_in_google()
