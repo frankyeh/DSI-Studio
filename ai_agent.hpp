@@ -81,8 +81,8 @@ class AIAgent : public QMainWindow
     quint64 github_connection_id = 0; // bumped on connect/disconnect; rejects callbacks from a superseded connection even to the same URL
     QString web_agent_session_id; // the actual chat this GitHub connection belongs to, independent of sidebar selection; survives Stop/Resume, cleared only on a fresh (non-resume) start
 
-    // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens live in memory only -- never logged, persisted or written to chat history
-    QString google_access_token,google_refresh_token;
+    // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens are never logged or written to chat history
+    QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved like the GitHub token, so a restart stays signed in
     QDateTime google_token_expiry;
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; a failure clears them
