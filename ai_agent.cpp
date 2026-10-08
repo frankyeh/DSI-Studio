@@ -1574,6 +1574,8 @@ void AIAgent::google_api(const QByteArray& verb,const QString& url,const QJsonOb
 {
     with_google_token([this,verb,url,body,done](QString token)
     {
+        if(token.isEmpty()) // signed out: fail without a doomed request
+            return done({});
         QNetworkRequest request{QUrl(url)};
         request.setRawHeader("Authorization","Bearer "+token.toUtf8());
         request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
@@ -1615,6 +1617,8 @@ void AIAgent::create_web_session(const QString& agent)
                 settings.setValue("ai/google_folder_id",google_folder_id = folder["id"].toString());
                 create_web_session(agent);
             };
+            if(!found.contains("files")) // a failed search is not "no folder": never create a duplicate
+                return void(QMessageBox::warning(this,"AI Agent","Cannot reach Google Drive."));
             if(auto files = found["files"].toArray();!files.isEmpty())
                 return use(files[0].toObject());
             google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
@@ -1634,8 +1638,7 @@ void AIAgent::create_web_session(const QString& agent)
         info->model_settings["google_file_id"] = file["id"].toString();
         add_ai_history(*info,"activity","Web session started.");
         start_web(*info);
-        info->save_config();
-        write_google_doc({},{{"dsi_bridge",true},{"session",session},{"from","dsi"},{"state","ready"}},[](bool){});
+        info->save_config(); // the first poll writes "ready" into the empty Doc
         ui->ai_project_list->setCurrentItem(info->project_items);
         QApplication::clipboard()->setText(
             "Connect to DSI Studio. First read the public GitHub file "
@@ -1665,6 +1668,11 @@ void AIAgent::stop_web()
     web_timer.stop();
     set_ai_status(web_session_id,session_status::Completed,"Web stopped.");
 }
+QString AIAgent::google_doc_url() const // only what write_google_doc() and the mailbox need
+{
+    return "https://docs.googleapis.com/v1/documents/"+google_file_id+
+           "?fields=revisionId,body(content(endIndex,paragraph(elements(textRun(content)))))";
+}
 void AIAgent::poll_web()
 {
     if(google_file_id.isEmpty())
@@ -1672,7 +1680,7 @@ void AIAgent::poll_web()
     if(!web_pending_result.isEmpty())
         return publish_web_result(); // a previous result write failed; retry it, never re-execute
     // the body is one tiny JSON message, so it is read directly (Drive file.version proved an unreliable doorbell)
-    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this,file = google_file_id](QJsonObject doc)
+    google_api("GET",google_doc_url(),{},[this,file = google_file_id](QJsonObject doc)
     {
         if(file != google_file_id) // stopped or switched while in flight
             return;
@@ -1680,8 +1688,20 @@ void AIAgent::poll_web()
         for(const auto& block : doc["body"].toObject()["content"].toArray())
             for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
                 text += element.toObject()["textRun"].toObject()["content"].toString();
+        if(!doc.isEmpty() && text.trimmed().isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
+            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"from","dsi"},{"state","ready"}},
+                                    [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
         auto request = QJsonDocument::fromJson(text.trimmed().toUtf8()).object();
         auto id = request["id"].toInteger();
+        if(request["session"].toString() == web_session_id && request["from"].toString() == "dsi" &&
+           request["state"].toString() == "processing" && id > web_last_id)
+        {
+            // claimed but never finished (DSI Studio stopped mid-request): report it instead of re-running it
+            web_last_id = id;
+            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","error"},
+                {"response",QJsonObject{{"status","error"},{"error","outcome unknown: DSI Studio stopped while running this request; check with list_window"}}}};
+            return publish_web_result();
+        }
         if(request["session"].toString() != web_session_id || request["from"].toString() != "agent" ||
            request["state"].toString() != "request" || id <= web_last_id)
             return web_timer.start(500); // our own write, a failed read, or nothing new
@@ -1708,7 +1728,7 @@ void AIAgent::poll_web()
 }
 void AIAgent::publish_web_result()
 {
-    google_api("GET","https://docs.googleapis.com/v1/documents/"+google_file_id,{},[this,file = google_file_id](QJsonObject doc)
+    google_api("GET",google_doc_url(),{},[this,file = google_file_id](QJsonObject doc)
     {
         if(file != google_file_id)
             return;
@@ -3129,7 +3149,8 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Disabled:
         return;
     case send_action::Resume: // only reachable for a Web chat, see current_send_action()
-        start_web(*info);
+        if(!google_refresh_token.isEmpty() || sign_in_google())
+            start_web(*info);
         return;
     case send_action::Stop: // only reachable when info exists, see current_send_action()
         if(info->provider == "Web")
