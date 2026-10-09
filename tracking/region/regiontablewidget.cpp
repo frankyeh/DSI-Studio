@@ -1002,14 +1002,12 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             std::swap(cmd[1],cmd[2]);
         if(cmd[1].empty() && tipl::begins_with(cmd[0],"save_"))
             return run->failed("usage: "+cmd[0]+" <output file path>");
-        auto regions = get_checked_regions();
-        auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
-        auto devices = cur_tracking_window.deviceWidget->devices;
-
         std::string result,title,default_file(cur_tracking_window.history.file_stem(false/*basic stem*/));
         tipl::progress p(cmd[0],true);
         if(tipl::contains(cmd[0],"t2r"))
         {
+            auto regions = get_checked_regions();
+            auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
             if(regions.empty())
                 return run->failed("please add parcellation regions");
             if(tracts.empty())
@@ -1026,53 +1024,51 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             }
             title = "Tract-To-Region Connectome";
             default_file += "_" + tracts.front()->name + "_t2r.txt";
-
         }
-        if(tipl::contains(cmd[0],"tract"))
+        else if(tipl::ends_with(cmd[0],"recognition")) // the indexed tract itself, checked or not
         {
+            // cmd[2] : tract id for recognition (default: the selected tract, or the first one when none is selected)
+            int cur_row = run->from_cmd(2,std::max(0,cur_tracking_window.tractWidget->currentRow()));
+            if(cur_row < 0 || cur_row >= int(cur_tracking_window.tractWidget->tract_models.size()))
+                return run->failed("invalid tract index: " + std::to_string(cur_row));
+            if(!cur_tracking_window.tractWidget->tract_models[cur_row]->get_visible_track_count())
+                return run->failed("tract " + std::to_string(cur_row) + " has no tracks");
+            if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
+                return run->failed(cur_tracking_window.handle->error_msg);
+
+            auto lock = cur_tracking_window.tractWidget->tract_rendering[cur_row]->start_reading();
+            auto sorted_list = cur_tracking_window.handle->recognize_and_sort(cur_tracking_window.tractWidget->tract_models[cur_row]);
+            if(sorted_list.empty())
+                return run->failed("cannot recognize tracks in tract " + std::to_string(cur_row));
+            std::ostringstream out;
+            for(const auto& each : sorted_list)
+                if(each.first != 0.0f)
+                    out << each.first*100.0f << "%\t" << each.second << std::endl;
+            result = out.str();
+            title = "Tract Recognition";
+            default_file += "_tract_names.txt";
+        }
+        else if(tipl::contains(cmd[0],"tract"))
+        {
+            auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
             if(tracts.empty())
                 return run->failed("please specify tract(s)");
-            if(tipl::ends_with(cmd[0],"recognition"))
-            {
-                // cmd[2] : tract id for recognition (default: the selected tract, or the first one when none is selected)
-                int cur_row = run->from_cmd(2,std::max(0,cur_tracking_window.tractWidget->currentRow()));
-                if(cur_row < 0 || cur_row >= int(cur_tracking_window.tractWidget->tract_models.size()))
-                    return run->failed("invalid tract index: " + cmd[2]);
-                if(!cur_tracking_window.tractWidget->tract_models[cur_row]->get_visible_track_count())
-                    return run->failed("tract " + cmd[2] + " has no tracks");
-                if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
-                    return run->failed(cur_tracking_window.handle->error_msg);
-
-                auto lock = cur_tracking_window.tractWidget->tract_rendering[cur_row]->start_reading();
-                auto sorted_list = cur_tracking_window.handle->recognize_and_sort(cur_tracking_window.tractWidget->tract_models[cur_row]);
-                if(sorted_list.empty())
-                    return run->failed("cannot recognize tracks in tract " + cmd[2]);
-                std::ostringstream out;
-                for(const auto& each : sorted_list)
-                    if(each.first != 0.0f)
-                        out << each.first*100.0f << "%\t" << each.second << std::endl;
-                result = out.str();
-                title = "Tract Recognition";
-                default_file += "_tract_names.txt";
-            }
-            else
-            {
-                get_tract_statistics(cur_tracking_window.handle,tracts,result);
-                title = "Tract Statistics";
-                default_file += "_tract_stat.txt";
-            }
-
+            get_tract_statistics(cur_tracking_window.handle,tracts,result);
+            title = "Tract Statistics";
+            default_file += "_tract_stat.txt";
         }
-        if(tipl::contains(cmd[0],"region"))
+        else if(tipl::contains(cmd[0],"region"))
         {
+            auto regions = get_checked_regions();
             if(regions.empty())
                 return run->failed("please specify regions");
             get_regions_statistics(cur_tracking_window.handle,regions,result);
             title = "Region Statistics";
             default_file += "_region_stat.txt";
         }
-        if(tipl::contains(cmd[0],"device"))
+        else // device
         {
+            const auto& devices = cur_tracking_window.deviceWidget->devices;
             if(devices.empty())
                 return run->failed("please specify devices");
             get_devices_statistics(cur_tracking_window.handle,devices,result);
