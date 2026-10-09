@@ -77,6 +77,7 @@ class AIAgent : public QMainWindow
     // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, polled directly
     QTimer web_timer;
     QString google_folder_id = settings.value("ai/google_folder_id").toString();
+    QString google_error; // the last Google failure, shown in the Web status; never holds a token
     QString google_file_id,web_session_id; // the connected chat's Doc (empty when stopped) and session
     qint64 web_last_id = 0;
     QElapsedTimer web_idle; // polling stops after 3 minutes without a request
