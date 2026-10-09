@@ -516,6 +516,11 @@ void GLWidget::paintGL()
             break;
 
     }
+    // translucent blending also lowers the framebuffer alpha: make it opaque so grabs (PNG, clipboard, ROI 3-slice) match the screen
+    glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);
+    glClearColor(0.0f,0.0f,0.0f,1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 
     painter.endNativePainting();
     painter.end();
