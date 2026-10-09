@@ -209,6 +209,7 @@ AIAgent::AIAgent(MainWindow* parent):
     ui->ai_status->hide();
 
     web_timer.setSingleShot(true);
+    web_manager.setTransferTimeout(30000); // a hung Google request would otherwise stall polling for good
     connect(&web_timer,&QTimer::timeout,this,&AIAgent::poll_web);
 
     refresh_agent_executables();
@@ -1390,24 +1391,41 @@ void AIAgent::with_google_token(std::function<void(QString)> call)
     if(QDateTime::currentDateTimeUtc().secsTo(google_token_expiry) > 60)
         return call(google_access_token);
     if(google_refresh_token.isEmpty()) // signed out: never hand on an expired token
+    {
+        google_error = "signed out of Google";
         return call({});
-    google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},
-                      [this,call](QString error){call(error.isEmpty() ? google_access_token : QString());});
+    }
+    google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},[this,call](QString error)
+    {
+        if(!error.isEmpty())
+            google_error = "Google sign-in failed: "+error;
+        call(error.isEmpty() ? google_access_token : QString());
+    });
 }
 void AIAgent::google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done)
 {
-    with_google_token([this,verb,url,body,done](QString token)
+    auto failed = [this,done]
+    {
+        if(!google_file_id.isEmpty()) // a live Web chat shows it; polling retries until the idle limit stops it
+            set_ai_status(web_session_id,session_status::Failed,"Web: "+google_error+"; retrying.");
+        done({});
+    };
+    with_google_token([this,verb,url,body,done,failed](QString token)
     {
         if(token.isEmpty()) // signed out: fail without a doomed request
-            return done({});
+            return failed();
         QNetworkRequest request{QUrl(url)};
         request.setRawHeader("Authorization","Bearer "+token.toUtf8());
         request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
         auto* reply = web_manager.sendCustomRequest(request,verb,body.isEmpty() ? QByteArray() : QJsonDocument(body).toJson(QJsonDocument::Compact));
-        connect(reply,&QNetworkReply::finished,this,[reply,done]
+        connect(reply,&QNetworkReply::finished,this,[this,reply,done,failed]
         {
             reply->deleteLater();
-            done(reply->error() == QNetworkReply::NoError ? QJsonDocument::fromJson(reply->readAll()).object() : QJsonObject());
+            auto json = QJsonDocument::fromJson(reply->readAll()).object();
+            if(reply->error() == QNetworkReply::NoError)
+                return done(json);
+            google_error = json["error"].toObject()["message"].toString(reply->errorString()); // Google's own reason when it gives one
+            failed();
         });
     });
 }
@@ -1476,7 +1494,8 @@ void AIAgent::start_web(ai_info& info)
         web_pending_result = QJsonObject();
     }
     google_file_id = info.model_settings["google_file_id"].toString();
-    set_ai_status(info.sessions,session_status::WaitingUser,"Web connected; waiting for a request.");
+    google_error = "the session Doc was never read"; // the first good read clears it and shows the chat connected
+    set_ai_status(info.sessions,session_status::WaitingUser,"Web: reading the session Doc.");
     web_idle.start();
     web_timer.start(0);
     QApplication::clipboard()->setText( // on every start and Resume: the agent may be a new chat
@@ -1504,21 +1523,30 @@ void AIAgent::poll_web()
         return;
     if(!web_pending_result.isEmpty())
         return publish_web_result(); // a previous result write failed; retry it, never re-execute
-    if(web_idle.hasExpired(180000))
-        return stop_web("Web stopped after 3 minutes without a request; press Resume to continue.");
+    if(web_idle.hasExpired(180000)) // also bounds failing reads
+        return stop_web(google_error.isEmpty() ? QString("Web stopped after 3 minutes without a request; press Resume to continue.") :
+                        "Web stopped: "+google_error+"; press Resume to retry.");
     // the body is one tiny JSON message, so it is read directly (Drive file.version proved an unreliable doorbell)
     google_api("GET",google_doc_url(),{},[this,file = google_file_id](QJsonObject doc)
     {
         if(file != google_file_id) // stopped or switched while in flight
             return;
+        if(doc.isEmpty()) // failed, and shown by google_api()
+            return web_timer.start(5000);
+        if(!google_error.isEmpty()) // the first good read after a start, Resume, or failure
+        {
+            google_error.clear();
+            set_ai_status(web_session_id,session_status::WaitingUser,"Web connected; waiting for a request.");
+        }
         QString text;
         for(const auto& block : doc["body"].toObject()["content"].toArray())
             for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
                 text += element.toObject()["textRun"].toObject()["content"].toString();
-        if(!doc.isEmpty() && text.trimmed().isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
+        if(text.trimmed().isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
             return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"from","dsi"},{"state","ready"}},
                                     [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
-        auto request = QJsonDocument::fromJson(text.trimmed().toUtf8()).object();
+        QJsonParseError parse_error;
+        auto request = QJsonDocument::fromJson(text.trimmed().toUtf8(),&parse_error).object();
         auto id = request["id"].toInteger();
         if(request["session"].toString() == web_session_id && request["from"].toString() == "dsi" &&
            request["state"].toString() == "processing" && id > web_last_id)
@@ -1529,9 +1557,22 @@ void AIAgent::poll_web()
                 {"response",QJsonObject{{"status","error"},{"error","outcome unknown: DSI Studio stopped while running this request; check with list_window"}}}};
             return publish_web_result();
         }
-        if(request["session"].toString() != web_session_id || request["from"].toString() != "agent" ||
-           request["state"].toString() != "request" || id <= web_last_id)
-            return web_timer.start(500); // our own write, a failed read, or nothing new
+        if(request["from"].toString() == "dsi")
+            return web_timer.start(500); // our own write
+        // anything else is a request: a malformed one is answered, or the agent waits forever
+        auto error = parse_error.error != QJsonParseError::NoError ?
+                        "invalid JSON (" + parse_error.errorString() + " at offset " + QString::number(parse_error.offset) + ")" :
+                     request["session"].toString() != web_session_id ? QString("wrong session") :
+                     request["from"].toString() != "agent" || request["state"].toString() != "request" ?
+                        QString(R"(needs "from":"agent" and "state":"request")") :
+                     id <= web_last_id ? "id must be greater than " + QString::number(web_last_id) : QString();
+        if(!error.isEmpty())
+        {
+            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id > web_last_id ? id : web_last_id+1},
+                {"from","dsi"},{"state","error"},{"response",QJsonObject{{"status","error"},
+                {"error",error + "; nothing was run. Resend the whole request as one line of compact JSON"}}}};
+            return publish_web_result();
+        }
         // claim with the revision we read: a crash after it never re-runs the command
         write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
                          [this,file,id,request](bool claimed)
