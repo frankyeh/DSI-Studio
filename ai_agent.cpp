@@ -10,6 +10,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -23,6 +24,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QMenu>
+#include <QMimeDatabase>
 #include <QNetworkAccessManager>
 #include <QNetworkProxy>
 #include <QNetworkReply>
@@ -1627,6 +1629,69 @@ void AIAgent::publish_web_result()
             web_timer.start(published ? 500 : 5000);
         });
     });
+}
+QJsonObject AIAgent::upload_web_file(const ai_info& info,const QString& file_name,QString& error)
+{
+    QFileInfo file_info(file_name); // relative to the chat's working directory, which dispatch_cmd() has made current
+    QFile file(file_info.absoluteFilePath());
+    if(info.provider != "Web" || !web_connected(info) || google_folder_id.isEmpty())
+        error = "web_upload is available only in the active Web session";
+    else if(!file_info.exists())
+        error = "file does not exist: "+file_name;
+    else if(!file_info.isFile())
+        error = "not a regular file: "+file_name;
+    else if(!file.open(QIODevice::ReadOnly))
+        error = "cannot open file: "+file_name;
+    if(!error.isEmpty())
+        return {};
+    auto mime = QMimeDatabase().mimeTypeForFile(file_info).name(); // application/octet-stream when unknown
+    // one resumable upload for every size: the file is streamed from disk, never held in memory
+    QJsonObject uploaded;
+    bool done = false;
+    QEventLoop loop;
+    auto finish = [&](QNetworkReply* reply)
+    {
+        auto json = QJsonDocument::fromJson(reply ? reply->readAll() : QByteArray()).object();
+        if(!reply || reply->error() != QNetworkReply::NoError)
+            error = "Google Drive upload failed: "+(reply ? json["error"].toObject()["message"].toString(reply->errorString()) : google_error);
+        uploaded = json;
+        done = true;
+        loop.quit();
+    };
+    with_google_token([&](QString token)
+    {
+        if(token.isEmpty())
+            return finish(nullptr);
+        QNetworkRequest start(QUrl("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id"));
+        start.setRawHeader("Authorization","Bearer "+token.toUtf8());
+        start.setHeader(QNetworkRequest::ContentTypeHeader,"application/json; charset=UTF-8");
+        start.setRawHeader("X-Upload-Content-Type",mime.toUtf8());
+        start.setRawHeader("X-Upload-Content-Length",QByteArray::number(file.size()));
+        auto* session = web_manager.post(start,QJsonDocument(QJsonObject{{"name",web_session_id+"_"+file_info.fileName()},
+                                                                         {"parents",QJsonArray{google_folder_id}}}).toJson(QJsonDocument::Compact));
+        connect(session,&QNetworkReply::finished,this,[&,session,token]
+        {
+            session->deleteLater();
+            if(session->error() != QNetworkReply::NoError || !session->hasRawHeader("Location"))
+                return finish(session);
+            QNetworkRequest put{QUrl::fromEncoded(session->rawHeader("Location"))};
+            put.setRawHeader("Authorization","Bearer "+token.toUtf8());
+            put.setHeader(QNetworkRequest::ContentTypeHeader,mime);
+            auto* upload = web_manager.put(put,&file); // the 30 s timeout counts idle time, so a long upload still completes
+            connect(upload,&QNetworkReply::finished,this,[&,upload]
+            {
+                upload->deleteLater();
+                finish(upload);
+            });
+        });
+    });
+    if(!done) // with_google_token() may already have finished
+        loop.exec();
+    if(!error.isEmpty())
+        return {};
+    auto id = uploaded["id"].toString();
+    return {{"name",file_info.fileName()},{"drive_id",id},{"mime_type",mime},{"size",file.size()},
+            {"url","https://drive.google.com/file/d/"+id+"/view"}};
 }
 bool AIAgent::sign_in_google()
 {
