@@ -1517,6 +1517,14 @@ QString AIAgent::google_doc_url() const // only what write_google_doc() and the 
     return "https://docs.googleapis.com/v1/documents/"+google_file_id+
            "?fields=revisionId,body(content(endIndex,paragraph(elements(textRun(content)))))";
 }
+static QString web_text(const QJsonObject& doc) // the mailbox message: the Doc body as one trimmed string
+{
+    QString text;
+    for(const auto& block : doc["body"].toObject()["content"].toArray())
+        for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
+            text += element.toObject()["textRun"].toObject()["content"].toString();
+    return text.trimmed();
+}
 void AIAgent::poll_web()
 {
     if(google_file_id.isEmpty())
@@ -1538,15 +1546,12 @@ void AIAgent::poll_web()
             google_error.clear();
             set_ai_status(web_session_id,session_status::WaitingUser,"Web connected; waiting for a request.");
         }
-        QString text;
-        for(const auto& block : doc["body"].toObject()["content"].toArray())
-            for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
-                text += element.toObject()["textRun"].toObject()["content"].toString();
-        if(text.trimmed().isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
+        auto text = web_text(doc);
+        if(text.isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
             return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"from","dsi"},{"state","ready"}},
                                     [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
         QJsonParseError parse_error;
-        auto request = QJsonDocument::fromJson(text.trimmed().toUtf8(),&parse_error).object();
+        auto request = QJsonDocument::fromJson(text.toUtf8(),&parse_error).object();
         auto id = request["id"].toInteger();
         if(request["session"].toString() == web_session_id && request["from"].toString() == "dsi" &&
            request["state"].toString() == "processing" && id > web_last_id)
@@ -1566,13 +1571,11 @@ void AIAgent::poll_web()
                      request["from"].toString() != "agent" || request["state"].toString() != "request" ?
                         QString(R"(needs "from":"agent" and "state":"request")") :
                      id <= web_last_id ? "id must be greater than " + QString::number(web_last_id) : QString();
-        if(!error.isEmpty())
-        {
-            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id > web_last_id ? id : web_last_id+1},
+        if(!error.isEmpty()) // nothing ran, so written with this read's revision (never over a newer message) and re-checked if it fails
+            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id > web_last_id ? id : web_last_id+1},
                 {"from","dsi"},{"state","error"},{"response",QJsonObject{{"status","error"},
-                {"error",error + "; nothing was run. Resend the whole request as one line of compact JSON"}}}};
-            return publish_web_result();
-        }
+                {"error",error + "; nothing was run. Resend the whole request as one line of compact JSON"}}}},
+                [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
         // claim with the revision we read: a crash after it never re-runs the command
         write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
                          [this,file,id,request](bool claimed)
@@ -1602,6 +1605,16 @@ void AIAgent::publish_web_result()
             return;
         if(doc.isEmpty()) // without the current body the write would append instead of replace
             return web_timer.start(5000);
+        auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
+        if(current["from"].toString() != "dsi" || current["state"].toString() != "processing" ||
+           current["id"].toInteger() != web_pending_result["id"].toInteger())
+        {
+            // only our own "processing" is replaced: anything else means the result already landed (its acknowledgement
+            // was lost) or the agent has moved on, and a newer request must never be overwritten
+            web_pending_result = QJsonObject();
+            web_idle.start();
+            return web_timer.start(500);
+        }
         write_google_doc(doc,web_pending_result,[this,file](bool published)
         {
             if(file != google_file_id)
