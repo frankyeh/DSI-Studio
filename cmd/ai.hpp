@@ -65,10 +65,6 @@ void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink 
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
 QString ai_dialog_style(); // shared stylesheet for the new-chat/settings dialogs
 QByteArray json_line(const QJsonObject&); // one compact JSON message per line, the framing every agent protocol and the history file use
-QByteArray claude_input(const QString& text); // wraps text in Claude's stream-json stdin message format
-QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text); // wraps text as a Codex app-server "turn/start" request on an idle thread
-QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text); // wraps text as a Codex app-server "turn/steer" request into the thread's currently active turn
-QByteArray codex_turn_interrupt(const QString& thread_id,const QString& turn_id); // a Codex app-server "turn/interrupt" request -- stops the active turn without ending the process/session, unlike QProcess::kill()
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
 QString model_combo_key(const QComboBox& model); // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
 void set_model_selector(QComboBox& model,const QJsonObject& profiles,
