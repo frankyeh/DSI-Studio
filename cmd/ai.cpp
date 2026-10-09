@@ -145,34 +145,6 @@ QByteArray json_line(const QJsonObject& message)
     return QJsonDocument(message).toJson(QJsonDocument::Compact)+'\n';
 }
 
-QByteArray claude_input(const QString& text)
-{
-    return json_line({
-        {"type","user"},{"message",QJsonObject{
-            {"role","user"},{"content",QJsonArray{QJsonObject{
-                {"type","text"},{"text",text}}}}}}});
-}
-
-QByteArray codex_turn_start(const QString& id,const QString& thread_id,const QString& text)
-{
-    return json_line({{"id",id},{"method","turn/start"},
-        {"params",QJsonObject{{"threadId",thread_id},
-            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}});
-}
-
-QByteArray codex_turn_steer(const QString& thread_id,const QString& turn_id,const QString& text)
-{
-    return json_line({{"id","turn_steer"},{"method","turn/steer"},
-        {"params",QJsonObject{{"threadId",thread_id},{"expectedTurnId",turn_id},
-            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}});
-}
-
-QByteArray codex_turn_interrupt(const QString& thread_id,const QString& turn_id)
-{
-    return json_line({{"id","turn_interrupt"},{"method","turn/interrupt"},
-        {"params",QJsonObject{{"threadId",thread_id},{"turnId",turn_id}}}});
-}
-
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
 {
     auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
