@@ -134,22 +134,6 @@ QByteArray grok_initialize()
     return json_line({{"jsonrpc","2.0"},{"id","initialize"},{"method","initialize"},
         {"params",QJsonObject{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}}}});
 }
-QByteArray muse_turn_start(const QString& session,const QString& text)
-{
-    auto id = muse_uuid_v7();
-    return muse_command(id,"turn/start",QJsonObject{{"sessionId",session},{"ifBusy","steer"},
-        {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}});
-}
-QByteArray muse_turn_cancel(const QString& session,const QString& turn)
-{
-    auto id = muse_uuid_v7();
-    return muse_command(id,"turn/cancel",QJsonObject{{"sessionId",session},{"turnId",turn}});
-}
-QByteArray antigravity_input(const QString& text)
-{
-    return json_line({{"event","user"},
-        {"message",QJsonObject{{"content",text}}}});
-}
 
 void AIAgent::ai_log(QString text)
 {
@@ -229,11 +213,12 @@ AIAgent::AIAgent(MainWindow* parent):
 
     refresh_agent_executables();
     refresh_agent_status();
-    if(agent_entries["Codex"].executable.isEmpty())
-        current_agent = !agent_entries["Claude"].executable.isEmpty() ? "Claude" :
-                        !agent_entries["Muse"].executable.isEmpty() ? "Muse" :
-                        !agent_entries["Antigravity"].executable.isEmpty() ? "Antigravity" :
-                        !agent_entries["Grok"].executable.isEmpty() ? "Grok" : "Codex";
+    for(const auto& provider : local_agents) // the first installed agent; Codex when none is
+        if(!agent_entries[provider].executable.isEmpty())
+        {
+            current_agent = provider;
+            break;
+        }
     update_agent_status_label();
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
@@ -2200,11 +2185,13 @@ void write_agent_input(const ai_info& info,const QString& text) // the one stdin
     auto* process = info.processes;
     auto session = process->objectName(); // the established id, in case establishment renamed it
     if(info.provider == "Claude")
-        process->write(claude_input(text));
+        process->write(json_line({{"type","user"},{"message",QJsonObject{{"role","user"},
+            {"content",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}));
     else if(info.provider == "Muse")
-        process->write(muse_turn_start(session,text));
+        process->write(muse_command(muse_uuid_v7(),"turn/start",{{"sessionId",session},{"ifBusy","steer"},
+            {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
     else if(info.provider == "Antigravity")
-        process->write(antigravity_input(text));
+        process->write(json_line({{"event","user"},{"message",QJsonObject{{"content",text}}}}));
     else if(info.provider == "Grok")
     {
         process->setProperty("turn_active",true); // Grok has no turn id: Stop cancels in-protocol only while a prompt is in flight
@@ -2215,8 +2202,11 @@ void write_agent_input(const ai_info& info,const QString& text) // the one stdin
     else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
     {
         auto turn_id = process->property("turn_id").toString();
-        process->write(turn_id.isEmpty() ? codex_turn_start("turn_start",session,text) :
-                                           codex_turn_steer(session,turn_id,text));
+        QJsonObject params{{"threadId",session},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
+        if(!turn_id.isEmpty())
+            params["expectedTurnId"] = turn_id;
+        process->write(json_line({{"id",turn_id.isEmpty() ? "turn_start" : "turn_steer"},
+                                  {"method",turn_id.isEmpty() ? "turn/start" : "turn/steer"},{"params",params}}));
     }
 }
 bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active turn; false when there is none to cancel (Claude, Antigravity, idle)
@@ -2225,9 +2215,10 @@ bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active 
     auto session = process->objectName();
     auto turn_id = process->property("turn_id").toString();
     if(info.provider == "Muse" && !turn_id.isEmpty())
-        process->write(muse_turn_cancel(session,turn_id));
+        process->write(muse_command(muse_uuid_v7(),"turn/cancel",{{"sessionId",session},{"turnId",turn_id}}));
     else if(info.provider == "Codex" && !turn_id.isEmpty())
-        process->write(codex_turn_interrupt(session,turn_id));
+        process->write(json_line({{"id","turn_interrupt"},{"method","turn/interrupt"},
+            {"params",QJsonObject{{"threadId",session},{"turnId",turn_id}}}}));
     else if(info.provider == "Grok" && process->property("turn_active").toBool()) // the prompt reply then reports "cancelled"
         process->write(json_line({{"jsonrpc","2.0"},{"method","session/cancel"},
             {"params",QJsonObject{{"sessionId",session}}}}));
