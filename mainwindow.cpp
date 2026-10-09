@@ -1221,6 +1221,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         auto command_name = QString::fromUtf8(cmd[0]);
         auto window_before = info.current_window;
         QString output,error;
+        QJsonObject attachment; // web_upload only
         QString* prev_capture;
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -1259,6 +1260,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             QJsonObject result{{"cmd",command_name},{"status",error.isEmpty() ? "success" : "error"}};
             if(!output.isEmpty())
                 result["output"] = output;
+            if(!attachment.isEmpty())
+                result["attachment"] = attachment;
             if(!error.isEmpty())
                 result["error"] = error+". Read DSI Studio Manuals and retry.";
             results.append(result);
@@ -1301,6 +1304,13 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "usage: set_title <title>";
                 else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
                     error = "cannot save title";
+            }
+            else if(command_name == "web_upload")
+            {
+                if(cmd.size() != 2 || cmd[1].empty())
+                    error = "usage: web_upload <local file>";
+                else
+                    attachment = ai_agent->upload_web_file(info,QString::fromStdString(cmd[1]),error);
             }
             else if(command_name == "log")
             {
