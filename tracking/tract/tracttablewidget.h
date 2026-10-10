@@ -62,10 +62,12 @@ public:
     bool for_each_bundle(fun_type&& fun,const std::string& indices = {})
     {
         std::vector<unsigned int> selected;
-        if(indices.empty())
+        if(indices.empty()) // braces required: without them the else binds to the inner if
+        {
             for(unsigned int index = 0;index < tract_models.size();++index)
                 if(item(int(index),0)->checkState() == Qt::Checked)
                     selected.push_back(index);
+        }
         else
             for(const auto& text : QString::fromStdString(indices).split('&'))
             {
