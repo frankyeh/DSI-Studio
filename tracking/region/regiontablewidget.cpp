@@ -984,7 +984,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         auto current_region = regions[cur_row];
         if(current_region->region.empty())
             return run->canceled();
-        tipl::vector<3,float> p(current_region->get_center());
+        auto voxels = current_region->region; // per-axis median: a small distant fragment does not pull the slice off the main lesion
+        tipl::vector<3,float> p;
+        for(int d = 0;d < 3;++d)
+        {
+            std::nth_element(voxels.begin(),voxels.begin()+voxels.size()/2,voxels.end(),[d](const auto& a,const auto& b){return a[d] < b[d];});
+            p[d] = voxels[voxels.size()/2][d];
+        }
+        if(!current_region->is_diffusion_space)
+            p.to(current_region->to_diffusion_space);
         if(!current_slice->is_diffusion_space)
             p.to(current_slice->to_slice);
         cur_tracking_window.move_slice_to(p);
