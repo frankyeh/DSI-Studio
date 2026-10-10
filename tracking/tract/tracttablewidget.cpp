@@ -223,6 +223,15 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit tract_changed();
 }
+static QString auto_track_target(tracking_window& w) // the AutoTrack dropdown selection; empty for "All"
+{
+    if(w.ui->tract_target_0->currentIndex() <= 0)
+        return {};
+    auto name = w.ui->tract_target_1->currentText();
+    if(w.ui->tract_target_2->isVisible() && w.ui->tract_target_2->currentText() != "All")
+        name += "_" + w.ui->tract_target_2->currentText();
+    return name;
+}
 void TractTableWidget::start_tracking(void)
 {
     auto roi_setting = cur_tracking_window.regionWidget->get_roi_settings();
@@ -235,15 +244,8 @@ void TractTableWidget::start_tracking(void)
         return;
     }
 
-    if(cur_tracking_window.ui->tract_target_0->currentIndex() > 0)
+    if(auto tract_name = auto_track_target(cur_tracking_window);!tract_name.isEmpty())
     {
-        QString tract_name = cur_tracking_window.ui->tract_target_1->currentText();
-        if(cur_tracking_window.ui->tract_target_2->isVisible() &&
-           cur_tracking_window.ui->tract_target_2->currentText() != "All")
-        {
-            tract_name += "_";
-            tract_name += cur_tracking_window.ui->tract_target_2->currentText();
-        }
         if(!cur_tracking_window.handle->trackable)
         {
             if(!command({"load_tract_atlas",tract_name.toStdString()}))
@@ -726,10 +728,12 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
             return run->failed(cur_tracking_window.handle->error_msg);
 
-        if(cmd[1].empty()) // load all
+        if(cmd[1].empty()) // all, or from the menu only those matching the AutoTrack dropdown ("All" loads all)
         {
+            auto target = run->source == command_source::User ? auto_track_target(cur_tracking_window).toStdString() : std::string();
             for(const auto& each : cur_tracking_window.handle->tractography_name_list)
-                load_tract_atlas(each);
+                if(target.empty() || tipl::contains_case_insensitive(each,target))
+                    load_tract_atlas(each);
             return true;
         }
         else
