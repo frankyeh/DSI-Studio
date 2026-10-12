@@ -37,7 +37,7 @@ float compute_tract_length(const tract_type& tract, const vs_type& vs = 1)
     return dist(0) + dist(3) * float(pts - 3) + dist((pts - 2) * 3);
 }
 
-struct model_mesh // one exported object: material name, voxel-space mesh, color/alpha, optional uv and jpeg texture
+struct model_mesh // one exported object: material name, mesh, color/alpha, optional uv and jpeg texture
 {
     std::string name;
     std::vector<tipl::vector<3> > points;
@@ -179,8 +179,9 @@ public:
 
         void get_mesh(std::vector<tipl::vector<3> >& points,std::vector<tipl::vector<3,unsigned int> >& tri,
                       float tube_diameter,unsigned char tract_tube_detail) const; // 8-sided tubes in voxel space
-        static bool save_obj_mtl(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes,const tipl::vector<3>& vs);
-        static bool save_glb(const std::filesystem::path& file_name,std::vector<model_mesh>& meshes,const tipl::vector<3>& vs);
+        static void to_export_space(std::vector<model_mesh>& meshes,const tipl::vector<3>& vs); // voxel to centered mm space shared by OBJ and GLB
+        static bool save_obj_mtl(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes);
+        static bool save_glb(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes);
         bool save_data_to_file(std::shared_ptr<fib_data> handle,const std::filesystem::path& file_name,const std::string& index_name);
         bool save_end_points(const std::filesystem::path& file_name) const;
 
