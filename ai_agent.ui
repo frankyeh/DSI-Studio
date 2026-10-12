@@ -69,7 +69,6 @@ QToolButton#ai_project_menu_button::menu-indicator {
 }
 QLabel#ai_status,
 QLabel#ai_work_dir_label,
-QPushButton#ai_agent_status,
 QPushButton#ai_send_message,
 QPushButton#ai_new_chat {
     color: #3c4043;
@@ -79,12 +78,10 @@ QPushButton#ai_new_chat {
     border-radius: 14px;
     padding: 4px 12px;
 }
-QPushButton#ai_agent_status:hover,
 QPushButton#ai_send_message:hover,
 QPushButton#ai_new_chat:hover {
     background-color: #e8eaed;
 }
-QPushButton#ai_agent_status:pressed,
 QPushButton#ai_send_message:pressed,
 QPushButton#ai_new_chat:pressed {
     background-color: #dadce0;
@@ -432,7 +429,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             </widget>
            </item>
            <item row="1" column="5">
-            <widget class="QPushButton" name="ai_agent_status">
+            <widget class="QComboBox" name="ai_model">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -446,10 +443,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
               </size>
              </property>
              <property name="toolTip">
-              <string>Change the agent/model used for the next chat you start</string>
-             </property>
-             <property name="text">
-              <string>Codex · default</string>
+              <string>Model of this chat</string>
              </property>
             </widget>
            </item>
