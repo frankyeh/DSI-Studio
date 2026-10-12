@@ -577,6 +577,10 @@ int main(int ac, char *av[])
                 {
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
+                    // a large request arrives in several chunks: read until the JSON is complete or the client stops sending
+                    while(request.trimmed().startsWith('{') && QJsonDocument::fromJson(request).isNull() &&
+                          clientSocket->waitForReadyRead(5000))
+                        request += clientSocket->readAll();
                     auto status_reply = [](QString status,QString error = {})
                     {
                         QJsonObject reply{{"status",status}};
