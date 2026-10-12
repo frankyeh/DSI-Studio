@@ -1727,6 +1727,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             }
         for(size_t i = 0;i < tracts.size() && prog(cur_prog++,total_prog);++i)
         {
+            if(tracts[i]->get_tracts().empty())
+                continue;
             meshes.push_back({"tract"+std::to_string(i),{},{},tracts[i]->get_tract_color(0),(*this)["tract_alpha"].toFloat()});
             tracts[i]->get_mesh(meshes.back().points,meshes.back().tri,(*this)["tube_diameter"].toFloat(),0/*coarse*/);
         }
@@ -1741,9 +1743,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
                               glWidget->surface->color,(*this)["surface_alpha"].toFloat()});
         if(prog.aborted())
             return run->failed("export canceled");
+        TractModel::to_export_space(meshes,handle->vs);
         if(!(QFileInfo(filename).suffix().compare("glb",Qt::CaseInsensitive) ?
-             TractModel::save_obj_mtl(tipl::qt::to_path(filename),meshes,handle->vs) :
-             TractModel::save_glb(tipl::qt::to_path(filename),meshes,handle->vs)))
+             TractModel::save_obj_mtl(tipl::qt::to_path(filename),meshes) :
+             TractModel::save_glb(tipl::qt::to_path(filename),meshes)))
             return run->failed("cannot write to " + filename.toStdString());
         return run->succeed();
     }
