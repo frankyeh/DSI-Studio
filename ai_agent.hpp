@@ -64,7 +64,7 @@ class AIAgent : public QMainWindow
     QString current_agent = "Codex";
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
-    void update_agent_status_label();
+    void update_model_list(); // the selected local chat's model dropdown; hidden for Web, AgentServer, or no chat
 
     QNetworkAccessManager web_manager; // Google OAuth and API calls
 
@@ -97,7 +97,7 @@ class AIAgent : public QMainWindow
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
     void create_new_chat(const QString& provider);
-    bool run_new_chat_dialog(const QString& title,const QString& accept_text); // the agent/model picker for New Chat and Change Agent/Model: sets current_agent/model on accept; Web starts its own session and returns false
+    bool run_new_chat_dialog(); // the agent/model picker for New Chat: sets current_agent/model on accept; Web starts its own session and returns false
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
@@ -141,7 +141,6 @@ private slots:
     void on_ai_quick_settings_clicked();
     void on_ai_new_chat_clicked();
     void on_ai_send_message_clicked();
-    void on_ai_agent_status_clicked();
 };
 
 #endif
