@@ -212,7 +212,7 @@ AIAgent::AIAgent(MainWindow* parent):
 
     web_timer.setSingleShot(true);
     web_manager.setTransferTimeout(30000); // a hung Google request would otherwise stall polling for good
-    connect(&web_timer,&QTimer::timeout,this,&AIAgent::poll_web);
+    connect(&web_timer,&QTimer::timeout,this,[this]{poll_web();});
 
     refresh_agent_executables();
     refresh_agent_status();
@@ -1527,17 +1527,32 @@ static QString web_text(const QJsonObject& doc) // the mailbox message: the Doc 
             text += element.toObject()["textRun"].toObject()["content"].toString();
     return text.trimmed();
 }
-void AIAgent::poll_web()
+void AIAgent::poll_web(const QString& modified_time)
 {
     if(google_file_id.isEmpty())
         return;
     if(!web_pending_result.isEmpty())
         return publish_web_result(); // a previous result write failed; retry it, never re-execute
-    if(web_idle.hasExpired(180000)) // also bounds failing reads
-        return stop_web(google_error.isEmpty() ? QString("Web stopped after 3 minutes without a request; press Resume to continue.") :
+    auto idle = web_idle.elapsed();
+    if(idle > 3600000) // also bounds failing reads
+        return stop_web(google_error.isEmpty() ? QString("Web stopped after 1 hour without a request; press Resume to continue.") :
                         "Web stopped: "+google_error+"; press Resume to retry.");
-    // the body is one tiny JSON message, so it is read directly (Drive file.version proved an unreliable doorbell)
-    google_api("GET",google_doc_url(),{},[this,file = google_file_id](QJsonObject doc)
+    // idle for 30 s: Drive modifiedTime (not file.version, an unreliable doorbell) is polled, and the body is read only when it
+    // changes; the first idle poll always reads, since web_modified_time is empty after any fast-mode read
+    if(modified_time.isEmpty() && idle >= 30000)
+        return google_api("GET","https://www.googleapis.com/drive/v3/files/"+google_file_id+"?fields=modifiedTime",{},
+                          [this,file = google_file_id,idle](QJsonObject meta)
+        {
+            if(file != google_file_id)
+                return;
+            if(meta.isEmpty())
+                return web_timer.start(5000);
+            if(meta["modifiedTime"].toString() != web_modified_time || !google_error.isEmpty()) // a failure clears on the next body read
+                return poll_web(meta["modifiedTime"].toString());
+            web_timer.start(idle < 60000 ? 500 : idle < 120000 ? 1000 : idle < 300000 ? 5000 : 10000);
+        });
+    // the body is one tiny JSON message, so during activity it is read directly
+    google_api("GET",google_doc_url(),{},[this,file = google_file_id,modified_time](QJsonObject doc)
     {
         if(file != google_file_id) // stopped or switched while in flight
             return;
@@ -1564,8 +1579,12 @@ void AIAgent::poll_web()
                 {"response",QJsonObject{{"status","error"},{"error","outcome unknown: DSI Studio stopped while running this request; check with list_window"}}}};
             return publish_web_result();
         }
-        if(request["from"].toString() == "dsi")
-            return web_timer.start(500); // our own write
+        if(request["from"].toString() == "dsi") // our own write, nothing to do: only now is the Drive change consumed
+        {
+            web_modified_time = modified_time;
+            return web_timer.start(500);
+        }
+        web_idle.start(); // an agent message: fast polling while it is claimed or answered
         // anything else is a request: a malformed one is answered, or the agent waits forever
         auto error = parse_error.error != QJsonParseError::NoError ?
                         "invalid JSON (" + parse_error.errorString() + " at offset " + QString::number(parse_error.offset) + ")" :
@@ -1624,7 +1643,7 @@ void AIAgent::publish_web_result()
             if(published)
             {
                 web_pending_result = QJsonObject();
-                web_idle.start(); // the 3-minute idle limit counts from the last result
+                web_idle.start(); // fast polling for 30 s after a result
             }
             web_timer.start(published ? 500 : 5000);
         });

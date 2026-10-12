@@ -74,13 +74,14 @@ class AIAgent : public QMainWindow
     bool sign_in_google(); // system-browser sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, polled directly
+    // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, read directly for 30 s after activity, then on a Drive modifiedTime change
     QTimer web_timer;
     QString google_folder_id = settings.value("ai/google_folder_id").toString();
     QString google_error; // the last Google failure, shown in the Web status; never holds a token
     QString google_file_id,web_session_id; // the connected chat's Doc (empty when stopped) and session
     qint64 web_last_id = 0;
-    QElapsedTimer web_idle; // polling stops after 3 minutes without a request
+    QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling and stops polling after 1 hour
+    QString web_modified_time; // Drive modifiedTime of the last body read that needed no action
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
     void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
@@ -88,7 +89,7 @@ class AIAgent : public QMainWindow
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
     QString google_doc_url() const; // documents.get for the connected Doc, trimmed to the mailbox fields
-    void poll_web();
+    void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
     void publish_web_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
