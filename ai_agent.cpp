@@ -222,7 +222,16 @@ AIAgent::AIAgent(MainWindow* parent):
             current_agent = provider;
             break;
         }
-    update_agent_status_label();
+    update_model_list();
+    connect(ui->ai_model,QOverload<int>::of(&QComboBox::activated),this,[this](int) // a user choice, never a list refill
+    {
+        if(auto* info = selected_info())
+        {
+            info->model_settings["model"] = model_combo_key(*ui->ai_model);
+            info->model_settings["info"] = ui->ai_model->currentData().toJsonObject(); // the entry's own profile, incl. its Ollama server
+            info->save_config();
+        }
+    });
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
@@ -335,7 +344,7 @@ AIAgent::AIAgent(MainWindow* parent):
         ui->ai_chat_input->setEnabled(true);
         ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
             info->model_settings["cwd"].toString() : main_window.work_dir());
-        update_agent_status_label();
+        update_model_list();
         show_ai_project(*info);
     });
 
@@ -468,7 +477,7 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
     if(selected_info() != &info)
         return;
     // one line -- a multi-line stderr dump (Failed) must not grow the composer's height
-    auto text = (session_status_text(info.status)+": "+info.status_message).simplified();
+    auto text = (info.provider+": "+info.status_message).simplified();
     if(running && !text.endsWith('.'))
         text += ".";
     ui->ai_status->show();
@@ -830,8 +839,8 @@ void AIAgent::update_agent_models(
         // refresh the default model's cached profile; value(), not [], which would insert a blank profile
         if(current_model_name.isEmpty() || profiles.contains(current_model_name))
             current_model_info = profiles.value(current_model_name).toObject();
-        update_agent_status_label();
     }
+    update_model_list();
     if(profiles != previous)
         emit agent_models_changed(agent);
 }
@@ -1302,24 +1311,15 @@ bool AIAgent::run_agent_login(const QString& provider)
     return true;
 }
 
-void AIAgent::update_agent_status_label()
+void AIAgent::update_model_list()
 {
-    static const QString dot = QString(" ")+QChar(0x00B7)+" "; // middle dot separator
     auto* info = selected_info();
     update_send_button(); // the send button depends on the same selected chat
-    ui->ai_agent_status->setVisible(!info || info->provider != "AgentServer"); // a log/routing record has no agent/model to show
-    if(info && info->provider == "AgentServer")
-        return;
-    if(info && info->provider == "Web")
-        return ui->ai_agent_status->setText("Web");
-    // a local chat's own model, or with nothing selected the default the next New Chat starts with
-    auto model_name = info ? info->model_settings["model"].toString() : current_model_name;
-    auto model_info = info ? info->model_settings["info"].toObject() : current_model_info;
-    auto text = (info ? info->provider : current_agent)+dot+(model_name.isEmpty() ? QString("default") : model_name);
-    if(model_info.contains("provider"))
-        text += dot+"Ollama@"+(model_info.contains("url") ? QUrl(model_info["url"].toString()).host() :
-                                                            ai_ollama_url(settings).first.host());
-    ui->ai_agent_status->setText(text);
+    bool local = info && info->provider != "Web" && info->provider != "AgentServer";
+    ui->ai_model->setVisible(local);
+    if(local)
+        set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
+                           info->model_settings["info"].toObject());
 }
 
 ai_info* AIAgent::selected_info() const
@@ -1356,6 +1356,7 @@ void AIAgent::update_send_button()
 {
     auto action = current_send_action();
     ui->ai_send_message->setEnabled(action != send_action::Disabled);
+    ui->ai_model->setEnabled(action != send_action::Stop); // a running agent keeps the model it was launched with
     ui->ai_send_message->setText(
         action == send_action::Stop ? "Stop" :
         action == send_action::Resume ? "Resume" : "Send");
@@ -1766,10 +1767,10 @@ bool AIAgent::sign_in_google()
     settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
-bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_text)
+bool AIAgent::run_new_chat_dialog()
 {
     QDialog dialog(this);
-    dialog.setWindowTitle(title);
+    dialog.setWindowTitle("New Chat");
     dialog.setMinimumWidth(440);
     dialog.setStyleSheet(ai_dialog_style());
     QFormLayout layout(&dialog);
@@ -1820,7 +1821,7 @@ bool AIAgent::run_new_chat_dialog(const QString& title,const QString& accept_tex
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
-    auto* accept = buttons.addButton(accept_text,QDialogButtonBox::AcceptRole);
+    auto* accept = buttons.addButton("Start",QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
     layout.addRow(&buttons);
     connect(this,&AIAgent::agent_status_changed,&dialog,update_agent);
@@ -1878,46 +1879,11 @@ void AIAgent::create_new_chat(const QString& provider)
 
 void AIAgent::on_ai_new_chat_clicked()
 {
-    if(!run_new_chat_dialog("New Chat","Start"))
+    if(!run_new_chat_dialog())
         return;
     create_new_chat(current_agent); // selecting the new chat refreshes the status label and send button
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
-}
-
-void AIAgent::on_ai_agent_status_clicked()
-{
-    if(auto* info = selected_info())
-    {
-        if(info->provider == "Web" || info->provider == "AgentServer") // bound to its one session Doc / a log record: no agent or model to change
-            return;
-        if(info->processes) // a running agent keeps the model it was launched with
-            return void(QMessageBox::information(this,"Change Model","Stop the agent before changing its model."));
-        QDialog dialog(this);
-        dialog.setWindowTitle("Change Model");
-        QFormLayout layout(&dialog);
-        QLabel agent_label(info->provider);
-        QComboBox model;
-        set_model_selector(model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
-                           info->model_settings["info"].toObject());
-        layout.addRow("Agent:",&agent_label);
-        layout.addRow("Model:",&model);
-        QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
-        layout.addRow(&buttons);
-        connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
-        connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
-        if(dialog.exec() != QDialog::Accepted)
-            return;
-
-        info->model_settings["model"] = model_combo_key(model);
-        info->model_settings["info"] = model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
-        info->save_config();
-        update_agent_status_label();
-        return;
-    }
-
-    if(run_new_chat_dialog("Change Agent/Model","Save"))
-        update_agent_status_label();
 }
 
 void AIAgent::on_ai_quick_settings_clicked()
