@@ -1537,9 +1537,10 @@ void AIAgent::poll_web(const QString& modified_time)
     if(idle > 3600000) // also bounds failing reads
         return stop_web(google_error.isEmpty() ? QString("Web stopped after 1 hour without a request; press Resume to continue.") :
                         "Web stopped: "+google_error+"; press Resume to retry.");
-    // idle for 30 s: Drive modifiedTime (not file.version, an unreliable doorbell) is polled, and the body is read only when it
-    // changes; the first idle poll always reads, since web_modified_time is empty after any fast-mode read
-    if(modified_time.isEmpty() && idle >= 30000)
+    // idle for 3 minutes: Drive modifiedTime (not file.version) is polled, and the body is read only when it changes; the first
+    // idle poll always reads, since web_modified_time is empty after any fast-mode read. A Docs body edit can take minutes to
+    // reach modifiedTime, but a rename reaches it at once, so an agent that gets no reply renames the Doc to wake DSI Studio
+    if(modified_time.isEmpty() && idle >= 180000)
         return google_api("GET","https://www.googleapis.com/drive/v3/files/"+google_file_id+"?fields=modifiedTime",{},
                           [this,file = google_file_id,idle](QJsonObject meta)
         {
@@ -1549,7 +1550,7 @@ void AIAgent::poll_web(const QString& modified_time)
                 return web_timer.start(5000);
             if(meta["modifiedTime"].toString() != web_modified_time || !google_error.isEmpty()) // a failure clears on the next body read
                 return poll_web(meta["modifiedTime"].toString());
-            web_timer.start(idle < 60000 ? 500 : idle < 120000 ? 1000 : idle < 300000 ? 5000 : 10000);
+            web_timer.start(idle < 300000 ? 5000 : 10000);
         });
     // the body is one tiny JSON message, so during activity it is read directly
     google_api("GET",google_doc_url(),{},[this,file = google_file_id,modified_time](QJsonObject doc)
@@ -1582,7 +1583,7 @@ void AIAgent::poll_web(const QString& modified_time)
         if(request["from"].toString() == "dsi") // our own write, nothing to do: only now is the Drive change consumed
         {
             web_modified_time = modified_time;
-            return web_timer.start(500);
+            return web_timer.start(web_idle.elapsed() < 60000 ? 500 : web_idle.elapsed() < 120000 ? 1000 : 2000); // 500 ms, 1 s, then 2 s per minute until idle
         }
         web_idle.start(); // an agent message: fast polling while it is claimed or answered
         // anything else is a request: a malformed one is answered, or the agent waits forever
@@ -1643,7 +1644,7 @@ void AIAgent::publish_web_result()
             if(published)
             {
                 web_pending_result = QJsonObject();
-                web_idle.start(); // fast polling for 30 s after a result
+                web_idle.start(); // fast polling for 3 minutes after a result
             }
             web_timer.start(published ? 500 : 5000);
         });
