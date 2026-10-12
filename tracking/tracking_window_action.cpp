@@ -1312,6 +1312,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     renderWidget->reveal(param.substr(0,pos).c_str());
                 }
             }
+        for(auto button : {ui->roi_draw_edge,ui->roi_track,ui->roi_label,ui->roi_position,ui->roi_ruler,ui->roi_fiber}) // the ROI toolbar follows roi_* parameters
+            button->setChecked((*this)[button->objectName().toStdString().c_str()].toBool());
         glWidget->update();
         slice_need_update |= position_updated;
         return run->succeed();
