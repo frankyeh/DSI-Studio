@@ -5,6 +5,7 @@
 #include <QClipboard>
 #include <QMessageBox>
 #include <QComboBox>
+#include <QBuffer>
 
 #include "atlasdialog.h"
 #include "tracking_window.h"
@@ -1696,7 +1697,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(cmd.size() < 2 || cmd[1].empty())
         {
             filename = QFileDialog::getSaveFileName(
-                        this,"Save tracts as",QFileInfo(windowTitle()).baseName()+".model.obj","3D files (*.obj);;All files (*)");
+                        this,"Save tracts as",QFileInfo(windowTitle()).baseName()+".model.obj","3D files (*.obj *.glb);;All files (*)");
             if(filename.isEmpty())
                 return run->canceled();
         }
@@ -1705,109 +1706,47 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::progress prog("exporting models",true);
         size_t total_prog = 3 + tracts.size() + regions.size()+1;
         size_t cur_prog = 0;
-        std::ofstream out(tipl::qt::to_path(filename)),mtl(tipl::qt::to_path(filename+".mtl"));
-        out << "mtllib " << QFileInfo(filename).fileName().toStdString() << ".mtl" << std::endl;
-        out << "g" << std::endl;
-        unsigned int coordinate_count = 0;
-
-
-
+        std::vector<model_mesh> meshes;
         if ((*this)["show_slice"].toInt())
-        {
-
             for(size_t dim = 0;dim < 3 && prog(cur_prog++,total_prog);++dim)
             {
                 if(!current_slice->slice_visible[dim])
                     continue;
-                // output texture
-                float slice_alpha = (*this)["slice_alpha"].toFloat();
-                {
-                    tipl::color_image texture;
-                    current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim],overlay_slices);
-                    QImage I;
-                    I << texture;
-                    mtl << "newmtl slice" << int(dim) << std::endl;
-                    mtl << "Ka 1.000 1.000 1.000" << std::endl;
-                    mtl << "Kd 1.000 1.000 1.000" << std::endl;
-                    mtl << "d " << slice_alpha << std::endl;
-                    mtl << "Tr " << 1.0f-slice_alpha << std::endl;
-                    mtl << "map_Kd " << QFileInfo(filename).fileName().toStdString() << ".slice" << int(dim) << ".jpg" << std::endl;
-                    I.save(filename+".slice"+std::to_string(int(dim)).c_str()+".jpg");
-                }
-
-                // output texture
-                {
-                    const float vt[4][3] = {{0.0f,1.0f},{1.0f,1.0f},{0.0f,0.0f},{1.0f,0.0f}};
-                    std::vector<tipl::vector<3> > points;
-                    current_slice->get_slice_positions(dim,points);
-                    for(size_t i = 0;i < 4;++i)
-                    {
-                        points[i][0] *= handle->vs[0];
-                        points[i][1] *= handle->vs[1];
-                        points[i][2] *= handle->vs[2];
-                        points[i][1] = -points[i][1];
-                        std::swap(points[i][1],points[i][2]);
-                        out << "v " << points[i] << std::endl;
-                        out << "vt " << vt[i][0] << " " << vt[i][1] << std::endl;
-                    }
-                    size_t j = coordinate_count;
-                    out << "usemtl slice" << int(dim) << std::endl;
-                    out << "f " << j+1 << "/" << j+1 << " " << j+2 << "/" << j+2 << " " << j+4 << "/" << j+4 << std::endl;
-                    out << "f " << j+3 << "/" << j+3 << " " << j+1 << "/" << j+1 << " " << j+4 << "/" << j+4 << std::endl;
-                    coordinate_count += 4;
-                }
+                tipl::color_image texture;
+                current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim],overlay_slices);
+                QImage I;
+                I << texture;
+                QByteArray jpeg;
+                QBuffer buffer(&jpeg);
+                buffer.open(QIODevice::WriteOnly);
+                I.save(&buffer,"JPG");
+                // two triangles over the slice corners, uv with v running down the image
+                meshes.push_back({"slice"+std::to_string(dim),{},{tipl::vector<3,unsigned int>(0,1,3),tipl::vector<3,unsigned int>(2,0,3)},
+                                  tipl::rgb(255,255,255),(*this)["slice_alpha"].toFloat(),{0,0,1,0,0,1,1,1},jpeg.toStdString()});
+                current_slice->get_slice_positions(dim,meshes.back().points);
             }
-        }
-
-
-
-
-        auto push_mtl = [&](tipl::rgb color,float alpha,std::string name,size_t id)
+        for(size_t i = 0;i < tracts.size() && prog(cur_prog++,total_prog);++i)
         {
-            mtl << "newmtl " << name << id << std::endl;
-            mtl << "Ka " << float(color.r)/255.0f << " " << float(color.g)/255.0f << " " << float(color.b)/255.0f << std::endl;
-            mtl << "Kd " << float(color.r)/255.0f << " " << float(color.g)/255.0f << " " << float(color.b)/255.0f << std::endl;
-            mtl << "d " << alpha << std::endl;
-            mtl << "Tr " << 1.0f-alpha << std::endl;
-            out << "usemtl " << name << id << std::endl;
-        };
-
-        size_t tract_count = 0;
-        for(auto& each_tract : tracts)
-        {
-            if(!prog(cur_prog++,total_prog))
-                break;
-            if(each_tract->get_tracts().empty())
-                continue;
-            push_mtl(each_tract->get_tract_color(0),(*this)["tract_alpha"].toFloat(),"tract",tract_count++);
-            out << each_tract->get_obj(coordinate_count,1/*tube*/,(*this)["tube_diameter"].toFloat(),0/*coarse*/) << std::endl;
+            meshes.push_back({"tract"+std::to_string(i),{},{},tracts[i]->get_tract_color(0),(*this)["tract_alpha"].toFloat()});
+            tracts[i]->get_mesh(meshes.back().points,meshes.back().tri,(*this)["tube_diameter"].toFloat(),0/*coarse*/);
         }
+        for(size_t i = 0;i < regions.size() && prog(cur_prog++,total_prog);++i)
+        {
+            auto& render = *regions[i]->region_render;
+            meshes.push_back({"region"+std::to_string(i),render.object->point_list,render.object->tri_list,
+                              render.color,render.color.a/255.0f*(*this)["region_alpha"].toFloat()});
+        }
+        if(glWidget->surface.get() && (*this)["show_surface"].toInt())
+            meshes.push_back({"surface0",glWidget->surface->object->point_list,glWidget->surface->object->tri_list,
+                              glWidget->surface->color,(*this)["surface_alpha"].toFloat()});
         if(prog.aborted())
             return run->failed("export canceled");
-        size_t render_count = 0;
-        float region_alpha = (*this)["region_alpha"].toFloat();
-        for(auto& each_region : regions)
-        {
-            if(!prog(cur_prog++,total_prog))
-                break;
-            if(each_region->region_render->object->point_list.empty())
-                continue;
-            push_mtl(each_region->region_render->color,float(each_region->region_render->color.a)/255.0f*region_alpha,"region",render_count++);
-            out << each_region->region_render->get_obj(coordinate_count,handle->vs) << std::endl;
-        }
-        if(prog.aborted())
-            return run->failed("export canceled");
-
-        if (glWidget->surface.get() && (*this)["show_surface"].toInt())
-        {
-            push_mtl(glWidget->surface->color,(*this)["surface_alpha"].toFloat(),"surface",0);
-            out << glWidget->surface->get_obj(coordinate_count,handle->vs) << std::endl;
-        }
-        if(prog.aborted())
-            return run->failed("export canceled");
+        if(!(QFileInfo(filename).suffix().compare("glb",Qt::CaseInsensitive) ?
+             TractModel::save_obj_mtl(tipl::qt::to_path(filename),meshes,handle->vs) :
+             TractModel::save_glb(tipl::qt::to_path(filename),meshes,handle->vs)))
+            return run->failed("cannot write to " + filename.toStdString());
         return run->succeed();
     }
-
     if(cmd[0] == "clear_surface")
     {
         glWidget->surface.reset();

@@ -1959,41 +1959,18 @@ bool TractModel::save_tracts_to_file(const std::filesystem::path& file_name)
     }
     return save_tracts_to_file(std::filesystem::path(file_name) += ".tt.gz");
 }
-std::string TractModel::get_obj(unsigned int& coordinate_count,
-                         unsigned char tract_style,
-                         float tube_diameter,
-                         unsigned char tract_tube_detail)
+void TractModel::get_mesh(std::vector<tipl::vector<3> >& points,
+                          std::vector<tipl::vector<3,unsigned int> >& tri,
+                          float tube_diameter,
+                          unsigned char tract_tube_detail) const
 {
-    std::vector<tipl::vector<3,float> > points(8),previous_points(8);
+    std::vector<tipl::vector<3,float> > ring(8),previous_ring(8);
 
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
     const unsigned char end_sequence2[8] = {0,1,7,2,6,3,5,4};
 
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
-
-
-    std::string coordinate,coordinate_index;
-    auto push_vertices = [&](const tipl::vector<3,float>& pos)
-    {
-        coordinate.push_back('v');
-        coordinate.push_back(' ');
-        coordinate += std::to_string(pos[0]*vs[0]);
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.back() = ' ';
-        coordinate += std::to_string(pos[2]*vs[2]);
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.back() = ' ';
-        coordinate += std::to_string(-pos[1]*vs[1]);
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.back() = '\n';
-    };
 
     for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
     {
@@ -2003,13 +1980,12 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
 
         const float* data_iter = &tract_data[data_index][0];
 
-
-        unsigned int prev_coordinate_count = coordinate_count;
+        unsigned int first = uint32_t(points.size());
         tipl::vector<3,float> last_pos(data_iter),
                 vec_a(1,0,0),vec_b(0,1,0),
                 vec_n,prev_vec_n,vec_ab,vec_ba;
 
-        for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
+        for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
         {
             tipl::vector<3,float> pos(data_iter);
             if (index + 1 < vertex_count)
@@ -2026,15 +2002,6 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
                 displacement -= prev_vec_n*(prev_vec_n*displacement);
                 if (float(displacement.length()) < tube_detail)
                     continue;
-            }
-            // add end
-            if(tract_style == 0)// line
-            {
-                push_vertices(pos);
-                prev_vec_n = vec_n;
-                last_pos = pos;
-                ++coordinate_count;
-                continue;
             }
 
             if (index == 0 && std::fabs(vec_a*vec_n) > 0.5f)
@@ -2056,76 +2023,162 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
 
             // add point
             {
-                std::fill(points.begin(),points.end(),pos);
-                points[0] += vec_a;
-                points[1] += vec_ab;
-                points[2] += vec_b;
-                points[3] -= vec_ba;
-                points[4] -= vec_a;
-                points[5] -= vec_ab;
-                points[6] -= vec_b;
-                points[7] += vec_ba;
+                std::fill(ring.begin(),ring.end(),pos);
+                ring[0] += vec_a;
+                ring[1] += vec_ab;
+                ring[2] += vec_b;
+                ring[3] -= vec_ba;
+                ring[4] -= vec_a;
+                ring[5] -= vec_ab;
+                ring[6] -= vec_b;
+                ring[7] += vec_ba;
             }
 
             if (index == 0)
-            {
                 for (unsigned int k = 0;k < 8;++k)
-                {
-                    tipl::vector<3,float> pos(points[end_sequence[k]][0],points[end_sequence[k]][1],points[end_sequence[k]][2]);
-                    push_vertices(pos);
-                }
-                coordinate_count+=8;
-            }
+                    points.push_back(ring[end_sequence[k]]);
             else
             // add tube
             {
-                push_vertices(points[0]);
+                points.push_back(ring[0]);
                 for (unsigned int k = 1;k < 8;++k)
                 {
-                    push_vertices(previous_points[k]);
-                    push_vertices(points[k]);
+                    points.push_back(previous_ring[k]);
+                    points.push_back(ring[k]);
                 }
-                push_vertices(points[0]);
-                coordinate_count+=16;
+                points.push_back(ring[0]);
                 if(index +1 == vertex_count)
-                {
                     for (unsigned int k = 0;k < 8;++k)
-                    {
-                        tipl::vector<3,float> pos(points[end_sequence2[k]][0],points[end_sequence2[k]][1],points[end_sequence2[k]][2]);
-                        push_vertices(pos);
-                    }
-                    coordinate_count+=8;
-                }
+                        points.push_back(ring[end_sequence2[k]]);
             }
-            previous_points.swap(points);
+            previous_ring.swap(ring);
             prev_vec_n = vec_n;
             last_pos = pos;
         }
-        if(tract_style == 0)// line
-        {
-            coordinate_index.push_back('l');
-            for (unsigned int j = prev_coordinate_count+1;j+2 <= coordinate_count;++j)
-            {
-                coordinate_index.push_back(' ');
-                coordinate_index += std::to_string(j);
-            }
-            coordinate_index.push_back('\n');
-        }
-        else
-        for (unsigned int j = prev_coordinate_count,k = 0;j+2 < coordinate_count;++j)
-        {
-            coordinate_index.push_back('f');
-            coordinate_index.push_back(' ');
-            coordinate_index += std::to_string(j+1);
-            coordinate_index.push_back(' ');
-            coordinate_index += std::to_string(j+ (k ? 2 : 3));
-            coordinate_index.push_back(' ');
-            coordinate_index += std::to_string(j+ (k ? 3 : 2));
-            coordinate_index.push_back('\n');
-            k = (k ? 0 :1);
-        }
+        // one triangle strip per streamline, alternating winding
+        for (unsigned int j = first,k = 0;j+2 < points.size();++j,k = !k)
+            tri.push_back(tipl::vector<3,unsigned int>(j,j+(k ? 1 : 2),j+(k ? 2 : 1)));
     }
-    return coordinate+coordinate_index;
+}
+bool TractModel::save_obj_mtl(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes,const tipl::vector<3>& vs)
+{
+    std::ofstream out(file_name),mtl(std::filesystem::path(file_name) += ".mtl");
+    auto name = file_name.filename().u8string();
+    out << "mtllib " << name << ".mtl" << std::endl << "g" << std::endl;
+    size_t coordinate_count = 1; // OBJ indices start at 1
+    for(const auto& each : meshes)
+    {
+        if(each.points.empty())
+            continue;
+        mtl << "newmtl " << each.name << std::endl;
+        for(auto k : {"Ka ","Kd "})
+            mtl << k << each.color.r/255.0f << " " << each.color.g/255.0f << " " << each.color.b/255.0f << std::endl;
+        mtl << "d " << each.alpha << std::endl << "Tr " << 1.0f-each.alpha << std::endl;
+        if(!each.jpeg.empty())
+        {
+            mtl << "map_Kd " << name << "." << each.name << ".jpg" << std::endl;
+            std::ofstream(std::filesystem::path(file_name) += "." + each.name + ".jpg",std::ios::binary).write(each.jpeg.data(),each.jpeg.size());
+        }
+        out << "usemtl " << each.name << std::endl;
+        std::string v;
+        for(const auto& p : each.points) // x, z, -y in mm with 3 decimals
+        {
+            v += "v";
+            for(float x : {p[0]*vs[0],p[2]*vs[2],-p[1]*vs[1]})
+            {
+                v += " " + std::to_string(x);
+                v.resize(v.size()-3);
+            }
+            v += "\n";
+        }
+        for(size_t i = 0;i+1 < each.uv.size();i += 2) // glTF v runs down the image, OBJ v runs up
+            v += "vt " + std::to_string(each.uv[i]) + " " + std::to_string(1.0f-each.uv[i+1]) + "\n";
+        for(const auto& t : each.tri)
+        {
+            v += "f";
+            for(int i = 0;i < 3;++i)
+            {
+                auto id = std::to_string(t[i]+coordinate_count);
+                v += " " + (each.uv.empty() ? id : id + "/" + id);
+            }
+            v += "\n";
+        }
+        out << v;
+        coordinate_count += each.points.size();
+    }
+    return out && mtl;
+}
+bool TractModel::save_glb(const std::filesystem::path& file_name,std::vector<model_mesh>& meshes,const tipl::vector<3>& vs)
+{
+    // one node and mesh per object; positions, indices, uv, and jpegs share one binary buffer
+    std::string bin;
+    QJsonArray nodes,gl_meshes,materials,accessors,buffer_views,images,textures;
+    auto add_view = [&](const void* data,size_t size)
+    {
+        buffer_views.append(QJsonObject{{"buffer",0},{"byteOffset",qint64(bin.size())},{"byteLength",qint64(size)}});
+        bin.append(reinterpret_cast<const char*>(data),size);
+        bin.resize((bin.size()+3)/4*4,char(0));
+        return qint64(buffer_views.size()-1);
+    };
+    for(auto& each : meshes)
+    {
+        if(each.points.empty())
+            continue;
+        for(auto& p : each.points) // same axes as save_obj_mtl: x, z, -y in mm
+            p = tipl::vector<3>(p[0]*vs[0],p[2]*vs[2],-p[1]*vs[1]);
+        tipl::vector<3> min(each.points[0]),max(each.points[0]);
+        for(const auto& p : each.points)
+            for(int i = 0;i < 3;++i)
+            {
+                min[i] = std::min(min[i],p[i]);
+                max[i] = std::max(max[i],p[i]);
+            }
+        QJsonObject attributes{{"POSITION",qint64(accessors.size())}};
+        accessors.append(QJsonObject{{"bufferView",add_view(each.points.data(),each.points.size()*sizeof(each.points[0]))},{"componentType",5126},
+                                     {"count",qint64(each.points.size())},{"type","VEC3"},
+                                     {"min",QJsonArray{min[0],min[1],min[2]}},{"max",QJsonArray{max[0],max[1],max[2]}}});
+        if(!each.uv.empty())
+        {
+            attributes["TEXCOORD_0"] = qint64(accessors.size());
+            accessors.append(QJsonObject{{"bufferView",add_view(each.uv.data(),each.uv.size()*sizeof(float))},{"componentType",5126},
+                                         {"count",qint64(each.uv.size()/2)},{"type","VEC2"}});
+        }
+        QJsonObject pbr{{"baseColorFactor",QJsonArray{each.color.r/255.0,each.color.g/255.0,each.color.b/255.0,each.alpha}},
+                        {"metallicFactor",0},{"roughnessFactor",1}};
+        if(!each.jpeg.empty())
+        {
+            images.append(QJsonObject{{"bufferView",add_view(each.jpeg.data(),each.jpeg.size())},{"mimeType","image/jpeg"}});
+            textures.append(QJsonObject{{"source",qint64(images.size()-1)}});
+            pbr["baseColorTexture"] = QJsonObject{{"index",qint64(textures.size()-1)}};
+        }
+        materials.append(QJsonObject{{"pbrMetallicRoughness",pbr},{"alphaMode",each.alpha < 1.0f ? "BLEND" : "OPAQUE"},{"doubleSided",true}});
+        gl_meshes.append(QJsonObject{{"primitives",QJsonArray{QJsonObject{{"attributes",attributes},{"indices",qint64(accessors.size())},
+                                                                          {"material",qint64(materials.size()-1)}}}}});
+        accessors.append(QJsonObject{{"bufferView",add_view(each.tri.data(),each.tri.size()*sizeof(each.tri[0]))},{"componentType",5125},
+                                     {"count",qint64(each.tri.size()*3)},{"type","SCALAR"}});
+        nodes.append(QJsonObject{{"mesh",qint64(gl_meshes.size()-1)}});
+    }
+    if(nodes.isEmpty())
+        return false;
+    QJsonArray scene_nodes;
+    for(qint64 i = 0;i < nodes.size();++i)
+        scene_nodes.append(i);
+    QJsonObject gltf{{"asset",QJsonObject{{"version","2.0"},{"generator","DSI Studio"}}},{"scene",0},
+                     {"scenes",QJsonArray{QJsonObject{{"nodes",scene_nodes}}}},{"nodes",nodes},{"meshes",gl_meshes},
+                     {"materials",materials},{"accessors",accessors},{"bufferViews",buffer_views},
+                     {"buffers",QJsonArray{QJsonObject{{"byteLength",qint64(bin.size())}}}}};
+    if(!images.isEmpty())
+    {
+        gltf["images"] = images;
+        gltf["textures"] = textures;
+    }
+    auto json = QJsonDocument(gltf).toJson(QJsonDocument::Compact).toStdString();
+    json.resize((json.size()+3)/4*4,' ');
+    // 12-byte header, then the JSON and BIN chunks, each with an 8-byte chunk header
+    uint32_t header[5] = {0x46546C67,2,uint32_t(28+json.size()+bin.size()),uint32_t(json.size()),0x4E4F534A};
+    uint32_t bin_header[2] = {uint32_t(bin.size()),0x004E4942};
+    return bool(std::ofstream(file_name,std::ios::binary).write(reinterpret_cast<const char*>(header),sizeof(header)).write(json.data(),json.size()).
+                write(reinterpret_cast<const char*>(bin_header),sizeof(bin_header)).write(bin.data(),bin.size()));
 }
 
 //---------------------------------------------------------------------------
