@@ -2025,12 +2025,37 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return fail("voice is available only on Windows");
 #endif
     }
+    auto ai_declined = [&](const QString& title,const QString& request) // every AI file write or shell command needs the local user's approval
+    {
+        return source == command_source::AI && QMessageBox::question(this,title,
+               (ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
+               QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes;
+    };
+    if(cmd[0] == "write_text_file")
+    {
+        if(cmd.size() != 3 || cmd[1].empty())
+            return fail("usage: write_text_file <filename> <content>");
+        auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to this chat's directory
+        if(ai_declined("AI File Write Request","The AI agent wants to write "+QString::number(cmd[2].size())+
+                       " bytes to this file, replacing it if it exists:\n\n"+file_name))
+            return fail("user declined to write this file");
+        QFile file(file_name); // binary: the UTF-8 content and its newlines are written exactly, no BOM
+        if(!file.open(QIODevice::WriteOnly) || file.write(cmd[2].data(),qint64(cmd[2].size())) != qint64(cmd[2].size()))
+            return fail("cannot write to "+file_name.toStdString());
+        tipl::out() << "wrote " << cmd[2].size() << " bytes to " << file_name.toStdString();
+        return true;
+    }
     if(cmd[0] == "run_shell")
     {
         if(cmd.size() != 2 || cmd[1].empty())
             return fail("usage: run_shell <command>");
         QString text = QString::fromUtf8(cmd[1].c_str());
         QString program = text.section(' ',0,0);
+        bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
+        if(is_curl)
+            text.insert(program.length()," -s -S");
+        if(ai_declined("AI Shell Command Request","The AI agent wants to run this shell command:\n\n"+text))
+            return fail("user declined to run this shell command");
         if(!program.compare("cd",Qt::CaseInsensitive))
         {
             QString path = text.mid(program.length()).trimmed();
@@ -2051,22 +2076,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             process.setArguments({"-c",shell_text});
 #endif
         };
-        bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
-        if(is_curl)
-            text.insert(program.length()," -s -S");
-        static const QStringList shell_special{"&","|",";","`","$(",">","<"};
-        bool needs_confirm = std::any_of(shell_special.begin(),shell_special.end(),
-            [&](const QString& token){return text.contains(token);});
-        if(source == command_source::AI && needs_confirm)
-        {
-            QString message;
-            if(!ai_chat_context.isEmpty())
-                message = "The AI agent says:\n\n"+ai_chat_context+"\n\n";
-            message += "The AI agent wants to run this shell command:\n\n"+text;
-            if(QMessageBox::question(this,"AI Shell Command Request",message,
-                   QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
-                return fail("user declined to run this shell command");
-        }
         if(!is_curl)
         {
             QProcess process;
