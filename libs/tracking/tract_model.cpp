@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <map>
 #include <cmath>
+#include <cfloat>
 #include <cstdio>
 #include "roi.hpp"
 #include "tract_model.hpp"
@@ -2060,7 +2061,26 @@ void TractModel::get_mesh(std::vector<tipl::vector<3> >& points,
             tri.push_back(tipl::vector<3,unsigned int>(j,j+(k ? 1 : 2),j+(k ? 2 : 1)));
     }
 }
-bool TractModel::save_obj_mtl(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes,const tipl::vector<3>& vs)
+void TractModel::to_export_space(std::vector<model_mesh>& meshes,const tipl::vector<3>& vs)
+{
+    // x, z, -y in mm, centered at the scene bounds so viewers (e.g. PowerPoint) frame it at the origin
+    tipl::vector<3> min(FLT_MAX,FLT_MAX,FLT_MAX),max(-FLT_MAX,-FLT_MAX,-FLT_MAX);
+    for(auto& each : meshes)
+        for(auto& p : each.points)
+        {
+            p = tipl::vector<3>(p[0]*vs[0],p[2]*vs[2],-p[1]*vs[1]);
+            for(int i = 0;i < 3;++i)
+            {
+                min[i] = std::min(min[i],p[i]);
+                max[i] = std::max(max[i],p[i]);
+            }
+        }
+    auto center = (min+max)*0.5f;
+    for(auto& each : meshes)
+        for(auto& p : each.points)
+            p -= center;
+}
+bool TractModel::save_obj_mtl(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes)
 {
     std::ofstream out(file_name),mtl(std::filesystem::path(file_name) += ".mtl");
     auto name = file_name.filename().u8string();
@@ -2081,10 +2101,10 @@ bool TractModel::save_obj_mtl(const std::filesystem::path& file_name,const std::
         }
         out << "usemtl " << each.name << std::endl;
         std::string v;
-        for(const auto& p : each.points) // x, z, -y in mm with 3 decimals
+        for(const auto& p : each.points) // 3 decimals
         {
             v += "v";
-            for(float x : {p[0]*vs[0],p[2]*vs[2],-p[1]*vs[1]})
+            for(float x : p)
             {
                 v += " " + std::to_string(x);
                 v.resize(v.size()-3);
@@ -2108,7 +2128,7 @@ bool TractModel::save_obj_mtl(const std::filesystem::path& file_name,const std::
     }
     return out && mtl;
 }
-bool TractModel::save_glb(const std::filesystem::path& file_name,std::vector<model_mesh>& meshes,const tipl::vector<3>& vs)
+bool TractModel::save_glb(const std::filesystem::path& file_name,const std::vector<model_mesh>& meshes)
 {
     // one node and mesh per object; positions, indices, uv, and jpegs share one binary buffer
     std::string bin;
@@ -2124,8 +2144,6 @@ bool TractModel::save_glb(const std::filesystem::path& file_name,std::vector<mod
     {
         if(each.points.empty())
             continue;
-        for(auto& p : each.points) // same axes as save_obj_mtl: x, z, -y in mm
-            p = tipl::vector<3>(p[0]*vs[0],p[2]*vs[2],-p[1]*vs[1]);
         tipl::vector<3> min(each.points[0]),max(each.points[0]);
         for(const auto& p : each.points)
             for(int i = 0;i < 3;++i)
