@@ -58,6 +58,7 @@ private slots:
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
     void on_actionSave_b_table_triggered();
+    void on_actionRegenerate_b_table_triggered();
     void on_actionSave_bvals_triggered();
     void on_actionSave_bvecs_triggered();
 

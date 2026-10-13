@@ -642,6 +642,17 @@ void reconstruction_window::on_zoom_out_clicked()
 }
 
 
+void reconstruction_window::on_actionRegenerate_b_table_triggered()
+{
+    auto filename = tipl::qt::open_image_file(this,absolute_path,"SRC files (*.sz *src.gz);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(!handle->regenerate_b_table(tipl::qt::to_path(filename)))
+        return void(QMessageBox::critical(this,"ERROR",handle->error_msg.c_str()));
+    load_b_table();
+    on_b_table_itemSelectionChanged();
+    ui->report->setText(check_citation(handle->voxel.report.c_str()));
+}
 void reconstruction_window::on_actionSave_b_table_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(

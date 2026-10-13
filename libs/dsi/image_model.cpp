@@ -2844,6 +2844,82 @@ bool src_data::run_topup(void)
 
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
+bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
+{
+    tipl::progress prog("regenerate b-table",true);
+    src_data reference;
+    std::vector<tipl::image<3> > b0,reference_b0;
+    if(!reference.load_from_file(reference_file) || !reference.read_b0(reference_b0))
+        return error_msg = reference.error_msg,false;
+    if(!read_b0(b0))
+        return false;
+    std::vector<unsigned int> shell;
+    calculate_shell(reference.src_bvalues,shell);
+    if(shell.size() != 1 || reference.src_bvalues.size()-shell[0] < 3)
+        return error_msg = "the reference SRC needs one nonzero b-value shell with at least three DWIs",false;
+    std::vector<float> sorted_bvalues(reference.src_bvalues);
+    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
+    float reference_bvalue = sorted_bvalues[(shell[0]+sorted_bvalues.size())/2];
+
+    // affine b0-to-b0 registration; rotate() then resamples the reference DWIs into this space and rotates its b-vectors
+    tipl::reg::mm_reg<tipl::out> reg;
+    reg.I[0] = tipl::reg::subject_image_pre(std::move(reference_b0[0]));
+    reg.Is = reference.voxel.dim;
+    reg.Ivs = reference.voxel.vs;
+    reg.IR = reference.voxel.trans_to_mni;
+    reg.It[0] = tipl::reg::template_image_pre(std::move(b0[0]));
+    reg.Its = voxel.dim;
+    reg.Itvs = voxel.vs;
+    reg.ItR = voxel.trans_to_mni;
+    reg.linear_reg(tipl::prog_aborted);
+    if(prog.aborted())
+        return error_msg = "canceled",false;
+    reference.rotate(voxel.dim,voxel.vs,reg.T());
+    if(prog.aborted())
+        return error_msg = "canceled",false;
+
+    // each DWI takes the kernel-regression direction of its three best-correlated reference DWIs
+    auto new_bvalues = src_bvalues;
+    auto new_bvectors = src_bvectors;
+    std::atomic<bool> failed = false;
+    std::atomic<size_t> p = 0;
+    tipl::par_for(src_bvalues.size(),[&](size_t i)
+    {
+        prog(p++,src_bvalues.size());
+        if(src_bvalues[i] == 0.0f)
+        {
+            new_bvectors[i] = tipl::vector<3,float>();
+            return;
+        }
+        std::pair<float,size_t> best[3] = {{-1.0f,0},{-1.0f,0},{-1.0f,0}};
+        for(size_t j = 0;j < reference.src_bvalues.size();++j)
+            if(reference.src_bvalues[j] != 0.0f)
+            {
+                std::pair<float,size_t> c(masked_correlation(src_dwi_data[i],reference.src_dwi_data[j],voxel.mask),j);
+                for(auto& each : best) // keeps best[] sorted: a larger value displaces the rest down
+                    if(c.first > each.first)
+                        std::swap(c,each);
+            }
+        // correlation as the kernel weight; directions folded into the hemisphere of the best match
+        const auto& g0 = reference.src_bvectors[best[0].second];
+        tipl::vector<3,float> g;
+        for(const auto& [w,j] : best)
+            g += reference.src_bvectors[j]*(reference.src_bvectors[j]*g0 < 0.0f ? -std::max(w,0.0f) : std::max(w,0.0f));
+        if(g.length() == 0.0)
+            return void(failed = true);
+        g.normalize();
+        new_bvectors[i] = g;
+        new_bvalues[i] = reference_bvalue;
+    });
+    if(prog.aborted())
+        return error_msg = "canceled",false;
+    if(failed)
+        return error_msg = "cannot estimate one or more b-vectors from the reference SRC",false;
+    src_bvalues.swap(new_bvalues);
+    src_bvectors.swap(new_bvectors);
+    voxel.report += " The b-table was regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
+    return true;
+}
 std::string src_data::get_report(bool dwi_part_only)
 {
     std::vector<float> sorted_bvalues(src_bvalues);

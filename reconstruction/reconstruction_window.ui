@@ -1383,6 +1383,7 @@ Reconstruction</string>
     <addaction name="actionSave_bvals"/>
     <addaction name="actionSave_bvecs"/>
     <addaction name="separator"/>
+    <addaction name="actionRegenerate_b_table"/>
     <addaction name="actionCheck_b_table2"/>
     <addaction name="actionCheck_b_table"/>
     <addaction name="separator"/>
@@ -1751,6 +1752,14 @@ Reconstruction</string>
   <action name="actionT1W_based_QSDR">
    <property name="text">
     <string>T1W-based QSDR...</string>
+   </property>
+  </action>
+  <action name="actionRegenerate_b_table">
+   <property name="text">
+    <string>Regenerate B-table...</string>
+   </property>
+   <property name="toolTip">
+    <string>Estimate the b-table from a reference SRC with the same single-shell scheme</string>
    </property>
   </action>
   <action name="actionCheck_b_table2">
