@@ -269,6 +269,7 @@ public:
     bool save_b_table(const std::filesystem::path& file_name) const;
     bool save_bval(const std::filesystem::path& file_name) const;
     bool save_bvec(const std::filesystem::path& file_name) const;
+    bool load_bval_or_bvec(const std::filesystem::path& file_name,bool bvec); // replaces the current b-values or b-vectors (FSL format)
 public:
     template<typename ...ProcessList>
     bool reconstruct2(const char* prog_title)
