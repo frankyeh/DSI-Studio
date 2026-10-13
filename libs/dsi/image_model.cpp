@@ -3527,6 +3527,29 @@ bool src_data::save_bval(const std::filesystem::path& file_name) const
     }
     return out.good();
 }
+bool src_data::load_bval_or_bvec(const std::filesystem::path& file_name,bool bvec)
+{
+    std::vector<float> values;
+    size_t rows = 0;
+    for(const auto& line : tipl::read_text_file(file_name))
+    {
+        std::istringstream in(line);
+        auto size = values.size();
+        for(float v;in >> v;)
+            values.push_back(v);
+        rows += values.size() > size;
+    }
+    size_t n = src_bvalues.size();
+    if(values.size() != (bvec ? 3*n : n))
+        return error_msg = "found " + std::to_string(values.size()) + " values in " + file_name.filename().u8string() +
+                           " but expected " + std::to_string(bvec ? 3*n : n) + " for " + std::to_string(n) + " DWIs",false;
+    if(!bvec)
+        return std::copy(values.begin(),values.end(),src_bvalues.begin()),true;
+    for(size_t i = 0;i < n;++i) // three rows (FSL) or one row per DWI; y is flipped as in save_bvec
+        for(int k = 0;k < 3;++k)
+            src_bvectors[i][k] = (k == 1 ? -1.0f : 1.0f)*values[rows == 3 ? k*n+i : i*3+k];
+    return true;
+}
 bool src_data::save_bvec(const std::filesystem::path& file_name) const
 {
     std::ofstream out(file_name);
