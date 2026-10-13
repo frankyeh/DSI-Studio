@@ -1382,6 +1382,8 @@ Reconstruction</string>
     <addaction name="actionSave_b_table"/>
     <addaction name="actionSave_bvals"/>
     <addaction name="actionSave_bvecs"/>
+    <addaction name="actionLoad_bvals"/>
+    <addaction name="actionLoad_bvecs"/>
     <addaction name="separator"/>
     <addaction name="actionRegenerate_b_table"/>
     <addaction name="actionCheck_b_table2"/>
@@ -1752,6 +1754,30 @@ Reconstruction</string>
   <action name="actionT1W_based_QSDR">
    <property name="text">
     <string>T1W-based QSDR...</string>
+   </property>
+  </action>
+  <action name="actionLoad_bvals">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Load Bvals...</string>
+   </property>
+   <property name="toolTip">
+    <string>Replace the b-values with an FSL bval file</string>
+   </property>
+  </action>
+  <action name="actionLoad_bvecs">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Load Bvecs...</string>
+   </property>
+   <property name="toolTip">
+    <string>Replace the b-vectors with an FSL bvec file</string>
    </property>
   </action>
   <action name="actionRegenerate_b_table">
