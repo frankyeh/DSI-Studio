@@ -1314,6 +1314,12 @@ bool src_data::command(std::vector<std::string> cmds)
             return false;
         return log_step();
     }
+    if(cmd == "regenerate_btable" || cmd == "load_bval" || cmd == "load_bvec") // param: the reference SRC or the bval/bvec file
+    {
+        if(!(cmd == "regenerate_btable" ? regenerate_b_table(param) : load_bval_or_bvec(param,cmd == "load_bvec")))
+            return false;
+        return log_step();
+    }
     if(cmd == "check_btable2")
     {
         if(!check_b_table(false))
