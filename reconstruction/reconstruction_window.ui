@@ -1470,6 +1470,9 @@ Reconstruction</string>
    <property name="text">
     <string>Save B-table...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_b_table</string>
+   </property>
   </action>
   <action name="actionSave_bvals">
    <property name="icon">
@@ -1479,6 +1482,9 @@ Reconstruction</string>
    <property name="text">
     <string>Save Bvals...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_bval</string>
+   </property>
   </action>
   <action name="actionSave_bvecs">
    <property name="icon">
@@ -1487,6 +1493,9 @@ Reconstruction</string>
    </property>
    <property name="text">
     <string>Save Bvecs...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_bvec</string>
    </property>
   </action>
   <action name="actionFlip_x">
@@ -1671,6 +1680,9 @@ Reconstruction</string>
    <property name="text">
     <string>Overwrite Voxel Size...</string>
    </property>
+   <property name="toolTip">
+    <string>run set_voxel_size</string>
+   </property>
   </action>
   <action name="actionRun_FSL_Topup">
    <property name="text">
@@ -1745,10 +1757,16 @@ Reconstruction</string>
    <property name="text">
     <string>Attach Images...</string>
    </property>
+   <property name="toolTip">
+    <string>run add_other_image</string>
+   </property>
   </action>
   <action name="actionPartial_FOV">
    <property name="text">
     <string>Partial FOV...</string>
+   </property>
+   <property name="toolTip">
+    <string>run partial_fov</string>
    </property>
   </action>
   <action name="actionT1W_based_QSDR">

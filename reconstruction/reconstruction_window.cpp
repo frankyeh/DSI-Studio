@@ -473,14 +473,28 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = std::to_string(nv);
     }
-    if((cmd == "save_nifti" || cmd == "save_b0" ||
-        cmd == "save_dwi_sum") && param.empty())
+    if(tipl::begins_with(cmd,"save_") && param.empty())
     {
-        QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
-                                "NIFTI files (*nii.gz);;All files (*)" );
+        static const std::map<std::string,std::pair<QString,QString> > save_types{
+            {"save_src",{".sz","SRC files (*.sz *src.gz);;All files (*)"}},
+            {"save_b_table",{".b_table.txt","Text files (*.txt);;All files (*)"}},
+            {"save_bval",{".bval","All files (*)"}},
+            {"save_bvec",{".bvec","All files (*)"}}};
+        auto type = save_types.count(cmd) ? save_types.at(cmd) : std::pair<QString,QString>{".nii.gz","NIFTI files (*nii.gz);;All files (*)"};
+        QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+type.first,type.second);
         if(filename.isEmpty())
             return fail("canceled");
         param = filename.toStdString();
+    }
+    if((cmd == "partial_fov" || cmd == "set_voxel_size") && param.empty())
+    {
+        bool ok;
+        const auto& vs = handle->voxel.vs;
+        param = QInputDialog::getText(this,QApplication::applicationName(),
+                    cmd == "partial_fov" ? "MNI coordinate range (minx miny minz maxx maxy maxz)" : "Voxel size in mm",QLineEdit::Normal,
+                    cmd == "partial_fov" ? QString("-36 -30 -20 36 30 24") : QString("%1 %2 %3").arg(vs[0]).arg(vs[1]).arg(vs[2]),&ok).toStdString();
+        if(!ok)
+            return fail("canceled");
     }
     if((cmd == "probabilistic_masking" || cmd == "correct_by_t1w" || cmd == "correct_by_t2w") && param.empty())
     {
@@ -498,14 +512,6 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         if(!ok)
             return fail("canceled");
         param += std::vector<std::string>{"|0","|1.5","|1.0"}[size_t(items.indexOf(item))];
-    }
-    if(cmd == "save_src" && param.empty())
-    {
-        QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+".sz",
-                        "SRC files (*.sz *src.gz);;All files (*)" );
-        if(filename.isEmpty())
-            return fail("canceled");
-        param = filename.toStdString();
     }
     if(source == command_source::User &&
        tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()) && param.empty())
@@ -525,10 +531,12 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             param = candidate.u8string();
     }
 
-    if((tipl::contains_case_insensitive(cmd,"open") || cmd == "regenerate_btable" || tipl::begins_with(cmd,"load_bv")) && param.empty())
+    if((tipl::contains_case_insensitive(cmd,"open") || cmd == "regenerate_btable" || tipl::begins_with(cmd,"load_bv") ||
+        cmd == "add_other_image") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(this,absolute_path,
             cmd == "regenerate_btable" ? "SRC files (*.sz *src.gz);;All files (*)" :
+            cmd == "add_other_image" ? "Images (*.nii *nii.gz);;All files (*)" :
             tipl::begins_with(cmd,"load_bv") ? "All files (*)" : "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)");
         if(filename.isEmpty())
             return fail("canceled");
@@ -643,43 +651,6 @@ void reconstruction_window::on_zoom_out_clicked()
 }
 
 
-void reconstruction_window::on_actionSave_b_table_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                this,
-                                "Save b table as...",
-                            QFileInfo(filenames[0]).absolutePath() + "/b_table.txt",
-                                "Text files (*.txt)" );
-    if ( filename.isEmpty() )
-        return;
-    handle->save_b_table(filename.toStdString());
-}
-
-void reconstruction_window::on_actionSave_bvals_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                this,
-                                "Save b table as...",
-                                QFileInfo(filenames[0]).absolutePath() + "/bvals",
-                                "Text files (*)" );
-    if ( filename.isEmpty() )
-        return;
-    handle->save_bval(filename.toStdString());
-}
-
-void reconstruction_window::on_actionSave_bvecs_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                this,
-                                "Save b table as...",
-                                QFileInfo(filenames[0]).absolutePath() + "/bvecs",
-                                "Text files (*)" );
-    if ( filename.isEmpty() )
-        return;
-    handle->save_bvec(filename.toStdString());
-}
-
-
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>&);
 void reconstruction_window::on_actionRotate_triggered()
 {
@@ -721,30 +692,14 @@ void reconstruction_window::on_actionRotate_triggered()
 
 void reconstruction_window::on_delete_2_clicked()
 {
-    if(handle->src_dwi_data.size() == 1)
-        return;
-    int index = ui->b_table->currentRow();
-    if(index < 0)
-        return;
-    bad_slice_analyzed = false;
-    ui->b_table->removeRow(index);
-    handle->remove(uint32_t(index));
-
+    if(ui->b_table->currentRow() >= 0 && command({"remove",std::to_string(ui->b_table->currentRow())},command_source::User))
+        bad_slice_analyzed = false;
 }
 
 void reconstruction_window::on_remove_below_clicked()
 {
-    if(handle->src_dwi_data.size() == 1)
-        return;
-    int index = ui->b_table->currentRow();
-    if(index <= 0)
-        return;
-    bad_slice_analyzed = false;
-    while(ui->b_table->rowCount() > index)
-    {
-        ui->b_table->removeRow(index);
-        handle->remove(uint32_t(index));
-    }
+    if(ui->b_table->currentRow() > 0 && command({"remove",std::to_string(ui->b_table->currentRow())+":end"},command_source::User))
+        bad_slice_analyzed = false;
 }
 
 
@@ -759,18 +714,6 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     view << buffer;
     view = view.scaled(int(buffer.width()*ratio),int(buffer.height()*ratio));
     scene << view;
-}
-
-void reconstruction_window::on_actionAttach_Images_triggered()
-{
-    QString filename = tipl::qt::open_image_file(this,absolute_path,"Images (*.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-    if(handle->add_other_image(QFileInfo(filename).baseName().toStdString(),filename.toStdString()))
-        QMessageBox::information(this,QApplication::applicationName(),"File added");
-    else
-        QMessageBox::critical(this,"ERROR","Not a valid nifti file");
-
 }
 
 void reconstruction_window::on_actionT1W_based_QSDR_triggered()
@@ -793,15 +736,6 @@ void reconstruction_window::on_actionT1W_based_QSDR_triggered()
     else
         QMessageBox::critical(this,"ERROR","Not a valid nifti file");
 
-}
-
-void reconstruction_window::on_actionPartial_FOV_triggered()
-{
-    QString values = QInputDialog::getText(this,QApplication::applicationName(),"Specify the range of MNI coordinates separated by spaces (minx miny minz maxx maxy maxz)",QLineEdit::Normal,
-                                           QString("-36 -30 -20 36 30 24"));
-    if(values.isEmpty())
-        return;
-    handle->command({"partial_fov",values.toStdString()});
 }
 
 void reconstruction_window::on_actionManual_Rotation_triggered()
@@ -910,20 +844,6 @@ void reconstruction_window::on_edit_mask_clicked()
 
 }
 
-
-void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
-{
-    bool ok;
-    QString result = QInputDialog::getText(this,QApplication::applicationName(),"Assign voxel size in mm",
-                                           QLineEdit::Normal,
-                                           QString("%1 %2 %3").arg(double(handle->voxel.vs[0]))
-                                                              .arg(double(handle->voxel.vs[1]))
-                                                              .arg(double(handle->voxel.vs[2])),&ok);
-    if(!ok)
-        return;
-    command({"set_voxel_size",result.toStdString()},command_source::User);
-    ui->report->setText((handle->voxel.report = handle->get_report()).c_str());
-}
 
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,

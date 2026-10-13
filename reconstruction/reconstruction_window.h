@@ -57,9 +57,6 @@ private slots:
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
-    void on_actionSave_b_table_triggered();
-    void on_actionSave_bvals_triggered();
-    void on_actionSave_bvecs_triggered();
 
     void on_actionRotate_triggered();
     void on_delete_2_clicked();
@@ -75,10 +72,7 @@ private slots:
     void on_show_bad_slice_clicked();
     void on_align_slices_clicked();
     void on_edit_mask_clicked();
-    void on_actionOverwrite_Voxel_Size_triggered();
     void on_actionManual_Align_triggered();
-    void on_actionAttach_Images_triggered();
-    void on_actionPartial_FOV_triggered();
     void on_actionT1W_based_QSDR_triggered();
     void on_change_fib_output_clicked();
     void on_fib_output_editingFinished();

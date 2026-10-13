@@ -13,6 +13,7 @@
 #include "tracking/region/Regions.h"
 #include <filesystem>
 #include <functional>
+#include <charconv>
 
 bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,bool must_have_bval_bvec,std::string& error_msg);
@@ -396,17 +397,6 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     return true;
 }
 
-void src_data::remove(unsigned int index)
-{
-    if(index >= src_dwi_data.size())
-        return;
-    src_dwi_data.erase(src_dwi_data.begin()+index);
-    src_bvalues.erase(src_bvalues.begin()+index);
-    src_bvectors.erase(src_bvectors.begin()+index);
-    std::string remove_text(" Reconstruction was conducted on a subset of DWI.");
-    if(voxel.report.find(remove_text) == std::string::npos)
-        voxel.report += remove_text;
-}
 
 
 
@@ -1066,32 +1056,77 @@ bool src_data::command(std::vector<std::string> cmds)
     tipl::progress prog(cmd,true);
     if(!param.empty())
         tipl::out() << "param: " << param;
-    if(cmd == "save_src" || cmd == "save_nifti")
+    if(tipl::begins_with(cmd,"save_"))
     {
         if(param.empty())
-        {
-            error_msg = " please assign file name ";
-            return false;
-        }
-        return save_to_file(param);
+            return error_msg = "please assign file name",false;
+        return cmd == "save_src" || cmd == "save_nifti" ? save_to_file(param) :
+               cmd == "save_b0" ? save_b0_to_nii(param) :
+               cmd == "save_dwi_sum" ? save_dwi_sum_to_nii(param) :
+               cmd == "save_b_table" ? save_b_table(param) :
+               cmd == "save_bval" ? save_bval(param) :
+               cmd == "save_bvec" ? save_bvec(param) : (error_msg = "unknown command: " + cmd,false);
     }
-    if(cmd == "save_b0")
+    if(cmd == "remove") // DWI index ranges and b-value conditions, e.g. 1,3:5,8:end or b>3000 or b<100
     {
-        if(param.empty())
+        const size_t n = src_bvalues.size();
+        std::vector<unsigned char> removed(n);
+        auto parse = [](const std::string& text,size_t& value)
         {
-            error_msg = " please assign file name ";
-            return false;
+            auto [p,e] = std::from_chars(text.data(),text.data()+text.size(),value);
+            return e == std::errc{} && p == text.data()+text.size();
+        };
+        for(const auto& text : tipl::split(param,','))
+        {
+            if(text.size() > 1 && text[0] == 'b' && (text[1] == '>' || text[1] == '<'))
+            {
+                char* end;
+                float b = std::strtof(text.c_str()+2,&end);
+                if(end == text.c_str()+2 || *end)
+                    return error_msg = "invalid remove: " + text,false;
+                for(size_t i = 0;i < n;++i)
+                    if(text[1] == '>' ? src_bvalues[i] > b : src_bvalues[i] < b)
+                        removed[i] = 1;
+                continue;
+            }
+            auto range = tipl::split(text,':');
+            size_t from,to;
+            if(range.empty() || range.size() > 2 || !parse(range[0],from) || from >= n)
+                return error_msg = "invalid remove: " + text,false;
+            to = range.size() == 1 ? from : n-1;
+            if(range.size() == 2 && range[1] != "end" && (!parse(range[1],to) || to >= n || from > to))
+                return error_msg = "invalid remove: " + text,false;
+            std::fill(removed.begin()+from,removed.begin()+to+1,1);
         }
-        return save_b0_to_nii(param);
+        size_t out = 0;
+        for(size_t i = 0;i < n;++i)
+            if(!removed[i])
+            {
+                src_dwi_data[out] = src_dwi_data[i];
+                src_bvalues[out] = src_bvalues[i];
+                src_bvectors[out++] = src_bvectors[i];
+            }
+        if(out == n)
+            return error_msg = "no DWI matched remove",false;
+        if(!out)
+            return error_msg = "remove cannot remove all DWI",false;
+        src_dwi_data.resize(out);
+        src_bvalues.resize(out);
+        src_bvectors.resize(out);
+        update_dwi_sum();
+        if(!tipl::contains(voxel.report," Reconstruction was conducted on a subset of DWI."))
+            voxel.report += " Reconstruction was conducted on a subset of DWI.";
+        tipl::out() << "current DWI count: " << out;
+        return log_step();
     }
-    if(cmd == "save_dwi_sum")
+    if(cmd == "add_other_image") // param: [name:]file, the name defaulting to the file name
     {
-        if(param.empty())
-        {
-            error_msg = " please assign file name ";
+        auto pos = param.find(':');
+        bool named = pos != std::string::npos && pos != 1 && !tipl::begins_with(param,"http");
+        std::filesystem::path path = named ? param.substr(pos+1) : param;
+        if(!add_other_image(named ? param.substr(0,pos) : tipl::remove_all_suffix(path.filename().u8string()),path))
             return false;
-        }
-        return save_dwi_sum_to_nii(param);
+        return log_step();
     }
 
     if(cmd == "mask_open")

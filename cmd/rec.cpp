@@ -1,7 +1,6 @@
 #include <string>
 #include <cstdlib>
 #include <filesystem>
-#include <charconv>
 #include "fib_data.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
@@ -68,90 +67,8 @@ int rec(tipl::program_option<tipl::out>& po)
         if(po.has(name) && !src.command({std::string("load_")+name,po.get(name)}))
             return fail();
 
-    // Examples: --remove=1,3:5,8:end or --remove="b>3000" or --remove="b<100"
-    if(po.has("remove"))
-    {
-        const size_t n = src.src_bvalues.size();
-        std::vector<unsigned char> removed(n);
-        size_t removed_count = 0;
-
-        auto parse = [](const std::string& text,size_t& value)
-        {
-            auto [p,e] = std::from_chars(text.data(),text.data()+text.size(),value);
-            return e == std::errc{} && p == text.data()+text.size();
-        };
-        auto invalid = [](const std::string& text)->int
-        {
-            return tipl::error() << "invalid --remove: " << text,1;
-        };
-        auto mark = [&](size_t i)
-        {
-            if(!removed[i])
-                removed[i] = 1,++removed_count;
-        };
-
-        for(const auto& text : tipl::split(po.get("remove"),','))
-        {
-            if(text.size() > 1 && text[0] == 'b' && (text[1] == '>' || text[1] == '<'))
-            {
-                char* end;
-                float b = std::strtof(text.c_str()+2,&end);
-                if(end == text.c_str()+2 || *end)
-                    return invalid(text);
-                for(size_t i = 0;i < n;++i)
-                    if(text[1] == '>' ? src.src_bvalues[i] > b : src.src_bvalues[i] < b)
-                        mark(i);
-                continue;
-            }
-
-            auto range = tipl::split(text,':');
-            size_t from,to;
-            if(range.empty() || range.size() > 2 || !parse(range[0],from) || from >= n)
-                return invalid(text);
-
-            to = from;
-            if(range.size() == 2)
-            {
-                if(range[1] == "end")
-                    to = n-1;
-                else
-                    if(!parse(range[1],to) || to >= n)
-                        return invalid(text);
-                if(from > to)
-                    return invalid(text);
-            }
-            for(size_t i = from;i <= to;++i)
-                mark(i);
-        }
-
-        if(!removed_count)
-            return tipl::error() << "no DWI matched --remove",1;
-        if(removed_count == n)
-            return tipl::error() << "--remove cannot remove all DWI",1;
-
-        std::string log("DWI removed at ");
-        size_t out = 0;
-        for(size_t i = 0;i < n;++i)
-            if(removed[i])
-                log += std::to_string(i) + " ";
-            else
-            {
-                src.src_dwi_data[out] = src.src_dwi_data[i];
-                src.src_bvalues[out] = src.src_bvalues[i];
-                src.src_bvectors[out++] = src.src_bvectors[i];
-            }
-
-        src.src_dwi_data.resize(out);
-        src.src_bvalues.resize(out);
-        src.src_bvectors.resize(out);
-        src.update_dwi_sum();
-
-        const char* report = " Reconstruction was conducted on a subset of DWI.";
-        if(!tipl::contains(src.voxel.report,report))
-            src.voxel.report += report;
-        tipl::out() << log << "\ncurrent DWI count: " << out;
-    }
-
+    if(po.has("remove") && !src.command({"remove",po.get("remove")})) // e.g. --remove=1,3:5,8:end or --remove="b>3000"
+        return fail();
 
     if(po.has("cmd"))
         for(const auto& each : tipl::split(po.get("cmd"),'+'))
@@ -274,22 +191,9 @@ int rec(tipl::program_option<tipl::out>& po)
         tipl::out() << "other modality template: " << (src.voxel.other_modality_template = file_list[1]);
     }
     if(po.has("other_image"))
-    {
         for(const auto& each : po.get_files("other_image"))
-        {
-            tipl::out() << "add image: " << each;
-            auto value = each.u8string();
-            auto pos = value.find(':');
-            bool named = pos != std::string::npos && pos != 1 &&
-                         !tipl::begins_with(value,"http");
-            auto name = named ? value.substr(0,pos) :
-                        tipl::remove_all_suffix(each.filename().u8string());
-            std::filesystem::path path =
-                named ? value.substr(pos+1) : value;
-            if(!src.add_other_image(name,path))
+            if(!src.command({"add_other_image",each.u8string()}))
                 return fail();
-        }
-    }
     if (!src.reconstruction())
         return fail();
     if(po.get("export_r",0) && src.voxel.R2 != 0.0f)
