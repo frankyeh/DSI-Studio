@@ -1765,7 +1765,7 @@ Reconstruction</string>
     <string>Load Bvals...</string>
    </property>
    <property name="toolTip">
-    <string>Replace the b-values with an FSL bval file</string>
+    <string>run load_bval</string>
    </property>
   </action>
   <action name="actionLoad_bvecs">
@@ -1777,7 +1777,7 @@ Reconstruction</string>
     <string>Load Bvecs...</string>
    </property>
    <property name="toolTip">
-    <string>Replace the b-vectors with an FSL bvec file</string>
+    <string>run load_bvec</string>
    </property>
   </action>
   <action name="actionRegenerate_b_table">
@@ -1785,7 +1785,7 @@ Reconstruction</string>
     <string>Regenerate B-table...</string>
    </property>
    <property name="toolTip">
-    <string>Estimate the b-table from a reference SRC with the same single-shell scheme</string>
+    <string>run regenerate_btable</string>
    </property>
   </action>
   <action name="actionCheck_b_table2">
