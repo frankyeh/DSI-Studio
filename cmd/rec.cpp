@@ -64,8 +64,8 @@ int rec(tipl::program_option<tipl::out>& po)
     }
 
     // --bval / --bvec replace the b-values / b-vectors (FSL format), same options as --action=src
-    for(auto [name,bvec] : {std::pair{"bval",false},std::pair{"bvec",true}})
-        if(po.has(name) && !src.load_bval_or_bvec(po.get(name),bvec))
+    for(auto name : {"bval","bvec"})
+        if(po.has(name) && !src.command({std::string("load_")+name,po.get(name)}))
             return fail();
 
     // Examples: --remove=1,3:5,8:end or --remove="b>3000" or --remove="b<100"
