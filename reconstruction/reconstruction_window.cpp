@@ -155,17 +155,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         foreach (QPushButton* pb, findChildren<QPushButton*>())
             if(pb->toolTip().startsWith("run "))
                 connect(pb,&QPushButton::clicked,this,[this,pb](){command({pb->toolTip().mid(4).section('=',0,0).toStdString(),pb->toolTip().mid(4).section('=',1).toStdString()},command_source::User);});
-        for(auto [action,bvec] : {std::pair{ui->actionLoad_bvals,false},std::pair{ui->actionLoad_bvecs,true}})
-            connect(action,&QAction::triggered,this,[this,bvec]()
-            {
-                auto filename = tipl::qt::open_image_file(this,absolute_path,"Text files (*)");
-                if(filename.isEmpty())
-                    return;
-                if(!handle->load_bval_or_bvec(tipl::qt::to_path(filename),bvec))
-                    return void(QMessageBox::critical(this,"ERROR",handle->error_msg.c_str()));
-                load_b_table();
-                on_b_table_itemSelectionChanged();
-            });
     }
 }
 void reconstruction_window::update_dimension(void)
@@ -536,10 +525,11 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             param = candidate.u8string();
     }
 
-    if(tipl::contains_case_insensitive(cmd,"open") && param.empty())
+    if((tipl::contains_case_insensitive(cmd,"open") || cmd == "regenerate_btable" || tipl::begins_with(cmd,"load_bv")) && param.empty())
     {
-        QString filename = tipl::qt::open_image_file(
-            this,absolute_path,"Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
+        QString filename = tipl::qt::open_image_file(this,absolute_path,
+            cmd == "regenerate_btable" ? "SRC files (*.sz *src.gz);;All files (*)" :
+            tipl::begins_with(cmd,"load_bv") ? "All files (*)" : "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)");
         if(filename.isEmpty())
             return fail("canceled");
         param = filename.toStdString();
@@ -653,17 +643,6 @@ void reconstruction_window::on_zoom_out_clicked()
 }
 
 
-void reconstruction_window::on_actionRegenerate_b_table_triggered()
-{
-    auto filename = tipl::qt::open_image_file(this,absolute_path,"SRC files (*.sz *src.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!handle->regenerate_b_table(tipl::qt::to_path(filename)))
-        return void(QMessageBox::critical(this,"ERROR",handle->error_msg.c_str()));
-    load_b_table();
-    on_b_table_itemSelectionChanged();
-    ui->report->setText(check_citation(handle->voxel.report.c_str()));
-}
 void reconstruction_window::on_actionSave_b_table_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
