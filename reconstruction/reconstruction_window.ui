@@ -585,7 +585,7 @@
                <item row="0" column="12">
                 <widget class="QPushButton" name="from_unet">
                  <property name="toolTip">
-                  <string>run mask_unet</string>
+                  <string>run mask_from_unet</string>
                  </property>
                  <property name="text">
                   <string>U-Net</string>
