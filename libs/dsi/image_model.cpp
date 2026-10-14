@@ -190,13 +190,17 @@ bool src_data::mask_from_template(void)
 }
 extern std::vector<std::vector<std::string> > unet_http;
 bool download_unet_model(tipl::ml3d::tissue_seg& unet,const std::string& name);
-bool src_data::mask_from_unet(void)
+bool src_data::mask_from_unet(tipl::image<3> b0)
 {
     tipl::progress p("generating a mask using unet",true);
-    std::vector<tipl::image<3> > b0;
-    if(!read_b0(b0))
-        return false;
-    tipl::filter::gaussian(b0[0]);
+    if(b0.empty())
+    {
+        std::vector<tipl::image<3> > b0s;
+        if(!read_b0(b0s))
+            return false;
+        b0.swap(b0s[0]);
+    }
+    tipl::filter::gaussian(b0);
     if(voxel.template_id >= unet_http.size())
         return error_msg = "no U-Net model for the current template",false;
     // the template's own species tissue model, e.g. human_tissue, rhesus_tissue, mouse_tissue
@@ -205,7 +209,7 @@ bool src_data::mask_from_unet(void)
     tipl::ml3d::tissue_seg unet;
     if(model == models.end())
         return error_msg = "no tissue U-Net model for the current template",false;
-    if(!download_unet_model(unet,std::filesystem::path(*model).stem().u8string()) || !unet.forward(std::move(b0[0]),voxel.vs))
+    if(!download_unet_model(unet,std::filesystem::path(*model).stem().u8string()) || !unet.forward(std::move(b0),voxel.vs))
         return error_msg = unet.error_msg,false;
     tipl::image<3,unsigned char> mask = unet.data.fg_prob > 0.5f;
     if(mask.shape() != voxel.dim || tipl::max_value(mask) == 0)
@@ -2485,14 +2489,11 @@ bool src_data::load_topup_eddy_result(void)
     }
     voxel.report += topup_eddy_report;
     update_dwi_sum();
-    // an automatic mask is regenerated in the corrected space; a mask the user opened is kept
-    if(voxel.mask.empty() || !tipl::contains(voxel.steps,"[Step T2a][Open]"))
+    // the mask is regenerated in the corrected space
+    if(!mask_from_unet())
     {
-        if(!mask_from_unet())
-        {
-            tipl::warning() << error_msg << "; using the DWI-sum mask";
-            update_mask();
-        }
+        tipl::warning() << error_msg << "; using the DWI-sum mask";
+        update_mask();
     }
     apply_mask = true;
     return true;
@@ -2640,8 +2641,24 @@ bool src_data::run_eddy(std::string exec)
     auto bval_file = std::filesystem::path(file_name)+=".bval";
     auto bvec_file = std::filesystem::path(file_name)+=".bvec";
     {
+        // eddy mask: U-Net on the topup-corrected b0 (current b0 without topup), otherwise the current mask
+        auto mask = voxel.mask;
+        bool unet = false;
+        std::vector<std::shared_ptr<DwiHeader> > iout;
+        if(!has_topup)
+            unet = mask_from_unet();
+        else
+        if(load_4d_nii(std::filesystem::path(file_name)+=".topup.check_result.nii.gz",iout,false,false,error_msg))
+        {
+            tipl::reshape(iout[0]->image,voxel.dim);
+            unet = mask_from_unet(std::move(iout[0]->image));
+        }
+        if(!unet)
+            tipl::warning() << error_msg << "; using the current mask for eddy";
         tipl::image<3,unsigned char> I(topup_size);
         tipl::reshape(voxel.mask,I);
+        // keep the original mask until the corrected data are loaded
+        voxel.mask.swap(mask);
         if(!(tipl::io::gz_nifti(mask_nifti,std::ios::out) << voxel.bind(I) << [&](const std::string& e){tipl::error() << (error_msg = e);}))
             return false;
     }
