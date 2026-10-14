@@ -1,4 +1,4 @@
-// ai_info's data layer (session registry, history/config persistence) and free helpers with no AIAgent/MainWindow dependency
+// ai_info's data layer (session registry, history/config persistence), free helpers, and the --action=ai entry point
 #include <QColor>
 #include <QComboBox>
 #include <QDateTime>
@@ -17,6 +17,8 @@
 #include <utility>
 
 #include "ai.hpp"
+#include "mainwindow.h"
+#include "ai_agent.hpp"
 #include "TIPL/tipl.hpp"
 
 std::unordered_map<QString,ai_info> ai_infos;
@@ -304,4 +306,12 @@ QJsonObject ai_info::record_reply(const QString& chat,const QString& reasoning)
     if(!reasoning.isEmpty())
         entry["reasoning"] = reasoning;
     return record_history(entry);
-}
+}
+extern MainWindow* main_window;
+int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headless Web session served until Ctrl+C
+{
+    if(po.get("agent") != "web")
+        return tipl::error() << "--action=ai supports only --agent=web",1;
+    return main_window->ai_agent->start_web_cli() ? 0 : 1;
+}
+
