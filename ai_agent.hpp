@@ -71,7 +71,8 @@ class AIAgent : public QMainWindow
     // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens are never logged or written to chat history
     QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved, so a restart stays signed in
     QDateTime google_token_expiry;
-    bool sign_in_google(); // system-browser sign-in; true once a token is held
+    bool sign_in_google(); // system-browser sign-in (or, headless, a pasted redirect address); true once a token is held
+    void warn(const QString& text); // a warning dialog; headless, an error line that ends the process
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
     // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, read directly for 3 minutes after activity, then on a Drive modifiedTime change
@@ -123,6 +124,8 @@ class AIAgent : public QMainWindow
     QString prepare_ai(ai_info&); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
+    bool cli = false; // --action=ai: headless, so prompts and approvals use the terminal, Web never stops when idle, and only CLI commands run
+    bool start_web_cli(); // --action=ai --agent=web: signs in when needed and starts a Web session
     explicit AIAgent(MainWindow*);
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
