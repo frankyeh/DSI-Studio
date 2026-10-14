@@ -1458,12 +1458,12 @@ void AIAgent::create_web_session()
             auto use = [this](QJsonObject folder)
             {
                 if(folder["id"].toString().isEmpty())
-                    return void(QMessageBox::warning(this,"AI Agent","Cannot create the DSI Studio AI folder in Google Drive."));
+                    return warn("Cannot create the DSI Studio AI folder in Google Drive.");
                 settings.setValue("ai/google_folder_id",google_folder_id = folder["id"].toString());
                 create_web_session();
             };
             if(!found.contains("files")) // a failed search is not "no folder": never create a duplicate
-                return void(QMessageBox::warning(this,"AI Agent","Cannot reach Google Drive."));
+                return warn("Cannot reach Google Drive.");
             if(auto files = found["files"].toArray();!files.isEmpty())
                 return use(files[0].toObject());
             google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
@@ -1477,7 +1477,7 @@ void AIAgent::create_web_session()
         if(file["id"].toString().isEmpty())
         {
             settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the folder may have been deleted: recreate it next time
-            return void(QMessageBox::warning(this,"AI Agent","Cannot create the Web session."));
+            return warn("Cannot create the Web session.");
         }
         auto* info = ai_info::create(session,"Web","Web"); // agent agnostic: any web-based agent can join
         info->model_settings["google_file_id"] = file["id"].toString();
@@ -1501,11 +1501,27 @@ void AIAgent::start_web(ai_info& info)
     set_ai_status(info.sessions,session_status::WaitingUser,"Web: reading the session Doc.");
     web_idle.start();
     web_timer.start(0);
-    QApplication::clipboard()->setText( // on every start and Resume: the agent may be a new chat
-        "Connect to DSI Studio. First read the public GitHub file "
-        "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
-        "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit");
+    QString prompt = "Connect to DSI Studio. First read the public GitHub file "
+                     "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
+                     "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit";
+    if(cli)
+        return void(std::cout << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << prompt.toStdString()
+                              << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl);
+    QApplication::clipboard()->setText(prompt); // on every start and Resume: the agent may be a new chat
     QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
+}
+bool AIAgent::start_web_cli()
+{
+    cli = true;
+    create_web_session(); // signs in first when no token is saved
+    return !google_refresh_token.isEmpty();
+}
+void AIAgent::warn(const QString& text)
+{
+    if(!cli)
+        return void(QMessageBox::warning(this,"AI Agent",text));
+    tipl::error() << text.toStdString();
+    QCoreApplication::exit(1);
 }
 void AIAgent::stop_web(const QString& message)
 {
@@ -1535,7 +1551,7 @@ void AIAgent::poll_web(const QString& modified_time)
     if(!web_pending_result.isEmpty())
         return publish_web_result(); // a previous result write failed; retry it, never re-execute
     auto idle = web_idle.elapsed();
-    if(idle > 3600000) // also bounds failing reads
+    if(!cli && idle > 3600000) // also bounds failing reads; headless Web serves until the process ends
         return stop_web(google_error.isEmpty() ? QString("Web stopped after 1 hour without a request; press Resume to continue.") :
                         "Web stopped: "+google_error+"; press Resume to retry.");
     // idle for 3 minutes: Drive modifiedTime (not file.version) is polled, and the body is read only when it changes; the first
@@ -1738,32 +1754,50 @@ bool AIAgent::sign_in_google()
     QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
     url.setQuery(query);
 
-    QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
-    QString error;
-    connect(&server,&QTcpServer::newConnection,&dialog,[&]
+    auto exchange = [&](const QUrlQuery& params,std::function<void(QString)> done)
     {
-        auto* socket = server.nextPendingConnection();
-        connect(socket,&QTcpSocket::readyRead,&dialog,[&,socket]
+        google_token_post({{"grant_type","authorization_code"},{"code",params.queryItemValue("code",QUrl::FullyDecoded)},
+                           {"code_verifier",verifier},{"redirect_uri",redirect}},done);
+    };
+    QString error;
+    if(cli) // headless: sign in on any computer, whose browser then fails to load the 127.0.0.1 redirect; its address holds the code
+    {
+        std::cout << "Google sign-in required. Open this URL on any computer and sign in:\n\n" << url.toEncoded().toStdString()
+                  << "\n\nThe browser then cannot reach a 127.0.0.1 page. Copy that page's full address and paste it here:" << std::endl;
+        std::string line;
+        QUrlQuery params(QUrl(QString::fromStdString(std::getline(std::cin,line) ? line : std::string()).trimmed()).query());
+        if(params.queryItemValue("state",QUrl::FullyDecoded) != state)
+            return warn("Google sign-in failed: the pasted address is not from this sign-in."),false;
+        QEventLoop loop;
+        exchange(params,[&](QString token_error){error = token_error;loop.quit();});
+        loop.exec();
+    }
+    else
+    {
+        QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
+        connect(&server,&QTcpServer::newConnection,&dialog,[&]
         {
-            QUrlQuery params(QUrl(QString::fromLatin1(socket->readLine()).section(' ',1,1)).query()); // "GET /?state=..&code=.. HTTP/1.1"
-            socket->write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nYou may close this window.");
-            socket->disconnectFromHost();
-            if(params.queryItemValue("state",QUrl::FullyDecoded) != state) // also skips the favicon request
-                return;
-            google_token_post({{"grant_type","authorization_code"},{"code",params.queryItemValue("code",QUrl::FullyDecoded)},
-                               {"code_verifier",verifier},{"redirect_uri",redirect}},
-                              [&,alive = QPointer<QMessageBox>(&dialog)](QString token_error)
+            auto* socket = server.nextPendingConnection();
+            connect(socket,&QTcpSocket::readyRead,&dialog,[&,socket]
             {
-                if(alive) // a reply after Cancel must not touch these locals
-                    error = token_error,dialog.done(0);
+                QUrlQuery params(QUrl(QString::fromLatin1(socket->readLine()).section(' ',1,1)).query()); // "GET /?state=..&code=.. HTTP/1.1"
+                socket->write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nYou may close this window.");
+                socket->disconnectFromHost();
+                if(params.queryItemValue("state",QUrl::FullyDecoded) != state) // also skips the favicon request
+                    return;
+                exchange(params,[&,alive = QPointer<QMessageBox>(&dialog)](QString token_error)
+                {
+                    if(alive) // a reply after Cancel must not touch these locals
+                        error = token_error,dialog.done(0);
+                });
             });
         });
-    });
-    QDesktopServices::openUrl(url);
-    if(dialog.exec() == QMessageBox::Cancel)
-        return false;
+        QDesktopServices::openUrl(url);
+        if(dialog.exec() == QMessageBox::Cancel)
+            return false;
+    }
     if(!error.isEmpty())
-        return QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error),false;
+        return warn("Google sign-in failed: "+error),false;
     settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
