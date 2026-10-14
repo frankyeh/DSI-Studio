@@ -228,7 +228,7 @@ public:
     bool correct_distortion_by_t1w(const std::string& t1w_filename,float target_resolution = 0.0f);
     void correction_axis(void);
     bool correct_motion(void);
-    bool correct_bias_field(bool need_update_mask = true);
+    bool correct_bias_field(void);
     bool add_other_image(const std::string& name,const std::filesystem::path& filename);
 public:
     std::shared_ptr<src_data> rev_pe_src;
