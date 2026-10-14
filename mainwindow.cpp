@@ -1099,7 +1099,6 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
                                          });
 }
 
-static QMap<QString,QString> shell_tasks;
 
 static bool command_window(QWidget* target,const std::vector<std::string>& cmd,command_source source,QString& error)
 {
@@ -1151,22 +1150,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return no_command_or_fail();
 
     std::vector<std::vector<std::string>> cmds;
-    for(const auto& value :
-        (command_json.isArray() ? command_json.toArray() : QJsonArray{command_json}))
-    {
-        auto object = value.toObject();
-        auto& cmd = cmds.emplace_back();
-        auto add = [&](const QJsonValue& value){cmd.push_back(value.toVariant().toString().toUtf8().toStdString());};
-        add(object["cmd"]);
-        if(cmd[0].empty())
-            return fail("invalid cmd text");
-        auto param = object["param"];
-        if(param.isArray())
-            for(const auto& value : param.toArray())
-                add(value);
-        else if(!param.isUndefined() && !param.isNull())
-            add(param);
-    }
+    if(!ai_commands(command_json,cmds))
+        return fail("invalid cmd text");
     if(cmds.empty())
         return no_command_or_fail();
     // each hub_open creates a full data window: a batch of them is a cohort download that belongs to hub_download
@@ -1399,8 +1384,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
-            else if(ai_agent->cli && command_name != "run_cli" && command_name != "run_shell" && command_name != "write_text_file")
-                error = "not available in headless mode (--action=ai); use run_cli, run_shell, or write_text_file";
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
@@ -1956,25 +1939,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     }
 
     if(cmd[0] == "run_cli")
-    {
-        if(cmd.size() != 2 || cmd[1].empty())
-            return fail("usage: run_cli <command line>");
-        auto command_line = cmd[1];
-        if(tipl::begins_with(command_line,"dsi_studio "))
-            command_line.erase(0,11);
-        tipl::program_option<tipl::out> po;
-        if(!po.parse(command_line))
-            return fail(po.error_msg);
-        if(!po.has("action"))
-            po.set("action","vis");
-        if(ai_agent->cli && (po.get("action") == "vis" || po.get("action") == "cnt" || po.get("action") == "ai"))
-            return fail("--action=vis, cnt, and ai are not available in headless mode");
-        if(run_action_with_wildcard(po))
-            return fail("command line failed");
-        po.check_end_param<tipl::warning>();
-        return true;
-    }
-
+        return ai_run_cli(cmd,false,error_msg);
     if(cmd[0] == "open_image")
     {
         auto files = select_images(
@@ -2029,115 +1994,15 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return fail("voice is available only on Windows");
 #endif
     }
-    auto ai_declined = [&](const QString& title,const QString& request) // every AI file write or shell command needs the local user's approval
+    auto approve = [&](const QString& title,const QString& request) // every AI file write or shell command needs the local user's approval
     {
-        if(source != command_source::AI)
-            return false;
-        auto text = (ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request;
-        if(!ai_agent->cli)
-            return QMessageBox::question(this,title,text,QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes;
-        std::cout << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N] " << std::flush; // headless: the terminal user approves
-        std::string answer;
-        return !std::getline(std::cin,answer) || (answer != "y" && answer != "Y"); // no terminal: declined
+        return source != command_source::AI || QMessageBox::question(this,title,
+               (ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
+               QMessageBox::Yes|QMessageBox::No,QMessageBox::No) == QMessageBox::Yes;
     };
     if(cmd[0] == "write_text_file")
-    {
-        if(cmd.size() != 3 || cmd[1].empty())
-            return fail("usage: write_text_file <filename> <content>");
-        auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to this chat's directory
-        if(ai_declined("AI File Write Request","The AI agent wants to write "+QString::number(cmd[2].size())+
-                       " bytes to this file, replacing it if it exists:\n\n"+file_name))
-            return fail("user declined to write this file");
-        QFile file(file_name); // binary: the UTF-8 content and its newlines are written exactly, no BOM
-        if(!file.open(QIODevice::WriteOnly) || file.write(cmd[2].data(),qint64(cmd[2].size())) != qint64(cmd[2].size()))
-            return fail("cannot write to "+file_name.toStdString());
-        tipl::out() << "wrote " << cmd[2].size() << " bytes to " << file_name.toStdString();
-        return true;
-    }
+        return ai_write_text_file(cmd,approve,error_msg);
     if(cmd[0] == "run_shell")
-    {
-        if(cmd.size() != 2 || cmd[1].empty())
-            return fail("usage: run_shell <command>");
-        QString text = QString::fromUtf8(cmd[1].c_str());
-        QString program = text.section(' ',0,0);
-        bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
-        if(is_curl)
-            text.insert(program.length()," -s -S");
-        if(ai_declined("AI Shell Command Request","The AI agent wants to run this shell command:\n\n"+text))
-            return fail("user declined to run this shell command");
-        if(!program.compare("cd",Qt::CaseInsensitive))
-        {
-            QString path = text.mid(program.length()).trimmed();
-            if(path.size() >= 2 && path.startsWith('"') && path.endsWith('"'))
-                path = path.mid(1,path.size()-2);
-            if(!path.isEmpty() && !QDir::setCurrent(path))
-                return fail(("cannot change directory to: "+path).toStdString());
-            tipl::out() << QDir::currentPath().toStdString();
-            return true;
-        }
-        auto configure_process = [](QProcess& process,const QString& shell_text)
-        {
-#ifdef Q_OS_WIN
-            process.setProgram("cmd.exe");
-            process.setNativeArguments("/c " + shell_text);
-#else
-            process.setProgram("/bin/sh");
-            process.setArguments({"-c",shell_text});
-#endif
-        };
-        if(!is_curl)
-        {
-            QProcess process;
-            configure_process(process,text);
-            process.start();
-            if(!process.waitForStarted(3000))
-                return fail("cannot start command");
-            constexpr int shell_timeout_ms = 600000;
-            if(!process.waitForFinished(shell_timeout_ms))
-            {
-                process.kill();
-                process.waitForFinished(3000);
-                return fail("command timed out after 10 minutes");
-            }
-            tipl::out() << process.readAllStandardOutput().toStdString();
-            auto err = process.readAllStandardError().toStdString();
-            if(!err.empty())
-                tipl::error() << err;
-            if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
-                return fail("command exited with code "+std::to_string(process.exitCode()));
-            return true;
-        }
-        static int next_curl_id = 0;
-        QString id = "curl"+QString::number(++next_curl_id);
-        auto* process = new QProcess(this);
-        configure_process(*process,text);
-        auto cleanup = [process,id]
-        {
-            shell_tasks.remove(id);
-            process->deleteLater();
-        };
-        QObject::connect(process,&QProcess::errorOccurred,[id,text,cleanup](QProcess::ProcessError error)
-        {
-            if(error != QProcess::FailedToStart)
-                return;
-            tipl::error() << (id+" cannot start: "+text).toStdString();
-            cleanup();
-        });
-        QObject::connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-            [process,id,text,cleanup](int exit_code,QProcess::ExitStatus exit_status)
-        {
-            tipl::out() << process->readAllStandardOutput().toStdString();
-            auto err = process->readAllStandardError().toStdString();
-            if(!err.empty())
-                tipl::error() << err;
-            if(exit_status != QProcess::NormalExit || exit_code != 0)
-                tipl::error() << (id+" exited with code "+QString::number(exit_code)+": "+text).toStdString();
-            cleanup();
-        });
-        shell_tasks[id] = text;
-        process->start();
-        tipl::out() << ("started "+id+": "+text).toStdString();
-        return true;
-    }
+        return ai_run_shell(cmd,approve,error_msg);
     return fail("unknown command: "+cmd[0]);
 }

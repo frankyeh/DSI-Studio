@@ -19,6 +19,7 @@ class QMenu;
 class QProcess;
 class QShowEvent;
 class QCloseEvent;
+#include "cmd/ai.hpp"
 struct ai_info; // full definition: cmd/ai.hpp -- every use here is by pointer/reference, so a forward declaration is enough; .cpp files that need member access include cmd/ai.hpp directly
 enum class session_status; // full definition: cmd/ai.hpp
 
@@ -66,32 +67,11 @@ class AIAgent : public QMainWindow
     QJsonObject current_model_info;
     void update_model_list(); // the selected local chat's model dropdown; hidden for Web, AgentServer, or no chat
 
-    QNetworkAccessManager web_manager; // Google OAuth and API calls
-
-    // Google OAuth (desktop, PKCE + loopback, drive.file only): tokens are never logged or written to chat history
-    QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved, so a restart stays signed in
-    QDateTime google_token_expiry;
-    bool sign_in_google(); // system-browser sign-in (or, headless, a pasted redirect address); true once a token is held
-    void warn(const QString& text); // a warning dialog; headless, an error line that ends the process
-    void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
-    void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    // Web channel: each Web chat's session Doc (in the "DSI Studio AI" folder) is a single-slot JSON mailbox, read directly for 3 minutes after activity, then on a Drive modifiedTime change
-    QTimer web_timer;
-    QString google_folder_id = settings.value("ai/google_folder_id").toString();
-    QString google_error; // the last Google failure, shown in the Web status; never holds a token
-    QString google_file_id,web_session_id; // the connected chat's Doc (empty when stopped) and session
-    qint64 web_last_id = 0;
-    QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling and stops polling after 1 hour
-    QString web_modified_time; // Drive modifiedTime of the last body read that needed no action
-    QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
-    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
-    void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
-    void create_web_session(); // signs in and resolves the folder when needed, then creates the Doc and the chat
-    void start_web(ai_info&); // starts (or resumes) polling this chat's Doc
+    web_bridge web; // the Web channel: Google tokens and the connected chat's session Doc
+    bool sign_in_google(); // system-browser sign-in (PKCE + loopback); true once a token is held
+    void create_web_session(); // signs in when needed, then creates the Doc and the chat
+    void start_web(ai_info&); // starts (or resumes) polling this chat's Doc and copies the connection prompt
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
-    QString google_doc_url() const; // documents.get for the connected Doc, trimmed to the mailbox fields
-    void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
-    void publish_web_result();
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
@@ -124,8 +104,6 @@ class AIAgent : public QMainWindow
     QString prepare_ai(ai_info&); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
-    bool cli = false; // --action=ai: headless, so prompts and approvals use the terminal, Web never stops when idle, and only CLI commands run
-    bool start_web_cli(); // --action=ai --agent=web: signs in when needed and starts a Web session
     explicit AIAgent(MainWindow*);
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar

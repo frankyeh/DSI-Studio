@@ -514,7 +514,7 @@ int main(int ac, char *av[])
             for(const auto& each : action_map)
                 action_list.push_back(each.first);
             std::string action = po.get("action",action_list,"qc");
-            if(action != "vis" && action != "cnt" && action != "ai")
+            if(action != "vis" && action != "cnt")
             {
                 QCoreApplication cmd(ac,av);
                 if(!init_application())
@@ -524,12 +524,8 @@ int main(int ac, char *av[])
                 po.check_end_param<tipl::warning>();
                 return 0;
             }
-            if(action != "ai" && !po.check("source"))
+            if(!po.check("source"))
                 return 1;
-#ifdef __linux__
-            if(action == "ai" && qgetenv("DISPLAY").isEmpty() && qgetenv("QT_QPA_PLATFORM").isEmpty())
-                qputenv("QT_QPA_PLATFORM","offscreen"); // a headless cluster node: the main window exists but is never shown
-#endif
         }
         catch(const std::exception& e ) {
             tipl::error() << e.what() << std::endl;
@@ -544,7 +540,6 @@ int main(int ac, char *av[])
 
 
     QApplication a(ac,av);
-    bool ai_cli = po.has("action") && po.get("action") == "ai";
 
     try
     {
@@ -566,7 +561,6 @@ int main(int ac, char *av[])
             w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0]);
         }
         else
-        if(!ai_cli)
             w.show();
 
 
@@ -640,7 +634,7 @@ int main(int ac, char *av[])
         {
             auto result = run_action_with_wildcard(po);
             po.check_end_param<tipl::warning>();
-            if(result || (!ai_cli && !po.has("stay_open"))) // --action=ai serves until Ctrl+C
+            if(!po.has("stay_open"))
                 return result;
         }
         return a.exec();

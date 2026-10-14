@@ -2,12 +2,22 @@
 #define CMD_AI_HPP
 
 #include <QByteArray>
+#include <QDateTime>
+#include <QElapsedTimer>
 #include <QJsonObject>
 #include <QList>
+#include <QMap>
+#include <QNetworkAccessManager>
+#include <QObject>
+#include <QSettings>
 #include <QStringList>
+#include <QTimer>
 #include <QUrl>
 
+#include <functional>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 class QComboBox;
 class QLabel;
@@ -70,5 +80,53 @@ QString model_combo_key(const QComboBox& model); // strips the " (Ollama@host)" 
 void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QString selected = {},QString fallback = {},
                         QJsonObject selected_info = {}); // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) -- selected_info backs an unrecognized selected value so it still shows up as a real entry
+
+// shared by MainWindow's command center and headless --action=ai
+using ai_approval = std::function<bool(const QString& title,const QString& request)>; // true approves
+extern QMap<QString,QString> shell_tasks; // running asynchronous run_shell (curl) commands, by id
+bool ai_commands(const QJsonValue& command,std::vector<std::vector<std::string> >& cmds); // a request's command or batch as argument lists; false on an empty cmd
+bool ai_run_cli(const std::vector<std::string>& cmd,bool headless,std::string& error); // headless refuses actions that open a window
+bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error);
+bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error);
+
+// the Web channel, without GUI: Google OAuth tokens (drive.file only; never logged or written to chat history) and one session Doc
+// (in the "DSI Studio AI" folder) used as a single-slot JSON mailbox, read directly for 3 minutes after activity, then on a Drive
+// modifiedTime change. AIAgent owns one for GUI Web chats; --action=ai --agent=web runs a local one
+class web_bridge : public QObject
+{
+public:
+    QSettings settings;
+    QNetworkAccessManager web_manager; // Google OAuth and API calls
+    QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved, so a restart stays signed in
+    QDateTime google_token_expiry;
+    bool google_device_auth = settings.value("ai/google_device_auth").toBool(); // the saved token came from the device client (headless sign-in)
+    QTimer web_timer;
+    QString google_folder_id = settings.value("ai/google_folder_id").toString();
+    QString google_error; // the last Google failure, shown in the Web status; never holds a token
+    QString google_file_id,web_session_id; // the connected Doc (empty when stopped) and session
+    qint64 web_last_id = 0;
+    QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling and, if stop_when_idle, stops polling after 1 hour
+    bool stop_when_idle = true;
+    QString web_modified_time; // Drive modifiedTime of the last body read that needed no action
+    QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
+    std::function<QJsonObject(const QJsonObject& request)> dispatch; // runs one agent request and returns its response
+    std::function<void(session_status,const QString&)> status;
+    std::function<void(const QString&)> warn;
+    web_bridge(void);
+    void report(session_status s,const QString& message){if(status) status(s,message);}
+    bool sign_in_device(void); // headless sign-in; true once a token is held
+    void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
+    void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
+    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
+    void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
+    void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
+    void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc
+    void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
+    QString prompt(void) const; // the connection prompt an agent is given
+    QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
+    void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
+    void publish_web_result(void);
+    QJsonObject upload_web_file(const QString& file_name,QString& error); // web_upload: a private Drive copy in the DSI Studio AI folder; waits for completion
+};
 
 #endif

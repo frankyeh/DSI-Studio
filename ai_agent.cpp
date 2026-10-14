@@ -210,9 +210,14 @@ AIAgent::AIAgent(MainWindow* parent):
     });
     ui->ai_status->hide();
 
-    web_timer.setSingleShot(true);
-    web_manager.setTransferTimeout(30000); // a hung Google request would otherwise stall polling for good
-    connect(&web_timer,&QTimer::timeout,this,[this]{poll_web();});
+    web.dispatch = [this](const QJsonObject& request)
+    {
+        QByteArray reply;
+        ai_request(QJsonDocument(request).toJson(QJsonDocument::Compact),reply);
+        return QJsonDocument::fromJson(reply).object();
+    };
+    web.status = [this](session_status status,const QString& message){set_ai_status(web.web_session_id,status,message);};
+    web.warn = [this](const QString& text){QMessageBox::warning(this,"AI Agent",text);};
 
     refresh_agent_executables();
     refresh_agent_status();
@@ -289,7 +294,7 @@ AIAgent::AIAgent(MainWindow* parent):
         if(row < 0)
             return;
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
-        if(session == web_session_id)
+        if(session == web.web_session_id)
             stop_web();
         if(auto* found = ai_info::find(session))
         {
@@ -298,7 +303,7 @@ AIAgent::AIAgent(MainWindow* parent):
                 process->disconnect(); kill_process_tree(process); process->waitForFinished(1000); process->deleteLater();
             }
             if(found->provider == "Web") // trash its mailbox Doc so "DSI Studio AI" does not accumulate them
-                google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+found->model_settings["google_file_id"].toString(),
+                web.google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+found->model_settings["google_file_id"].toString(),
                            {{"trashed",true}},[](QJsonObject){});
         }
         QFile::remove(ai_info::history_file(session));
@@ -1331,7 +1336,7 @@ ai_info* AIAgent::selected_info() const
 
 bool AIAgent::web_connected(const ai_info& info) const
 {
-    return info.sessions == web_session_id && !google_file_id.isEmpty();
+    return info.sessions == web.web_session_id && !web.google_file_id.isEmpty();
 }
 
 AIAgent::send_action AIAgent::current_send_action() const
@@ -1362,125 +1367,14 @@ void AIAgent::update_send_button()
         action == send_action::Resume ? "Resume" : "Send");
 }
 
-void AIAgent::google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString)> done)
-{
-    form.emplaceBack("client_id",GOOGLE_CLIENT_ID);
-    form.emplaceBack("client_secret",GOOGLE_CLIENT_SECRET); // bundled in a desktop binary, so not confidential: PKCE + state protect the flow
-    QByteArray body;
-    for(const auto& [key,value] : form)
-        body += key.toUtf8()+"="+QUrl::toPercentEncoding(value)+"&";
-    QNetworkRequest request(QUrl("https://oauth2.googleapis.com/token"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
-    auto* reply = web_manager.post(request,body);
-    connect(reply,&QNetworkReply::finished,this,[this,reply,done]
-    {
-        reply->deleteLater();
-        auto json = QJsonDocument::fromJson(reply->readAll()).object();
-        if(!json.contains("access_token"))
-        {
-            if(json["error"].toString() == "invalid_grant") // revoked: sign out; a network or server error keeps the saved token
-                settings.setValue("ai/google_refresh_token",google_refresh_token = QString());
-            return done(json["error"].toString(reply->errorString()));
-        }
-        google_access_token = json["access_token"].toString();
-        google_token_expiry = QDateTime::currentDateTimeUtc().addSecs(json["expires_in"].toInt());
-        if(json.contains("refresh_token")) // returned with consent; a refresh keeps the saved one
-            settings.setValue("ai/google_refresh_token",google_refresh_token = json["refresh_token"].toString());
-        done({});
-    });
-}
-void AIAgent::with_google_token(std::function<void(QString)> call)
-{
-    if(QDateTime::currentDateTimeUtc().secsTo(google_token_expiry) > 60)
-        return call(google_access_token);
-    if(google_refresh_token.isEmpty()) // signed out: never hand on an expired token
-    {
-        google_error = "signed out of Google";
-        return call({});
-    }
-    google_token_post({{"grant_type","refresh_token"},{"refresh_token",google_refresh_token}},[this,call](QString error)
-    {
-        if(!error.isEmpty())
-            google_error = "Google sign-in failed: "+error;
-        call(error.isEmpty() ? google_access_token : QString());
-    });
-}
-void AIAgent::google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done)
-{
-    auto failed = [this,done]
-    {
-        if(!google_file_id.isEmpty()) // a live Web chat shows it; polling retries until the idle limit stops it
-            set_ai_status(web_session_id,session_status::Failed,"Web: "+google_error+"; retrying.");
-        done({});
-    };
-    with_google_token([this,verb,url,body,done,failed](QString token)
-    {
-        if(token.isEmpty()) // signed out: fail without a doomed request
-            return failed();
-        QNetworkRequest request{QUrl(url)};
-        request.setRawHeader("Authorization","Bearer "+token.toUtf8());
-        request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
-        auto* reply = web_manager.sendCustomRequest(request,verb,body.isEmpty() ? QByteArray() : QJsonDocument(body).toJson(QJsonDocument::Compact));
-        connect(reply,&QNetworkReply::finished,this,[this,reply,done,failed]
-        {
-            reply->deleteLater();
-            auto json = QJsonDocument::fromJson(reply->readAll()).object();
-            if(reply->error() == QNetworkReply::NoError)
-                return done(json);
-            google_error = json["error"].toObject()["message"].toString(reply->errorString()); // Google's own reason when it gives one
-            failed();
-        });
-    });
-}
-void AIAgent::write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done)
-{
-    auto content = doc["body"].toObject()["content"].toArray();
-    auto end = content.isEmpty() ? 0 : content.last().toObject()["endIndex"].toInt();
-    QJsonArray requests;
-    if(end > 2) // everything except the final newline every Doc keeps
-        requests.append(QJsonObject{{"deleteContentRange",QJsonObject{{"range",QJsonObject{{"startIndex",1},{"endIndex",end-1}}}}}});
-    requests.append(QJsonObject{{"insertText",QJsonObject{{"location",QJsonObject{{"index",1}}},
-        {"text",QString(QJsonDocument(message).toJson(QJsonDocument::Compact))}}}});
-    QJsonObject body{{"requests",requests}};
-    if(doc.contains("revisionId")) // fails instead of overwriting a message written after our read
-        body["writeControl"] = QJsonObject{{"requiredRevisionId",doc["revisionId"]}};
-    google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
-               [done](QJsonObject reply){done(!reply.isEmpty());});
-}
 void AIAgent::create_web_session()
 {
-    if(google_refresh_token.isEmpty() && !sign_in_google())
+    if(web.google_refresh_token.isEmpty() && !sign_in_google())
         return;
-    if(google_folder_id.isEmpty()) // resolved once (found or created), then reused by its ID
-        return google_api("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
-                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false")),{},[this](QJsonObject found)
-        {
-            auto use = [this](QJsonObject folder)
-            {
-                if(folder["id"].toString().isEmpty())
-                    return warn("Cannot create the DSI Studio AI folder in Google Drive.");
-                settings.setValue("ai/google_folder_id",google_folder_id = folder["id"].toString());
-                create_web_session();
-            };
-            if(!found.contains("files")) // a failed search is not "no folder": never create a duplicate
-                return warn("Cannot reach Google Drive.");
-            if(auto files = found["files"].toArray();!files.isEmpty())
-                return use(files[0].toObject());
-            google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
-                       {{"name","DSI Studio AI"},{"mimeType","application/vnd.google-apps.folder"}},use);
-        });
-    auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
-               {{"name","DSI Studio "+session},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}}},
-               [this,session](QJsonObject file)
+    web.create_web_session([this](QString file,QString session)
     {
-        if(file["id"].toString().isEmpty())
-        {
-            settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the folder may have been deleted: recreate it next time
-            return warn("Cannot create the Web session.");
-        }
         auto* info = ai_info::create(session,"Web","Web"); // agent agnostic: any web-based agent can join
-        info->model_settings["google_file_id"] = file["id"].toString();
+        info->model_settings["google_file_id"] = file;
         add_ai_history(*info,"activity","Web session started.");
         ui->ai_project_list->setCurrentItem(info->project_items);
         start_web(*info); // the first poll writes "ready" into the empty Doc
@@ -1489,249 +1383,23 @@ void AIAgent::create_web_session()
 }
 void AIAgent::start_web(ai_info& info)
 {
-    stop_web();
-    if(info.sessions != web_session_id) // a pending result belongs to its own session only
-    {
-        web_session_id = info.sessions;
-        web_last_id = 0; // a claimed request is always overwritten by "processing", so it is never re-run
-        web_pending_result = QJsonObject();
-    }
-    google_file_id = info.model_settings["google_file_id"].toString();
-    google_error = "the session Doc was never read"; // the first good read clears it and shows the chat connected
-    set_ai_status(info.sessions,session_status::WaitingUser,"Web: reading the session Doc.");
-    web_idle.start();
-    web_timer.start(0);
-    QString prompt = "Connect to DSI Studio. First read the public GitHub file "
-                     "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
-                     "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit";
-    if(cli)
-        return void(std::cout << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << prompt.toStdString()
-                              << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl);
-    QApplication::clipboard()->setText(prompt); // on every start and Resume: the agent may be a new chat
+    web.start_web(info.model_settings["google_file_id"].toString(),info.sessions);
+    QApplication::clipboard()->setText(web.prompt()); // on every start and Resume: the agent may be a new chat
     QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
-}
-bool AIAgent::start_web_cli()
-{
-    cli = true;
-    create_web_session(); // signs in first when no token is saved
-    return !google_refresh_token.isEmpty();
-}
-void AIAgent::warn(const QString& text)
-{
-    if(!cli)
-        return void(QMessageBox::warning(this,"AI Agent",text));
-    tipl::error() << text.toStdString();
-    QCoreApplication::exit(1);
 }
 void AIAgent::stop_web(const QString& message)
 {
-    if(google_file_id.isEmpty())
-        return;
-    google_file_id.clear(); // callbacks still in flight see this and stop
-    web_timer.stop();
-    set_ai_status(web_session_id,session_status::Completed,message);
-}
-QString AIAgent::google_doc_url() const // only what write_google_doc() and the mailbox need
-{
-    return "https://docs.googleapis.com/v1/documents/"+google_file_id+
-           "?fields=revisionId,body(content(endIndex,paragraph(elements(textRun(content)))))";
-}
-static QString web_text(const QJsonObject& doc) // the mailbox message: the Doc body as one trimmed string
-{
-    QString text;
-    for(const auto& block : doc["body"].toObject()["content"].toArray())
-        for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
-            text += element.toObject()["textRun"].toObject()["content"].toString();
-    return text.trimmed();
-}
-void AIAgent::poll_web(const QString& modified_time)
-{
-    if(google_file_id.isEmpty())
-        return;
-    if(!web_pending_result.isEmpty())
-        return publish_web_result(); // a previous result write failed; retry it, never re-execute
-    auto idle = web_idle.elapsed();
-    if(!cli && idle > 3600000) // also bounds failing reads; headless Web serves until the process ends
-        return stop_web(google_error.isEmpty() ? QString("Web stopped after 1 hour without a request; press Resume to continue.") :
-                        "Web stopped: "+google_error+"; press Resume to retry.");
-    // idle for 3 minutes: Drive modifiedTime (not file.version) is polled, and the body is read only when it changes; the first
-    // idle poll always reads, since web_modified_time is empty after any fast-mode read. A Docs body edit can take minutes to
-    // reach modifiedTime, but a rename reaches it at once, so an agent that gets no reply renames the Doc to wake DSI Studio
-    if(modified_time.isEmpty() && idle >= 180000)
-        return google_api("GET","https://www.googleapis.com/drive/v3/files/"+google_file_id+"?fields=modifiedTime",{},
-                          [this,file = google_file_id,idle](QJsonObject meta)
-        {
-            if(file != google_file_id)
-                return;
-            if(meta.isEmpty())
-                return web_timer.start(5000);
-            if(meta["modifiedTime"].toString() != web_modified_time || !google_error.isEmpty()) // a failure clears on the next body read
-                return poll_web(meta["modifiedTime"].toString());
-            web_timer.start(idle < 300000 ? 5000 : 10000);
-        });
-    // the body is one tiny JSON message, so during activity it is read directly
-    google_api("GET",google_doc_url(),{},[this,file = google_file_id,modified_time](QJsonObject doc)
-    {
-        if(file != google_file_id) // stopped or switched while in flight
-            return;
-        if(doc.isEmpty()) // failed, and shown by google_api()
-            return web_timer.start(5000);
-        if(!google_error.isEmpty()) // the first good read after a start, Resume, or failure
-        {
-            google_error.clear();
-            set_ai_status(web_session_id,session_status::WaitingUser,"Web connected; waiting for a request.");
-        }
-        auto text = web_text(doc);
-        if(text.isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
-            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"from","dsi"},{"state","ready"}},
-                                    [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
-        QJsonParseError parse_error;
-        auto request = QJsonDocument::fromJson(text.toUtf8(),&parse_error).object();
-        auto id = request["id"].toInteger();
-        if(request["session"].toString() == web_session_id && request["from"].toString() == "dsi" &&
-           request["state"].toString() == "processing" && id > web_last_id)
-        {
-            // claimed but never finished (DSI Studio stopped mid-request): report it instead of re-running it
-            web_last_id = id;
-            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","error"},
-                {"response",QJsonObject{{"status","error"},{"error","outcome unknown: DSI Studio stopped while running this request; check with list_window"}}}};
-            return publish_web_result();
-        }
-        if(request["from"].toString() == "dsi") // our own write, nothing to do: only now is the Drive change consumed
-        {
-            web_modified_time = modified_time;
-            return web_timer.start(web_idle.elapsed() < 60000 ? 500 : web_idle.elapsed() < 120000 ? 1000 : 2000); // 500 ms, 1 s, then 2 s per minute until idle
-        }
-        web_idle.start(); // an agent message: fast polling while it is claimed or answered
-        // anything else is a request: a malformed one is answered, or the agent waits forever
-        auto error = parse_error.error != QJsonParseError::NoError ?
-                        "invalid JSON (" + parse_error.errorString() + " at offset " + QString::number(parse_error.offset) + ")" :
-                     request["session"].toString() != web_session_id ? QString("wrong session") :
-                     request["from"].toString() != "agent" || request["state"].toString() != "request" ?
-                        QString(R"(needs "from":"agent" and "state":"request")") :
-                     id <= web_last_id ? "id must be greater than " + QString::number(web_last_id) : QString();
-        if(!error.isEmpty()) // nothing ran, so written with this read's revision (never over a newer message) and re-checked if it fails
-            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id > web_last_id ? id : web_last_id+1},
-                {"from","dsi"},{"state","error"},{"response",QJsonObject{{"status","error"},
-                {"error",error + "; nothing was run. Resend the whole request as one line of compact JSON"}}}},
-                [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
-        // claim with the revision we read: a crash after it never re-runs the command
-        write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
-                         [this,file,id,request](bool claimed)
-        {
-            if(file != google_file_id)
-                return;
-            if(!claimed) // not claimed, so not executed: read again
-                return web_timer.start(5000);
-            web_last_id = id;
-            auto forwarded = request;
-            for(auto key : {"dsi_bridge","id","from","state"})
-                forwarded.remove(key);
-            QByteArray reply_bytes;
-            ai_request(QJsonDocument(forwarded).toJson(QJsonDocument::Compact),reply_bytes);
-            auto response = QJsonDocument::fromJson(reply_bytes).object();
-            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},
-                {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
-            publish_web_result();
-        });
-    });
-}
-void AIAgent::publish_web_result()
-{
-    google_api("GET",google_doc_url(),{},[this,file = google_file_id](QJsonObject doc)
-    {
-        if(file != google_file_id)
-            return;
-        if(doc.isEmpty()) // without the current body the write would append instead of replace
-            return web_timer.start(5000);
-        auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
-        if(current["from"].toString() != "dsi" || current["state"].toString() != "processing" ||
-           current["id"].toInteger() != web_pending_result["id"].toInteger())
-        {
-            // only our own "processing" is replaced: anything else means the result already landed (its acknowledgement
-            // was lost) or the agent has moved on, and a newer request must never be overwritten
-            web_pending_result = QJsonObject();
-            web_idle.start();
-            return web_timer.start(500);
-        }
-        write_google_doc(doc,web_pending_result,[this,file](bool published)
-        {
-            if(file != google_file_id)
-                return;
-            if(published)
-            {
-                web_pending_result = QJsonObject();
-                web_idle.start(); // fast polling for 3 minutes after a result
-            }
-            web_timer.start(published ? 500 : 5000);
-        });
-    });
+    web.stop_web(message);
 }
 QJsonObject AIAgent::upload_web_file(const ai_info& info,const QString& file_name,QString& error)
 {
-    QFileInfo file_info(file_name); // relative to the chat's working directory, which dispatch_cmd() has made current
-    QFile file(file_info.absoluteFilePath());
-    if(info.provider != "Web" || !web_connected(info) || google_folder_id.isEmpty())
-        error = "web_upload is available only in the active Web session";
-    else if(!file_info.exists())
-        error = "file does not exist: "+file_name;
-    else if(!file_info.isFile())
-        error = "not a regular file: "+file_name;
-    else if(!file.open(QIODevice::ReadOnly))
-        error = "cannot open file: "+file_name;
-    if(!error.isEmpty())
-        return {};
-    auto mime = QMimeDatabase().mimeTypeForFile(file_info).name(); // application/octet-stream when unknown
-    // one resumable upload for every size: the file is streamed from disk, never held in memory
-    QJsonObject uploaded;
-    bool done = false;
-    QEventLoop loop;
-    auto finish = [&](QNetworkReply* reply)
-    {
-        auto json = QJsonDocument::fromJson(reply ? reply->readAll() : QByteArray()).object();
-        if(!reply || reply->error() != QNetworkReply::NoError)
-            error = "Google Drive upload failed: "+(reply ? json["error"].toObject()["message"].toString(reply->errorString()) : google_error);
-        uploaded = json;
-        done = true;
-        loop.quit();
-    };
-    with_google_token([&](QString token)
-    {
-        if(token.isEmpty())
-            return finish(nullptr);
-        QNetworkRequest start(QUrl("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id"));
-        start.setRawHeader("Authorization","Bearer "+token.toUtf8());
-        start.setHeader(QNetworkRequest::ContentTypeHeader,"application/json; charset=UTF-8");
-        start.setRawHeader("X-Upload-Content-Type",mime.toUtf8());
-        start.setRawHeader("X-Upload-Content-Length",QByteArray::number(file.size()));
-        auto* session = web_manager.post(start,QJsonDocument(QJsonObject{{"name",web_session_id+"_"+file_info.fileName()},
-                                                                         {"parents",QJsonArray{google_folder_id}}}).toJson(QJsonDocument::Compact));
-        connect(session,&QNetworkReply::finished,this,[&,session,token]
-        {
-            session->deleteLater();
-            if(session->error() != QNetworkReply::NoError || !session->hasRawHeader("Location"))
-                return finish(session);
-            QNetworkRequest put{QUrl::fromEncoded(session->rawHeader("Location"))};
-            put.setRawHeader("Authorization","Bearer "+token.toUtf8());
-            put.setHeader(QNetworkRequest::ContentTypeHeader,mime);
-            auto* upload = web_manager.put(put,&file); // the 30 s timeout counts idle time, so a long upload still completes
-            connect(upload,&QNetworkReply::finished,this,[&,upload]
-            {
-                upload->deleteLater();
-                finish(upload);
-            });
-        });
-    });
-    if(!done) // with_google_token() may already have finished
-        loop.exec();
-    if(!error.isEmpty())
-        return {};
-    auto id = uploaded["id"].toString();
-    return {{"name",file_info.fileName()},{"drive_id",id},{"mime_type",mime},{"size",file.size()},
-            {"url","https://drive.google.com/file/d/"+id+"/view"}};
+    if(info.provider != "Web" || !web_connected(info))
+        return error = "web_upload is available only in the active Web session",QJsonObject();
+    return web.upload_web_file(file_name,error);
 }
-bool AIAgent::sign_in_google()
+bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopback); true once a token is held
 {
+    QString error;
     auto random_text = [](int bytes)
     {
         QByteArray data(bytes,0);
@@ -1754,51 +1422,33 @@ bool AIAgent::sign_in_google()
     QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
     url.setQuery(query);
 
-    auto exchange = [&](const QUrlQuery& params,std::function<void(QString)> done)
+    web.google_device_auth = false;
+    QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
+    connect(&server,&QTcpServer::newConnection,&dialog,[&]
     {
-        google_token_post({{"grant_type","authorization_code"},{"code",params.queryItemValue("code",QUrl::FullyDecoded)},
-                           {"code_verifier",verifier},{"redirect_uri",redirect}},done);
-    };
-    QString error;
-    if(cli) // headless: sign in on any computer, whose browser then fails to load the 127.0.0.1 redirect; its address holds the code
-    {
-        std::cout << "Google sign-in required. Open this URL on any computer and sign in:\n\n" << url.toEncoded().toStdString()
-                  << "\n\nThe browser then cannot reach a 127.0.0.1 page. Copy that page's full address and paste it here:" << std::endl;
-        std::string line;
-        QUrlQuery params(QUrl(QString::fromStdString(std::getline(std::cin,line) ? line : std::string()).trimmed()).query());
-        if(params.queryItemValue("state",QUrl::FullyDecoded) != state)
-            return warn("Google sign-in failed: the pasted address is not from this sign-in."),false;
-        QEventLoop loop;
-        exchange(params,[&](QString token_error){error = token_error;loop.quit();});
-        loop.exec();
-    }
-    else
-    {
-        QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
-        connect(&server,&QTcpServer::newConnection,&dialog,[&]
+        auto* socket = server.nextPendingConnection();
+        connect(socket,&QTcpSocket::readyRead,&dialog,[&,socket]
         {
-            auto* socket = server.nextPendingConnection();
-            connect(socket,&QTcpSocket::readyRead,&dialog,[&,socket]
+            QUrlQuery params(QUrl(QString::fromLatin1(socket->readLine()).section(' ',1,1)).query()); // "GET /?state=..&code=.. HTTP/1.1"
+            socket->write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nYou may close this window.");
+            socket->disconnectFromHost();
+            if(params.queryItemValue("state",QUrl::FullyDecoded) != state) // also skips the favicon request
+                return;
+            web.google_token_post({{"grant_type","authorization_code"},{"code",params.queryItemValue("code",QUrl::FullyDecoded)},
+                                   {"code_verifier",verifier},{"redirect_uri",redirect}},
+                                  [&,alive = QPointer<QMessageBox>(&dialog)](QString token_error)
             {
-                QUrlQuery params(QUrl(QString::fromLatin1(socket->readLine()).section(' ',1,1)).query()); // "GET /?state=..&code=.. HTTP/1.1"
-                socket->write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nYou may close this window.");
-                socket->disconnectFromHost();
-                if(params.queryItemValue("state",QUrl::FullyDecoded) != state) // also skips the favicon request
-                    return;
-                exchange(params,[&,alive = QPointer<QMessageBox>(&dialog)](QString token_error)
-                {
-                    if(alive) // a reply after Cancel must not touch these locals
-                        error = token_error,dialog.done(0);
-                });
+                if(alive) // a reply after Cancel must not touch these locals
+                    error = token_error,dialog.done(0);
             });
         });
-        QDesktopServices::openUrl(url);
-        if(dialog.exec() == QMessageBox::Cancel)
-            return false;
-    }
+    });
+    QDesktopServices::openUrl(url);
+    if(dialog.exec() == QMessageBox::Cancel)
+        return false;
     if(!error.isEmpty())
-        return warn("Google sign-in failed: "+error),false;
-    settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
+        return QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error),false;
+    settings.setValue("ai/google_folder_id",web.google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
 bool AIAgent::run_new_chat_dialog()
@@ -2032,7 +1682,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     auto [web_label,web_button] = add_row();
     auto refresh_web_row = [this,web_label = web_label,web_button = web_button]
     {
-        bool ready = !google_refresh_token.isEmpty();
+        bool ready = !web.google_refresh_token.isEmpty();
         web_label->setText(QString("<b>Web</b><br><span style='color:%1;'>&#9679;</span> "
                                    "<span style='color:#5f6368;'>%2</span>").arg(ready ? "#34a853" : "#f9ab00",ready ? "Ready · Google Drive › DSI Studio AI" : "Not signed in · Google"));
         web_button->setText(ready ? "Sign In Again" : "Sign In");
@@ -2957,7 +2607,7 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Disabled:
         return;
     case send_action::Resume: // only reachable for a Web chat, see current_send_action()
-        if(!google_refresh_token.isEmpty() || sign_in_google())
+        if(!web.google_refresh_token.isEmpty() || sign_in_google())
             start_web(*info);
         return;
     case send_action::Stop: // only reachable when info exists, see current_send_action()
