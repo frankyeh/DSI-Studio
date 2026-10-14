@@ -197,19 +197,20 @@ bool src_data::mask_from_unet(void)
     if(!read_b0(b0))
         return false;
     tipl::filter::gaussian(b0[0]);
+    if(voxel.template_id >= unet_http.size())
+        return error_msg = "no U-Net model for the current template",false;
+    // the template's own species tissue model, e.g. human_tissue, rhesus_tissue, mouse_tissue
+    const auto& models = unet_http[voxel.template_id];
+    auto model = std::find_if(models.begin(),models.end(),[](const auto& each){return tipl::ends_with(each,"_tissue.nz");});
     tipl::ml3d::tissue_seg unet;
-    if(voxel.template_id < unet_http.size())
-        for(const auto& each : unet_http[voxel.template_id])
-        {
-            if(tipl::ends_with(each,"human_tissue.nz"))
-            {
-                if(!download_unet_model(unet,std::filesystem::path(each).stem().u8string()) ||
-                   !unet.forward(std::move(b0[0]),voxel.vs))
-                    return error_msg = unet.error_msg,false;
-                break;
-            }
-        }
-    voxel.mask = unet.data.fg_prob > 0.5f;
+    if(model == models.end())
+        return error_msg = "no tissue U-Net model for the current template",false;
+    if(!download_unet_model(unet,std::filesystem::path(*model).stem().u8string()) || !unet.forward(std::move(b0[0]),voxel.vs))
+        return error_msg = unet.error_msg,false;
+    tipl::image<3,unsigned char> mask = unet.data.fg_prob > 0.5f;
+    if(mask.shape() != voxel.dim || tipl::max_value(mask) == 0)
+        return error_msg = "U-Net did not produce a valid mask",false;
+    voxel.mask = mask;
     return true;
 }
 
@@ -2484,8 +2485,15 @@ bool src_data::load_topup_eddy_result(void)
     }
     voxel.report += topup_eddy_report;
     update_dwi_sum();
-    if(voxel.mask.empty())
-        update_mask();
+    // an automatic mask is regenerated in the corrected space; a mask the user opened is kept
+    if(voxel.mask.empty() || !tipl::contains(voxel.steps,"[Step T2a][Open]"))
+    {
+        if(!mask_from_unet())
+        {
+            tipl::warning() << error_msg << "; using the DWI-sum mask";
+            update_mask();
+        }
+    }
     apply_mask = true;
     return true;
 }
