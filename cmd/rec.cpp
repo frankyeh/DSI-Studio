@@ -127,7 +127,7 @@ int rec(tipl::program_option<tipl::out>& po)
 
         if(!tipl::contains(src.voxel.report,"bias field") &&
             po.get("bias_field_correction",src.voxel.method_id == 1/*DTI*/ ? 0 : 1) &&
-            !src.correct_bias_field(!po.has("mask"))) // don't update mask if user supplied mask
+            !src.correct_bias_field())
             return fail();
 
 
@@ -172,8 +172,13 @@ int rec(tipl::program_option<tipl::out>& po)
             }
     }
 
-    if(po.has("apply_mask"))
+    // an unmasked dataset becomes masked only with a U-Net mask
+    if(po.has("apply_mask") && !src.apply_mask && !po.has("mask"))
+    {
+        if(!src.command({"mask_from_unet"}))
+            return fail();
         src.apply_mask = true;
+    }
 
     if(po.has("intro") && !src.load_intro(po.get("intro")))
         return fail();
