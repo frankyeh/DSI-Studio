@@ -172,8 +172,8 @@ int rec(tipl::program_option<tipl::out>& po)
             }
     }
 
-    // an unmasked dataset becomes masked only with a U-Net mask
-    if(po.has("apply_mask") && !src.apply_mask && !po.has("mask"))
+    // an unmasked dataset becomes masked (--apply_mask or --save_src) only with a U-Net mask
+    if((po.has("apply_mask") || po.has("save_src")) && !src.apply_mask && !po.has("mask"))
     {
         if(!src.command({"mask_from_unet"}))
             return fail();
