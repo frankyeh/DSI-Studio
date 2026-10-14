@@ -887,8 +887,13 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
                 ok = ai_write_text_file(cmd,approve,error);
             else if(cmd[0] == "web_upload")
                 ok = cmd.size() == 2 && !(attachment = web.upload_web_file(QString::fromStdString(cmd[1]),upload_error)).isEmpty();
-            else if(cmd[0] != "set_title")
-                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, or web_upload";
+            else if(cmd[0] == "set_title") // saved like a GUI chat's title
+            {
+                if(!(ok = cmd.size() == 2 && ai_info::create(web.web_session_id,"Web","Web")->save_title(QString::fromStdString(cmd[1]))))
+                    error = "usage: set_title <title>";
+            }
+            else
+                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, or set_title";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(cmd[0] == "web_upload" && !ok)
