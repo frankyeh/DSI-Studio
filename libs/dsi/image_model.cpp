@@ -76,19 +76,13 @@ void src_data::update_dwi_sum(void)
         return;
 
     tipl::image<3> dwi_sum(voxel.dim);
-    bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
-
     tipl::par_for(dwi_sum.size(), [&](size_t i)
     {
         for(size_t j = 0,data_sz = src_dwi_data.size(); j < data_sz; ++j)
-        {
-            if(skip_b0 && src_bvalues[j] < 100.0f)
-                continue;
             dwi_sum[i] += src_dwi_data[j][i];
-        }
     });
-
-    dwi = tipl::reg::subject_image_pre(dwi_sum);
+    tipl::segmentation::normalize_otsu_median(dwi_sum,255.99f);
+    dwi = dwi_sum;
 }
 void src_data::update_mask(void)
 {
