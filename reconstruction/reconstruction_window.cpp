@@ -452,7 +452,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         }
         return true;
     }
-    if(cmd == "mask_from_template")
+    if(cmd == "mask_from_template" || cmd == "mask_from_unet") // both pick the model by the selected template
     {
         if(param.empty())
             handle->voxel.template_id = source == command_source::User ? ui->primary_template->currentIndex() : handle->voxel.template_id;
