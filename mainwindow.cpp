@@ -1399,6 +1399,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
+            else if(ai_agent->cli && command_name != "run_cli" && command_name != "run_shell" && command_name != "write_text_file")
+                error = "not available in headless mode (--action=ai); use run_cli, run_shell, or write_text_file";
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
@@ -1965,6 +1967,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             return fail(po.error_msg);
         if(!po.has("action"))
             po.set("action","vis");
+        if(ai_agent->cli && (po.get("action") == "vis" || po.get("action") == "cnt" || po.get("action") == "ai"))
+            return fail("--action=vis, cnt, and ai are not available in headless mode");
         if(run_action_with_wildcard(po))
             return fail("command line failed");
         po.check_end_param<tipl::warning>();
@@ -2027,9 +2031,14 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     }
     auto ai_declined = [&](const QString& title,const QString& request) // every AI file write or shell command needs the local user's approval
     {
-        return source == command_source::AI && QMessageBox::question(this,title,
-               (ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
-               QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes;
+        if(source != command_source::AI)
+            return false;
+        auto text = (ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request;
+        if(!ai_agent->cli)
+            return QMessageBox::question(this,title,text,QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes;
+        std::cout << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N] " << std::flush; // headless: the terminal user approves
+        std::string answer;
+        return !std::getline(std::cin,answer) || (answer != "y" && answer != "Y"); // no terminal: declined
     };
     if(cmd[0] == "write_text_file")
     {
