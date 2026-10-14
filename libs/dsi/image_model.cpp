@@ -852,7 +852,7 @@ std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2a][Open]","mask_open"},
     {"[Step T2a][Erosion]","mask_erosion"},
     {"[Step T2a][Dilation]","mask_dilation"},
-    {"[Step T2a][Unet]","mask_unet"},
+    {"[Step T2a][Unet]","mask_from_unet"},
     {"[Step T2a][Defragment]","mask_defragment"},
     {"[Step T2a][Slice Defragment]","mask_slice_defragment"},
     {"[Step T2a][Smoothing]","mask_smoothing"},
@@ -1163,7 +1163,7 @@ bool src_data::command(std::vector<std::string> cmds)
             tipl::morphology::dilation(voxel.mask);
         return log_step();
     }
-    if(cmd == "mask_unet")
+    if(cmd == "mask_from_unet")
     {
         if(!mask_from_unet())
             return false;
