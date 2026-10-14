@@ -106,7 +106,7 @@ int rec(tipl::program_option<tipl::out>& po)
             else
                 if(mask_file == "unet")
                 {
-                    if(!src.command({"mask_unet"}))
+                    if(!src.command({"mask_from_unet"}))
                         return fail();
                 }
                 else
