@@ -187,7 +187,7 @@ public:
     void update_mask(void);
     bool warp_b0_to_image(tipl::reg::mm_reg<tipl::out>& r);
     bool warp_to_template(tipl::reg::mm_reg<tipl::out>& r);
-    bool mask_from_unet(void);
+    bool mask_from_unet(tipl::image<3> b0 = tipl::image<3>());
     bool mask_from_template(void);
     bool check_b_table(bool use_template = true);
     bool load_intro(const std::filesystem::path& file_name);
