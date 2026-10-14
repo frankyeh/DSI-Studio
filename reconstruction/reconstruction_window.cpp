@@ -486,6 +486,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
+    if(cmd == "save_src" && source == command_source::User) // the displayed mask is reviewed by the user
+        handle->apply_mask = true;
     if((cmd == "partial_fov" || cmd == "set_voxel_size") && param.empty())
     {
         bool ok;
