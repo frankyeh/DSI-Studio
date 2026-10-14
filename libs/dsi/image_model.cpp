@@ -185,7 +185,6 @@ bool src_data::mask_from_template(void)
     voxel.mask = r.apply_warping<false,tipl::interpolation::linear>(r.It[1]) > 0.0f;
     for(size_t i = 0;i < 4;++i)
         tipl::morphology::smoothing(voxel.mask);
-    apply_mask = true;
     return true;
 }
 extern std::vector<std::vector<std::string> > unet_http;
@@ -1925,12 +1924,17 @@ bool estimate_bias_field(tipl::image<3> I,
     return true;
 }
 
-bool src_data::correct_bias_field(bool need_update_mask)
+bool src_data::correct_bias_field(void)
 {
     if(tipl::contains(voxel.report,"bias field"))
         return tipl::warning() << "bias field correction has been previously applied",false;
     if(src_dwi_data.empty() || dwi.empty())
         return error_msg = "no dwi data",false;
+    // only an Otsu mask is regenerated after correction; U-Net, template, or user masks are kept
+    auto mask = voxel.mask;
+    update_mask();
+    bool otsu_mask = std::equal(mask.begin(),mask.end(),voxel.mask.begin());
+    voxel.mask.swap(mask);
     {
         tipl::progress prog("correct bias field");
         tipl::image<3>  bias_field;
@@ -1961,7 +1965,7 @@ bool src_data::correct_bias_field(bool need_update_mask)
         voxel.report += " The bias field was corrected using the sum of diffusion images.";
     }
     update_dwi_sum();
-    if(need_update_mask)
+    if(otsu_mask)
         update_mask();
     return true;
 }
@@ -3093,21 +3097,6 @@ bool src_data::save_to_file(const std::filesystem::path& filename)
                 mat_writer.mask_rows = voxel.dim.plane_size();
                 mat_writer.mask_cols = voxel.dim.depth();
                 mat_writer.si2vi = tipl::get_sparse_index(voxel.mask);
-                if(!apply_mask && !mat_writer.si2vi.empty())
-                {
-                    bool no_signal_at_background = true;
-                    for(auto each : mat_writer.si2vi)
-                        if(dwi[each])
-                        {
-                            no_signal_at_background = false;
-                            break;
-                        }
-                    if(no_signal_at_background)
-                    {
-                        tipl::out() << "no dwi signal in the background, enable apply mask";
-                        mat_writer.apply_mask = true;
-                    }
-                }
             }
             if(mat_writer.apply_mask)
             {
@@ -3184,6 +3173,7 @@ void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::g
         in->save_index(idx_name);
     }
 }
+size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs);
 bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable)
 {
     if(dwi_files.empty())
@@ -3267,6 +3257,8 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
         voxel.mask = dwi_files.front()->mask;
         apply_mask = true;
     }
+    voxel.template_id = match_volume(tipl::make_image(voxel.mask.data(),voxel.mask.shape()),voxel.vs);
+    is_human_data = (voxel.template_id == 0);
     dwi_files.clear();
     return true;
 }
@@ -3279,7 +3271,6 @@ bool src_data::load_from_file(const std::vector<std::filesystem::path>& nii_name
     return load_from_file(dwi_files,false);
 }
 
-size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs);
 QImage read_qimage(QString filename,std::string& error);
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
 extern int src_ver;
@@ -3410,9 +3401,6 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
         mat_reader.read("report",voxel.report);
         if(!tipl::contains(voxel.report,"b-value"))
             voxel.report += get_report(!voxel.report.empty());
-
-        if(!apply_mask && voxel.report.find(" eddy ") != std::string::npos)
-            apply_mask = true;
 
         mat_reader.read("intro",voxel.intro);
 
