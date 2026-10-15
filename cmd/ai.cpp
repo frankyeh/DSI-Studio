@@ -663,9 +663,8 @@ void web_bridge::start_web(const QString& file,const QString& session)
 }
 QString web_bridge::prompt() const
 {
-    return "Connect to DSI Studio session "+web_code+". First read the public GitHub file "
-           "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
-           "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit";
+    return "Read the public GitHub file frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it "
+           "to connect to DSI Studio "+web_code+"."; // the agent finds the Doc by its codename in the DSI Studio AI folder
 }
 void web_bridge::stop_web(const QString& message)
 {
