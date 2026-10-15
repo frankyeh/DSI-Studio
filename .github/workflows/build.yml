@@ -61,6 +61,7 @@ jobs:
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
+        sed -i 's|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git \&\& git -C DSI-Studio fetch -q --depth 1 origin ${{ github.sha }} \&\& git -C DSI-Studio checkout -q FETCH_HEAD|' build_packages/*/Dockerfile* # build this commit; a new commit also invalidates the cached source and build layers
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
     - name: Set up Docker Buildx
@@ -103,6 +104,7 @@ jobs:
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
+        sed -i 's|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git \&\& git -C DSI-Studio fetch -q --depth 1 origin ${{ github.sha }} \&\& git -C DSI-Studio checkout -q FETCH_HEAD|' build_packages/*/Dockerfile* # build this commit; a new commit also invalidates the cached source and build layers
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
     - name: Set up Docker Buildx
@@ -165,6 +167,7 @@ jobs:
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
+        sed -i 's|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git \&\& git -C DSI-Studio fetch -q --depth 1 origin ${{ github.sha }} \&\& git -C DSI-Studio checkout -q FETCH_HEAD|' build_packages/*/Dockerfile* # build this commit; a new commit also invalidates the cached source and build layers
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3.0.0
     - name: Build universal Linux ARM64 CPU package
@@ -228,6 +231,7 @@ jobs:
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
+        sed -i 's|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git \&\& git -C DSI-Studio fetch -q --depth 1 origin ${{ github.sha }} \&\& git -C DSI-Studio checkout -q FETCH_HEAD|' build_packages/*/Dockerfile* # build this commit; a new commit also invalidates the cached source and build layers
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3.0.0
     - name: Build legacy universal Linux CPU package
@@ -283,6 +287,7 @@ jobs:
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
         mv DSI-Studio-Build/build_packages .
+        sed -i 's|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git \&\& git -C DSI-Studio fetch -q --depth 1 origin ${{ github.sha }} \&\& git -C DSI-Studio checkout -q FETCH_HEAD|' build_packages/*/Dockerfile* # build this commit; a new commit also invalidates the cached source and build layers
     - name: Prepare Dockerfile for ARM build (CPU)
       run: |
         DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile"
@@ -397,6 +402,7 @@ jobs:
         run: |
           git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
           mv DSI-Studio-Build/build_packages .
+          sed -i 's|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git|git clone --depth 1 https://github.com/frankyeh/DSI-Studio.git \&\& git -C DSI-Studio fetch -q --depth 1 origin ${{ github.sha }} \&\& git -C DSI-Studio checkout -q FETCH_HEAD|' build_packages/*/Dockerfile* # build this commit; a new commit also invalidates the cached source and build layers
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
