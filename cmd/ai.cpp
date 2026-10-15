@@ -25,6 +25,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QSaveFile>
 
 #include <iostream>
 #include <sstream>
@@ -750,13 +751,98 @@ void web_bridge::publish_web_result()
         });
     });
 }
+QJsonObject web_bridge::google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body)
+{
+    QJsonObject result;
+    bool done = false;
+    QEventLoop loop;
+    google_api(verb,url,body,[&](QJsonObject reply){result = reply;done = true;loop.quit();});
+    if(!done) // google_api() may already have finished
+        loop.exec();
+    return result;
+}
+QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,QString& error)
+{
+    auto name = QString::fromStdString(cmd[0]);
+    if(cmd.size() != 2 || cmd[1].empty())
+        return error = "usage: "+name+(name == "web_upload" ? " <local file>" : name == "web_download" ? " <drive_id>" : " <file name>"),QJsonObject();
+    if(google_file_id.isEmpty() || google_folder_id.isEmpty())
+        return error = name+" is available only in the active Web session",QJsonObject();
+    auto param = QString::fromStdString(cmd[1]);
+    if(name == "web_upload")
+        return upload_web_file(param,error);
+    if(name == "web_download")
+        return download_web_file(param,error);
+    // web_download_prepare: an empty Drive file created by DSI Studio, so drive.file can read it after the agent replaces its bytes
+    auto file_name = QFileInfo(param).fileName(); // no local or Drive path
+    if(file_name.isEmpty())
+        return error = "invalid file name: "+param,QJsonObject();
+    auto id = google_api_wait("POST","https://www.googleapis.com/drive/v3/files?fields=id",
+                              {{"name",web_session_id+"_in_"+file_name},{"mimeType","application/octet-stream"},{"parents",QJsonArray{google_folder_id}},
+                               {"appProperties",QJsonObject{{"dsi_session",web_session_id},{"dsi_transfer","inbound"},{"dsi_name",file_name}}}})["id"].toString();
+    if(id.isEmpty())
+        return error = "cannot create the Drive upload slot: "+google_error,QJsonObject();
+    return {{"name",file_name},{"drive_id",id},{"url","https://drive.google.com/file/d/"+id+"/view"}};
+}
+QJsonObject web_bridge::download_web_file(const QString& drive_id,QString& error)
+{
+    auto file_url = "https://www.googleapis.com/drive/v3/files/"+QString::fromLatin1(QUrl::toPercentEncoding(drive_id));
+    auto meta = google_api_wait("GET",file_url+"?fields=mimeType,parents,appProperties");
+    if(meta.isEmpty())
+        return error = "cannot read Drive file "+drive_id+": "+google_error,QJsonObject();
+    auto properties = meta["appProperties"].toObject();
+    auto file_name = QFileInfo(properties["dsi_name"].toString()).fileName();
+    // only a slot this Web session prepared, never an arbitrary file of the user
+    if(!meta["parents"].toArray().contains(google_folder_id) || properties["dsi_session"].toString() != web_session_id ||
+       properties["dsi_transfer"].toString() != "inbound" || file_name.isEmpty())
+        return error = "not an upload slot of this Web session; use web_download_prepare and replace the content of its drive_id",QJsonObject();
+    if(meta["mimeType"].toString().startsWith("application/vnd.google-apps."))
+        return error = "Google Docs, Sheets, and Slides files are not supported; upload raw file content",QJsonObject();
+    auto dir = ai_project_dir+"/web_files/"+web_session_id;
+    auto path = dir+"/"+file_name;
+    if(QFileInfo::exists(path))
+        return error = "local file already exists: "+path,QJsonObject();
+    QSaveFile file(path); // committed only after a complete download
+    if(!QDir().mkpath(dir) || !file.open(QIODevice::WriteOnly))
+        return error = "cannot write "+path,QJsonObject();
+    bool done = false;
+    QEventLoop loop;
+    auto finish = [&](QString failure)
+    {
+        error = failure;
+        done = true;
+        loop.quit();
+    };
+    with_google_token([&](QString token)
+    {
+        if(token.isEmpty())
+            return finish("Google Drive download failed: "+google_error);
+        QNetworkRequest request{QUrl(file_url+"?alt=media")};
+        request.setRawHeader("Authorization","Bearer "+token.toUtf8());
+        auto* reply = web_manager.get(request); // streamed to disk, never held in memory; the 30 s timeout counts idle time
+        connect(reply,&QNetworkReply::readyRead,this,[&,reply]{file.write(reply->readAll());});
+        connect(reply,&QNetworkReply::finished,this,[&,reply]
+        {
+            reply->deleteLater();
+            file.write(reply->readAll());
+            finish(reply->error() == QNetworkReply::NoError ? QString() : "Google Drive download failed: "+reply->errorString());
+        });
+    });
+    if(!done) // with_google_token() may already have finished
+        loop.exec();
+    if(error.isEmpty() && !file.commit())
+        error = "cannot write "+path;
+    if(!error.isEmpty())
+        return {};
+    google_api("PATCH",file_url,{{"trashed",true}},[](QJsonObject){}); // best effort: the local file is already complete
+    return {{"name",file_name},{"path",QFileInfo(path).absoluteFilePath()},{"mime_type",meta["mimeType"]},
+            {"size",QFileInfo(path).size()},{"drive_id",drive_id}};
+}
 QJsonObject web_bridge::upload_web_file(const QString& file_name,QString& error)
 {
     QFileInfo file_info(file_name); // relative to the current (chat) working directory
     QFile file(file_info.absoluteFilePath());
-    if(google_file_id.isEmpty() || google_folder_id.isEmpty())
-        error = "web_upload is available only in the active Web session";
-    else if(!file_info.exists())
+    if(!file_info.exists())
         error = "file does not exist: "+file_name;
     else if(!file_info.isFile())
         error = "not a regular file: "+file_name;
@@ -885,19 +971,19 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
                 ok = ai_run_shell(cmd,approve,error);
             else if(cmd[0] == "write_text_file")
                 ok = ai_write_text_file(cmd,approve,error);
-            else if(cmd[0] == "web_upload")
-                ok = cmd.size() == 2 && !(attachment = web.upload_web_file(QString::fromStdString(cmd[1]),upload_error)).isEmpty();
+            else if(cmd[0] == "web_upload" || cmd[0] == "web_download_prepare" || cmd[0] == "web_download")
+                ok = !(attachment = web.web_file(cmd,upload_error)).isEmpty();
             else if(cmd[0] == "set_title") // saved like a GUI chat's title
             {
                 if(!(ok = cmd.size() == 2 && ai_info::create(web.web_session_id,"Web","Web")->save_title(QString::fromStdString(cmd[1]))))
                     error = "usage: set_title <title>";
             }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, or set_title";
+                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, web_download_prepare, web_download, or set_title";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
-            if(cmd[0] == "web_upload" && !ok)
-                error = cmd.size() == 2 ? upload_error.toStdString() : "usage: web_upload <local file>";
+            if(!upload_error.isEmpty())
+                error = upload_error.toStdString();
             QJsonObject result{{"cmd",QString::fromStdString(cmd[0])},{"status",ok ? "success" : "error"}};
             if(!out.str().empty())
                 result["output"] = QString::fromStdString(out.str());

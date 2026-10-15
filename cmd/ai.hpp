@@ -126,7 +126,10 @@ public:
     QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
     void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
     void publish_web_result(void);
+    QJsonObject google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body = {}); // google_api() that waits for its reply
+    QJsonObject web_file(const std::vector<std::string>& cmd,QString& error); // web_upload, web_download_prepare, web_download: the attachment, or empty on error
     QJsonObject upload_web_file(const QString& file_name,QString& error); // web_upload: a private Drive copy in the DSI Studio AI folder; waits for completion
+    QJsonObject download_web_file(const QString& drive_id,QString& error); // web_download: streams a prepared slot to <ai_project_dir>/web_files/<session>/
 };
 
 #endif
