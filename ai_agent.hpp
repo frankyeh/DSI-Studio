@@ -104,6 +104,7 @@ class AIAgent : public QMainWindow
     QString prepare_ai(ai_info&); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
+    void web_step(const QString& step,const QString& approval = {}){web.report_step(step,approval);} // see web_bridge::report_step
     explicit AIAgent(MainWindow*);
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar

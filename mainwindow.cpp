@@ -1993,11 +1993,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return fail("voice is available only on Windows");
 #endif
     }
-    auto approve = [&](const QString& title,const QString& request) // every AI file write or shell command needs the local user's approval
+    auto approve = [&](const QString& title,const QString& request,bool) // every AI file write or shell command needs the local user's approval
     {
-        return source != command_source::AI || QMessageBox::question(this,title,
-               (ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
-               QMessageBox::Yes|QMessageBox::No,QMessageBox::No) == QMessageBox::Yes;
+        if(source != command_source::AI)
+            return true;
+        ai_agent->web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
+        if(QMessageBox::question(this,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
+                                 QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
+            return false;
+        ai_agent->web_step("running");
+        return true;
     };
     if(cmd[0] == "write_text_file")
         return ai_write_text_file(cmd,approve,error_msg);

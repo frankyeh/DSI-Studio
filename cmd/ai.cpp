@@ -25,6 +25,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QSaveFile>
 
 #include <iostream>
@@ -360,6 +361,24 @@ bool ai_run_cli(const std::vector<std::string>& cmd,bool headless,std::string& e
     po.check_end_param<tipl::warning>();
     return true;
 }
+static bool read_only_shell(const QString& text) // conservative: one simple command from a short list, without shell syntax or writing options
+{
+    static const QString shell_syntax(";&|<>`$(){}\\\n\r");
+    static const QStringList commands{"pwd","ls","cat","head","tail","grep","wc","stat","du","df","basename","dirname","readlink","realpath","find","rg","file","dir","type"},
+                             writing{"-exec","-execdir","-ok","-okdir","-delete","-fprint","-fprint0","-fprintf","-fls","-C"};
+    auto args = text.split(' ',Qt::SkipEmptyParts);
+    if(args.isEmpty() || !commands.contains(args[0]) || std::any_of(text.begin(),text.end(),[](QChar c){return shell_syntax.contains(c);}))
+        return false;
+    bool options_matter = args[0] == "find" || args[0] == "rg" || args[0] == "file"; // the commands with writing or command-running options
+    return std::none_of(args.begin()+1,args.end(),[&](QString arg)
+    {
+        // an unquoted wildcard could expand to a file named like an option
+        if(options_matter && arg.contains(QRegularExpression("[*?\\[]")) && !arg.startsWith('\'') && !arg.startsWith('"'))
+            return true;
+        arg.remove('\'').remove('"');
+        return writing.contains(arg) || arg.startsWith("--pre");
+    });
+}
 bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error)
 {
     auto fail = [&](const std::string& msg){error = msg;return false;};
@@ -367,7 +386,7 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
         return fail("usage: write_text_file <filename> <content>");
     auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to the working directory (set_work_dir)
     if(!approve("AI File Write Request","The AI agent wants to write "+QString::number(cmd[2].size())+
-                   " bytes to this file, replacing it if it exists:\n\n"+file_name))
+                   " bytes to this file, replacing it if it exists:\n\n"+file_name,false))
         return fail("user declined to write this file");
     QFile file(file_name); // binary: the UTF-8 content and its newlines are written exactly, no BOM
     if(!file.open(QIODevice::WriteOnly) || file.write(cmd[2].data(),qint64(cmd[2].size())) != qint64(cmd[2].size()))
@@ -385,7 +404,7 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
     bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
     if(is_curl)
         text.insert(program.length()," -s -S");
-    if(!approve("AI Shell Command Request","The AI agent wants to run this shell command:\n\n"+text))
+    if(!approve("AI Shell Command Request","The AI agent wants to run this shell command:\n\n"+text,read_only_shell(text)))
         return fail("user declined to run this shell command");
     auto configure_process = [](QProcess& process,const QString& shell_text)
     {
@@ -703,12 +722,31 @@ void web_bridge::poll_web(const QString& modified_time)
             auto forwarded = request;
             for(auto key : {"dsi_bridge","id","from","state"})
                 forwarded.remove(key);
+            web_dispatching = true;
             auto response = dispatch(forwarded);
+            web_dispatching = false;
             web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},
                 {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
             publish_web_result();
         });
     });
+}
+void web_bridge::report_step(const QString& step,const QString& approval)
+{
+    if(!web_dispatching) // e.g. a local agent's request in the GUI
+        return;
+    auto doc = google_api_wait("GET",google_doc_url());
+    auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
+    if(current["from"].toString() != "dsi" || current["state"].toString() != "processing" || current["id"].toInteger() != web_last_id)
+        return; // only this request's own "processing" message is rewritten
+    QJsonObject message{{"dsi_bridge",true},{"session",web_session_id},{"id",web_last_id},{"from","dsi"},{"state","processing"},{"step",step}};
+    if(!approval.isEmpty())
+        message["approval"] = approval;
+    bool done = false;
+    QEventLoop loop;
+    write_google_doc(doc,message,[&](bool){done = true;loop.quit();});
+    if(!done) // the write completes before a prompt can block the event loop
+        loop.exec();
 }
 void web_bridge::publish_web_result()
 {
@@ -935,15 +973,26 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
     web.stop_when_idle = false;
     web.status = [](session_status,const QString& message){tipl::out() << message.toStdString();};
     web.warn = [](const QString& text){tipl::error() << text.toStdString();QCoreApplication::exit(1);};
-    web.dispatch = [&web](const QJsonObject& request)
+    std::string approval = po.has("approval") ? po.get("approval") : std::string("manual");
+    if(approval != "manual" && approval != "read_only" && approval != "auto")
+        return tipl::error() << "--approval must be manual, read_only, or auto",1;
+    web.dispatch = [&](const QJsonObject& request)
     {
         if(auto chat = request["chat"].toString().trimmed();!chat.isEmpty())
             std::cout << "\nThe AI agent says: " << chat.toStdString() << std::endl;
-        auto approve = [&](const QString& title,const QString& text) // the terminal user approves; no terminal declines
+        auto approve = [&](const QString& title,const QString& text,bool read_only) // --approval decides, otherwise the terminal user; no terminal declines
         {
-            std::cerr << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N] " << std::flush;
+            if(approval == "auto" || (approval == "read_only" && read_only))
+                return true;
+            web.report_step("waiting_approval",text);
+            std::cerr << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N/a = approve all from now on] " << std::flush;
             std::string answer;
-            return std::getline(std::cin,answer) && (answer == "y" || answer == "Y");
+            if(!std::getline(std::cin,answer) || (answer != "y" && answer != "Y" && answer != "a" && answer != "A"))
+                return false;
+            if(answer == "a" || answer == "A")
+                approval = "auto";
+            web.report_step("running");
+            return true;
         };
         std::vector<std::vector<std::string> > cmds;
         QJsonArray results;
@@ -998,11 +1047,11 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
     };
     if(web.google_refresh_token.isEmpty() && !web.sign_in_device())
         return 1;
-    web.create_web_session([&web](QString file,QString session)
+    web.create_web_session([&](QString file,QString session)
     {
         web.start_web(file,session);
         std::cout << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << web.prompt().toStdString()
-                  << " This session is headless: DSI Studio has no window, so use only its headless commands." // tells the agent the mode before its first request
+                  << " This session is headless: DSI Studio has no window, so use only its headless commands. Approval: " << approval << "." // tells the agent the mode before its first request
                   << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl;
     });
     return QCoreApplication::exec();

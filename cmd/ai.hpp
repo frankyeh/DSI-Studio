@@ -82,7 +82,7 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QJsonObject selected_info = {}); // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) -- selected_info backs an unrecognized selected value so it still shows up as a real entry
 
 // shared by MainWindow's command center and headless --action=ai
-using ai_approval = std::function<bool(const QString& title,const QString& request)>; // true approves
+using ai_approval = std::function<bool(const QString& title,const QString& request,bool read_only)>; // true approves; read_only: a shell command that cannot change anything
 extern QMap<QString,QString> shell_tasks; // running asynchronous run_shell (curl) commands, by id
 bool ai_commands(const QJsonValue& command,std::vector<std::vector<std::string> >& cmds); // a request's command or batch as argument lists; false on an empty cmd
 bool ai_run_cli(const std::vector<std::string>& cmd,bool headless,std::string& error); // headless refuses actions that open a window
@@ -109,6 +109,7 @@ public:
     bool stop_when_idle = true;
     QString web_modified_time; // Drive modifiedTime of the last body read that needed no action
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
+    bool web_dispatching = false; // a Web request is running: report_step() may rewrite its "processing" message
     std::function<QJsonObject(const QJsonObject& request)> dispatch; // runs one agent request and returns its response
     std::function<void(session_status,const QString&)> status;
     std::function<void(const QString&)> warn;
@@ -126,6 +127,7 @@ public:
     QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
     void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
     void publish_web_result(void);
+    void report_step(const QString& step,const QString& approval = {}); // the running Web request's "processing" message gains step (waiting_approval/running); waits for the write
     QJsonObject google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body = {}); // google_api() that waits for its reply
     QJsonObject web_file(const std::vector<std::string>& cmd,QString& error); // web_upload, web_download_prepare, web_download: the attachment, or empty on error
     QJsonObject upload_web_file(const QString& file_name,QString& error); // web_upload: a private Drive copy in the DSI Studio AI folder; waits for completion
