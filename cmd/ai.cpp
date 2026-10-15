@@ -883,9 +883,11 @@ QJsonObject web_bridge::upload_web_file(const QString& file_name,QString& error)
     });
     if(!done) // with_google_token() may already have finished
         loop.exec();
+    auto id = uploaded["id"].toString();
+    if(error.isEmpty() && id.isEmpty()) // an HTTP success without a Location header or without the file's metadata
+        error = "Google Drive upload failed: no file ID returned";
     if(!error.isEmpty())
         return {};
-    auto id = uploaded["id"].toString();
     return {{"name",file_info.fileName()},{"drive_id",id},{"mime_type",mime},{"size",file.size()},
             {"url","https://drive.google.com/file/d/"+id+"/view"}};
 }
@@ -1000,6 +1002,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
     {
         web.start_web(file,session);
         std::cout << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << web.prompt().toStdString()
+                  << " This session is headless: DSI Studio has no window, so use only its headless commands." // tells the agent the mode before its first request
                   << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl;
     });
     return QCoreApplication::exec();
