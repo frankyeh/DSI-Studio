@@ -159,7 +159,7 @@ AIAgent::AIAgent(MainWindow* parent):
     ui->setupUi(this);
     ai_debug_level = settings.value("ai/debug",0).toInt();
     ui->ai_work_dir->setText(main_window.work_dir());
-    // the selected chat's dispatch directory (model_settings["cwd"], also run_shell's "cd" target)
+    // the selected chat's dispatch directory (model_settings["cwd"], also changed by set_work_dir)
     auto sync_work_dir = [this]
     {
         auto* info = selected_info();
@@ -541,6 +541,8 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     dispatching_info = &info;
     auto result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     dispatching_info = nullptr;
+    if(&info == selected_info()) // set_work_dir may have moved this chat's directory
+        ui->ai_work_dir->setText(info.model_settings["cwd"].toString(main_window.work_dir()));
     // a live local process is still mid-turn (this was one of its tool calls); Web or no transport is idle now
     if(info.processes && info.processes->state() != QProcess::NotRunning)
         set_ai_status(session,session_status::Thinking,

@@ -365,7 +365,7 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
     auto fail = [&](const std::string& msg){error = msg;return false;};
     if(cmd.size() != 3 || cmd[1].empty())
         return fail("usage: write_text_file <filename> <content>");
-    auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to this chat's directory
+    auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to the working directory (set_work_dir)
     if(!approve("AI File Write Request","The AI agent wants to write "+QString::number(cmd[2].size())+
                    " bytes to this file, replacing it if it exists:\n\n"+file_name))
         return fail("user declined to write this file");
@@ -830,7 +830,7 @@ QJsonObject web_bridge::download_web_file(const QString& drive_id,QString& error
 }
 QJsonObject web_bridge::upload_web_file(const QString& file_name,QString& error)
 {
-    QFileInfo file_info(file_name); // relative to the current (chat) working directory
+    QFileInfo file_info(file_name); // relative to the working directory (set_work_dir)
     QFile file(file_info.absoluteFilePath());
     if(!file_info.exists())
         error = "file does not exist: "+file_name;
@@ -963,13 +963,20 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
                 ok = ai_write_text_file(cmd,approve,error);
             else if(cmd[0] == "web_upload" || cmd[0] == "web_download_prepare" || cmd[0] == "web_download")
                 ok = !(attachment = web.web_file(cmd,upload_error)).isEmpty();
+            else if(cmd[0] == "set_work_dir") // the current directory for relative paths
+            {
+                if(!(ok = cmd.size() == 2 && QFileInfo(QString::fromStdString(cmd[1])).isDir() && QDir::setCurrent(QString::fromStdString(cmd[1]))))
+                    error = "usage: set_work_dir <existing directory>";
+                else
+                    std::cout << QDir::currentPath().toStdString() << std::endl;
+            }
             else if(cmd[0] == "set_title") // saved like a GUI chat's title
             {
                 if(!(ok = cmd.size() == 2 && ai_info::create(web.web_session_id,"Web","Web")->save_title(QString::fromStdString(cmd[1]))))
                     error = "usage: set_title <title>";
             }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, web_download_prepare, web_download, or set_title";
+                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, or set_title";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())

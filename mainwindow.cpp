@@ -1224,12 +1224,13 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 std::lock_guard<std::mutex> lock(console.edit_buf);
                 console.capture = prev_capture;
             }
-            if(auto cwd = QDir::currentPath();cwd != base_cwd)
+            if(auto cwd = QDir::currentPath();cwd != base_cwd) // set_work_dir: the chat's directory and the current directory both move
             {
                 info.model_settings["cwd"] = cwd;
                 info.save_config();
             }
-            QDir::setCurrent(prev_cwd);
+            else
+                QDir::setCurrent(prev_cwd);
             if(info.current_window != window_before)
                 unlock_target();
 
@@ -1501,13 +1502,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return true;
     }
 
-    if(cmd[0] == "set_work_dir")
+    if(cmd[0] == "set_work_dir") // the working directory (Work Dir list) and the current directory for relative paths
     {
         auto dir = select_dir(
             "Browse Directory",ui->workDir->currentText());
         if(dir.isEmpty())
             return true;
-        add_work_dir(dir);
+        if(!QFileInfo(dir).isDir() || !QDir::setCurrent(dir))
+            return fail("cannot change directory to: "+dir.toStdString());
+        add_work_dir(QDir::currentPath());
+        tipl::out() << QDir::currentPath().toStdString();
         return true;
     }
 
