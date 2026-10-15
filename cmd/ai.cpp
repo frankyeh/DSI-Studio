@@ -14,6 +14,7 @@
 #include <QWidget>
 
 #include <algorithm>
+#include <climits>
 #include <utility>
 
 #include <QCoreApplication>
@@ -25,6 +26,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSaveFile>
 
@@ -565,7 +567,7 @@ void web_bridge::write_google_doc(const QJsonObject& doc,const QJsonObject& mess
     google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
                [done](QJsonObject reply){done(!reply.isEmpty());});
 }
-static const QString web_title_separator = QString(" ")+QChar(0x00B7)+" DSI Studio "; // a Doc named "<title> <middle dot> DSI Studio <uuid>"
+static const QString web_title_separator = QString(" ")+QChar(0x00B7)+" DSI Studio "; // a Doc named "<title> <middle dot> DSI Studio <codename>"
 static const QString web_folder_search = "https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
                                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false"));
 QJsonArray web_bridge::list_web_sessions(void)
@@ -578,13 +580,13 @@ QJsonArray web_bridge::list_web_sessions(void)
         settings.setValue("ai/google_folder_id",google_folder_id = folders[0].toObject()["id"].toString());
     }
     // drive.file lists only files DSI Studio created, so other Docs never appear; web_download slots are not Docs
-    return google_api_wait("GET","https://www.googleapis.com/drive/v3/files?pageSize=15&orderBy=modifiedTime%20desc&fields=files(id,name,modifiedTime)&q="+
+    return google_api_wait("GET","https://www.googleapis.com/drive/v3/files?pageSize=15&orderBy=modifiedTime%20desc&fields=files(id,name,modifiedTime,appProperties)&q="+
                            QString::fromLatin1(QUrl::toPercentEncoding("'"+google_folder_id+"' in parents and mimeType='application/vnd.google-apps.document' and trashed=false")))["files"].toArray();
 }
 void web_bridge::set_web_title(const QString& title)
 {
-    if(!google_file_id.isEmpty()) // the session UUID stays at the end of the name
-        google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+google_file_id,{{"name",title+web_title_separator+web_session_id}},[](QJsonObject){});
+    if(!google_file_id.isEmpty()) // the codename stays at the end of the name, so an agent can still find the Doc by it
+        google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+google_file_id,{{"name",title+web_title_separator+web_code}},[](QJsonObject){});
 }
 void web_bridge::create_web_session(std::function<void(QString file,QString session)> done)
 {
@@ -605,9 +607,24 @@ void web_bridge::create_web_session(std::function<void(QString file,QString sess
             google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
                        {{"name","DSI Studio AI"},{"mimeType","application/vnd.google-apps.folder"}},use);
         });
+    // the codename is how a user or agent names the session; the UUID in appProperties stays the protocol session ID
+    static const QStringList word1{"amber","arctic","azure","blaze","cedar","coral","crystal","delta","ember","frost","gold","green","jade","lunar","maple","pine",
+                                   "neon","nova","ocean","onyx","polar","river","sage","silver","solar","swift","storm","sunset","terra","violet","wild","zen"},
+                             word2{"bison","comet","eagle","falcon","finch","fox","hawk","heron","koala","lion","moose","meteor","otter","owl","panda","raven",
+                                   "rocket","seal","shark","star","swan","tiger","orca","wolf","zebra","cloud","flame","leaf","moon","stone","pike","spark"};
+    auto random_code = []{return word1[QRandomGenerator::global()->bounded(int(word1.size()))]+"-"+word2[QRandomGenerator::global()->bounded(int(word2.size()))];};
+    auto taken = [this](const QString& code) // exact match through appProperties; a failed search counts as free
+    {
+        return !google_api_wait("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
+                "'"+google_folder_id+"' in parents and appProperties has {key='dsi_code' and value='"+code+"'} and trashed=false")))["files"].toArray().isEmpty();
+    };
+    auto code = random_code();
+    for(int tries = 1;taken(code);++tries) // a fresh pair is easier to remember than a number, until pairs keep colliding
+        code = random_code()+(tries < 5 ? QString() : "-"+QString::number(tries));
     auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
     google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
-               {{"name","DSI Studio "+session},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}}},
+               {{"name","DSI Studio "+code},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}},
+                {"appProperties",QJsonObject{{"dsi_session",session},{"dsi_code",code}}}},
                [this,session,done](QJsonObject file)
     {
         if(file["id"].toString().isEmpty())
@@ -629,6 +646,9 @@ void web_bridge::start_web(const QString& file,const QString& session)
         web_pending_result = QJsonObject();
     }
     google_file_id = file;
+    web_code = google_api_wait("GET","https://www.googleapis.com/drive/v3/files/"+file+"?fields=appProperties")["appProperties"].toObject()["dsi_code"].toString();
+    if(web_code.isEmpty()) // a Doc from before codenames keeps its UUID in the name
+        web_code = session;
     // continue after the Doc's last message: an unclaimed old request is answered "id must be greater" instead of run,
     // and a "processing" left by a stopped DSI Studio still gets "outcome unknown"
     if(auto doc = google_api_wait("GET",google_doc_url());!doc.isEmpty())
@@ -643,7 +663,7 @@ void web_bridge::start_web(const QString& file,const QString& session)
 }
 QString web_bridge::prompt() const
 {
-    return "Connect to DSI Studio. First read the public GitHub file "
+    return "Connect to DSI Studio session "+web_code+". First read the public GitHub file "
            "frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it. "
            "Session document: https://docs.google.com/document/d/"+google_file_id+"/edit";
 }
@@ -707,7 +727,7 @@ void web_bridge::poll_web(const QString& modified_time)
         }
         auto text = web_text(doc);
         if(text.isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
-            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"from","dsi"},{"state","ready"}},
+            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"code",web_code},{"from","dsi"},{"state","ready"}},
                                     [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
         QJsonParseError parse_error;
         auto request = QJsonDocument::fromJson(text.toUtf8(),&parse_error).object();
@@ -1097,28 +1117,36 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         if(!po.has("debug")) // from now on only the chat history
             std::cout.rdbuf(&quiet),std::cerr.rdbuf(&quiet);
     };
-    // --session=N resumes the N-th chat listed below (default 0, the most recent); -1 or no chat starts a new one
+    // --session=N resumes the N-th chat listed below (default 0, the most recent), --session=<codename> that chat;
+    // -1 or no chat starts a new one
     QList<QJsonObject> sessions;
     QStringList items;
-    int choice = po.get("session",0);
+    auto session_arg = QString::fromStdString(po.get("session","0"));
+    bool by_number = false;
+    int choice = session_arg.toInt(&by_number);
+    if(!by_number) // a codename not listed is reported below
+        choice = INT_MAX;
     for(const auto& each : web.list_web_sessions())
     {
         auto file = each.toObject();
         auto name = file["name"].toString();
-        if(!is_valid_session_id(name.right(36)))
+        auto props = file["appProperties"].toObject();
+        if(!is_valid_session_id(props["dsi_session"].toString()))
             continue;
+        if(!by_number && props["dsi_code"].toString() == session_arg)
+            choice = int(sessions.size());
         sessions << file;
         auto title = name.section(web_title_separator,0,0);
         if(title == name) // never titled through set_title on any machine: the local title, if any
-            title = web.settings.value("ai/title/"+name.right(36),"(untitled)").toString();
-        items << QString("%1  %2  %3").arg(title.left(30),-30).arg(file["id"].toString())
+            title = web.settings.value("ai/title/"+props["dsi_session"].toString(),"(untitled)").toString();
+        items << QString("%1  %2  %3").arg(props["dsi_code"].toString(),-16).arg(title.left(30),-30)
                  .arg(QDateTime::fromString(file["modifiedTime"].toString(),Qt::ISODate).toLocalTime().toString("yyyy-MM-dd hh:mm"));
     }
     chat << "\nDSI Studio AI chats (--session)\n\n";
     for(int i = 0;i < items.size();++i)
         chat << i << ". " << items[i].toStdString() << "\n";
     if(!sessions.isEmpty() && choice >= int(sessions.size()))
-        return tipl::error() << "--session=" << choice << " is not listed; use 0 to " << int(sessions.size())-1 << ", or -1 for a new chat",1;
+        return tipl::error() << "--session=" << session_arg.toStdString() << " is not listed; use 0 to " << int(sessions.size())-1 << ", a listed codename, or -1 for a new chat",1;
     if(choice < 0 || sessions.isEmpty())
         web.create_web_session(start);
     else
@@ -1126,7 +1154,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         auto file = sessions[choice];
         if(QDateTime::fromString(file["modifiedTime"].toString(),Qt::ISODate).secsTo(QDateTime::currentDateTimeUtc()) < 60)
             chat << "Warning: this chat changed in the last minute; make sure no other DSI Studio is serving it." << std::endl;
-        start(file["id"].toString(),file["name"].toString().right(36));
+        start(file["id"].toString(),file["appProperties"].toObject()["dsi_session"].toString());
     }
     auto result = QCoreApplication::exec();
     std::cout.rdbuf(chat.rdbuf());
