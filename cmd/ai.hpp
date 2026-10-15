@@ -4,6 +4,7 @@
 #include <QByteArray>
 #include <QDateTime>
 #include <QElapsedTimer>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
 #include <QMap>
@@ -121,7 +122,9 @@ public:
     void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
     void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
     void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
-    void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc
+    void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc after its last message
+    QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <uuid>", or "<title> <middle dot> DSI Studio <uuid>" after set_title), modifiedTime
+    void set_web_title(const QString& title); // renames the connected Doc to "<title> <middle dot> DSI Studio <uuid>"
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
     QString prompt(void) const; // the connection prompt an agent is given
     QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields

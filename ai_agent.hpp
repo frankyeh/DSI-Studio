@@ -105,6 +105,7 @@ class AIAgent : public QMainWindow
 
 public:
     void web_step(const QString& step,const QString& approval = {}){web.report_step(step,approval);} // see web_bridge::report_step
+    void web_title(const ai_info& info,const QString& title){if(web_connected(info)) web.set_web_title(title);} // set_title also names this chat's Doc
     explicit AIAgent(MainWindow*);
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar

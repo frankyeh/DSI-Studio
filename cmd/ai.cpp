@@ -27,6 +27,11 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSaveFile>
+#ifndef Q_OS_WIN
+#include <csignal>
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 #include <iostream>
 #include <sstream>
@@ -564,11 +569,31 @@ void web_bridge::write_google_doc(const QJsonObject& doc,const QJsonObject& mess
     google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
                [done](QJsonObject reply){done(!reply.isEmpty());});
 }
+static const QString web_title_separator = QString(" ")+QChar(0x00B7)+" DSI Studio "; // a Doc named "<title> <middle dot> DSI Studio <uuid>"
+static const QString web_folder_search = "https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
+                                         "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false"));
+QJsonArray web_bridge::list_web_sessions(void)
+{
+    if(google_folder_id.isEmpty()) // found, never created: no folder means no chats
+    {
+        auto folders = google_api_wait("GET",web_folder_search)["files"].toArray();
+        if(folders.isEmpty())
+            return {};
+        settings.setValue("ai/google_folder_id",google_folder_id = folders[0].toObject()["id"].toString());
+    }
+    // drive.file lists only files DSI Studio created, so other Docs never appear; web_download slots are not Docs
+    return google_api_wait("GET","https://www.googleapis.com/drive/v3/files?pageSize=15&orderBy=modifiedTime%20desc&fields=files(id,name,modifiedTime)&q="+
+                           QString::fromLatin1(QUrl::toPercentEncoding("'"+google_folder_id+"' in parents and mimeType='application/vnd.google-apps.document' and trashed=false")))["files"].toArray();
+}
+void web_bridge::set_web_title(const QString& title)
+{
+    if(!google_file_id.isEmpty()) // the session UUID stays at the end of the name
+        google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+google_file_id,{{"name",title+web_title_separator+web_session_id}},[](QJsonObject){});
+}
 void web_bridge::create_web_session(std::function<void(QString file,QString session)> done)
 {
     if(google_folder_id.isEmpty()) // resolved once (found or created), then reused by its ID
-        return google_api("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
-                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false")),{},[this,done](QJsonObject found)
+        return google_api("GET",web_folder_search,{},[this,done](QJsonObject found)
         {
             auto use = [this,done](QJsonObject folder)
             {
@@ -597,16 +622,24 @@ void web_bridge::create_web_session(std::function<void(QString file,QString sess
         done(file["id"].toString(),session);
     });
 }
+static QString web_text(const QJsonObject& doc);
 void web_bridge::start_web(const QString& file,const QString& session)
 {
     stop_web();
     if(session != web_session_id) // a pending result belongs to its own session only
     {
         web_session_id = session;
-        web_last_id = 0; // a claimed request is always overwritten by "processing", so it is never re-run
+        web_last_id = 0;
         web_pending_result = QJsonObject();
     }
     google_file_id = file;
+    // continue after the Doc's last message: an unclaimed old request is answered "id must be greater" instead of run,
+    // and a "processing" left by a stopped DSI Studio still gets "outcome unknown"
+    if(auto doc = google_api_wait("GET",google_doc_url());!doc.isEmpty())
+    {
+        auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
+        web_last_id = current["id"].toInteger()-(current["from"].toString() == "dsi" && current["state"].toString() == "processing" ? 1 : 0);
+    }
     google_error = "the session Doc was never read"; // the first good read clears it and shows the chat connected
     report(session_status::WaitingUser,"Web: reading the session Doc.");
     web_idle.start();
@@ -965,6 +998,42 @@ bool web_bridge::sign_in_device() // Google's device flow, authorized on any com
     settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
+static int pick_item(const QStringList& items,std::ostream& out) // arrow keys and Enter on a terminal, otherwise a number
+{
+#ifndef Q_OS_WIN
+    static termios tty_mode;
+    if(isatty(STDIN_FILENO) && tcgetattr(STDIN_FILENO,&tty_mode) == 0)
+    {
+        auto raw = tty_mode;
+        raw.c_lflag &= ~(ICANON|ECHO);
+        tcsetattr(STDIN_FILENO,TCSANOW,&raw);
+        std::signal(SIGINT,[](int){tcsetattr(STDIN_FILENO,TCSANOW,&tty_mode);_exit(130);}); // Ctrl+C leaves an echoing terminal
+        int pos = 0;
+        for(bool first = true;;first = false)
+        {
+            if(!first)
+                out << "\033[" << items.size() << "A"; // back to the first row
+            for(int i = 0;i < items.size();++i)
+                out << "\r\033[K" << (i == pos ? "> " : "  ") << items[i].toStdString() << "\n";
+            out << std::flush;
+            int c = getchar();
+            if(c == '\n' || c == '\r' || c == EOF)
+                break;
+            if(c == 27 && getchar() == '[' && (c = getchar()) != EOF)
+                pos = std::clamp(pos+(c == 'B')-(c == 'A'),0,int(items.size())-1);
+        }
+        tcsetattr(STDIN_FILENO,TCSANOW,&tty_mode);
+        std::signal(SIGINT,SIG_DFL);
+        return pos;
+    }
+#endif
+    for(int i = 0;i < items.size();++i)
+        out << i+1 << ". " << items[i].toStdString() << "\n";
+    out << "Choose [1-" << items.size() << "]: " << std::flush;
+    std::string line;
+    int n = std::getline(std::cin,line) ? std::atoi(line.c_str()) : 0;
+    return n >= 1 && n <= items.size() ? n-1 : int(items.size())-1; // anything else: the last item, New chat
+}
 int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headless Web session served until Ctrl+C; no window is created
 {
     if(po.get("agent") != "web")
@@ -1029,10 +1098,13 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
                 else
                     std::cout << QDir::currentPath().toStdString() << std::endl;
             }
-            else if(cmd[0] == "set_title") // saved like a GUI chat's title
+            else if(cmd[0] == "set_title") // saved like a GUI chat's title, and names the Doc
             {
-                if(!(ok = cmd.size() == 2 && ai_info::create(web.web_session_id,"Web","Web")->save_title(QString::fromStdString(cmd[1]))))
+                auto* info = ai_info::create(web.web_session_id,"Web","Web");
+                if(!(ok = cmd.size() == 2 && info->save_title(QString::fromStdString(cmd[1]))))
                     error = "usage: set_title <title>";
+                else
+                    web.set_web_title(info->project_titles);
             }
             else
                 ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, or set_title";
@@ -1058,15 +1130,43 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
     };
     if(web.google_refresh_token.isEmpty() && !web.sign_in_device())
         return 1;
-    web.create_web_session([&](QString file,QString session)
+    auto start = [&](QString file,QString session)
     {
         web.start_web(file,session);
         chat << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << web.prompt().toStdString()
-                  << " This session is headless: DSI Studio has no window, so use only its headless commands. Approval: " << approval << "." // tells the agent the mode before its first request
-                  << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl;
+             << " This session is headless: DSI Studio has no window, so use only its headless commands. Approval: " << approval << "." // tells the agent the mode before its first request
+             << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl;
         if(!po.has("debug")) // from now on only the chat history
             std::cout.rdbuf(&quiet),std::cerr.rdbuf(&quiet);
-    });
+    };
+    // resume a recent chat (its Doc and session) or start a new one
+    QList<QJsonObject> sessions;
+    QStringList items;
+    for(const auto& each : web.list_web_sessions())
+    {
+        auto file = each.toObject();
+        auto name = file["name"].toString();
+        if(!is_valid_session_id(name.right(36)))
+            continue;
+        sessions << file;
+        auto title = name.section(web_title_separator,0,0);
+        if(title == name) // never titled through set_title on any machine: the local title, if any
+            title = web.settings.value("ai/title/"+name.right(36),"(untitled)").toString();
+        items << QString("%1  %2  %3").arg(title.left(30),-30).arg(file["id"].toString())
+                 .arg(QDateTime::fromString(file["modifiedTime"].toString(),Qt::ISODate).toLocalTime().toString("yyyy-MM-dd hh:mm"));
+    }
+    items << "New chat";
+    chat << "\nDSI Studio AI chats (Up/Down, Enter)\n\n";
+    auto choice = pick_item(items,chat);
+    if(choice == sessions.size())
+        web.create_web_session(start);
+    else
+    {
+        auto file = sessions[choice];
+        if(QDateTime::fromString(file["modifiedTime"].toString(),Qt::ISODate).secsTo(QDateTime::currentDateTimeUtc()) < 60)
+            chat << "Warning: this chat changed in the last minute; make sure no other DSI Studio is serving it." << std::endl;
+        start(file["id"].toString(),file["name"].toString().right(36));
+    }
     auto result = QCoreApplication::exec();
     std::cout.rdbuf(chat.rdbuf());
     std::cerr.rdbuf(cerr_buf);

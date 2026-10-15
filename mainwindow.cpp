@@ -1290,6 +1290,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "usage: set_title <title>";
                 else if(!info.save_title(QString::fromStdString(cmd[1]).simplified()))
                     error = "cannot save title";
+                else
+                    ai_agent->web_title(info,info.project_titles);
             }
             else if(command_name == "web_upload" || command_name == "web_download_prepare" || command_name == "web_download")
                 attachment = ai_agent->web_file(info,cmd,error);
