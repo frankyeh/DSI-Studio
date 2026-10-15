@@ -387,16 +387,6 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
         text.insert(program.length()," -s -S");
     if(!approve("AI Shell Command Request","The AI agent wants to run this shell command:\n\n"+text))
         return fail("user declined to run this shell command");
-    if(!program.compare("cd",Qt::CaseInsensitive))
-    {
-        QString path = text.mid(program.length()).trimmed();
-        if(path.size() >= 2 && path.startsWith('"') && path.endsWith('"'))
-            path = path.mid(1,path.size()-2);
-        if(!path.isEmpty() && !QDir::setCurrent(path))
-            return fail(("cannot change directory to: "+path).toStdString());
-        tipl::out() << QDir::currentPath().toStdString();
-        return true;
-    }
     auto configure_process = [](QProcess& process,const QString& shell_text)
     {
 #ifdef Q_OS_WIN
