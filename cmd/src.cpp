@@ -171,7 +171,7 @@ bool handle_bids_folder(const std::vector<std::filesystem::path>& dwi_nii_files,
         std::get<tipl::shape<3> >(dwi_info[i]) = tipl::shape<3>();
 
 
-        auto dwi_file_name = main_dwi_list.back();
+        auto dwi_file_name = main_dwi_list.front(); // name after the main DWI (largest volume count), not an added b0/sbref/epi
         if(!output_dir.empty())
             dwi_file_name = output_dir/dwi_file_name.stem().stem();
         else
