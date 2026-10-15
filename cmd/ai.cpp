@@ -969,6 +969,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
 {
     if(po.get("agent") != "web")
         return tipl::error() << "--action=ai supports only --agent=web",1;
+    // the terminal shows the chat history (agent messages, commands, errors, approvals); other output only with --debug
+    std::ostream chat(std::cout.rdbuf());
+    auto* cerr_buf = std::cerr.rdbuf();
+    struct : std::streambuf {int_type overflow(int_type c) override {return traits_type::not_eof(c);}} quiet;
     web_bridge web;
     web.stop_when_idle = false;
     web.status = [](session_status,const QString& message){tipl::out() << message.toStdString();};
@@ -978,14 +982,14 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
         return tipl::error() << "--approval must be manual, read_only, or auto",1;
     web.dispatch = [&](const QJsonObject& request)
     {
-        if(auto chat = request["chat"].toString().trimmed();!chat.isEmpty())
-            std::cout << "\nThe AI agent says: " << chat.toStdString() << std::endl;
+        if(auto text = request["chat"].toString().trimmed();!text.isEmpty())
+            chat << "\nAgent: " << text.toStdString() << std::endl;
         auto approve = [&](const QString& title,const QString& text,bool read_only) // --approval decides, otherwise the terminal user; no terminal declines
         {
             if(approval == "auto" || (approval == "read_only" && read_only))
                 return true;
             web.report_step("waiting_approval",text);
-            std::cerr << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N/a = approve all from now on] " << std::flush;
+            chat << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N/a = approve all from now on] " << std::flush;
             std::string answer;
             if(!std::getline(std::cin,answer) || (answer != "y" && answer != "Y" && answer != "a" && answer != "A"))
                 return false;
@@ -1000,6 +1004,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
             results.append(QJsonObject{{"status","error"},{"error","invalid cmd text"}});
         for(const auto& cmd : cmds)
         {
+            chat << ">";
+            for(auto param : cmd) // first line of each parameter, shortened
+                chat << " " << ((param = param.substr(0,param.find('\n'))).size() > 100 ? param.substr(0,97)+"..." : param);
+            chat << std::endl;
             std::string error;
             QString upload_error;
             QJsonObject attachment;
@@ -1038,7 +1046,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
             if(!attachment.isEmpty())
                 result["attachment"] = attachment;
             if(!ok)
+            {
                 result["error"] = QString::fromStdString(error)+". Read DSI Studio Manuals and retry.";
+                chat << "  error: " << error << std::endl;
+            }
             results.append(result);
             if(!ok)
                 break;
@@ -1050,9 +1061,14 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
     web.create_web_session([&](QString file,QString session)
     {
         web.start_web(file,session);
-        std::cout << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << web.prompt().toStdString()
+        chat << "\nDSI Studio Web AI session ready.\n\nPaste this prompt into a web AI agent:\n\n" << web.prompt().toStdString()
                   << " This session is headless: DSI Studio has no window, so use only its headless commands. Approval: " << approval << "." // tells the agent the mode before its first request
                   << "\n\nDSI Studio is running. Press Ctrl+C to stop." << std::endl;
+        if(!po.has("debug")) // from now on only the chat history
+            std::cout.rdbuf(&quiet),std::cerr.rdbuf(&quiet);
     });
-    return QCoreApplication::exec();
+    auto result = QCoreApplication::exec();
+    std::cout.rdbuf(chat.rdbuf());
+    std::cerr.rdbuf(cerr_buf);
+    return result;
 }
