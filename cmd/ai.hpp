@@ -92,7 +92,7 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
 
 // the Web channel, without GUI: Google OAuth tokens (drive.file only; never logged or written to chat history) and one session Doc
 // (in the "DSI Studio AI" folder) used as a single-slot JSON mailbox, read directly for 3 minutes after activity, then on a Drive
-// modifiedTime change. AIAgent owns one for GUI Web chats; --action=ai --agent=web runs a local one
+// modifiedTime change. AIAgent owns one for GUI Web chats; --action=ai runs a local one
 class web_bridge : public QObject
 {
 public:
