@@ -104,7 +104,7 @@ public:
     QTimer web_timer;
     QString google_folder_id = settings.value("ai/google_folder_id").toString();
     QString google_error; // the last Google failure, shown in the Web status; never holds a token
-    QString google_file_id,web_session_id; // the connected Doc (empty when stopped) and session
+    QString google_file_id,web_session_id,web_code; // the connected Doc (empty when stopped), session, and codename (e.g. neon-raven)
     qint64 web_last_id = 0;
     QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling and, if stop_when_idle, stops polling after 1 hour
     bool stop_when_idle = true;
@@ -123,8 +123,8 @@ public:
     void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
     void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
     void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc after its last message
-    QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <uuid>", or "<title> <middle dot> DSI Studio <uuid>" after set_title), modifiedTime
-    void set_web_title(const QString& title); // renames the connected Doc to "<title> <middle dot> DSI Studio <uuid>"
+    QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <codename>", or "<title> <middle dot> DSI Studio <codename>" after set_title), modifiedTime, appProperties (dsi_session, dsi_code)
+    void set_web_title(const QString& title); // renames the connected Doc to "<title> <middle dot> DSI Studio <codename>"
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
     QString prompt(void) const; // the connection prompt an agent is given
     QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
