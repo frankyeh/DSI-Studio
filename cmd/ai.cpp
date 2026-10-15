@@ -370,7 +370,7 @@ static bool read_only_shell(const QString& text) // conservative: one simple com
 {
     static const QString shell_syntax(";&|<>`$(){}\\\n\r");
     static const QStringList commands{"pwd","ls","cat","head","tail","grep","wc","stat","du","df","basename","dirname","readlink","realpath","find","rg","file","dir","type"},
-                             writing{"-exec","-execdir","-ok","-okdir","-delete","-fprint","-fprint0","-fprintf","-fls","-C"};
+                             writing{"-exec","-execdir","-ok","-okdir","-delete","-fprint","-fprint0","-fprintf","-fls"};
     auto args = text.split(' ',Qt::SkipEmptyParts);
     if(args.isEmpty() || !commands.contains(args[0]) || std::any_of(text.begin(),text.end(),[](QChar c){return shell_syntax.contains(c);}))
         return false;
@@ -381,7 +381,8 @@ static bool read_only_shell(const QString& text) // conservative: one simple com
         if(options_matter && arg.contains(QRegularExpression("[*?\\[]")) && !arg.startsWith('\'') && !arg.startsWith('"'))
             return true;
         arg.remove('\'').remove('"');
-        return writing.contains(arg) || arg.startsWith("--pre");
+        return writing.contains(arg) || arg.startsWith("--pre") || // file -C/--compile writes, also bundled (-bC) or abbreviated (--comp)
+               (args[0] == "file" && (arg.startsWith("--co") || QRegularExpression("^-[^-]*C").match(arg).hasMatch()));
     });
 }
 bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error)
