@@ -27,11 +27,6 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSaveFile>
-#ifndef Q_OS_WIN
-#include <csignal>
-#include <termios.h>
-#include <unistd.h>
-#endif
 
 #include <iostream>
 #include <sstream>
@@ -999,46 +994,8 @@ bool web_bridge::sign_in_device() // Google's device flow, authorized on any com
     settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
-static int pick_item(const QStringList& items,std::ostream& out) // arrow keys and Enter on a terminal, otherwise a number
+int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web session served until Ctrl+C; no window is created
 {
-#ifndef Q_OS_WIN
-    static termios tty_mode;
-    if(isatty(STDIN_FILENO) && tcgetattr(STDIN_FILENO,&tty_mode) == 0)
-    {
-        auto raw = tty_mode;
-        raw.c_lflag &= ~(ICANON|ECHO);
-        tcsetattr(STDIN_FILENO,TCSANOW,&raw);
-        std::signal(SIGINT,[](int){tcsetattr(STDIN_FILENO,TCSANOW,&tty_mode);_exit(130);}); // Ctrl+C leaves an echoing terminal
-        int pos = 0;
-        for(bool first = true;;first = false)
-        {
-            if(!first)
-                out << "\033[" << items.size() << "A"; // back to the first row
-            for(int i = 0;i < items.size();++i)
-                out << "\r\033[K" << (i == pos ? "> " : "  ") << items[i].toStdString() << "\n";
-            out << std::flush;
-            int c = getchar();
-            if(c == '\n' || c == '\r' || c == EOF)
-                break;
-            if(c == 27 && getchar() == '[' && (c = getchar()) != EOF)
-                pos = std::clamp(pos+(c == 'B')-(c == 'A'),0,int(items.size())-1);
-        }
-        tcsetattr(STDIN_FILENO,TCSANOW,&tty_mode);
-        std::signal(SIGINT,SIG_DFL);
-        return pos;
-    }
-#endif
-    for(int i = 0;i < items.size();++i)
-        out << i+1 << ". " << items[i].toStdString() << "\n";
-    out << "Choose [1-" << items.size() << "]: " << std::flush;
-    std::string line;
-    int n = std::getline(std::cin,line) ? std::atoi(line.c_str()) : 0;
-    return n >= 1 && n <= items.size() ? n-1 : int(items.size())-1; // anything else: the last item, New chat
-}
-int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headless Web session served until Ctrl+C; no window is created
-{
-    if(po.get("agent") != "web")
-        return tipl::error() << "--action=ai supports only --agent=web",1;
     // the terminal shows the chat history (agent messages, commands, errors, approvals); other output only with --debug
     std::ostream chat(std::cout.rdbuf());
     auto* cerr_buf = std::cerr.rdbuf();
@@ -1140,9 +1097,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
         if(!po.has("debug")) // from now on only the chat history
             std::cout.rdbuf(&quiet),std::cerr.rdbuf(&quiet);
     };
-    // resume a recent chat (its Doc and session) or start a new one
+    // --session=N resumes the N-th chat listed below (default 0, the most recent); -1 or no chat starts a new one
     QList<QJsonObject> sessions;
     QStringList items;
+    int choice = po.get("session",0);
     for(const auto& each : web.list_web_sessions())
     {
         auto file = each.toObject();
@@ -1156,10 +1114,12 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai --agent=web: a headle
         items << QString("%1  %2  %3").arg(title.left(30),-30).arg(file["id"].toString())
                  .arg(QDateTime::fromString(file["modifiedTime"].toString(),Qt::ISODate).toLocalTime().toString("yyyy-MM-dd hh:mm"));
     }
-    items << "New chat";
-    chat << "\nDSI Studio AI chats (Up/Down, Enter)\n\n";
-    auto choice = pick_item(items,chat);
-    if(choice == sessions.size())
+    chat << "\nDSI Studio AI chats (--session)\n\n";
+    for(int i = 0;i < items.size();++i)
+        chat << i << ". " << items[i].toStdString() << "\n";
+    if(!sessions.isEmpty() && choice >= int(sessions.size()))
+        return tipl::error() << "--session=" << choice << " is not listed; use 0 to " << int(sessions.size())-1 << ", or -1 for a new chat",1;
+    if(choice < 0 || sessions.isEmpty())
         web.create_web_session(start);
     else
     {
