@@ -96,8 +96,6 @@ void src_data::update_mask(void)
         tipl::morphology::smoothing(voxel.mask);
         tipl::morphology::smoothing(voxel.mask);
         tipl::morphology::smoothing(voxel.mask);
-        tipl::morphology::erosion(voxel.mask);
-        tipl::morphology::erosion(voxel.mask);
         tipl::morphology::defragment(voxel.mask);
         tipl::morphology::smoothing(voxel.mask);
         tipl::morphology::defragment(voxel.mask);
