@@ -837,7 +837,7 @@ QJsonObject web_bridge::google_api_wait(const QByteArray& verb,const QString& ur
         loop.exec();
     return result;
 }
-QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,QString& error)
+QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,const ai_approval& approve,QString& error)
 {
     auto name = QString::fromStdString(cmd[0]);
     if(cmd.size() != 2 || cmd[1].empty())
@@ -846,7 +846,7 @@ QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,QString& er
         return error = name+" is available only in the active Web session",QJsonObject();
     auto param = QString::fromStdString(cmd[1]);
     if(name == "web_upload")
-        return upload_web_file(param,error);
+        return upload_web_file(param,approve,error);
     if(name == "web_download")
         return download_web_file(param,error);
     // web_download_prepare: an empty Drive file created by DSI Studio, so drive.file can read it after the agent replaces its bytes
@@ -863,7 +863,7 @@ QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,QString& er
 QJsonObject web_bridge::download_web_file(const QString& drive_id,QString& error)
 {
     auto file_url = "https://www.googleapis.com/drive/v3/files/"+QString::fromLatin1(QUrl::toPercentEncoding(drive_id));
-    auto meta = google_api_wait("GET",file_url+"?fields=mimeType,parents,appProperties");
+    auto meta = google_api_wait("GET",file_url+"?fields=mimeType,parents,appProperties,size");
     if(meta.isEmpty())
         return error = "cannot read Drive file "+drive_id+": "+google_error,QJsonObject();
     auto properties = meta["appProperties"].toObject();
@@ -874,6 +874,8 @@ QJsonObject web_bridge::download_web_file(const QString& drive_id,QString& error
         return error = "not an upload slot of this Web session; use web_download_prepare and replace the content of its drive_id",QJsonObject();
     if(meta["mimeType"].toString().startsWith("application/vnd.google-apps."))
         return error = "Google Docs, Sheets, and Slides files are not supported; upload raw file content",QJsonObject();
+    if(meta["size"].toString() == "0") // the untouched slot from web_download_prepare
+        return error = "the upload slot is still empty; replace the content of drive_id "+drive_id+" first",QJsonObject();
     auto dir = ai_project_dir+"/web_files/"+web_session_id;
     auto path = dir+"/"+file_name;
     if(QFileInfo::exists(path))
@@ -914,7 +916,7 @@ QJsonObject web_bridge::download_web_file(const QString& drive_id,QString& error
     return {{"name",file_name},{"path",QFileInfo(path).absoluteFilePath()},{"mime_type",meta["mimeType"]},
             {"size",QFileInfo(path).size()},{"drive_id",drive_id}};
 }
-QJsonObject web_bridge::upload_web_file(const QString& file_name,QString& error)
+QJsonObject web_bridge::upload_web_file(const QString& file_name,const ai_approval& approve,QString& error)
 {
     QFileInfo file_info(file_name); // relative to the working directory (set_work_dir)
     QFile file(file_info.absoluteFilePath());
@@ -924,6 +926,10 @@ QJsonObject web_bridge::upload_web_file(const QString& file_name,QString& error)
         error = "not a regular file: "+file_name;
     else if(!file.open(QIODevice::ReadOnly))
         error = "cannot open file: "+file_name;
+    // reading a local file, like a read-only shell command, so --approval=read_only allows it
+    else if(!approve("AI File Upload Request","The AI agent wants to upload this file ("+QString::number(file.size())+
+                     " bytes) to your Google Drive for the Web agent to read:\n\n"+file_info.absoluteFilePath(),true))
+        error = "user declined to upload this file";
     if(!error.isEmpty())
         return {};
     auto mime = QMimeDatabase().mimeTypeForFile(file_info).name(); // application/octet-stream when unknown
@@ -1067,7 +1073,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             else if(cmd[0] == "write_text_file")
                 ok = ai_write_text_file(cmd,approve,error);
             else if(cmd[0] == "web_upload" || cmd[0] == "web_download_prepare" || cmd[0] == "web_download")
-                ok = !(attachment = web.web_file(cmd,upload_error)).isEmpty();
+                ok = !(attachment = web.web_file(cmd,approve,upload_error)).isEmpty();
             else if(cmd[0] == "set_work_dir") // the current directory for relative paths
             {
                 if(!(ok = cmd.size() == 2 && QFileInfo(QString::fromStdString(cmd[1])).isDir() && QDir::setCurrent(QString::fromStdString(cmd[1]))))

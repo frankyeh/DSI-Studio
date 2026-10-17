@@ -1393,11 +1393,11 @@ void AIAgent::stop_web(const QString& message)
 {
     web.stop_web(message);
 }
-QJsonObject AIAgent::web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error)
+QJsonObject AIAgent::web_file(const ai_info& info,const std::vector<std::string>& cmd,const ai_approval& approve,QString& error)
 {
     if(info.provider != "Web" || !web_connected(info))
         return error = QString::fromStdString(cmd[0])+" is available only in the active Web session",QJsonObject();
-    return web.web_file(cmd,error);
+    return web.web_file(cmd,approve,error);
 }
 bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopback); true once a token is held
 {

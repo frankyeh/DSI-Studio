@@ -1294,7 +1294,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     ai_agent->web_title(info,info.project_titles);
             }
             else if(command_name == "web_upload" || command_name == "web_download_prepare" || command_name == "web_download")
-                attachment = ai_agent->web_file(info,cmd,error);
+                attachment = ai_agent->web_file(info,cmd,[&](const QString& title,const QString& request,bool){return ai_approve(title,request);},error);
             else if(command_name == "log")
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -1409,6 +1409,16 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     return QJsonObject{
         {"status",results.last().toObject()["status"]},{"result",results}};
+}
+
+bool MainWindow::ai_approve(const QString& title,const QString& request)
+{
+    ai_agent->web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
+    if(QMessageBox::question(this,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
+                             QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
+        return false;
+    ai_agent->web_step("running");
+    return true;
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
@@ -1997,14 +2007,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     }
     auto approve = [&](const QString& title,const QString& request,bool) // every AI file write or shell command needs the local user's approval
     {
-        if(source != command_source::AI)
-            return true;
-        ai_agent->web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
-        if(QMessageBox::question(this,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
-                                 QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
-            return false;
-        ai_agent->web_step("running");
-        return true;
+        return source != command_source::AI || ai_approve(title,request);
     };
     if(cmd[0] == "write_text_file")
         return ai_write_text_file(cmd,approve,error_msg);
