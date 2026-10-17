@@ -160,15 +160,18 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::out() << "DWI rotated.";
             }
             else
+            if(src.voxel.method_id != 7) // resample to isotropic is redundant for QSDR, which use qsdr_reso
             {
-                float default_iso = max_reso;
-                if(src.voxel.method_id != 7 && src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
-                    default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
-                if(po.has("save_src"))
-                    default_iso = 0.0f;
-                if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
-                    !src.command({"resample",std::to_string(default_iso)}))
-                    return fail();
+                // resample to isotropic if (1) users specify make_isotropic, or (2) is human scan, and not just save sz
+                if((!po.has("save_src") && src.is_human_data) || po.has("make_isotropic"))
+                {
+                    float default_iso = max_reso;
+                    if(src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
+                        default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
+                    if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
+                        !src.command({"resample",std::to_string(default_iso)}))
+                        return fail();
+                }
             }
     }
 
