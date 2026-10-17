@@ -1048,8 +1048,6 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     tipl::image<3,unsigned int,tipl::buffer_container> nearest;
     if(cmd == "regrid")
     {
-        if(dim.size() >= (1u << 24)) // majority compares values as float, exact only below 2^24
-            return mat_reader.error_msg = "too many voxels to regrid",false;
         nearest.resize(dim);
         std::iota(nearest.begin(),nearest.end(),1);
         if(!tipl::command<tipl::out,tipl::io::gz_nifti>(nearest,new_vs = vs,new_trans = trans,is_mni,cmd,param,false,mat_reader.error_msg))
@@ -1083,25 +1081,22 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         }
         if(mat_size == 3*dim.size())
         {
-            for(size_t d = 0;d < 3;++d)
-            {
-                tipl::image<3> new_image(dim);
-                mat.convert_to<float>();
-                auto ptr = mat.get_data<float>()+d;
-                for(size_t j = 0,sz = dim.size();j < sz;++j,ptr += 3)
-                    new_image[j] = *ptr;
-                if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image,new_vs = vs,new_trans = trans,is_mni,cmd,param,true,mat_reader.error_msg))
-                    return mat_reader.error_msg = "cannot perform " + cmd,failed = true,void();
-                new_dim = new_image.shape();
-                if(d == 0)
-                    mat.set_row_col(3*new_image.width()*new_image.height(),new_image.depth());
+            // split all three components before the matrix is resized, then interleave them back
+            std::vector<tipl::image<3> > new_image(3,tipl::image<3>(dim));
+            mat.convert_to<float>();
+            auto ptr = mat.get_data<float>();
+            for(size_t j = 0,sz = dim.size();j < sz;++j)
                 for(size_t d = 0;d < 3;++d)
-                {
-                    auto ptr = mat.get_data<float>()+d;
-                    for(size_t j = 0,sz = dim.size();j < sz;++j,ptr += 3)
-                        *ptr = new_image[j];
-                }
-            }
+                    new_image[d][j] = *(ptr++);
+            for(size_t d = 0;d < 3;++d)
+                if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,true,mat_reader.error_msg))
+                    return mat_reader.error_msg = "cannot perform " + cmd,failed = true,void();
+            new_dim = new_image[0].shape();
+            mat.set_row_col(3*new_dim.plane_size(),new_dim.depth());
+            ptr = mat.get_data<float>();
+            for(size_t j = 0,sz = new_dim.size();j < sz;++j)
+                for(size_t d = 0;d < 3;++d)
+                    *(ptr++) = new_image[d][j];
         }
         if(mat_size == dim.size()) // image volumes, including fa, and fiber index
         {
