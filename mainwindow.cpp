@@ -1950,7 +1950,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     }
 
     if(cmd[0] == "run_cli")
-        return ai_run_cli(cmd,false,error_msg);
+        return ai_run_cli(cmd,error_msg);
     if(cmd[0] == "open_image")
     {
         auto files = select_images(

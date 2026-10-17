@@ -343,7 +343,7 @@ bool ai_commands(const QJsonValue& command,std::vector<std::vector<std::string> 
     return true;
 }
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
-bool ai_run_cli(const std::vector<std::string>& cmd,bool headless,std::string& error)
+bool ai_run_cli(const std::vector<std::string>& cmd,std::string& error)
 {
     auto fail = [&](const std::string& msg){error = msg;return false;};
     if(cmd.size() != 2 || cmd[1].empty())
@@ -356,8 +356,6 @@ bool ai_run_cli(const std::vector<std::string>& cmd,bool headless,std::string& e
         return fail(po.error_msg);
     if(!po.has("action"))
         po.set("action","vis");
-    if(headless && (po.get("action") == "vis" || po.get("action") == "cnt" || po.get("action") == "ai"))
-        return fail("--action=vis, cnt, and ai are not available in headless mode");
     if(run_action_with_wildcard(po))
         return fail("command line failed");
     po.check_end_param<tipl::warning>();
@@ -1066,9 +1064,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             std::ostringstream out;
             auto* cout_buf = std::cout.rdbuf(out.rdbuf()); // the command's output is returned to the agent
             bool ok = true;
-            if(cmd[0] == "run_cli")
-                ok = ai_run_cli(cmd,true,error);
-            else if(cmd[0] == "run_shell")
+            if(cmd[0] == "run_shell")
                 ok = ai_run_shell(cmd,approve,error);
             else if(cmd[0] == "write_text_file")
                 ok = ai_write_text_file(cmd,approve,error);
@@ -1090,7 +1086,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                     web.set_web_title(info->project_titles);
             }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_cli, run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, or set_title";
+                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, or set_title, and dispatch long work with run_shell \"sbatch ...\"";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())

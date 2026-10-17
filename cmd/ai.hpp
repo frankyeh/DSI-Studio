@@ -86,7 +86,7 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
 using ai_approval = std::function<bool(const QString& title,const QString& request,bool read_only)>; // true approves; read_only: a shell command that cannot change anything
 extern QMap<QString,QString> shell_tasks; // running asynchronous run_shell (curl) commands, by id
 bool ai_commands(const QJsonValue& command,std::vector<std::vector<std::string> >& cmds); // a request's command or batch as argument lists; false on an empty cmd
-bool ai_run_cli(const std::vector<std::string>& cmd,bool headless,std::string& error); // headless refuses actions that open a window
+bool ai_run_cli(const std::vector<std::string>& cmd,std::string& error); // GUI only: headless --action=ai dispatches long work instead of running it in the AI process
 bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error);
 bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error);
 
