@@ -1127,7 +1127,7 @@ bool fib_data::load_template_fib(size_t id,float reso)
     if(mat_reader.read_pointer("voxel_size",native_vs) && reso != native_vs[0])
     {
         tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
-        if(!modify_fib(mat_reader,"regrid",std::to_string(reso)))
+        if(!modify_fib(mat_reader,"regrid_nearest",std::to_string(reso))) // nearest voxel keeps fa, index, and dir of each fiber paired
             return error_msg = mat_reader.error_msg,false;
     }
 
