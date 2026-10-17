@@ -104,7 +104,7 @@ class AIAgent : public QMainWindow
     QString prepare_ai(ai_info&); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
-    void web_step(const QString& step,const QString& approval = {}){web.report_step(step,approval);} // see web_bridge::report_step
+    void web_step(const QString& step,const QString& approval = {},qint64 pid = 0){web.report_step(step,approval,pid);} // see web_bridge::report_step
     void web_title(const ai_info& info,const QString& title){if(web_connected(info)) web.set_web_title(title);} // set_title also names this chat's Doc
     explicit AIAgent(MainWindow*);
     ~AIAgent();

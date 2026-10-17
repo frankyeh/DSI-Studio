@@ -2012,6 +2012,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     if(cmd[0] == "write_text_file")
         return ai_write_text_file(cmd,approve,error_msg);
     if(cmd[0] == "run_shell")
-        return ai_run_shell(cmd,approve,error_msg);
+        return ai_run_shell(cmd,approve,error_msg,[&](qint64 pid){ai_agent->web_step("running",{},pid);});
     return fail("unknown command: "+cmd[0]);
 }

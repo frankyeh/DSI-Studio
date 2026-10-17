@@ -88,7 +88,8 @@ extern QMap<QString,QString> shell_tasks; // running asynchronous run_shell (cur
 bool ai_commands(const QJsonValue& command,std::vector<std::vector<std::string> >& cmds); // a request's command or batch as argument lists; false on an empty cmd
 bool ai_run_cli(const std::vector<std::string>& cmd,std::string& error); // GUI only: headless --action=ai dispatches long work instead of running it in the AI process
 bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error);
-bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error);
+bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error,
+                  const std::function<void(qint64)>& started = {}); // started: the PID of a synchronous command, so a Web agent can find it if DSI Studio stops
 
 // the Web channel, without GUI: Google OAuth tokens (drive.file only; never logged or written to chat history) and one session Doc
 // (in the "DSI Studio AI" folder) used as a single-slot JSON mailbox, read directly for 3 minutes after activity, then on a Drive
@@ -130,7 +131,7 @@ public:
     QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
     void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
     void publish_web_result(void);
-    void report_step(const QString& step,const QString& approval = {}); // the running Web request's "processing" message gains step (waiting_approval/running); waits for the write
+    void report_step(const QString& step,const QString& approval = {},qint64 pid = 0); // the running Web request's "processing" message gains step (waiting_approval/running) and the shell PID; waits for the write
     QJsonObject google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body = {}); // google_api() that waits for its reply
     QJsonObject web_file(const std::vector<std::string>& cmd,const ai_approval& approve,QString& error); // web_upload, web_download_prepare, web_download: the attachment, or empty on error
     QJsonObject upload_web_file(const QString& file_name,const ai_approval& approve,QString& error); // web_upload: a private Drive copy in the DSI Studio AI folder; waits for completion

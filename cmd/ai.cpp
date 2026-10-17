@@ -395,7 +395,8 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
     tipl::out() << "wrote " << cmd[2].size() << " bytes to " << file_name.toStdString();
     return true;
 }
-bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error)
+bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error,
+                  const std::function<void(qint64)>& started)
 {
     auto fail = [&](const std::string& msg){error = msg;return false;};
     if(cmd.size() != 2 || cmd[1].empty())
@@ -424,6 +425,8 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
         process.start();
         if(!process.waitForStarted(3000))
             return fail("cannot start command");
+        if(started)
+            started(process.processId());
         constexpr int shell_timeout_ms = 600000;
         if(!process.waitForFinished(shell_timeout_ms))
         {
@@ -734,8 +737,11 @@ void web_bridge::poll_web(const QString& modified_time)
         {
             // claimed but never finished (DSI Studio stopped mid-request): report it instead of re-running it
             web_last_id = id;
+            QString error("outcome unknown: DSI Studio stopped while running this request; check with list_window");
+            if(auto pid = request["pid"].toInteger()) // DSI Studio cannot control it, but the agent can inspect it before repeating
+                error += "; its shell command may still be running as pid "+QString::number(pid);
             web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","error"},
-                {"response",QJsonObject{{"status","error"},{"error","outcome unknown: DSI Studio stopped while running this request; check with list_window"}}}};
+                {"response",QJsonObject{{"status","error"},{"error",error}}}};
             return publish_web_result();
         }
         if(request["from"].toString() == "dsi") // our own write, nothing to do: only now is the Drive change consumed
@@ -777,7 +783,7 @@ void web_bridge::poll_web(const QString& modified_time)
         });
     });
 }
-void web_bridge::report_step(const QString& step,const QString& approval)
+void web_bridge::report_step(const QString& step,const QString& approval,qint64 pid)
 {
     if(!web_dispatching) // e.g. a local agent's request in the GUI
         return;
@@ -788,6 +794,8 @@ void web_bridge::report_step(const QString& step,const QString& approval)
     QJsonObject message{{"dsi_bridge",true},{"session",web_session_id},{"id",web_last_id},{"from","dsi"},{"state","processing"},{"step",step}};
     if(!approval.isEmpty())
         message["approval"] = approval;
+    if(pid)
+        message["pid"] = pid;
     bool done = false;
     QEventLoop loop;
     write_google_doc(doc,message,[&](bool){done = true;loop.quit();});
@@ -1065,7 +1073,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             auto* cout_buf = std::cout.rdbuf(out.rdbuf()); // the command's output is returned to the agent
             bool ok = true;
             if(cmd[0] == "run_shell")
-                ok = ai_run_shell(cmd,approve,error);
+                ok = ai_run_shell(cmd,approve,error,[&](qint64 pid){web.report_step("running",{},pid);});
             else if(cmd[0] == "write_text_file")
                 ok = ai_write_text_file(cmd,approve,error);
             else if(cmd[0] == "web_upload" || cmd[0] == "web_download_prepare" || cmd[0] == "web_download")
