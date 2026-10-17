@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <numeric>
 #include <unordered_set>
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -1042,6 +1043,20 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return false;
 
+    // regrid copies the nearest source voxel into every matrix, so fa, index, and dir of a fiber stay paired:
+    // majority-regridding unique voxel numbers (0 marks outside) gives the nearest source voxel of each new voxel
+    tipl::image<3,unsigned int,tipl::buffer_container> nearest;
+    if(cmd == "regrid")
+    {
+        if(dim.size() >= (1u << 24)) // majority compares values as float, exact only below 2^24
+            return mat_reader.error_msg = "too many voxels to regrid",false;
+        nearest.resize(dim);
+        std::iota(nearest.begin(),nearest.end(),1);
+        if(!tipl::command<tipl::out,tipl::io::gz_nifti>(nearest,new_vs = vs,new_trans = trans,is_mni,cmd,param,false,mat_reader.error_msg))
+            return false;
+        new_dim = nearest.shape();
+    }
+
     tipl::progress prog(cmd);
     size_t p = 0;
     bool failed = false;
@@ -1053,6 +1068,19 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             return;
         auto& mat = mat_reader[i];
         size_t mat_size = mat_reader.cols(i)*mat_reader.rows(i);
+        if(mat_size == 3*dim.size() && !nearest.empty())
+        {
+            mat.convert_to<float>();
+            std::vector<float> old(mat.get_data<float>(),mat.get_data<float>()+mat_size);
+            mat.set_row_col(3*new_dim.plane_size(),new_dim.depth());
+            auto ptr = mat.get_data<float>();
+            for(size_t j = 0;j < nearest.size();++j,ptr += 3)
+                if(nearest[j])
+                    std::copy_n(old.data()+3*(nearest[j]-1),3,ptr);
+                else
+                    std::fill_n(ptr,3,0.0f);
+            return;
+        }
         if(mat_size == 3*dim.size())
         {
             for(size_t d = 0;d < 3;++d)
@@ -1087,6 +1115,19 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             if(!new_image.read_mat_image(i,mat_reader))
                 return mat_reader.error_msg = "size mismatch at matrix " + mat.name,failed = true,void();
             tipl::out() << mat_reader[i].name;
+            if(!nearest.empty())
+            {
+                new_image.apply([&](auto& I)
+                {
+                    std::decay_t<decltype(I)> J(new_dim);
+                    for(size_t j = 0;j < J.size();++j)
+                        if(nearest[j])
+                            J[j] = I[nearest[j]-1];
+                    I.swap(J);
+                });
+                new_image.shape = new_dim;
+                return new_image.write_mat_image(i,mat_reader);
+            }
             if(!new_image.command(cmd,param))
                 return mat_reader.error_msg = "cannot perform " + cmd + " : " + new_image.error_msg,failed = true,void();
 
@@ -1127,7 +1168,7 @@ bool fib_data::load_template_fib(size_t id,float reso)
     if(mat_reader.read_pointer("voxel_size",native_vs) && reso != native_vs[0])
     {
         tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
-        if(!modify_fib(mat_reader,"regrid_nearest",std::to_string(reso))) // nearest voxel keeps fa, index, and dir of each fiber paired
+        if(!modify_fib(mat_reader,"regrid",std::to_string(reso)))
             return error_msg = mat_reader.error_msg,false;
     }
 
