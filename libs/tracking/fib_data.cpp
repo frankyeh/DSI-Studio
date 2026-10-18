@@ -1043,17 +1043,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return false;
 
-    // regrid copies the nearest source voxel into every matrix, so fa, index, and dir of a fiber stay paired:
-    // majority-regridding unique voxel numbers (0 marks outside) gives the nearest source voxel of each new voxel
-    tipl::image<3,unsigned int,tipl::buffer_container> nearest;
-    if(cmd == "regrid")
-    {
-        nearest.resize(dim);
-        std::iota(nearest.begin(),nearest.end(),1);
-        if(!tipl::command<tipl::out,tipl::io::gz_nifti>(nearest,new_vs = vs,new_trans = trans,is_mni,cmd,param,false,mat_reader.error_msg))
-            return false;
-        new_dim = nearest.shape();
-    }
+    // regrid samples every matrix with nearest neighbor, so fa, index, and dir of a fiber come from the same source voxel
+    bool regrid = cmd == "regrid";
 
     tipl::progress prog(cmd);
     size_t p = 0;
@@ -1066,19 +1057,6 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             return;
         auto& mat = mat_reader[i];
         size_t mat_size = mat_reader.cols(i)*mat_reader.rows(i);
-        if(mat_size == 3*dim.size() && !nearest.empty())
-        {
-            mat.convert_to<float>();
-            std::vector<float> old(mat.get_data<float>(),mat.get_data<float>()+mat_size);
-            mat.set_row_col(3*new_dim.plane_size(),new_dim.depth());
-            auto ptr = mat.get_data<float>();
-            for(size_t j = 0;j < nearest.size();++j,ptr += 3)
-                if(nearest[j])
-                    std::copy_n(old.data()+3*(nearest[j]-1),3,ptr);
-                else
-                    std::fill_n(ptr,3,0.0f);
-            return;
-        }
         if(mat_size == 3*dim.size())
         {
             // split all three components before the matrix is resized, then interleave them back
@@ -1089,7 +1067,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 for(size_t d = 0;d < 3;++d)
                     new_image[d][j] = *(ptr++);
             for(size_t d = 0;d < 3;++d)
-                if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,true,mat_reader.error_msg))
+                if(!(regrid ? tipl::command<tipl::out,tipl::nearest,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,mat_reader.error_msg) :
+                              tipl::command<tipl::out,tipl::linear,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,mat_reader.error_msg)))
                     return mat_reader.error_msg = "cannot perform " + cmd,failed = true,void();
             new_dim = new_image[0].shape();
             mat.set_row_col(3*new_dim.plane_size(),new_dim.depth());
@@ -1104,26 +1083,22 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             new_image.vs = vs;
             new_image.T = trans;
             new_image.shape = dim;
-            new_image.interpolation = !tipl::begins_with(mat.name,"index") && mat.name != "mask";
-            if(!new_image.interpolation && tipl::contains(cmd,{"normalize","filter","_value"}))
+            new_image.is_label = tipl::begins_with(mat.name,"index") || mat.name == "mask";
+            if(new_image.is_label && tipl::contains(cmd,{"normalize","filter","_value"}))
                 return;
             if(!new_image.read_mat_image(i,mat_reader))
                 return mat_reader.error_msg = "size mismatch at matrix " + mat.name,failed = true,void();
             tipl::out() << mat_reader[i].name;
-            if(!nearest.empty())
-            {
+            bool ok = true;
+            if(regrid) // nearest even for index and mask, which other commands treat as labels (majority)
                 new_image.apply([&](auto& I)
                 {
-                    std::decay_t<decltype(I)> J(new_dim);
-                    for(size_t j = 0;j < J.size();++j)
-                        if(nearest[j])
-                            J[j] = I[nearest[j]-1];
-                    I.swap(J);
+                    ok = tipl::command<void,tipl::nearest,tipl::io::gz_nifti>(I,new_image.vs,new_image.T,new_image.is_mni,cmd,param,new_image.error_msg);
+                    new_image.shape = I.shape();
                 });
-                new_image.shape = new_dim;
-                return new_image.write_mat_image(i,mat_reader);
-            }
-            if(!new_image.command(cmd,param))
+            else
+                ok = new_image.command(cmd,param);
+            if(!ok)
                 return mat_reader.error_msg = "cannot perform " + cmd + " : " + new_image.error_msg,failed = true,void();
 
             new_vs = new_image.vs;

@@ -186,9 +186,9 @@ bool view_image::command(std::vector<std::string> cmds,
                 typename std::decay<decltype(I)>::type
                         J(tipl::shape<3>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2]*buf4d.size()));
                 get_4d_buf(J.buf().buf());
-                result = tipl::command<void,tipl::io::gz_nifti>(J,
-                                cur_image->vs,cur_image->T,cur_image->is_mni,
-                                cmd,param1,cur_image->interpolation,cur_image->error_msg);
+                result = cur_image->is_label ?
+                    tipl::command<void,tipl::majority,tipl::io::gz_nifti>(J,cur_image->vs,cur_image->T,cur_image->is_mni,cmd,param1,cur_image->error_msg) :
+                    tipl::command<void,tipl::linear,tipl::io::gz_nifti>(J,cur_image->vs,cur_image->T,cur_image->is_mni,cmd,param1,cur_image->error_msg);
                 set_4d_buf(J.buf().buf());
             });
             read_4d_at(old_4d_index);
@@ -199,8 +199,9 @@ bool view_image::command(std::vector<std::string> cmds,
             cur_image->apply([&](auto& I)
             {
                 typename std::decay<decltype(I)>::type new_I(I.shape());
-                result = tipl::command<void,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,
-                                "load_image",param1,cur_image->interpolation,cur_image->error_msg);
+                result = cur_image->is_label ?
+                    tipl::command<void,tipl::majority,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,"load_image",param1,cur_image->error_msg) :
+                    tipl::command<void,tipl::linear,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,"load_image",param1,cur_image->error_msg);
                 if(result)
                 {
                     buf4d.push_back(std::vector<unsigned char>());
@@ -671,7 +672,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     tipl::image<3> new_image(cur_image->shape);
     tipl::io::gz_nifti nii(tipl::qt::to_path(filename),std::ios::in);
 
-    if(cur_image->interpolation)
+    if(!cur_image->is_label)
         nii.to_space<tipl::linear>(new_image,cur_image->T);
     else
         nii.to_space<tipl::majority>(new_image,cur_image->T);
@@ -955,7 +956,7 @@ void view_image::show_image(bool update_others)
             if(overlay_images_visible[i] && opened_images[overlay_images[i]])
             opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
             {
-                if(!opened_images[overlay_images[i]]->cur_image->interpolation)
+                if(opened_images[overlay_images[i]]->cur_image->is_label)
                 {
                     std::array<int,256> label_to_mask;
                     label_to_mask.fill(-1);

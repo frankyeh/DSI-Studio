@@ -110,10 +110,10 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
             if(!new_image.read_mat_image(i,mat_reader))
                 return;
             if(tipl::begins_with(mat.name,{"index","mask"}))
-                new_image.interpolation = false;
+                new_image.is_label = true;
             new_image.apply([&](auto& I)
             {
-                if(new_image.interpolation)
+                if(!new_image.is_label)
                 {
                     auto new_I = reg.template apply_warping<direction,tipl::interpolation::cubic>(tipl::image<3>(I));
                     tipl::lower_threshold(new_I,0.0f);

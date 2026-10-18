@@ -247,8 +247,8 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
             bool is_mni = false;
             auto mask_vs = target_vs;
             auto mask_R = target_R;
-            if(!tipl::command<void,tipl::io::gz_nifti>(b0,target_vs,target_R,is_mni,"regrid",std::to_string(target_resolution),true,error_msg) ||
-               !tipl::command<void,tipl::io::gz_nifti>(target_mask,mask_vs,mask_R,is_mni,"regrid",std::to_string(target_resolution),false,error_msg))
+            if(!tipl::command<void,tipl::linear,tipl::io::gz_nifti>(b0,target_vs,target_R,is_mni,"regrid",std::to_string(target_resolution),error_msg) ||
+               !tipl::command<void,tipl::majority,tipl::io::gz_nifti>(target_mask,mask_vs,mask_R,is_mni,"regrid",std::to_string(target_resolution),error_msg))
                 return false;
         }
         if(debug_t1w)

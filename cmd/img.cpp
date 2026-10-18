@@ -95,8 +95,8 @@ bool variant_image::command(std::string cmd,std::string param1)
                 if(r.r.front() == 0.0f)
                     return error_msg = "run registration first to get the mapping field",result = false,void();
                 I.resize(r.Is);
-                if(!(interpolation ? nii.to_space<tipl::interpolation::linear>(I,r.IR):
-                          nii.to_space<tipl::interpolation::majority>(I,r.IR)))
+                if(!(is_label ? nii.to_space<tipl::interpolation::majority>(I,r.IR):
+                          nii.to_space<tipl::interpolation::linear>(I,r.IR)))
                     return error_msg = "failed to read file data",result = false,void();
             }
             else
@@ -128,21 +128,22 @@ bool variant_image::command(std::string cmd,std::string param1)
                 is_mni = r.It_is_mni;
             }
 
-            I = interpolation ?
-                       r.template apply_warping<true,tipl::interpolation::linear>(I) :
-                       r.template apply_warping<true,tipl::interpolation::majority>(I);
+            I = is_label ?
+                       r.template apply_warping<true,tipl::interpolation::majority>(I) :
+                       r.template apply_warping<true,tipl::interpolation::linear>(I);
             tipl::io::apply_flip_swap_seq(I,tipl::io::get_flip_swap_seq(T),true);
             shape = I.shape();
             return;
         }
-        result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
+        result = is_label ? tipl::command<void,tipl::majority,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg) :
+                            tipl::command<void,tipl::linear,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
         shape = I.shape();
     });
 
     if(cmd == "segmentation")
     {
         pixel_type = variant_image::int8;
-        interpolation = false;
+        is_label = true;
     }
     return result;
 }
@@ -423,7 +424,7 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name)
     apply([this](auto& I)
     {
         if(tipl::is_label_image(I))
-            interpolation = false;
+            is_label = true;
     });
     return true;
 }

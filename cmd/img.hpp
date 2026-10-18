@@ -18,7 +18,7 @@ public:
     tipl::shape<3> shape;
     size_t dim4 = 1;
     bool is_mni = false;
-    bool interpolation = true;
+    bool is_label = false; // label images resample with majority
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
     std::string error_msg,info;
