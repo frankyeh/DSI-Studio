@@ -1753,7 +1753,7 @@ bool estimate_bias_field(tipl::image<3> I,
     {
         old_size.push_back(I.shape());
         tipl::downsample_with_padding(I);
-        tipl::downsample_with_padding(mask);
+        tipl::downsample_with_padding<tipl::majority>(mask); // averaging 0/1 would erode the mask
     }
 
     constexpr int spline_range = 3;
