@@ -13,141 +13,47 @@ public:
     }
 };
 class BalanceScheme : public BaseProcess{
-    std::vector<float> trans;
+    std::vector<float> trans,scale;
     unsigned int new_q_count;
     unsigned int old_q_count;
 public:
     BalanceScheme(void){}
     virtual bool needed(Voxel& voxel)
     {
-        return voxel.need_resample_shells || voxel.need_resample_dsi;
+        return voxel.need_resample_shells || voxel.need_resample_dsi || tipl::contains(voxel.steps,"scheme_balance");
     }
     virtual void init(Voxel& voxel)
     {
-        unsigned int b_count = uint32_t(voxel.bvalues.size());
-        unsigned int total_signals = 0;
-
-        tessellated_icosahedron new_dir(6);
-
+        old_q_count = new_q_count = uint32_t(voxel.bvalues.size());
+        if(tipl::contains(voxel.steps,"scheme_balance")) // signals already interpolated by scheme_balance: apply only the gqi scale
+        {
+            scale.resize(old_q_count,1.0f);
+            if(voxel.shell.size() >= 5) // dsi: 1/N for all but the b0
+                std::fill(scale.begin()+(voxel.bvalues.front() == 0.0f ? 1 : 0),scale.end(),1.0f/float(old_q_count));
+            else
+                for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
+                {
+                    unsigned int from = voxel.shell[shell_index];
+                    unsigned int to = (shell_index + 1 == voxel.shell.size() ? old_q_count : voxel.shell[shell_index+1]);
+                    std::fill(scale.begin()+from,scale.begin()+to,float(tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to)/1000.0));
+                }
+            return;
+        }
         std::vector<tipl::vector<3,float> > new_bvectors;
         std::vector<float> new_bvalues;
-
-        // if b0
-        if(voxel.bvalues.front() == 0.0f)
-        {
-            trans.resize(b_count);
-            trans[0] = 1;
-            new_bvectors.resize(1);
-            new_bvalues.resize(1);
-            total_signals = 1;
-        }
-
-        if(voxel.need_resample_dsi)
-        {
-            float mean_dis = 0.0f;
-            // estimate average grid distance
-            {
-                std::vector<float> grid_distance;
-                for(size_t i = 1;i < voxel.bvalues.size();++i)
-                    grid_distance.push_back(voxel.bvalues[i]-voxel.bvalues[i-1]);
-                float dis_threshold = tipl::max_value(grid_distance.begin(),grid_distance.end())*0.5f;
-                grid_distance.erase(std::remove_if(grid_distance.begin(),grid_distance.end(),[dis_threshold](auto v){return v < dis_threshold;}),grid_distance.end());
-                mean_dis = tipl::mean(grid_distance.begin(),grid_distance.end())*2.0f;
-            }
-
-            float max_q2 = 16.0f;
-            float b_max = voxel.bvalues.back();
-            for(int z = -4;z <= 4;++z)
-                for(int y = -4;y <= 4;++y)
-                    for(int x = -4;x <= 4;++x)
-                    {
-                        auto l2 = x*x+y*y+z*z;
-                        if(l2 == 0)
-                            goto end;
-                        if(l2 <= max_q2)
-                        {
-                            new_bvalues.push_back(b_max*float(l2)/max_q2);
-                            new_bvectors.push_back(tipl::v(x,y,z));
-                            new_bvectors.back().normalize();
-                        }
-                    }
-            end:
-            trans.resize(new_bvectors.size()*size_t(b_count));
-            for(size_t i = total_signals; i < new_bvectors.size();++i)
-            {
-                auto nb = new_bvectors[i];
-                nb *= new_bvalues[i]/mean_dis;
-                std::vector<double> w;
-                for(size_t b = total_signals;b < b_count;++b)
-                {
-                    auto cb = voxel.bvectors[b];
-                    cb *= voxel.bvalues[b]/mean_dis;
-                    auto d2 = std::min<float>((nb + cb).length2(),(nb - cb).length2());
-                    w.push_back(std::exp(-2.0*d2));
-                }
-                auto sum_w = tipl::sum(w.begin(),w.end());
-                tipl::multiply_constant(w.begin(),w.end(),1.0/sum_w/double(new_bvectors.size()));
-                std::copy(w.begin(),w.end(),trans.begin() + total_signals + b_count*i);
-            }
-            total_signals = new_bvectors.size();
-        }
-        else
-        for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
-        {
-            unsigned int from = voxel.shell[shell_index];
-            unsigned int to = (shell_index + 1 == voxel.shell.size() ? b_count : voxel.shell[shell_index+1]);
-            unsigned int num = to-from;
-
-
-            //calculate averaged angle distance
-            double averaged_angle = 0.0;
-            for(unsigned int i = from;i < to;++i)
-            {
-                double max_cos = 0.0;
-                for(unsigned int j = from;j < to;++j)
-                {
-                    if(i == j)
-                        continue;
-                    double cur_cos = std::abs(std::cos(double(voxel.bvectors[i]*voxel.bvectors[j])));
-                    if(cur_cos > 0.998)
-                        continue;
-                    max_cos = std::max<double>(max_cos,cur_cos);
-                }
-                averaged_angle += std::acos(max_cos);
-            }
-            averaged_angle /= num;
-
-            //calculate averaged b_value
-            double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
-            size_t trans_old_size = trans.size();
-            trans.resize(trans.size() + size_t(new_dir.half_vertices_count)*size_t(b_count));
-            for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
-            {
-                std::vector<double> t(b_count);
-                double effective_b = 0.0;
-                for(unsigned int j = from;j < to;++j)
-                {
-                    double angle = std::acos(std::min<double>(1.0,std::abs(double(new_dir.vertices[i]*voxel.bvectors[j]))));
-                    angle/=averaged_angle;
-                    t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
-                    effective_b += t[j]*double(voxel.bvalues[j]);
-                }
-                double sum_t = std::accumulate(t.begin(),t.end(),0.0);
-                tipl::multiply_constant(t.begin(),t.end(),avg_b/1000.0/sum_t);
-                std::copy(t.begin(),t.end(),trans.begin() + int64_t(trans_old_size + size_t(i) * size_t(b_count)));
-                new_bvalues.push_back(float(effective_b/sum_t));
-                new_bvectors.push_back(new_dir.vertices[i]);
-            }
-            total_signals += new_dir.half_vertices_count;
-        }
-
-        old_q_count = uint32_t(voxel.bvalues.size());
-        new_q_count = total_signals;
+        voxel.balance_scheme(false,trans,new_bvalues,new_bvectors);
+        new_q_count = uint32_t(new_bvalues.size());
         voxel.bvalues.swap(new_bvalues);
         voxel.bvectors.swap(new_bvectors);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
+        if(!scale.empty())
+        {
+            for(size_t i = 0;i < scale.size();++i)
+                data.space[i] *= scale[i];
+            return;
+        }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
         tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape<2>(new_q_count,old_q_count));

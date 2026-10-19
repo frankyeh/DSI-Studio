@@ -1440,6 +1440,7 @@ Reconstruction</string>
     <addaction name="actionAttach_Images"/>
     <addaction name="separator"/>
     <addaction name="actionSmooth_Signals"/>
+    <addaction name="actionScheme_Balance"/>
     <addaction name="actionErase_Background_Signals"/>
     <addaction name="actionTrim_image"/>
     <addaction name="actionProbablistic_Masking"/>
@@ -1506,6 +1507,14 @@ Reconstruction</string>
    </property>
    <property name="toolTip">
     <string>run save_bvec</string>
+   </property>
+  </action>
+  <action name="actionScheme_Balance">
+   <property name="text">
+    <string>Scheme Balance</string>
+   </property>
+   <property name="toolTip">
+    <string>run scheme_balance</string>
    </property>
   </action>
   <action name="actionFlip_x">

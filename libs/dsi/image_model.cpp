@@ -1063,6 +1063,8 @@ bool src_data::command(std::vector<std::string> cmds)
                cmd == "save_bval" ? save_bval(param) :
                cmd == "save_bvec" ? save_bvec(param) : (error_msg = "unknown command: " + cmd,false);
     }
+    if(cmd == "scheme_balance")
+        return scheme_balance() && log_step();
     if(cmd == "remove") // DWI index ranges and b-value conditions, e.g. 1,3:5,8:end or b>3000 or b<100
     {
         const size_t n = src_bvalues.size();
@@ -1594,6 +1596,54 @@ void src_data::smoothing(void)
         tipl::filter::gaussian(dwi_at(index));
     });
     update_dwi_sum();
+}
+// stores the gqi balanced scheme as physical signals; reconstruction then applies only the gqi scale
+bool src_data::scheme_balance(void)
+{
+    if(tipl::contains(voxel.steps,"scheme_balance"))
+        return error_msg = "scheme balance was already applied",false;
+    Voxel v; // the sorted dwi, first b0, and shells used by gqi reconstruction
+    v.method_id = 4;
+    v.load_from_src(*this);
+    if(!v.need_resample_shells && !v.need_resample_dsi)
+        return error_msg = "this b-table does not need scheme balance",false;
+
+    std::vector<float> trans,new_bvalues;
+    std::vector<tipl::vector<3,float> > new_bvectors;
+    v.balance_scheme(true,trans,new_bvalues,new_bvectors);
+    size_t old_count = v.bvalues.size(),new_count = new_bvalues.size();
+    tipl::out() << "balance " << old_count << " dwi to " << new_count << " dwi";
+
+    std::vector<tipl::image<3,unsigned short> > balanced_dwi(new_count,tipl::image<3,unsigned short>(voxel.dim));
+    tipl::progress prog("scheme balance");
+    std::atomic<size_t> p = 0;
+    tipl::par_for(voxel.dim.depth(),[&](unsigned int z)
+    {
+        if(prog.aborted())
+            return;
+        prog(p++,voxel.dim.depth());
+        std::vector<float> old_signal(old_count),new_signal(new_count);
+        for(size_t i = z*voxel.dim.plane_size(),end = i+voxel.dim.plane_size();i < end;++i)
+        {
+            for(size_t j = 0;j < old_count;++j)
+                old_signal[j] = v.dwi_data[j][i];
+            tipl::mat::vector_product(trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
+            for(size_t j = 0;j < new_count;++j)
+                balanced_dwi[j][i] = (unsigned short)std::max<float>(0.0f,new_signal[j]); // rows sum to one, so no overflow
+        }
+    });
+    if(prog.aborted())
+        return error_msg = "scheme balance canceled",false;
+
+    std::vector<const unsigned short*> new_src_dwi_data(new_count);
+    for(size_t j = 0;j < new_count;++j)
+        new_src_dwi_data[j] = balanced_dwi[j].data();
+    balanced_dwi.swap(new_dwi);
+    new_src_dwi_data.swap(src_dwi_data);
+    new_bvalues.swap(src_bvalues);
+    new_bvectors.swap(src_bvectors);
+    update_dwi_sum();
+    return true;
 }
 
 bool src_data::add_other_image(const std::string& name,const std::filesystem::path& filename)
