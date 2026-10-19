@@ -907,9 +907,10 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             continue;
         size_t pos = step.find('=');
         std::string cmd,param;
-        if(pos == std::string::npos)
+        if(pos == std::string::npos) // a legacy bracketed step or a plain command such as scheme_balance
         {
-            cmd = step.substr(0,step.find_last_of(']')+1);
+            auto end = step.find_last_of(']');
+            cmd = end == std::string::npos ? step : step.substr(0,end+1);
         }
         else
         {
@@ -1629,7 +1630,7 @@ bool src_data::scheme_balance(void)
                 old_signal[j] = v.dwi_data[j][i];
             tipl::mat::vector_product(trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
             for(size_t j = 0;j < new_count;++j)
-                balanced_dwi[j][i] = (unsigned short)std::max<float>(0.0f,new_signal[j]); // rows sum to one, so no overflow
+                balanced_dwi[j][i] = (unsigned short)std::min<float>(65535.0f,std::max<float>(0.0f,new_signal[j]));
         }
     });
     if(prog.aborted())
