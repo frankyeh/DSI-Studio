@@ -12,10 +12,10 @@
 extern std::vector<std::string> template_name_list;
 void src_data::check_output_file_name(void)
 {
-    if(output_file_name.empty())
-        output_file_name = file_name;
     if(tipl::ends_with(output_file_name.u8string(),{".fz",".fib.gz"}))
         return;
+    if(output_file_name.empty()) // the default output never reuses the source name, e.g. a qsdr fz source
+        output_file_name = file_name;
     output_file_name = tipl::remove_all_suffix(output_file_name);
     if(voxel.is_histology)
     {
