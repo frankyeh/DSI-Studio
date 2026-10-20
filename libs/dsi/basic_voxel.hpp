@@ -125,7 +125,6 @@ public://used in GQI
     bool r2_weighted = false;// used in GQI only
 public://used in GQI
     std::vector<unsigned int> shell;
-    bool need_resample_shells = false,need_resample_dsi = false;
 public:// manual alignment used in QSDR
     bool manual_alignment = false;
     tipl::affine_param<float> qsdr_arg;
