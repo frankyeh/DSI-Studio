@@ -985,7 +985,6 @@ bool src_data::command(std::vector<std::string> cmds)
             make_entry("thread_count",voxel.thread_count),
             make_entry("other_output",voxel.other_output),
             make_entry("dti_ignore_high_b",voxel.dti_ignore_high_b),
-            make_entry("odf_resolving",voxel.odf_resolving),
             make_entry("r2_weighted",voxel.r2_weighted),
             make_entry("param",voxel.param[0]),
             make_entry("template",voxel.template_id),
@@ -3478,7 +3477,6 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
         voxel.other_output = "fa,md,rd,rdi";
         voxel.param[0] = tipl::max_value(src_bvalues) < 5000.0f ? voxel.param[0] : get_optimal_L();
         voxel.r2_weighted = false;
-        voxel.odf_resolving = false;
         if(is_human_data)
         {
             float reso = std::max<float>(voxel.vs[0],voxel.vs[2]);
