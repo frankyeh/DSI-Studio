@@ -33,14 +33,12 @@ struct VoxelData
     std::vector<float> fa;
     std::vector<float> rdi;
     std::vector<tipl::vector<3,float> > dir;
-    std::vector<unsigned short> dir_index;
     float min_odf;
     tipl::matrix<3,3,float> jacobian;
 
     void init(void)
     {
         std::fill(fa.begin(),fa.end(),0.0);
-        std::fill(dir_index.begin(),dir_index.end(),0);
         std::fill(dir.begin(),dir.end(),tipl::vector<3,float>());
     }
 };
@@ -121,8 +119,9 @@ public:
 public:// DTI
     bool dti_ignore_high_b = true;
 public://used in GQI
-    bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only
+    std::vector<tipl::vector<3,float> > q_vectors; // set by GQI_Recon; empty without diffusion signals (e.g. an odf template)
+    float odf_at(const VoxelData& data,tipl::vector<3,float> u) const; // the gqi odf at direction u
 public://used in GQI
     std::vector<unsigned int> shell;
 public:// manual alignment used in QSDR
