@@ -29,17 +29,13 @@ struct VoxelData
     size_t voxel_index;
     std::vector<float> space;
     std::vector<float> odf;
-    std::vector<float> odf1,odf2;
     std::vector<float> fa;
     std::vector<float> rdi;
-    std::vector<tipl::vector<3,float> > dir;
-    float min_odf;
     tipl::matrix<3,3,float> jacobian;
 
     void init(void)
     {
         std::fill(fa.begin(),fa.end(),0.0);
-        std::fill(dir.begin(),dir.end(),tipl::vector<3,float>());
     }
 };
 
