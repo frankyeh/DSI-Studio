@@ -1609,10 +1609,9 @@ bool src_data::scheme_balance(void)
     if(!v.need_resample_shells && !v.need_resample_dsi)
         return error_msg = "this b-table does not need scheme balance",false;
 
-    std::vector<float> trans,new_bvalues;
-    std::vector<tipl::vector<3,float> > new_bvectors;
-    v.balance_scheme(true,trans,new_bvalues,new_bvectors);
-    size_t old_count = v.bvalues.size(),new_count = new_bvalues.size();
+    BalanceScheme b; // v gets the balanced b-table, b.trans the interpolation of the sorted dwi
+    b.init(v);
+    size_t old_count = v.dwi_data.size(),new_count = v.bvalues.size();
     tipl::out() << "balance " << old_count << " dwi to " << new_count << " dwi";
 
     std::vector<tipl::image<3,unsigned short> > balanced_dwi(new_count,tipl::image<3,unsigned short>(voxel.dim));
@@ -1628,7 +1627,7 @@ bool src_data::scheme_balance(void)
         {
             for(size_t j = 0;j < old_count;++j)
                 old_signal[j] = v.dwi_data[j][i];
-            tipl::mat::vector_product(trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
+            tipl::mat::vector_product(b.trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
             for(size_t j = 0;j < new_count;++j)
                 balanced_dwi[j][i] = (unsigned short)std::min<float>(65535.0f,std::max<float>(0.0f,new_signal[j]));
         }
@@ -1641,8 +1640,8 @@ bool src_data::scheme_balance(void)
         new_src_dwi_data[j] = balanced_dwi[j].data();
     balanced_dwi.swap(new_dwi);
     new_src_dwi_data.swap(src_dwi_data);
-    new_bvalues.swap(src_bvalues);
-    new_bvectors.swap(src_bvectors);
+    v.bvalues.swap(src_bvalues);
+    v.bvectors.swap(src_bvectors);
     update_dwi_sum();
     return true;
 }
