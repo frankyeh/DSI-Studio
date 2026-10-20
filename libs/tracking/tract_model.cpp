@@ -3000,8 +3000,20 @@ bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,co
         }
         tract_to_delete.push_back(i);
     }
+    if(!modified)
+        return false;
+    // drop fragments shorter than two points
+    size_t count = 0;
+    for(size_t k = 0;k < new_tract.size();++k)
+        if(new_tract[k].size() >= 6)
+        {
+            new_tract[count].swap(new_tract[k]);
+            new_tract_color[count++] = new_tract_color[k];
+        }
+    new_tract.resize(count);
+    new_tract_color.resize(count);
     cut(tract_to_delete,new_tract,new_tract_color);
-    return modified;
+    return true;
 }
 //---------------------------------------------------------------------------
 bool TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
