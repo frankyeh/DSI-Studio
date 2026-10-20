@@ -54,14 +54,12 @@ void calculate_shell(std::vector<float> sorted_bvalues,
 }
 
 // the gqi balanced b-table and its transformation of the signals (new count x old count)
-// physical: each row sums to one; otherwise the rows carry the gqi scale (1/N for dsi, avg_b/1000 for a shell)
+// physical: each row sums to one; otherwise the rows carry the gqi scale (1/N for dsi; for shells, b_k/(n_k*B) and no b0)
 void Voxel::balance_scheme(bool physical,std::vector<float>& trans,
                            std::vector<float>& new_bvalues,std::vector<tipl::vector<3,float> >& new_bvectors) const
 {
     unsigned int b_count = uint32_t(bvalues.size());
     unsigned int total_signals = 0;
-
-    tessellated_icosahedron new_dir(6);
 
     trans.clear();
     new_bvalues.clear();
@@ -71,7 +69,7 @@ void Voxel::balance_scheme(bool physical,std::vector<float>& trans,
     if(bvalues.front() == 0.0f)
     {
         trans.resize(b_count);
-        trans[0] = 1;
+        trans[0] = (physical || need_resample_dsi) ? 1.0f : 0.0f; // a shell scheme gives b0 no weight: q = 0 has no surface
         new_bvectors.resize(1);
         new_bvalues.resize(1);
         total_signals = 1;
@@ -126,51 +124,58 @@ void Voxel::balance_scheme(bool physical,std::vector<float>& trans,
         }
     }
     else
-    for(unsigned int shell_index = 0;shell_index < shell.size();++shell_index)
     {
-        unsigned int from = shell[shell_index];
-        unsigned int to = (shell_index + 1 == shell.size() ? b_count : shell[shell_index+1]);
-        unsigned int num = to-from;
-
-
-        //calculate averaged angle distance
-        double averaged_angle = 0.0;
-        for(unsigned int i = from;i < to;++i)
+        // each shell is sampled uniformly on its q-space surface: per-dwi weight b_k/(n_k*B), B = sum of the shell b-values
+        double sum_b = 0.0;
+        for(unsigned int shell_index = 0;shell_index < shell.size();++shell_index)
+            sum_b += tipl::mean(bvalues.begin()+shell[shell_index],bvalues.begin()+(shell_index + 1 == shell.size() ? b_count : shell[shell_index+1]));
+        for(unsigned int shell_index = 0;shell_index < shell.size();++shell_index)
         {
-            double max_cos = 0.0;
-            for(unsigned int j = from;j < to;++j)
-            {
-                if(i == j)
-                    continue;
-                double cur_cos = std::abs(std::cos(double(bvectors[i]*bvectors[j])));
-                if(cur_cos > 0.998)
-                    continue;
-                max_cos = std::max<double>(max_cos,cur_cos);
-            }
-            averaged_angle += std::acos(max_cos);
-        }
-        averaged_angle /= num;
+            unsigned int from = shell[shell_index];
+            unsigned int to = (shell_index + 1 == shell.size() ? b_count : shell[shell_index+1]);
+            unsigned int num = to-from;
 
-        //calculate averaged b_value
-        double avg_b = tipl::mean(bvalues.begin()+from,bvalues.begin()+to);
-        size_t trans_old_size = trans.size();
-        trans.resize(trans.size() + size_t(new_dir.half_vertices_count)*size_t(b_count));
-        for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
-        {
-            std::vector<double> t(b_count);
-            double effective_b = 0.0;
-            for(unsigned int j = from;j < to;++j)
+
+            //calculate averaged angle distance
+            double averaged_angle = 0.0;
+            for(unsigned int i = from;i < to;++i)
             {
-                double angle = std::acos(std::min<double>(1.0,std::abs(double(new_dir.vertices[i]*bvectors[j]))));
-                angle/=averaged_angle;
-                t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
-                effective_b += t[j]*double(bvalues[j]);
+                double max_cos = 0.0;
+                for(unsigned int j = from;j < to;++j)
+                {
+                    if(i == j)
+                        continue;
+                    double cur_cos = std::abs(std::cos(double(bvectors[i]*bvectors[j])));
+                    if(cur_cos > 0.998)
+                        continue;
+                    max_cos = std::max<double>(max_cos,cur_cos);
+                }
+                averaged_angle += std::acos(max_cos);
             }
-            double sum_t = std::accumulate(t.begin(),t.end(),0.0);
-            tipl::multiply_constant(t.begin(),t.end(),(physical ? 1.0 : avg_b/1000.0)/sum_t);
-            std::copy(t.begin(),t.end(),trans.begin() + int64_t(trans_old_size + size_t(i) * size_t(b_count)));
-            new_bvalues.push_back(float(effective_b/sum_t));
-            new_bvectors.push_back(new_dir.vertices[i]);
+            averaged_angle /= num;
+
+            //calculate averaged b_value
+            double avg_b = tipl::mean(bvalues.begin()+from,bvalues.begin()+to);
+            tessellated_icosahedron new_dir(avg_b > 2500.0 ? 6 : avg_b > 1500.0 ? 5 : avg_b > 500.0 ? 4 : 3); // 181, 126, 81, or 46 directions
+            size_t trans_old_size = trans.size();
+            trans.resize(trans.size() + size_t(new_dir.half_vertices_count)*size_t(b_count));
+            for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
+            {
+                std::vector<double> t(b_count);
+                double effective_b = 0.0;
+                for(unsigned int j = from;j < to;++j)
+                {
+                    double angle = std::acos(std::min<double>(1.0,std::abs(double(new_dir.vertices[i]*bvectors[j]))));
+                    angle/=averaged_angle;
+                    t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
+                    effective_b += t[j]*double(bvalues[j]);
+                }
+                double sum_t = std::accumulate(t.begin(),t.end(),0.0);
+                tipl::multiply_constant(t.begin(),t.end(),(physical ? 1.0 : avg_b/sum_b/double(new_dir.half_vertices_count))/sum_t);
+                std::copy(t.begin(),t.end(),trans.begin() + int64_t(trans_old_size + size_t(i) * size_t(b_count)));
+                new_bvalues.push_back(float(effective_b/sum_t));
+                new_bvectors.push_back(new_dir.vertices[i]);
+            }
         }
     }
 }
