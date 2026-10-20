@@ -723,7 +723,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
 {
     int this_fib_ver(0);
     if(mat_reader.has("version") && (this_fib_ver = mat_reader.read_as_value<int>("version")) >
-                                    (mat_reader.has("b_table") ? src_ver : fib_ver))
+                                    (mat_reader.has("fa0") ? fib_ver : src_ver))
     {
         mat_reader.error_msg = "Incompatible format. please update DSI Studio to open this new format file.";
         return false;
@@ -890,12 +890,15 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
         matfile.si2vi = mat_reader.si2vi;
     }
 
-    if(mat_reader.has("b_table"))
-        matfile.write("version",src_ver);
-    if(mat_reader.has("fa0"))
-        matfile.write("version",fib_ver);
     if(mat_reader.has("arg"))
         matfile.write("version",map_ver);
+    else
+        if(mat_reader.has("fa0"))
+            matfile.write("version",fib_ver);
+        else
+        if(mat_reader.has("b_table"))
+            matfile.write("version",src_ver);
+
 
     const std::unordered_set<std::string> skip_set(skip_list.begin(), skip_list.end());
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
