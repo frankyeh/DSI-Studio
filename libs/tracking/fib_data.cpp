@@ -319,14 +319,14 @@ bool fiber_directions::add_data(fib_data& fib)
                 if (!mat_reader.read(prefix + std::to_string(j), code))
                     return (error_msg = mat_reader.error_msg, false);
                 dir_buf[j].resize(dim.size()*3);
-                for (size_t i = 0; i < dim.size(); ++i)
+                tipl::par_for(dim.size(),[&](size_t i)
                 {
                     float u = float(code[i] & 255)/127.5f-1.0f,v = float(code[i] >> 8)/127.5f-1.0f;
                     tipl::vector<3> d((u+v)*0.5f,(u-v)*0.5f,0.0f);
                     d[2] = 1.0f-std::abs(d[0])-std::abs(d[1]);
                     d.normalize();
                     std::copy(d.begin(),d.end(),dir_buf[j].begin()+i*3);
-                }
+                });
                 dir[j] = dir_buf[j].data();
             }
         }
