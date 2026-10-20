@@ -13,58 +13,123 @@ public:
     }
 };
 class BalanceScheme : public BaseProcess{
-    std::vector<float> trans,scale;
-    unsigned int new_q_count;
-    unsigned int old_q_count;
+    std::vector<float> scale; // the gqi weight of each balanced signal
+    std::vector<unsigned int> new_shell; // the shells of the balanced b-table
 public:
-    BalanceScheme(void){}
+    std::vector<float> trans; // the interpolation (new x old dwi, each row sums to one), also used by src_data::scheme_balance
+private: // the dwi output of qsdr: template-space dwi under the balanced voxel b-table, written into the fz
+    std::vector<tipl::vector<3,float> > src_bvectors; // native directions; voxel.shell keeps the native shells
+    std::vector<tipl::image<3> > dwi;
+private:
+    // normalized angular weights of the dwi [from,to) of a shell at direction dir, a gaussian of 0.08 rad width
+    std::vector<double> shell_weights(const std::vector<tipl::vector<3,float> >& bvectors,unsigned int from,unsigned int to,const tipl::vector<3,float>& dir) const
+    {
+        std::vector<double> t;
+        for(unsigned int j = from;j < to;++j)
+        {
+            double angle = std::acos(std::min<double>(1.0,std::abs(double(dir*bvectors[j]))))/0.08;
+            t.push_back(std::exp(-2.0*angle*angle));
+        }
+        tipl::multiply_constant(t.begin(),t.end(),1.0/std::accumulate(t.begin(),t.end(),0.0));
+        return t;
+    }
+public:
     virtual bool needed(Voxel& voxel)
     {
-        return voxel.need_resample_shells || voxel.need_resample_dsi || tipl::contains(voxel.steps,"scheme_balance");
+        return voxel.shell.size() < 5; // shell schemes, including those already balanced by scheme_balance
     }
+    // balances the voxel b-table (unless already done by scheme_balance) and gets the gqi scale of the balanced signals
     virtual void init(Voxel& voxel)
     {
-        old_q_count = new_q_count = uint32_t(voxel.bvalues.size());
-        if(tipl::contains(voxel.steps,"scheme_balance")) // signals already interpolated by scheme_balance: apply only the gqi scale
+        unsigned int old_q_count = uint32_t(voxel.dwi_data.size());
+        if(voxel.qsdr && voxel.needs("dwi") && !voxel.shell.empty())
+            src_bvectors = voxel.bvectors;
+        new_shell = voxel.shell;
+        if(!tipl::contains(voxel.steps,"scheme_balance"))
         {
-            scale.resize(old_q_count,1.0f);
-            if(voxel.shell.size() >= 5) // dsi: 1/N for all but the b0
-                std::fill(scale.begin()+(voxel.bvalues.front() == 0.0f ? 1 : 0),scale.end(),1.0f/float(old_q_count));
-            else // shells: per-dwi weight b_k/(n_k*B), and no weight for b0
+            bool b0 = voxel.bvalues.front() == 0.0f; // the b0 keeps the first row
+            std::vector<float> new_bvalues(b0);
+            std::vector<tipl::vector<3,float> > new_bvectors(b0);
+            if(b0)
             {
-                std::vector<double> shell_b(voxel.shell.size());
-                for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
-                    shell_b[shell_index] = tipl::mean(voxel.bvalues.begin()+voxel.shell[shell_index],
-                        voxel.bvalues.begin()+(shell_index + 1 == voxel.shell.size() ? old_q_count : voxel.shell[shell_index+1]));
-                double sum_b = std::accumulate(shell_b.begin(),shell_b.end(),0.0);
-                std::fill(scale.begin(),scale.begin()+(voxel.shell.empty() ? 0 : voxel.shell[0]),0.0f);
-                for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
+                trans.resize(old_q_count);
+                trans[0] = 1.0f;
+            }
+            for(unsigned int k = 0;k < voxel.shell.size();++k)
+            {
+                unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? old_q_count : voxel.shell[k+1]);
+                new_shell[k] = uint32_t(new_bvalues.size());
+                double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
+                tessellated_icosahedron new_dir(avg_b > 2500.0 ? 6 : avg_b > 1500.0 ? 5 : avg_b > 500.0 ? 4 : 3); // 181, 126, 81, or 46 directions
+                for(unsigned int i = 0;i < new_dir.half_vertices_count;++i)
                 {
-                    unsigned int from = voxel.shell[shell_index];
-                    unsigned int to = (shell_index + 1 == voxel.shell.size() ? old_q_count : voxel.shell[shell_index+1]);
-                    std::fill(scale.begin()+from,scale.begin()+to,float(shell_b[shell_index]/sum_b/double(to-from)));
+                    auto t = shell_weights(voxel.bvectors,from,to,new_dir.vertices[i]);
+                    trans.resize(trans.size()+old_q_count);
+                    std::copy(t.begin(),t.end(),trans.end()-old_q_count+from);
+                    new_bvalues.push_back(float(std::inner_product(t.begin(),t.end(),voxel.bvalues.begin()+from,0.0)));
+                    new_bvectors.push_back(new_dir.vertices[i]);
                 }
             }
-            return;
+            voxel.bvalues.swap(new_bvalues);
+            voxel.bvectors.swap(new_bvectors);
         }
-        std::vector<tipl::vector<3,float> > new_bvectors;
-        std::vector<float> new_bvalues;
-        voxel.balance_scheme(false,trans,new_bvalues,new_bvectors);
-        new_q_count = uint32_t(new_bvalues.size());
-        voxel.bvalues.swap(new_bvalues);
-        voxel.bvectors.swap(new_bvectors);
+        // the gqi scale b_k/(n_k*B) (b0 none): each shell sampled uniformly on its q-space surface, B the sum of shell b-values
+        {
+            double sum_b = 0.0;
+            scale.resize(voxel.bvalues.size());
+            for(unsigned int k = 0;k < new_shell.size();++k)
+            {
+                unsigned int from = new_shell[k],to = (k + 1 == new_shell.size() ? uint32_t(scale.size()) : new_shell[k+1]);
+                double b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
+                sum_b += b;
+                std::fill(scale.begin()+from,scale.begin()+to,float(b/double(to-from)));
+            }
+            tipl::multiply_constant(scale.begin(),scale.end(),float(1.0/sum_b));
+        }
+        if(!src_bvectors.empty())
+            dwi.resize(voxel.bvalues.size(),tipl::image<3>(voxel.dim));
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(!scale.empty())
+        if(!dwi.empty() && data.jacobian.det() != 0.0f) // zero outside the native fov
         {
-            for(size_t i = 0;i < scale.size();++i)
-                data.space[i] *= scale[i];
-            return;
+            for(unsigned int j = 0;j < new_shell[0];++j) // b0
+                dwi[j][data.voxel_index] = data.space[j];
+            for(unsigned int k = 0;k < new_shell.size();++k)
+                for(unsigned int j = new_shell[k],end = (k + 1 == new_shell.size() ? uint32_t(dwi.size()) : new_shell[k+1]);j < end;++j)
+                {
+                    auto dir = voxel.bvectors[j]; // the qsdr convention: template direction t evaluates native normalize(J t)
+                    dir.rotate(data.jacobian);
+                    dir.normalize();
+                    auto w = shell_weights(src_bvectors,voxel.shell[k],k + 1 == voxel.shell.size() ? uint32_t(voxel.dwi_data.size()) : voxel.shell[k+1],dir);
+                    dwi[j][data.voxel_index] = float(std::inner_product(w.begin(),w.end(),data.space.begin()+voxel.shell[k],0.0));
+                }
         }
-        std::vector<float> new_data(new_q_count);
-        data.space.swap(new_data);
-        tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape<2>(new_q_count,old_q_count));
+        if(!trans.empty())
+        {
+            std::vector<float> new_data(scale.size());
+            data.space.swap(new_data);
+            tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape<2>(scale.size(),voxel.dwi_data.size()));
+        }
+        for(size_t i = 0;i < scale.size();++i)
+            data.space[i] *= scale[i];
+    }
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
+    {
+        if(dwi.empty())
+            return;
+        std::vector<float> b_table;
+        for(size_t i = 0;i < voxel.bvalues.size();++i)
+        {
+            b_table.push_back(voxel.bvalues[i]);
+            b_table.insert(b_table.end(),voxel.bvectors[i].begin(),voxel.bvectors[i].end());
+        }
+        mat_writer.write("b_table",b_table,4);
+        for(size_t i = 0;i < dwi.size();++i)
+            mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(i),dwi[i].data(),voxel.dim.plane_size(),voxel.dim.depth());
+        if(!tipl::contains(voxel.steps,"scheme_balance")) // the fz steps then mark the embedded dwi as balanced
+            voxel.step_report << "scheme_balance" << std::endl;
+        dwi = std::vector<tipl::image<3> >();
     }
 };
 
