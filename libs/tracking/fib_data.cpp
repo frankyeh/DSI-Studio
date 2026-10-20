@@ -309,7 +309,7 @@ bool fiber_directions::add_data(fib_data& fib)
                 if (!mat_reader.read(prefix + std::to_string(j), dir[j]))
                     return (error_msg = mat_reader.error_msg, false);
         }
-        else if (prefix == "fixel") // 16-bit fiber axis decoded into dir: hemioctahedral map of the z >= 0 hemisphere, 8 bits per square coordinate
+        else if (prefix == "fixel") // 16-bit fiber axes decoded into dir
         {
             dir.resize(num_fiber);
             dir_buf.resize(num_fiber);
@@ -321,11 +321,7 @@ bool fiber_directions::add_data(fib_data& fib)
                 dir_buf[j].resize(dim.size()*3);
                 tipl::par_for(dim.size(),[&](size_t i)
                 {
-                    float u = float(code[i] & 255)/127.5f-1.0f,v = float(code[i] >> 8)/127.5f-1.0f;
-                    tipl::vector<3> d((u+v)*0.5f,(u-v)*0.5f,0.0f);
-                    d[2] = 1.0f-std::abs(d[0])-std::abs(d[1]);
-                    d.normalize();
-                    std::copy(d.begin(),d.end(),dir_buf[j].begin()+i*3);
+                    std::copy_n(decode_fixel(code[i]).begin(),3,dir_buf[j].begin()+i*3);
                 });
                 dir[j] = dir_buf[j].data();
             }
