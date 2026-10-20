@@ -125,6 +125,7 @@ public:
     void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
     void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc after its last message
     QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <codename>", or "<title> <middle dot> DSI Studio <codename>" after set_title), modifiedTime, appProperties (dsi_session, dsi_code)
+    bool remove_web_session(const QString& file_id,const QString& session); // trashes the session Doc (if any) and removes its local history, config, and title; false if the Doc was not trashed
     void set_web_title(const QString& title); // renames the connected Doc to "<title> <middle dot> DSI Studio <codename>"
     void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
     QString prompt(void) const; // the connection prompt an agent is given
