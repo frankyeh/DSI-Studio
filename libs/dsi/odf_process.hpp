@@ -30,13 +30,21 @@ public:
             scale.resize(old_q_count,1.0f);
             if(voxel.shell.size() >= 5) // dsi: 1/N for all but the b0
                 std::fill(scale.begin()+(voxel.bvalues.front() == 0.0f ? 1 : 0),scale.end(),1.0f/float(old_q_count));
-            else
+            else // shells: per-dwi weight b_k/(n_k*B), and no weight for b0
+            {
+                std::vector<double> shell_b(voxel.shell.size());
+                for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
+                    shell_b[shell_index] = tipl::mean(voxel.bvalues.begin()+voxel.shell[shell_index],
+                        voxel.bvalues.begin()+(shell_index + 1 == voxel.shell.size() ? old_q_count : voxel.shell[shell_index+1]));
+                double sum_b = std::accumulate(shell_b.begin(),shell_b.end(),0.0);
+                std::fill(scale.begin(),scale.begin()+(voxel.shell.empty() ? 0 : voxel.shell[0]),0.0f);
                 for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
                 {
                     unsigned int from = voxel.shell[shell_index];
                     unsigned int to = (shell_index + 1 == voxel.shell.size() ? old_q_count : voxel.shell[shell_index+1]);
-                    std::fill(scale.begin()+from,scale.begin()+to,float(tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to)/1000.0));
+                    std::fill(scale.begin()+from,scale.begin()+to,float(shell_b[shell_index]/sum_b/double(to-from)));
                 }
+            }
             return;
         }
         std::vector<tipl::vector<3,float> > new_bvectors;
