@@ -303,8 +303,7 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
                 other_metrics_count.resize(other_metrics_name.size());
 
                 odfs.resize(dim.size());
-                if(fib.has_odfs())
-                    odf_count.resize(dim);
+                odf_count.resize(dim);
             }
             else
             // check odf consistency
@@ -323,67 +322,22 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
 
             tipl::out() << "accumulating ODFs";
 
-            if(!odf_count.empty())
+            odf_data odf;
+            if(!odf.read(fib))
+                throw std::runtime_error(odf.error_msg);
+            tipl::par_for(dim.size(),[&](size_t i)
             {
-                odf_data odf;
-                if(!odf.read(fib))
-                    throw std::runtime_error(odf.error_msg);
-                tipl::par_for(dim.size(),[&](size_t i)
-                {
-                    if(fib.dir.fa[0][i] == 0.0f)
-                        return;
-                    const float* odf_data = odf.get_odf_data(i);
-                    if(odf_data == nullptr)
-                        return;
-                    if(odfs[i].empty())
-                        odfs[i] = std::vector<double>(odf_data,odf_data+ti.half_vertices_count);
-                    else
-                        tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
-                    odf_count[i]++;
-                });
-            }
-            else
-            {
-                if(!fib.dir.findex.empty())
-                {
-                    for(size_t pos = 0,sz = dim.size();pos < sz;++pos)
-                        for(size_t f_index = 0;f_index < fib.dir.num_fiber;++f_index)
-                            if(fib.dir.fa[f_index][pos] > 0.0f)
-                            {
-                                if(odfs[pos].empty())
-                                    odfs[pos].resize(ti.half_vertices_count);
-                                odfs[pos][fib.dir.findex[f_index][pos]] += fib.dir.fa[f_index][pos];
-                            }
-                }
+                if(fib.dir.fa[0][i] == 0.0f)
+                    return;
+                const float* odf_data = odf.get_odf_data(i);
+                if(odf_data == nullptr)
+                    return;
+                if(odfs[i].empty())
+                    odfs[i] = std::vector<double>(odf_data,odf_data+ti.half_vertices_count);
                 else
-                if(!fib.dir.findex.empty())
-                {
-                    tipl::par_for(dim.size(),[&](size_t pos)
-                    {
-                        if(fib.dir.fa[0][pos] > 0.0f)
-                        {
-                            auto fdir = fib.dir.get_fib(pos,0);
-                            size_t best_dir = 0;
-                            float best_cos = 0.0f;
-                            for(size_t i = 0;i < fib.dir.odf_table.size();++i)
-                            {
-                                auto cur_cos = std::fabs(fdir*fib.dir.odf_table[i]);
-                                if(cur_cos > best_cos)
-                                {
-                                    best_cos = cur_cos;
-                                    best_dir = i;
-                                }
-                            }
-                            if(odfs[pos].empty())
-                                odfs[pos].resize(ti.half_vertices_count);
-                            odfs[pos][best_dir] += fib.dir.fa[0][pos];
-                        }
-                    },tipl::max_thread_count);
-
-                }
-                else
-                    throw std::runtime_error("no fiber orientation information");
-            }
+                    tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
+                odf_count[i]++;
+            });
 
             tipl::progress p2("accumulating other metrics");
             for(size_t i = 0;p2(i,other_metrics_name.size());++i)
@@ -427,15 +381,8 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
         tipl::par_for(dim.size(),[&](size_t pos)
         {
             prog(p++,dim.size());
-            if(odfs[pos].empty())
-                return;
-            if(!odf_count.empty())
-            {
-                if(odf_count[pos] > 1)
-                    tipl::divide_constant(odfs[pos].begin(),odfs[pos].end(),float(odf_count[pos]));
-            }
-            else
-                tipl::divide_constant(odfs[pos].begin(),odfs[pos].end(),float(file_names.size()));
+            if(odf_count[pos] > 1)
+                tipl::divide_constant(odfs[pos].begin(),odfs[pos].end(),float(odf_count[pos]));
         },tipl::max_thread_count);
         if (prog.aborted())
             return false;
@@ -447,7 +394,7 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
         size_t odf_size = 0;
         for(size_t i = 0;prog(i,mask.size());++i)
         {
-            if((!odf_count.empty() && odf_count[i] > (file_names.size() >> 1)) || !odfs[i].empty())
+            if(odf_count[i] > (file_names.size() >> 1) || !odfs[i].empty())
             {
                 mask[i] = 1;
                 odfs[odf_size].swap(odfs[i]);
