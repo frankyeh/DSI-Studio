@@ -63,6 +63,7 @@ public:
     }
 };
 
+
 struct src_data;
 class Voxel
 {
@@ -88,8 +89,6 @@ public:
     std::ostringstream recon_report, step_report;
     unsigned int thread_count = tipl::max_thread_count;
     void load_from_src(src_data& image_model);
-    void balance_scheme(bool physical,std::vector<float>& trans,
-                        std::vector<float>& new_bvalues,std::vector<tipl::vector<3,float> >& new_bvectors) const;
 public:
     unsigned char method_id;
     float param[3] = {1.25f,3000.0f,0.05f};
