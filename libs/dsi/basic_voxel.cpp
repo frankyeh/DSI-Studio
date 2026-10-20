@@ -18,7 +18,6 @@ bool Voxel::init(void)
             voxel_data[index].space.resize(bvalues.size());
             voxel_data[index].odf.resize(ti.half_vertices_count);
             voxel_data[index].fa.resize(max_fiber_number);
-            voxel_data[index].dir.resize(max_fiber_number);
         }
     }
     for (unsigned int index = 0; prog(index,process_list.size()); ++index)
