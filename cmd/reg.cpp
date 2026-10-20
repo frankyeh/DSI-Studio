@@ -109,7 +109,7 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
             new_image.shape = dim;
             if(!new_image.read_mat_image(i,mat_reader))
                 return;
-            if(tipl::begins_with(mat.name,{"index","mask"}))
+            if(tipl::begins_with(mat.name,{"index","fixel","mask"}))
                 new_image.is_label = true;
             new_image.apply([&](auto& I)
             {
