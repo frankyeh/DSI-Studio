@@ -428,7 +428,7 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
         if(started)
             started(process.processId());
         constexpr int shell_timeout_ms = 600000;
-        if(!process.waitForFinished(shell_timeout_ms))
+        if(!process.waitForFinished(shell_timeout_ms) && process.state() != QProcess::NotRunning) // false also when it already finished, e.g. during report_step
         {
             process.kill();
             process.waitForFinished(3000);
@@ -583,6 +583,13 @@ QJsonArray web_bridge::list_web_sessions(void)
     // drive.file lists only files DSI Studio created, so other Docs never appear; web_download slots are not Docs
     return google_api_wait("GET","https://www.googleapis.com/drive/v3/files?pageSize=15&orderBy=modifiedTime%20desc&fields=files(id,name,modifiedTime,appProperties)&q="+
                            QString::fromLatin1(QUrl::toPercentEncoding("'"+google_folder_id+"' in parents and mimeType='application/vnd.google-apps.document' and trashed=false")))["files"].toArray();
+}
+bool web_bridge::remove_web_session(const QString& file_id,const QString& session)
+{
+    QFile::remove(ai_info::history_file(session));
+    QFile::remove(ai_info::config_file(session));
+    settings.remove("ai/title/"+session);
+    return file_id.isEmpty() || !google_api_wait("PATCH","https://www.googleapis.com/drive/v3/files/"+file_id,{{"trashed",true}}).isEmpty();
 }
 void web_bridge::set_web_title(const QString& title)
 {
@@ -1034,7 +1041,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     web_bridge web;
     web.stop_when_idle = false;
     web.status = [](session_status,const QString& message){tipl::out() << message.toStdString();};
-    web.warn = [](const QString& text){tipl::error() << text.toStdString();QCoreApplication::exit(1);};
+    web.warn = [&](const QString& text){chat << "\nerror: " << text.toStdString() << std::endl;QCoreApplication::exit(1);}; // std::cerr is silenced after start
     std::string approval = po.has("approval") ? po.get("approval") : std::string("manual");
     if(approval != "manual" && approval != "read_only" && approval != "auto")
         return tipl::error() << "--approval must be manual, read_only, or auto",1;
@@ -1127,10 +1134,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             std::cout.rdbuf(&quiet),std::cerr.rdbuf(&quiet);
     };
     // --session=N resumes the N-th chat listed below (default 0, the most recent), --session=<codename> that chat;
-    // -1 or no chat starts a new one
+    // -1 or no chat starts a new one; --remove_session=N or <codename> removes that chat instead
     QList<QJsonObject> sessions;
     QStringList items;
-    auto session_arg = QString::fromStdString(po.get("session","0"));
+    auto session_arg = QString::fromStdString(po.has("remove_session") ? po.get("remove_session") : po.get("session","0"));
     bool by_number = false;
     int choice = session_arg.toInt(&by_number);
     if(!by_number) // a codename not listed is reported below
@@ -1156,6 +1163,16 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         chat << i << ". " << items[i].toStdString() << "\n";
     if(!sessions.isEmpty() && choice >= int(sessions.size()))
         return tipl::error() << "--session=" << session_arg.toStdString() << " is not listed; use 0 to " << int(sessions.size())-1 << ", a listed codename, or -1 for a new chat",1;
+    if(po.has("remove_session"))
+    {
+        if(choice < 0 || sessions.isEmpty())
+            return tipl::error() << "no listed chat to remove",1;
+        auto props = sessions[choice]["appProperties"].toObject();
+        if(!web.remove_web_session(sessions[choice]["id"].toString(),props["dsi_session"].toString()))
+            return tipl::error() << "cannot move the chat's Google Doc to the trash",1;
+        chat << "removed " << props["dsi_code"].toString().toStdString() << std::endl;
+        return 0;
+    }
     if(choice < 0 || sessions.isEmpty())
         web.create_web_session(start);
     else
