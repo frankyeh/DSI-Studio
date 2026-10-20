@@ -21,7 +21,7 @@ class fiber_directions
 {
 public:
     std::vector<std::vector<short> > findex_buf;
-    std::vector<std::vector<float> > fa_buf;
+    std::vector<std::vector<float> > fa_buf,dir_buf;
 public:
     std::vector<const float*> dir;
     std::vector<const short*> findex;
@@ -47,7 +47,8 @@ public:
     bool set_tracking_index(const std::string& name);
     std::string get_threshold_name(void) const{return index_name_data[uint32_t(cur_index)].first;}
     tipl::vector<3> get_fib(size_t space_index,unsigned int order) const;
-    float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const;
+    float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
+        {return cur_dir*get_fib(space_index,fib_order);}
     float get_track_specific_metrics(size_t space_index,const std::vector<const float*>& index,
                              const tipl::vector<3,float>& dir) const;
 };
@@ -108,10 +109,7 @@ public:
             }
             if (max_value <= cull_cos_angle)
                 continue;
-            if(!dir.empty())
-                main_dir = dir[fib_order] + space_index + (space_index << 1);
-            else
-                main_dir = odf_table[findex[fib_order][space_index]];
+            main_dir = get_fib(space_index,fib_order);
             if(reverse)
             {
                 main_dir[0] = -main_dir[0];
@@ -137,12 +135,7 @@ public:
     }
     inline float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
     {
-        if(!dir.empty())
-        {
-            const float* dir_at = dir[fib_order] + space_index + (space_index << 1);
-            return cur_dir[0]*dir_at[0] + cur_dir[1]*dir_at[1] + cur_dir[2]*dir_at[2];
-        }
-        return cur_dir*odf_table[findex[fib_order][space_index]];
+        return cur_dir*get_fib(space_index,fib_order);
     }
 
 };

@@ -309,6 +309,27 @@ bool fiber_directions::add_data(fib_data& fib)
                 if (!mat_reader.read(prefix + std::to_string(j), dir[j]))
                     return (error_msg = mat_reader.error_msg, false);
         }
+        else if (prefix == "fixel") // 16-bit fiber axis decoded into dir: hemioctahedral map of the z >= 0 hemisphere, 8 bits per square coordinate
+        {
+            dir.resize(num_fiber);
+            dir_buf.resize(num_fiber);
+            for (unsigned int j = 0; j < num_fiber; ++j)
+            {
+                const unsigned short* code = nullptr;
+                if (!mat_reader.read(prefix + std::to_string(j), code))
+                    return (error_msg = mat_reader.error_msg, false);
+                dir_buf[j].resize(dim.size()*3);
+                for (size_t i = 0; i < dim.size(); ++i)
+                {
+                    float u = float(code[i] & 255)/127.5f-1.0f,v = float(code[i] >> 8)/127.5f-1.0f;
+                    tipl::vector<3> d((u+v)*0.5f,(u-v)*0.5f,0.0f);
+                    d[2] = 1.0f-std::abs(d[0])-std::abs(d[1]);
+                    d.normalize();
+                    std::copy(d.begin(),d.end(),dir_buf[j].begin()+i*3);
+                }
+                dir[j] = dir_buf[j].data();
+            }
+        }
         else
         {
             index_name_data.push_back({prefix, std::vector<const float*>(num_fiber)});
@@ -359,17 +380,6 @@ tipl::vector<3> fiber_directions::get_fib(size_t space_index,unsigned int order)
         return odf_table[0];
     return odf_table[findex[order][space_index]];
 }
-
-float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
-{
-    if(!dir.empty())
-    {
-        const float* dir_at = dir[fib_order] + space_index + space_index + space_index;
-        return cur_dir[0]*dir_at[0] + cur_dir[1]*dir_at[1] + cur_dir[2]*dir_at[2];
-    }
-    return cur_dir*odf_table[findex[fib_order][space_index]];
-}
-
 
 float fiber_directions::get_track_specific_metrics(size_t space_index,
                          const std::vector<const float*>& metrics,
@@ -921,8 +931,12 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
                 matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<float>(index),
                                                        matfile.mask_rows,matfile.mask_cols);
             else
-            if(mat_reader[index].is_type<short>() || mat_reader[index].is_type<unsigned short>()) // index no slope
+            if(mat_reader[index].is_type<short>()) // index no slope
                 matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<short>(index),
+                                                matfile.mask_rows,matfile.mask_cols);
+            else
+            if(mat_reader[index].is_type<unsigned short>()) // fixel no slope
+                matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<unsigned short>(index),
                                                 matfile.mask_rows,matfile.mask_cols);
             else
             if(mat_reader[index].is_type<char>())
@@ -1032,7 +1046,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             handle_mask(mat_reader);
 
         if(cmd == "save_mini")
-            return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","dti_fa","md","ad","rd","fa3","fa4","rdi","index3","index4"},{"nrdi","subject"});
+            return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","dti_fa","md","ad","rd","fa3","fa4","rdi","index3","index4","fixel3","fixel4"},{"nrdi","subject"});
         if(tipl::ends_with(param,".fz"))
             return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
         return save_fz(mat_reader,matfile,{},{});
@@ -1083,7 +1097,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             new_image.vs = vs;
             new_image.T = trans;
             new_image.shape = dim;
-            new_image.is_label = tipl::begins_with(mat.name,"index") || mat.name == "mask";
+            new_image.is_label = tipl::begins_with(mat.name,{"index","fixel"}) || mat.name == "mask";
             if(new_image.is_label && tipl::contains(cmd,{"normalize","filter","_value"}))
                 return;
             if(!new_image.read_mat_image(i,mat_reader))
