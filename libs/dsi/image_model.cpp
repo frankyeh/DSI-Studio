@@ -1606,8 +1606,8 @@ bool src_data::scheme_balance(void)
     Voxel v; // the sorted dwi, first b0, and shells used by gqi reconstruction
     v.method_id = 4;
     v.load_from_src(*this);
-    if(!v.need_resample_shells && !v.need_resample_dsi)
-        return error_msg = "this b-table does not need scheme balance",false;
+    if(v.shell.size() >= 5)
+        return error_msg = "cannot apply scheme balance due to many shells",false;
 
     BalanceScheme b; // v gets the balanced b-table, b.trans the interpolation of the sorted dwi
     b.init(v);
