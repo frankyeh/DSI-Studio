@@ -111,11 +111,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
 
-    ui->odf_resolving->setVisible(false);
-
     ui->ThreadCount->setValue(handle->voxel.thread_count);
-
-    ui->odf_resolving->setChecked(settings.value("odf_resolving",handle->voxel.odf_resolving).toInt());
 
     ui->report->setText(check_citation(handle->voxel.report.c_str()));
     ui->dti_ignore_high_b->setChecked(handle->voxel.dti_ignore_high_b);
@@ -380,9 +376,6 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             if(source == command_source::User)
             {
                 settings.setValue("rec_method_id",method_id);
-                settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
-
-                handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
                 handle->voxel.dti_ignore_high_b = ui->dti_ignore_high_b->isChecked();
                 handle->voxel.thread_count = ui->ThreadCount->value();
                 handle->voxel.template_id = ui->primary_template->currentIndex();
@@ -759,7 +752,6 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
 
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
-    ui->odf_resolving->setVisible(true);
     ui->align_slices->setVisible(true);
 }
 
