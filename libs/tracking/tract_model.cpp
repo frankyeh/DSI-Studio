@@ -2985,9 +2985,8 @@ bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,co
             if(has_cut[i][t])
             {
                 modified = true;
-                if(!adding)
-                    continue;
                 adding = false;
+                continue;
             }
             if(!adding)
             {
