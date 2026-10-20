@@ -322,7 +322,7 @@ public:
     }
     virtual void run(Voxel&, VoxelData& data)
     {
-        if(data.space.front() == 0.0f)
+        if(tipl::max_value(data.space.begin(),data.space.end()) == 0.0f) // no signal; b0 alone cannot tell, as shell schemes give it no weight
         {
             data.rdi = std::vector<float>(rdi_weightings.size());
             return;
