@@ -3321,7 +3321,7 @@ bool src_data::load_from_file(const std::vector<std::filesystem::path>& nii_name
 
 QImage read_qimage(QString filename,std::string& error);
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
-extern int src_ver,fib_ver;
+extern int src_ver;
 bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
 {
     auto result = [&](void)->bool
@@ -3417,8 +3417,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
         if(!mat_reader.read_pointer("trans",voxel.trans_to_mni))
             tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         int this_src_ver(0);
-        if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) >
-                                        (mat_reader.has("fa0") ? fib_ver : src_ver)) // a qsdr fz with the dwi output carries the fib version
+        if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > src_ver)
             return error_msg = "incompatible SRC format. please update DSI Studio to open this file.",false;
         if(!mat_reader.has("mask"))
             voxel.mask.clear();
