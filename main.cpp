@@ -261,7 +261,7 @@ const char* version_string = "Sun \"\xe5\xad\xab\"";
 std::string dsi_studio_citation = std::string("DSI Studio (doi:10.1038/s41592-025-02762-8), ") + version_string + " " + __DATE__ + " ";
 int map_ver = 202408;
 int src_ver = 202408;
-int fib_ver = 202504;
+int fib_ver = 202610;
 bool has_cuda = false;
 void check_cuda(std::string& error_msg);
 bool init_application(void)
