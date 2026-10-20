@@ -296,19 +296,13 @@ AIAgent::AIAgent(MainWindow* parent):
         auto session = ui->ai_project_list->item(row)->data(Qt::UserRole).toString();
         if(session == web.web_session_id)
             stop_web();
-        if(auto* found = ai_info::find(session))
+        auto* found = ai_info::find(session);
+        if(auto* process = found ? found->processes : nullptr)
         {
-            if(auto* process = found->processes)
-            {
-                process->disconnect(); kill_process_tree(process); process->waitForFinished(1000); process->deleteLater();
-            }
-            if(found->provider == "Web") // trash its mailbox Doc so "DSI Studio AI" does not accumulate them
-                web.google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+found->model_settings["google_file_id"].toString(),
-                           {{"trashed",true}},[](QJsonObject){});
+            process->disconnect(); kill_process_tree(process); process->waitForFinished(1000); process->deleteLater();
         }
-        QFile::remove(ai_info::history_file(session));
-        QFile::remove(ai_info::config_file(session));
-        settings.remove("ai/title/"+session);
+        // a Web chat's mailbox Doc is trashed so "DSI Studio AI" does not accumulate them
+        web.remove_web_session(found && found->provider == "Web" ? found->model_settings["google_file_id"].toString() : QString(),session);
         ai_infos.erase(session);
         auto* taken_item = ui->ai_project_list->takeItem(row); // defer delete: its row widget owns the "..." button whose menu action is still running
         QTimer::singleShot(0,this,[taken_item]{delete taken_item;});
