@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <numeric>
 #include <unordered_set>
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -1046,8 +1045,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return false;
 
-    // regrid samples every matrix with nearest neighbor, so fa, index, and dir of a fiber come from the same source voxel
-    bool regrid = cmd == "regrid";
+    bool is_fz = mat_reader.has("fa0");
 
     tipl::progress prog(cmd);
     size_t p = 0;
@@ -1070,8 +1068,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 for(size_t d = 0;d < 3;++d)
                     new_image[d][j] = *(ptr++);
             for(size_t d = 0;d < 3;++d)
-                if(!(regrid ? tipl::command<tipl::out,tipl::nearest,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,mat_reader.error_msg) :
-                              tipl::command<tipl::out,tipl::linear,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,mat_reader.error_msg)))
+                if(!tipl::command<tipl::out,tipl::nearest,tipl::io::gz_nifti>(new_image[d],new_vs = vs,new_trans = trans,is_mni,cmd,param,mat_reader.error_msg)) // fiber directions
                     return mat_reader.error_msg = "cannot perform " + cmd,failed = true,void();
             new_dim = new_image[0].shape();
             mat.set_row_col(3*new_dim.plane_size(),new_dim.depth());
@@ -1092,8 +1089,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             if(!new_image.read_mat_image(i,mat_reader))
                 return mat_reader.error_msg = "size mismatch at matrix " + mat.name,failed = true,void();
             tipl::out() << mat_reader[i].name;
-            bool ok = true;
-            if(regrid) // nearest even for index and mask, which other commands treat as labels (majority)
+            bool ok;
+            if(is_fz) // nearest for every fz matrix, so fa, index, and dir of a fiber come from the same source voxel
                 new_image.apply([&](auto& I)
                 {
                     ok = tipl::command<void,tipl::nearest,tipl::io::gz_nifti>(I,new_image.vs,new_image.T,new_image.is_mni,cmd,param,new_image.error_msg);
