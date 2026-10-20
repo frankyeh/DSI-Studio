@@ -119,8 +119,10 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
                     tipl::lower_threshold(new_I,0.0f);
                     I = new_I;
                 }
-                else
+                else if(mat.name == "mask")
                     I = reg.template apply_warping<direction,tipl::interpolation::majority>(I);
+                else // fiber directions (index, fixel): codes rarely repeat, so take the nearest source voxel
+                    I = reg.template apply_warping<direction,tipl::interpolation::nearest>(I);
             });
             new_image.shape = (direction ? reg.Its : reg.Is);
             new_image.write_mat_image(i,mat_reader);
