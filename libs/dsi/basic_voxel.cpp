@@ -77,14 +77,6 @@ void Voxel::load_from_src(src_data& image_model)
         }
 
     calculate_shell(bvalues,shell);
-    auto is_dsi = [this](void){return shell.size() > 4 && shell[1] - shell[0] <= 6;};
-
-    if(method_id == 7 || method_id == 4)
-    {
-        need_resample_shells = shell.size() < 5;
-        if((need_resample_dsi = shell.size() >= 5 && dwi_data.size() < 64))
-            tipl::out() << "dsi resampling needed";
-    }
     if(method_id == 1)
         max_fiber_number = 1;
     else
