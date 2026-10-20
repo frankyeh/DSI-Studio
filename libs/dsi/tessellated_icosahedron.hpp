@@ -14,6 +14,25 @@ extern unsigned short odf6_face[720][3];
 extern float odf8_vec[642][3];
 extern unsigned short odf8_face[1280][3];
 
+// 16-bit fixel code of a fiber axis (v == -v): hemioctahedral map of the z >= 0 hemisphere, 8 bits per square coordinate
+inline uint16_t encode_fixel(tipl::vector<3,float> dir)
+{
+    if(dir[2] < 0.0f || (dir[2] == 0.0f && (dir[1] < 0.0f || (dir[1] == 0.0f && dir[0] < 0.0f))))
+        dir *= -1.0f;
+    float s = std::abs(dir[0])+std::abs(dir[1])+dir[2];
+    if(!std::isfinite(s) || s == 0.0f) // zero (inactive) or invalid axis
+        return 0;
+    return uint16_t(std::lround((dir[0]+dir[1])/s*127.5f+127.5f) | (std::lround((dir[0]-dir[1])/s*127.5f+127.5f) << 8));
+}
+inline tipl::vector<3,float> decode_fixel(uint16_t code)
+{
+    float u = float(code & 255)/127.5f-1.0f,v = float(code >> 8)/127.5f-1.0f;
+    tipl::vector<3,float> dir((u+v)*0.5f,(u-v)*0.5f,0.0f);
+    dir[2] = 1.0f-std::abs(dir[0])-std::abs(dir[1]);
+    dir.normalize();
+    return dir;
+}
+
 class tessellated_icosahedron
 {
 public:
