@@ -388,68 +388,19 @@ struct ODFShaping
             odf[pos] -= cur_max;
         }
     }
-    void reshape(std::vector<float>& odf,uint16_t dir)
-    {
-        const std::vector<unsigned int>& remove_list = shape_list[dir];
-        for (unsigned int index = 1;index < remove_list.size();++index)
-        {
-            float back_value = odf[remove_list[index]];
-            if(back_value > odf[remove_list[index-1]])
-            {
-                unsigned int j = index -1;
-                do{
-                    odf[remove_list[j]] = back_value;
-                }
-                while(back_value > odf[remove_list[j]] && j);
-            }
-        }
-    }
-    /*
-    std::vector<std::vector<std::vector<unsigned int> > > shape_list;
-    void init(Voxel& voxel)
-    {
-        unsigned int half_odf_size = voxel.ti.half_vertices_count;
-        shape_list.resize(half_odf_size);
-        for (unsigned int i = 0;i < half_odf_size;++i)
-        {
-            std::vector<std::vector<unsigned int> > cos_table(6);
-            for(unsigned int j = 0;j < half_odf_size;++j)
-                if(j != i)
-                    cos_table[uint32_t(std::floor(float(cos_table.size())*std::fabs(voxel.ti.vertices_cos(i,j))))].push_back(j);
-            std::reverse(cos_table.begin(),cos_table.end());
-            shape_list[i] = std::move(cos_table);
-        }
-    }
-    void shape(std::vector<float>& odf,uint16_t dir)
-    {
-        float cur_max = odf[dir];
-        odf[dir] = 0.0f;
-        const auto& cos_table = shape_list[dir];
-        for (size_t index = 0;index < cos_table.size();++index)
-        {
-            for(auto sym_dir : cos_table[index])
-                cur_max = std::min<float>(odf[sym_dir],cur_max);
-            for(auto sym_dir : cos_table[index])
-                odf[sym_dir] -= cur_max;
-        }
-    }*/
 };
 
-double base_function(double theta);
 struct SaveMetrics : public BaseProcess
 {
 protected:
     SearchLocalMaximum lm;
-    ODFShaping shaping;
-    std::vector<tipl::image<3,short> > findex;
+    std::vector<tipl::image<3,unsigned short> > fixel; // fiber directions, 0 where there is no fiber
 protected:
     tipl::image<3> iso,gfa;
     std::vector<tipl::image<3> > fa,rdi;
 public:
     virtual void init(Voxel& voxel)
     {
-        if(voxel.odf_resolving)
-            shaping.init(voxel.ti);
         lm.init(voxel);
 
         voxel.z0 = 1.0f;
@@ -466,74 +417,46 @@ public:
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
                 rdi.emplace_back(voxel.dim);
         }
-        findex.resize(voxel.max_fiber_number);
-        for(auto& each : findex)
-            each = std::move(tipl::image<3>(voxel.dim));
+        fixel.resize(voxel.max_fiber_number,tipl::image<3,unsigned short>(voxel.dim));
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        data.min_odf = tipl::min_value(data.odf.begin(),data.odf.end());
-        if(std::isnan(data.min_odf) || std::isinf(data.min_odf) || data.min_odf < 0.0f)
+        float min_odf = tipl::min_value(data.odf.begin(),data.odf.end());
+        if(!std::isfinite(min_odf) || min_odf < 0.0f)
             return;
-        if(voxel.odf_resolving)
+        std::map<float,unsigned short,std::greater<float> > max_table;
+        lm.search(data.odf,max_table);
+        auto iter = max_table.begin();
+        auto end = max_table.end();
+        for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
         {
-            std::vector<float> odf(data.odf);
-            tipl::minus_constant(odf.begin(),odf.end(),data.min_odf);
-            float sum = tipl::sum(odf.begin(),odf.end());
-            float last_fiber_sum = 0.0f;
-            for(unsigned int i = 0;i < voxel.max_fiber_number;++i)
+            tipl::vector<3,float> d(voxel.ti.vertices[iter->second]);
+            data.fa[index] = iter->first - min_odf;
+            fixel[index][data.voxel_index] = encode_fixel(d);
+            if(voxel.q_vectors.empty()) // an odf template: no diffusion signals to refine on
+                continue;
+            // refine the peak on the gqi odf: a quadratic fit of 9 tangent-plane samples (spacing h) around the seed d,
+            // accepted only as a maximum within the seed's one-ring (radius r) that does not lower the odf
+            tipl::vector<3,float> e1(d.normal()),e2(d.cross_product(e1));
+            auto f = [&](float a,float b)
             {
-                uint16_t peak = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
-                float qa = odf[peak];
-                shaping.shape(odf,peak);
-                float new_sum = tipl::sum(odf.begin(),odf.end());
-                if(i && last_fiber_sum*0.2f > sum-new_sum)
-                    break;
-                last_fiber_sum = sum-new_sum;
-                sum = new_sum;
-                data.dir_index[i] = peak;
-                data.fa[i] = qa;
-            }
-
-            /*
-            std::vector<float> second_fiber_odf(data.odf.size());
-            for(int i = 0;i < 3;++i)
-            {
-                std::vector<float> odf(data.odf);
-                if(i)
-                    tipl::minus(odf,second_fiber_odf);
-                shaping.shape(odf,first_peak);
-                if(i)
-                    tipl::add(odf,second_fiber_odf);
-                second_peak = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
-                shaping.reshape(odf,second_peak);
-                second_fiber_odf = odf;
-
-                std::vector<float> new_odf(data.odf);
-                tipl::minus(new_odf,second_fiber_odf);
-                uint16_t first_peak2 = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
-                if(first_peak != first_peak2)
-                    iter->second = first_peak = first_peak2;
-                else
-                    break;
-            }
-            */
-
-        }
-        else
-        {
-            std::map<float,unsigned short,std::greater<float> > max_table;
-            lm.search(data.odf,max_table);
-            auto iter = max_table.begin();
-            auto end = max_table.end();
-            for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
-            {
-                data.dir_index[index] = iter->second;
-                data.fa[index] = iter->first - data.min_odf;
-            }
+                auto u = d+e1*a+e2*b;
+                u.normalize();
+                return voxel.odf_at(data,u);
+            };
+            float r = std::sqrt(4.0f*float(M_PI)/float(voxel.ti.vertices_count)),h = r*0.5f,f0 = data.odf[iter->second];
+            float p = f(h,0.0f),m = f(-h,0.0f),gx = (p-m)/(2.0f*h),hxx = (p+m-2.0f*f0)/(h*h);
+            p = f(0.0f,h);
+            m = f(0.0f,-h);
+            float gy = (p-m)/(2.0f*h),hyy = (p+m-2.0f*f0)/(h*h),hxy = (f(h,h)-f(h,-h)-f(-h,h)+f(-h,-h))/(4.0f*h*h);
+            float det = hxx*hyy-hxy*hxy,a = (hxy*gy-hyy*gx)/det,b = (hxy*gx-hxx*gy)/det;
+            auto u = d+e1*a+e2*b;
+            u.normalize();
+            if(hxx < 0.0f && det > 0.0f && a*a+b*b <= r*r && voxel.odf_at(data,u) >= f0)
+                fixel[index][data.voxel_index] = encode_fixel(u);
         }
 
-        iso[data.voxel_index] = data.min_odf;
+        iso[data.voxel_index] = min_odf;
 
         if(!gfa.empty())
             gfa[data.voxel_index] = GeneralizedFA()(data.odf);
@@ -544,9 +467,6 @@ public:
         if(!rdi.empty())
             for (unsigned int index = 0;index < data.rdi.size();++index)
                 rdi[index][data.voxel_index] = data.rdi[index];
-
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            findex[index][data.voxel_index] = short(data.dir_index[index]);
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
@@ -585,8 +505,8 @@ public:
                 }
             }
         }
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            mat_writer.write<tipl::io::masked>("index" + std::to_string(index),findex[index],voxel.dim.plane_size());
+        for (unsigned int index = 0;index < fixel.size();++index)
+            mat_writer.write<tipl::io::masked>("fixel" + std::to_string(index),fixel[index],voxel.dim.plane_size());
 
     }
 };
