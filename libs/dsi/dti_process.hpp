@@ -191,7 +191,9 @@ public:
         if(voxel.method_id == 1) // DTI
         {
             mat_writer.write<tipl::io::masked_sloped>("fa0",voxel.fib_fa,voxel.dim.plane_size());
-            mat_writer.write<tipl::io::masked_sloped>("dir0",voxel.fib_dir,voxel.dim.plane_size());
+            std::vector<unsigned short> fixel(voxel.fib_dir.size());
+            std::transform(voxel.fib_dir.begin(),voxel.fib_dir.end(),fixel.begin(),encode_fixel);
+            mat_writer.write<tipl::io::masked>("fixel0",fixel,voxel.dim.plane_size());
         }
         else
         if(voxel.needs("fa"))
