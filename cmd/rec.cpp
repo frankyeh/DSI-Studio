@@ -27,7 +27,6 @@ int rec(tipl::program_option<tipl::out>& po)
         {
             src.voxel.param[0] = po.get("param",src.voxel.param[0]);
             src.voxel.r2_weighted = po.get("r2_weighted",src.voxel.r2_weighted);
-            src.voxel.odf_resolving = po.get("odf_resolving",src.voxel.odf_resolving);
             if(src.voxel.method_id == 7)
             {
                 src.voxel.reg_param.resolution = po.get("reg_resolution",src.voxel.reg_param.resolution);
