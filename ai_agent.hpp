@@ -69,39 +69,27 @@ class AIAgent : public QMainWindow
 
     web_bridge web; // the Web channel: Google tokens and the connected chat's session Doc
     bool sign_in_google(); // system-browser sign-in (PKCE + loopback); true once a token is held
-    void create_web_session(); // signs in when needed, then creates the Doc and the chat
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc and copies the connection prompt
-    void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing
     send_action current_send_action() const; // single source of truth for what the Send button means right now, including whether it's clickable at all -- update_send_button() only turns this into a label/enabled state, on_ai_send_message_clicked() only executes it
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
-    void create_new_chat(const QString& provider);
-    bool run_new_chat_dialog(); // the agent/model picker for New Chat: sets current_agent/model on accept; Web starts its own session and returns false
 
     void add_ai_history(ai_info&,const QString&,const QString&);
-    void add_ai_reply(ai_info&,const QString&,const QString&);
     void add_ai_reply(QProcess*,const QString& chat,const QString& reasoning);
     bool run_agent_login(const QString& provider);
     void finish_agent_turn(QProcess* process,QString error = {},bool cancelled = false); // one turn-end rule: idle (WaitingUser) or Failed with an error entry
     ai_info* establish_agent_session(QProcess* process,QString new_session = {}); // the one session-identity rule for every local agent; nullptr when the launch must stop
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
-    void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself (show_ai_history()) only when this chat is the one currently selected
-    void show_ai_history(ai_info&,QJsonObject added_entry); // markdown->HTML transcript rendering: a full rebuild, or just appending added_entry when that alone is enough
+    void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself only when this chat is the one currently selected
     void update_agent_models(const QString&,const QStringList&,bool);
     void refresh_agent_executables(); // re-runs local-agent executable discovery into agent_entries[agent].executable
     void refresh_agent_status(const QString& provider = {});
     void refresh_agent_models(const QString& provider); // one model-list probe per local agent
     void refresh_ollama_models();
     void start_ai(ai_info&,const QString&);
-    QStringList configure_codex(const ai_info&,const QString&); // reads info.sessions/info.status/info.launch_* as of the call -- synchronous only, never captured into the process's own async handlers (Codex can still rename/rekey the session)
-    QStringList configure_claude(const ai_info&,const QString&);
-    QStringList configure_muse(const ai_info&,const QString&);
-    QStringList configure_antigravity(const ai_info&,const QString&);
-    QStringList configure_grok(const ai_info&,const QString&);
-    QString prepare_ai(ai_info&); // populates info.launch_* and, on success, info.processes; returns the resolved executable, empty on failure; the process callbacks advance info.status
 
 public:
     void web_step(const QString& step,const QString& approval = {},qint64 pid = 0){web.report_step(step,approval,pid);} // see web_bridge::report_step

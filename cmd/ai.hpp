@@ -45,9 +45,6 @@ struct ai_info{
     QString current_window = "main"; // persists across requests until changed by "set_window"
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
     QString status_message;
-    // the latest local launch attempt, set by prepare_ai() and read by configure_*()
-    QString launch_name,launch_model;
-    QUrl launch_model_url;
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString,QString = {}); // session, provider, optional display agent name
     static QString history_file(const QString&);
@@ -76,7 +73,7 @@ void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink 
 void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
 QString ai_dialog_style(); // shared stylesheet for the new-chat/settings dialogs
 QByteArray json_line(const QJsonObject&); // one compact JSON message per line, the framing every agent protocol and the history file use
-QPair<QUrl,bool> ai_ollama_url(const QSettings& settings); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
+QPair<QUrl,bool> ai_ollama_url(QString host = QSettings().value("ai/ollama_host","localhost").toString(),int port = QSettings().value("ai/ollama_port",11434).toInt()); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
 QString model_combo_key(const QComboBox& model); // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
 void set_model_selector(QComboBox& model,const QJsonObject& profiles,
                         QString selected = {},QString fallback = {},
@@ -113,15 +110,14 @@ public:
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     bool web_dispatching = false; // a Web request is running: report_step() may rewrite its "processing" message
     std::function<QJsonObject(const QJsonObject& request)> dispatch; // runs one agent request and returns its response
-    std::function<void(session_status,const QString&)> status;
+    std::function<void(session_status,const QString&)> status = [](session_status,const QString&){};
     std::function<void(const QString&)> warn;
     web_bridge(void);
-    void report(session_status s,const QString& message){if(status) status(s,message);}
     bool sign_in_device(void); // headless sign-in; true once a token is held
     void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
     void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
     void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
-    void write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done); // replaces the body with one JSON message; doc (from documents.get) guards the revision
+    void write_google_doc(const QJsonObject& doc,QJsonObject message,std::function<void(bool)> done = {}); // replaces the body with one JSON message; doc (from documents.get) guards the revision
     void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
     void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc after its last message
     QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <codename>", or "<title> <middle dot> DSI Studio <codename>" after set_title), modifiedTime, appProperties (dsi_session, dsi_code)
@@ -135,8 +131,6 @@ public:
     void report_step(const QString& step,const QString& approval = {},qint64 pid = 0); // the running Web request's "processing" message gains step (waiting_approval/running) and the shell PID; waits for the write
     QJsonObject google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body = {}); // google_api() that waits for its reply
     QJsonObject web_file(const std::vector<std::string>& cmd,const ai_approval& approve,QString& error); // web_upload, web_download_prepare, web_download: the attachment, or empty on error
-    QJsonObject upload_web_file(const QString& file_name,const ai_approval& approve,QString& error); // web_upload: a private Drive copy in the DSI Studio AI folder; waits for completion
-    QJsonObject download_web_file(const QString& drive_id,QString& error); // web_download: streams a prepared slot to <ai_project_dir>/web_files/<session>/
 };
 
 #endif

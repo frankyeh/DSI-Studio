@@ -162,14 +162,14 @@ QByteArray json_line(const QJsonObject& message)
     return QJsonDocument(message).toJson(QJsonDocument::Compact)+'\n';
 }
 
-QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
+QPair<QUrl,bool> ai_ollama_url(QString host,int port)
 {
-    auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
+    host = host.trimmed();
     bool configured = !host.isEmpty();
     if(!host.contains("://"))
         host.prepend("http://");
     QUrl url(host);
-    url.setPort(settings.value("ai/ollama_port",11434).toInt());
+    url.setPort(port);
     return {url,configured};
 }
 
@@ -190,7 +190,7 @@ void set_model_selector(QComboBox& model,const QJsonObject& profiles,
     native_names.sort(Qt::CaseInsensitive);
     ollama_names.sort(Qt::CaseInsensitive);
 
-    auto ollama_host = ai_ollama_url(QSettings()).first.host();
+    auto ollama_host = ai_ollama_url().first.host();
     auto display_text = [&](const QString& name,const QJsonObject& info)
     {
         return info.contains("provider") ?
@@ -345,19 +345,18 @@ bool ai_commands(const QJsonValue& command,std::vector<std::vector<std::string> 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool ai_run_cli(const std::vector<std::string>& cmd,std::string& error)
 {
-    auto fail = [&](const std::string& msg){error = msg;return false;};
     if(cmd.size() != 2 || cmd[1].empty())
-        return fail("usage: run_cli <command line>");
+        return error = "usage: run_cli <command line>",false;
     auto command_line = cmd[1];
     if(tipl::begins_with(command_line,"dsi_studio "))
         command_line.erase(0,11);
     tipl::program_option<tipl::out> po;
     if(!po.parse(command_line))
-        return fail(po.error_msg);
+        return error = po.error_msg,false;
     if(!po.has("action"))
         po.set("action","vis");
     if(run_action_with_wildcard(po))
-        return fail("command line failed");
+        return error = "command line failed",false;
     po.check_end_param<tipl::warning>();
     return true;
 }
@@ -382,32 +381,30 @@ static bool read_only_shell(const QString& text) // conservative: one simple com
 }
 bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error)
 {
-    auto fail = [&](const std::string& msg){error = msg;return false;};
     if(cmd.size() != 3 || cmd[1].empty())
-        return fail("usage: write_text_file <filename> <content>");
+        return error = "usage: write_text_file <filename> <content>",false;
     auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to the working directory (set_work_dir)
     if(!approve("AI File Write Request","The AI agent wants to write "+QString::number(cmd[2].size())+
                    " bytes to this file, replacing it if it exists:\n\n"+file_name,false))
-        return fail("user declined to write this file");
+        return error = "user declined to write this file",false;
     QFile file(file_name); // binary: the UTF-8 content and its newlines are written exactly, no BOM
     if(!file.open(QIODevice::WriteOnly) || file.write(cmd[2].data(),qint64(cmd[2].size())) != qint64(cmd[2].size()))
-        return fail("cannot write to "+file_name.toStdString());
+        return error = "cannot write to "+file_name.toStdString(),false;
     tipl::out() << "wrote " << cmd[2].size() << " bytes to " << file_name.toStdString();
     return true;
 }
 bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error,
                   const std::function<void(qint64)>& started)
 {
-    auto fail = [&](const std::string& msg){error = msg;return false;};
     if(cmd.size() != 2 || cmd[1].empty())
-        return fail("usage: run_shell <command>");
+        return error = "usage: run_shell <command>",false;
     QString text = QString::fromUtf8(cmd[1].c_str());
     QString program = text.section(' ',0,0);
     bool is_curl = !program.compare("curl",Qt::CaseInsensitive);
     if(is_curl)
         text.insert(program.length()," -s -S");
     if(!approve("AI Shell Command Request","The AI agent wants to run this shell command:\n\n"+text,read_only_shell(text)))
-        return fail("user declined to run this shell command");
+        return error = "user declined to run this shell command",false;
     auto configure_process = [](QProcess& process,const QString& shell_text)
     {
 #ifdef Q_OS_WIN
@@ -418,13 +415,19 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
         process.setArguments({"-c",shell_text});
 #endif
     };
+    auto log_output = [](QProcess& process)
+    {
+        tipl::out() << process.readAllStandardOutput().toStdString();
+        if(auto err = process.readAllStandardError().toStdString();!err.empty())
+            tipl::error() << err;
+    };
     if(!is_curl)
     {
         QProcess process;
         configure_process(process,text);
         process.start();
         if(!process.waitForStarted(3000))
-            return fail("cannot start command");
+            return error = "cannot start command",false;
         if(started)
             started(process.processId());
         constexpr int shell_timeout_ms = 600000;
@@ -432,14 +435,11 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
         {
             process.kill();
             process.waitForFinished(3000);
-            return fail("command timed out after 10 minutes");
+            return error = "command timed out after 10 minutes",false;
         }
-        tipl::out() << process.readAllStandardOutput().toStdString();
-        auto err = process.readAllStandardError().toStdString();
-        if(!err.empty())
-            tipl::error() << err;
+        log_output(process);
         if(process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
-            return fail("command exited with code "+std::to_string(process.exitCode()));
+            return error = "command exited with code "+std::to_string(process.exitCode()),false;
         return true;
     }
     static int next_curl_id = 0;
@@ -459,12 +459,9 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
         cleanup();
     });
     QObject::connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-        [process,id,text,cleanup](int exit_code,QProcess::ExitStatus exit_status)
+        [process,id,text,cleanup,log_output](int exit_code,QProcess::ExitStatus exit_status)
     {
-        tipl::out() << process->readAllStandardOutput().toStdString();
-        auto err = process->readAllStandardError().toStdString();
-        if(!err.empty())
-            tipl::error() << err;
+        log_output(*process);
         if(exit_status != QProcess::NormalExit || exit_code != 0)
             tipl::error() << (id+" exited with code "+QString::number(exit_code)+": "+text).toStdString();
         cleanup();
@@ -531,7 +528,7 @@ void web_bridge::google_api(const QByteArray& verb,const QString& url,const QJso
     auto failed = [this,done]
     {
         if(!google_file_id.isEmpty()) // a live Web chat shows it; polling retries until the idle limit stops it
-            report(session_status::Failed,"Web: "+google_error+"; retrying.");
+            status(session_status::Failed,"Web: "+google_error+"; retrying.");
         done({});
     };
     with_google_token([this,verb,url,body,done,failed](QString token)
@@ -553,8 +550,11 @@ void web_bridge::google_api(const QByteArray& verb,const QString& url,const QJso
         });
     });
 }
-void web_bridge::write_google_doc(const QJsonObject& doc,const QJsonObject& message,std::function<void(bool)> done)
+void web_bridge::write_google_doc(const QJsonObject& doc,QJsonObject message,std::function<void(bool)> done)
 {
+    message["dsi_bridge"] = true;
+    message["session"] = web_session_id;
+    message["from"] = "dsi";
     auto content = doc["body"].toObject()["content"].toArray();
     auto end = content.isEmpty() ? 0 : content.last().toObject()["endIndex"].toInt();
     QJsonArray requests;
@@ -565,8 +565,11 @@ void web_bridge::write_google_doc(const QJsonObject& doc,const QJsonObject& mess
     QJsonObject body{{"requests",requests}};
     if(doc.contains("revisionId")) // fails instead of overwriting a message written after our read
         body["writeControl"] = QJsonObject{{"requiredRevisionId",doc["revisionId"]}};
-    google_api("POST","https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate",body,
-               [done](QJsonObject reply){done(!reply.isEmpty());});
+    auto url = "https://docs.googleapis.com/v1/documents/"+google_file_id+":batchUpdate";
+    if(!done)
+        google_api_wait("POST",url,body);
+    else
+        google_api("POST",url,body,[done](QJsonObject reply){done(!reply.isEmpty());});
 }
 static const QString web_title_separator = QString(" ")+QChar(0x00B7)+" DSI Studio "; // a Doc named "<title> <middle dot> DSI Studio <codename>"
 static const QString web_folder_search = "https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
@@ -643,7 +646,18 @@ void web_bridge::create_web_session(std::function<void(QString file,QString sess
         done(file["id"].toString(),session);
     });
 }
-static QString web_text(const QJsonObject& doc);
+static QString web_text(const QJsonObject& doc) // the mailbox message: the Doc body as one trimmed string
+{
+    QString text;
+    for(const auto& block : doc["body"].toObject()["content"].toArray())
+        for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
+            text += element.toObject()["textRun"].toObject()["content"].toString();
+    return text.trimmed();
+}
+static QJsonObject web_json(const QJsonObject& doc,QJsonParseError* error = nullptr)
+{
+    return QJsonDocument::fromJson(web_text(doc).toUtf8(),error).object();
+}
 void web_bridge::start_web(const QString& file,const QString& session)
 {
     stop_web();
@@ -661,11 +675,11 @@ void web_bridge::start_web(const QString& file,const QString& session)
     // and a "processing" left by a stopped DSI Studio still gets "outcome unknown"
     if(auto doc = google_api_wait("GET",google_doc_url());!doc.isEmpty())
     {
-        auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
+        auto current = web_json(doc);
         web_last_id = current["id"].toInteger()-(current["from"].toString() == "dsi" && current["state"].toString() == "processing" ? 1 : 0);
     }
     google_error = "the session Doc was never read"; // the first good read clears it and shows the chat connected
-    report(session_status::WaitingUser,"Web: reading the session Doc.");
+    status(session_status::WaitingUser,"Web: reading the session Doc.");
     web_idle.start();
     web_timer.start(0);
 }
@@ -680,20 +694,12 @@ void web_bridge::stop_web(const QString& message)
         return;
     google_file_id.clear(); // callbacks still in flight see this and stop
     web_timer.stop();
-    report(session_status::Completed,message);
+    status(session_status::Completed,message);
 }
 QString web_bridge::google_doc_url() const // only what write_google_doc() and the mailbox need
 {
     return "https://docs.googleapis.com/v1/documents/"+google_file_id+
            "?fields=revisionId,body(content(endIndex,paragraph(elements(textRun(content)))))";
-}
-static QString web_text(const QJsonObject& doc) // the mailbox message: the Doc body as one trimmed string
-{
-    QString text;
-    for(const auto& block : doc["body"].toObject()["content"].toArray())
-        for(const auto& element : block.toObject()["paragraph"].toObject()["elements"].toArray())
-            text += element.toObject()["textRun"].toObject()["content"].toString();
-    return text.trimmed();
 }
 void web_bridge::poll_web(const QString& modified_time)
 {
@@ -730,14 +736,13 @@ void web_bridge::poll_web(const QString& modified_time)
         if(!google_error.isEmpty()) // the first good read after a start, Resume, or failure
         {
             google_error.clear();
-            report(session_status::WaitingUser,"Web connected; waiting for a request.");
+            status(session_status::WaitingUser,"Web connected; waiting for a request.");
         }
-        auto text = web_text(doc);
-        if(text.isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
-            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"code",web_code},{"from","dsi"},{"state","ready"}},
+        if(web_text(doc).isEmpty()) // a new Doc, or a "ready" write that failed: retried until it lands
+            return write_google_doc(doc,{{"code",web_code},{"state","ready"}},
                                     [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
         QJsonParseError parse_error;
-        auto request = QJsonDocument::fromJson(text.toUtf8(),&parse_error).object();
+        auto request = web_json(doc,&parse_error);
         auto id = request["id"].toInteger();
         if(request["session"].toString() == web_session_id && request["from"].toString() == "dsi" &&
            request["state"].toString() == "processing" && id > web_last_id)
@@ -747,7 +752,7 @@ void web_bridge::poll_web(const QString& modified_time)
             QString error("outcome unknown: DSI Studio stopped while running this request; check with list_window");
             if(auto pid = request["pid"].toInteger()) // DSI Studio cannot control it, but the agent can inspect it before repeating
                 error += "; its shell command may still be running as pid "+QString::number(pid);
-            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","error"},
+            web_pending_result = QJsonObject{{"id",id},{"state","error"},
                 {"response",QJsonObject{{"status","error"},{"error",error}}}};
             return publish_web_result();
         }
@@ -765,12 +770,12 @@ void web_bridge::poll_web(const QString& modified_time)
                         QString(R"(needs "from":"agent" and "state":"request")") :
                      id <= web_last_id ? "id must be greater than " + QString::number(web_last_id) : QString();
         if(!error.isEmpty()) // nothing ran, so written with this read's revision (never over a newer message) and re-checked if it fails
-            return write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id > web_last_id ? id : web_last_id+1},
-                {"from","dsi"},{"state","error"},{"response",QJsonObject{{"status","error"},
+            return write_google_doc(doc,{{"id",id > web_last_id ? id : web_last_id+1},
+                {"state","error"},{"response",QJsonObject{{"status","error"},
                 {"error",error + "; nothing was run. Resend the whole request as one line of compact JSON"}}}},
                 [this,file](bool written){if(file == google_file_id) web_timer.start(written ? 500 : 5000);});
         // claim with the revision we read: a crash after it never re-runs the command
-        write_google_doc(doc,{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},{"state","processing"}},
+        write_google_doc(doc,{{"id",id},{"state","processing"}},
                          [this,file,id,request](bool claimed)
         {
             if(file != google_file_id)
@@ -784,7 +789,7 @@ void web_bridge::poll_web(const QString& modified_time)
             web_dispatching = true;
             auto response = dispatch(forwarded);
             web_dispatching = false;
-            web_pending_result = QJsonObject{{"dsi_bridge",true},{"session",web_session_id},{"id",id},{"from","dsi"},
+            web_pending_result = QJsonObject{{"id",id},
                 {"state",response["status"].toString() == "error" ? "error" : "done"},{"response",response}};
             publish_web_result();
         });
@@ -795,19 +800,15 @@ void web_bridge::report_step(const QString& step,const QString& approval,qint64 
     if(!web_dispatching) // e.g. a local agent's request in the GUI
         return;
     auto doc = google_api_wait("GET",google_doc_url());
-    auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
+    auto current = web_json(doc);
     if(current["from"].toString() != "dsi" || current["state"].toString() != "processing" || current["id"].toInteger() != web_last_id)
         return; // only this request's own "processing" message is rewritten
-    QJsonObject message{{"dsi_bridge",true},{"session",web_session_id},{"id",web_last_id},{"from","dsi"},{"state","processing"},{"step",step}};
+    QJsonObject message{{"id",web_last_id},{"state","processing"},{"step",step}};
     if(!approval.isEmpty())
         message["approval"] = approval;
     if(pid)
         message["pid"] = pid;
-    bool done = false;
-    QEventLoop loop;
-    write_google_doc(doc,message,[&](bool){done = true;loop.quit();});
-    if(!done) // the write completes before a prompt can block the event loop
-        loop.exec();
+    write_google_doc(doc,message);
 }
 void web_bridge::publish_web_result()
 {
@@ -817,7 +818,7 @@ void web_bridge::publish_web_result()
             return;
         if(doc.isEmpty()) // without the current body the write would append instead of replace
             return web_timer.start(5000);
-        auto current = QJsonDocument::fromJson(web_text(doc).toUtf8()).object();
+        auto current = web_json(doc);
         if(current["from"].toString() != "dsi" || current["state"].toString() != "processing" ||
            current["id"].toInteger() != web_pending_result["id"].toInteger())
         {
@@ -858,87 +859,83 @@ QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,const ai_ap
     if(google_file_id.isEmpty() || google_folder_id.isEmpty())
         return error = name+" is available only in the active Web session",QJsonObject();
     auto param = QString::fromStdString(cmd[1]);
-    if(name == "web_upload")
-        return upload_web_file(param,approve,error);
-    if(name == "web_download")
-        return download_web_file(param,error);
-    // web_download_prepare: an empty Drive file created by DSI Studio, so drive.file can read it after the agent replaces its bytes
-    auto file_name = QFileInfo(param).fileName(); // no local or Drive path
-    if(file_name.isEmpty())
-        return error = "invalid file name: "+param,QJsonObject();
-    auto id = google_api_wait("POST","https://www.googleapis.com/drive/v3/files?fields=id",
-                              {{"name",web_session_id+"_in_"+file_name},{"mimeType","application/octet-stream"},{"parents",QJsonArray{google_folder_id}},
-                               {"appProperties",QJsonObject{{"dsi_session",web_session_id},{"dsi_transfer","inbound"},{"dsi_name",file_name}}}})["id"].toString();
-    if(id.isEmpty())
-        return error = "cannot create the Drive upload slot: "+google_error,QJsonObject();
-    return {{"name",file_name},{"drive_id",id},{"url","https://drive.google.com/file/d/"+id+"/view"}};
-}
-QJsonObject web_bridge::download_web_file(const QString& drive_id,QString& error)
-{
-    auto file_url = "https://www.googleapis.com/drive/v3/files/"+QString::fromLatin1(QUrl::toPercentEncoding(drive_id));
-    auto meta = google_api_wait("GET",file_url+"?fields=mimeType,parents,appProperties,size");
-    if(meta.isEmpty())
-        return error = "cannot read Drive file "+drive_id+": "+google_error,QJsonObject();
-    auto properties = meta["appProperties"].toObject();
-    auto file_name = QFileInfo(properties["dsi_name"].toString()).fileName();
-    // only a slot this Web session prepared, never an arbitrary file of the user
-    if(!meta["parents"].toArray().contains(google_folder_id) || properties["dsi_session"].toString() != web_session_id ||
-       properties["dsi_transfer"].toString() != "inbound" || file_name.isEmpty())
-        return error = "not an upload slot of this Web session; use web_download_prepare and replace the content of its drive_id",QJsonObject();
-    if(meta["mimeType"].toString().startsWith("application/vnd.google-apps."))
-        return error = "Google Docs, Sheets, and Slides files are not supported; upload raw file content",QJsonObject();
-    if(meta["size"].toString() == "0") // the untouched slot from web_download_prepare
-        return error = "the upload slot is still empty; replace the content of drive_id "+drive_id+" first",QJsonObject();
-    auto dir = ai_project_dir+"/web_files/"+web_session_id;
-    auto path = dir+"/"+file_name;
-    if(QFileInfo::exists(path))
-        return error = "local file already exists: "+path,QJsonObject();
-    QSaveFile file(path); // committed only after a complete download
-    if(!QDir().mkpath(dir) || !file.open(QIODevice::WriteOnly))
-        return error = "cannot write "+path,QJsonObject();
+    if(name == "web_download_prepare")
+    {
+        // an empty Drive file created by DSI Studio, so drive.file can read it after the agent replaces its bytes
+        auto file_name = QFileInfo(param).fileName(); // no local or Drive path
+        if(file_name.isEmpty())
+            return error = "invalid file name: "+param,QJsonObject();
+        auto id = google_api_wait("POST","https://www.googleapis.com/drive/v3/files?fields=id",
+                                  {{"name",web_session_id+"_in_"+file_name},{"mimeType","application/octet-stream"},{"parents",QJsonArray{google_folder_id}},
+                                   {"appProperties",QJsonObject{{"dsi_session",web_session_id},{"dsi_transfer","inbound"},{"dsi_name",file_name}}}})["id"].toString();
+        if(id.isEmpty())
+            return error = "cannot create the Drive upload slot: "+google_error,QJsonObject();
+        return {{"name",file_name},{"drive_id",id},{"url","https://drive.google.com/file/d/"+id+"/view"}};
+    }
     bool done = false;
     QEventLoop loop;
-    auto finish = [&](QString failure)
+    if(name == "web_download")
     {
-        error = failure;
-        done = true;
-        loop.quit();
-    };
-    with_google_token([&](QString token)
-    {
-        if(token.isEmpty())
-            return finish("Google Drive download failed: "+google_error);
-        QNetworkRequest request{QUrl(file_url+"?alt=media")};
-        request.setRawHeader("Authorization","Bearer "+token.toUtf8());
-        auto* reply = web_manager.get(request); // streamed to disk, never held in memory; the 30 s timeout counts idle time
-        connect(reply,&QNetworkReply::readyRead,this,[&,reply]{file.write(reply->readAll());});
-        connect(reply,&QNetworkReply::finished,this,[&,reply]
+        auto file_url = "https://www.googleapis.com/drive/v3/files/"+QString::fromLatin1(QUrl::toPercentEncoding(param));
+        auto meta = google_api_wait("GET",file_url+"?fields=mimeType,parents,appProperties,size");
+        if(meta.isEmpty())
+            return error = "cannot read Drive file "+param+": "+google_error,QJsonObject();
+        auto properties = meta["appProperties"].toObject();
+        auto file_name = QFileInfo(properties["dsi_name"].toString()).fileName();
+        // only a slot this Web session prepared, never an arbitrary file of the user
+        if(!meta["parents"].toArray().contains(google_folder_id) || properties["dsi_session"].toString() != web_session_id ||
+           properties["dsi_transfer"].toString() != "inbound" || file_name.isEmpty())
+            return error = "not an upload slot of this Web session; use web_download_prepare and replace the content of its drive_id",QJsonObject();
+        if(meta["mimeType"].toString().startsWith("application/vnd.google-apps."))
+            return error = "Google Docs, Sheets, and Slides files are not supported; upload raw file content",QJsonObject();
+        if(meta["size"].toString() == "0") // the untouched slot from web_download_prepare
+            return error = "the upload slot is still empty; replace the content of drive_id "+param+" first",QJsonObject();
+        auto dir = ai_project_dir+"/web_files/"+web_session_id;
+        auto path = dir+"/"+file_name;
+        if(QFileInfo::exists(path))
+            return error = "local file already exists: "+path,QJsonObject();
+        QSaveFile file(path); // committed only after a complete download
+        if(!QDir().mkpath(dir) || !file.open(QIODevice::WriteOnly))
+            return error = "cannot write "+path,QJsonObject();
+        auto finish = [&](QString failure)
         {
-            reply->deleteLater();
-            file.write(reply->readAll());
-            finish(reply->error() == QNetworkReply::NoError ? QString() : "Google Drive download failed: "+reply->errorString());
+            error = failure;
+            done = true;
+            loop.quit();
+        };
+        with_google_token([&](QString token)
+        {
+            if(token.isEmpty())
+                return finish("Google Drive download failed: "+google_error);
+            QNetworkRequest request{QUrl(file_url+"?alt=media")};
+            request.setRawHeader("Authorization","Bearer "+token.toUtf8());
+            auto* reply = web_manager.get(request); // streamed to disk, never held in memory; the 30 s timeout counts idle time
+            connect(reply,&QNetworkReply::readyRead,this,[&,reply]{file.write(reply->readAll());});
+            connect(reply,&QNetworkReply::finished,this,[&,reply]
+            {
+                reply->deleteLater();
+                file.write(reply->readAll());
+                finish(reply->error() == QNetworkReply::NoError ? QString() : "Google Drive download failed: "+reply->errorString());
+            });
         });
-    });
-    if(!done) // with_google_token() may already have finished
-        loop.exec();
-    if(error.isEmpty() && !file.commit())
-        error = "cannot write "+path;
-    if(!error.isEmpty())
-        return {};
-    google_api("PATCH",file_url,{{"trashed",true}},[](QJsonObject){}); // best effort: the local file is already complete
-    return {{"name",file_name},{"path",QFileInfo(path).absoluteFilePath()},{"mime_type",meta["mimeType"]},
-            {"size",QFileInfo(path).size()},{"drive_id",drive_id}};
-}
-QJsonObject web_bridge::upload_web_file(const QString& file_name,const ai_approval& approve,QString& error)
-{
-    QFileInfo file_info(file_name); // relative to the working directory (set_work_dir)
+        if(!done) // with_google_token() may already have finished
+            loop.exec();
+        if(error.isEmpty() && !file.commit())
+            error = "cannot write "+path;
+        if(!error.isEmpty())
+            return {};
+        google_api("PATCH",file_url,{{"trashed",true}},[](QJsonObject){}); // best effort: the local file is already complete
+        return {{"name",file_name},{"path",QFileInfo(path).absoluteFilePath()},{"mime_type",meta["mimeType"]},
+                {"size",QFileInfo(path).size()},{"drive_id",param}};
+    }
+    QFileInfo file_info(param); // relative to the working directory (set_work_dir)
     QFile file(file_info.absoluteFilePath());
     if(!file_info.exists())
-        error = "file does not exist: "+file_name;
+        error = "file does not exist: "+param;
     else if(!file_info.isFile())
-        error = "not a regular file: "+file_name;
+        error = "not a regular file: "+param;
     else if(!file.open(QIODevice::ReadOnly))
-        error = "cannot open file: "+file_name;
+        error = "cannot open file: "+param;
     // reading a local file, like a read-only shell command, so --approval=read_only allows it
     else if(!approve("AI File Upload Request","The AI agent wants to upload this file ("+QString::number(file.size())+
                      " bytes) to your Google Drive for the Web agent to read:\n\n"+file_info.absoluteFilePath(),true))
@@ -948,8 +945,6 @@ QJsonObject web_bridge::upload_web_file(const QString& file_name,const ai_approv
     auto mime = QMimeDatabase().mimeTypeForFile(file_info).name(); // application/octet-stream when unknown
     // one resumable upload for every size: the file is streamed from disk, never held in memory
     QJsonObject uploaded;
-    bool done = false;
-    QEventLoop loop;
     auto finish = [&](QNetworkReply* reply)
     {
         auto json = QJsonDocument::fromJson(reply ? reply->readAll() : QByteArray()).object();
