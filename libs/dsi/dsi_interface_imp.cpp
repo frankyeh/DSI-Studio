@@ -469,8 +469,10 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
         std::vector<float> bvalues(col);
         for(size_t i = 0;i < col;++i)
             bvalues[i] = table[i*4];
-        std::vector<unsigned int> this_shell;
+        std::vector<unsigned int> this_shell; // directions in each shell
         calculate_shell(bvalues,this_shell);
+        for(size_t i = 0;i < this_shell.size();++i)
+            this_shell[i] = (i+1 < this_shell.size() ? this_shell[i+1] : col)-this_shell[i];
         auto inconsistent = [&](const std::string& name,const auto& value,const auto& reference)
         {
             std::ostringstream out;
@@ -488,7 +490,7 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
             shell = this_shell;
             tipl::out() << "shell count: " << shell.size();
             for(size_t i = 0;i < shell.size();++i)
-                tipl::out() << "shell " << i+1 << ": " << (i+1 < shell.size() ? shell[i+1] : col)-shell[i] << " directions";
+                tipl::out() << "shell " << i+1 << ": " << shell[i] << " directions";
             vi2ai.resize(dim.size(),-1);
             sum.resize(col);
         }
@@ -505,12 +507,8 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
             if(this_shell.size() != shell.size())
                 return inconsistent("shell count",this_shell.size(),shell.size());
             for(size_t i = 0;i < shell.size();++i)
-            {
-                auto n = (i+1 < shell.size() ? this_shell[i+1] : col)-this_shell[i];
-                auto ref_n = (i+1 < shell.size() ? shell[i+1] : col)-shell[i];
-                if(n != ref_n)
-                    return inconsistent("direction count in shell " + std::to_string(i+1),n,ref_n);
-            }
+                if(this_shell[i] != shell[i])
+                    return inconsistent("direction count in shell " + std::to_string(i+1),this_shell[i],shell[i]);
         }
         auto this_si2vi = tipl::get_sparse_index(tipl::make_image(mask,dim));
         for(auto vi : this_si2vi)
