@@ -185,10 +185,8 @@ public:
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        {
-            b0[data.voxel_index] = data.space[0];
-            data.space[0] = 0;
-        }
+        b0[data.voxel_index] = data.space[0];
+        data.space[0] = 0;
         from.run(voxel,data);
         std::vector<float> hardi_data(dwi.size()),tmp(dwi.size());
         tipl::mat::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),tipl::shape<2>(dwi.size(),dwi.size()));
@@ -213,12 +211,8 @@ public:
             std::copy(bvectors[index].begin(),bvectors[index].end(),std::back_inserter(b_table));
         }
         mat_writer.write("b_table",b_table,4);
-        unsigned int image_num = 0;
-        if(!b0.empty())
-        {
-            mat_writer.write<tipl::io::masked_sloped>("image0",b0,voxel.dim.plane_size());
-            ++image_num;
-        }
+        unsigned int image_num = 1;
+        mat_writer.write<tipl::io::masked_sloped>("image0",b0,voxel.dim.plane_size());
         for (unsigned int index = 0;index < dwi.size();++index)
         {
             std::ostringstream out;
