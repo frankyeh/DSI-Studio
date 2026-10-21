@@ -510,8 +510,7 @@ bool load_4d_2dseq(const std::filesystem::path& file_name,std::vector<std::share
     tipl::shape<3> dim(bruker_header.get_image().shape().divide(tipl::shape<3>::z,bvalues.size()));
     if(dwi_files.size() && dwi_files.back()->image.shape() != dim)
         return error_msg = "inconsistent dimension found",false;
-    tipl::lower_threshold(bruker_header.get_image(),0.0);
-    tipl::normalize(bruker_header.get_image(),32767.0);
+    tipl::lower_threshold(bruker_header.get_image(),0.0f);
 
     for (unsigned int index = 0;index < bvalues.size();++index)
     {
@@ -685,17 +684,6 @@ bool load_multiple_slice_dicom(const std::vector<std::filesystem::path>& file_li
     }
     return !prog.aborted();
 }
-void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
-{
-    float max_value = 0.0f;
-    for(size_t i = 0;i < image_buf.size();++i)
-        max_value = std::max<float>(max_value,tipl::max_value(image_buf[i]));
-    tipl::par_for(image_buf.size(),[&](int i)
-    {
-        image_buf[i] *= float(std::numeric_limits<unsigned short>::max()-1)/max_value;
-        tipl::lower_threshold(image_buf[i],0);
-    });
-}
 bool load_nhdr(const std::vector<std::filesystem::path>& file_list,
                std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                std::string& error_msg)
@@ -788,21 +776,14 @@ bool load_nhdr(const std::vector<std::filesystem::path>& file_list,
     if(prog.aborted())
         return false;
 
-    scale_image_buf_to_uint16(image_buf);
-
+    for(size_t i = 0;i < image_buf.size();++i)
     {
-        tipl::progress prog2("Converting data");
-        for(size_t i = 0;prog2(i,image_buf.size());++i)
-        {
-            dwi_files.push_back(std::make_shared<DwiHeader>());
-            dwi_files.back()->voxel_size = vs;
-            dwi_files.back()->file_name = file_list[i];
-            dwi_files.back()->report = "The diffusion images were acquired on an Agilent scanner.";
-            dwi_files.back()->image = image_buf[i];
-            image_buf[i] = tipl::image<3>();
-        }
-        if(prog2.aborted())
-            return false;
+        tipl::lower_threshold(image_buf[i],0.0f);
+        dwi_files.push_back(std::make_shared<DwiHeader>());
+        dwi_files.back()->voxel_size = vs;
+        dwi_files.back()->file_name = file_list[i];
+        dwi_files.back()->report = "The diffusion images were acquired on an Agilent scanner.";
+        dwi_files.back()->image.swap(image_buf[i]);
     }
     return true;
 }
@@ -813,7 +794,6 @@ bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
     if(file_list.empty())
         return false;
     tipl::progress prog("open",file_list.front().u8string());
-    std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
     for (int index = 0;prog(index,file_list.size());++index)
     {
@@ -887,10 +867,8 @@ bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
                     fov[2] *= 10.0f;
             }
 
-            image_buf.resize(dwi_num);
             for(unsigned int i = 0;i < dwi_num;++i)
             {
-                image_buf[i].resize(shape);
                 dwi_files.push_back(std::make_shared<DwiHeader>());
                 dwi_files.back()->image.resize(shape);
                 dwi_files.back()->voxel_size = fov;
@@ -920,18 +898,19 @@ bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
         }
 
         std::ifstream in(file_list[index],std::ifstream::binary);
+        auto& I = dwi_files[dwi_id]->image;
         if(scan_2d)
         {
             // get DWI and slice location
             size_t slice_id;
-            if(!(std::istringstream(value_list["slice_no"]) >> slice_id) || (--slice_id >= size_t(dwi_files[dwi_id]->image.depth())))
+            if(!(std::istringstream(value_list["slice_no"]) >> slice_id) || (--slice_id >= size_t(I.depth())))
             {
                 error_msg = "invalid slice no";
                 return false;
             }
-            int64_t plane_size = int64_t(image_buf[dwi_id].plane_size());
+            int64_t plane_size = int64_t(I.plane_size());
             in.seekg(-plane_size*4,std::ios_base::end);
-            if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin() + plane_size*int64_t(slice_id))),plane_size*4))
+            if(!in.read(reinterpret_cast<char*>(&*(I.begin() + plane_size*int64_t(slice_id))),plane_size*4))
             {
                 error_msg = "read image failed";
                 return false;
@@ -939,8 +918,8 @@ bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
         }
         else
         {
-            in.seekg(-int64_t(image_buf[dwi_id].size()*4),std::ios_base::end);
-            if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin())),image_buf[dwi_id].size()*4))
+            in.seekg(-int64_t(I.size()*4),std::ios_base::end);
+            if(!in.read(reinterpret_cast<char*>(&*(I.begin())),I.size()*4))
             {
                 error_msg = "read image failed";
                 return false;
@@ -951,9 +930,8 @@ bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
     if(prog.aborted())
         return false;
 
-    scale_image_buf_to_uint16(image_buf);
-    for(size_t i = 0;i < image_buf.size();++i)
-        dwi_files[i]->image = image_buf[i];
+    for(auto& each : dwi_files)
+        tipl::lower_threshold(each->image,0.0f);
     return true;
 }
 
