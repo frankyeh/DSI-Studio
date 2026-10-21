@@ -721,10 +721,8 @@ bool load_nhdr(const std::vector<std::filesystem::path>& file_list,
             return false;
         return true;
     }
-    std::vector<tipl::image<3> > image_buf;
     tipl::shape<3> dim;
     tipl::vector<3> vs;
-    image_buf.resize(file_list.size());
     for (size_t i = 0;prog(i,file_list.size());++i)
     {
         std::unordered_map<std::string,std::string> value_list;
@@ -761,8 +759,10 @@ bool load_nhdr(const std::vector<std::filesystem::path>& file_list,
             }
         }
 
+        dwi_files.push_back(std::make_shared<DwiHeader>());
+        auto& I = dwi_files.back()->image;
         try{
-            image_buf[i].resize(dim);
+            I.resize(dim);
         }
         catch(...)
         {
@@ -770,22 +770,14 @@ bool load_nhdr(const std::vector<std::filesystem::path>& file_list,
             return false;
         }
         std::ifstream in(tipl::remove_all_suffix(file_list[i])+=".raw",std::ifstream::binary);
-        if(!in.read((char*)&image_buf[i][0],image_buf[i].size()*sizeof(float)))
+        if(!in.read((char*)&I[0],I.size()*sizeof(float)))
             return error_msg = "failed to read image file",false;
-    }
-    if(prog.aborted())
-        return false;
-
-    for(size_t i = 0;i < image_buf.size();++i)
-    {
-        tipl::lower_threshold(image_buf[i],0.0f);
-        dwi_files.push_back(std::make_shared<DwiHeader>());
+        tipl::lower_threshold(I,0.0f);
         dwi_files.back()->voxel_size = vs;
         dwi_files.back()->file_name = file_list[i];
         dwi_files.back()->report = "The diffusion images were acquired on an Agilent scanner.";
-        dwi_files.back()->image.swap(image_buf[i]);
     }
-    return true;
+    return !prog.aborted();
 }
 bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
                  std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
