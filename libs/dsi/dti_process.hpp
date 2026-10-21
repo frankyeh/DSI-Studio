@@ -119,16 +119,11 @@ public:
         if(voxel.fib_fa.empty() || data.space.front() <= 0.0f)
             return;
         std::vector<double> signal(b_count);
-        {
-            double s0 = double(data.space.front());
-            for(size_t i = 0;i < b_count;++i)
-                s0 = std::max<double>(s0,double(data.space[b_location[i]]));
-            if(s0 <= 0.0)
-                return;
-            double floor_val = std::max<double>(s0*1e-6,std::numeric_limits<double>::min());
-            for(size_t i = 0;i < b_count;++i)
-                signal[i] = std::log(s0/std::max<double>(floor_val,double(data.space[b_location[i]])));
-        }
+        double s0 = double(data.space.front());
+        for(size_t i = 0;i < b_count;++i)
+            s0 = std::max<double>(s0,double(data.space[b_location[i]]));
+        for(size_t i = 0;i < b_count;++i)
+            signal[i] = std::log(s0/std::max<double>(s0*1e-6,double(data.space[b_location[i]])));
         //  Kt S = Kt K D
         double KtS[6],tensor_param[6];
         double tensor[9];
