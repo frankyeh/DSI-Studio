@@ -156,7 +156,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 src.rotate(I.shape(),vs,
                            tipl::reg::linear<tipl::out>(tipl::reg::make_list(I),vs,tipl::reg::make_list(src.dwi),src.voxel.vs,
                                   {po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine}));
-                tipl::out() << "DWI rotated.";
+                src.voxel.report += " The diffusion images were rotated to the space of " + std::filesystem::path(file_name).filename().u8string() + ".";
             }
             else
             if(src.voxel.method_id != 7) // resample to isotropic is redundant for QSDR, which use qsdr_reso
