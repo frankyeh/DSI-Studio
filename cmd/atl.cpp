@@ -95,6 +95,7 @@ int db(tipl::program_option<tipl::out>& po)
     return 0;
 }
 bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg);
+bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg);
 int tmp(tipl::program_option<tipl::out>& po)
 {
     auto name_list = po.get_files("source","*.fz");
@@ -109,7 +110,9 @@ int tmp(tipl::program_option<tipl::out>& po)
         output = source+".avg.nii.gz";
     else
         return tipl::error() << "unsupported format",1;
-    return odf_average(po.get("output",output),name_list,error_msg) ?
+    output = po.get("output",output);
+    return (tipl::ends_with(source,".fz") && tipl::ends_with(output,".sz") ?
+                dwi_average(output,name_list,error_msg) : odf_average(output,name_list,error_msg)) ?
                0 : (tipl::error() << error_msg,1);
 }
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
