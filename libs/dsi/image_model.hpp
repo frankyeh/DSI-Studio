@@ -149,13 +149,11 @@ struct src_data
     src_data operator=(const src_data&) = delete;
 
 public:
-    std::vector<tipl::image<3> > new_dwi; //used in rotated volume
-    std::vector<tipl::image<3> > nifti_dwi; // if load directly from nifti
+    std::vector<tipl::image<3> > dwi_buf; // owns the dwi volumes pointed by src_dwi_data
 public:
     Voxel voxel;
     std::filesystem::path file_name,output_file_name;
     mutable std::string error_msg;
-    tipl::io::gz_mat_read mat_reader;
     std::string topup_eddy_report;
     bool apply_mask = false;
     bool is_human_data = true;
