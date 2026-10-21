@@ -372,11 +372,9 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
         });
         if(prog.aborted())
             return false;
-        new_dwi = std::move(this_new_dwi);
-        nifti_dwi.clear();
-        tipl::io::gz_mat_read().swap(mat_reader);
-        for(size_t v = 0;v < new_dwi.size();++v)
-            src_dwi_data[v] = new_dwi[v].data();
+        dwi_buf = std::move(this_new_dwi);
+        for(size_t v = 0;v < dwi_buf.size();++v)
+            src_dwi_data[v] = dwi_buf[v].data();
     }
     voxel.dim = reg.Its;
     voxel.vs = reg.Itvs;
@@ -428,7 +426,7 @@ void src_data::flip_b_table(const unsigned char* order)
 extern std::vector<std::filesystem::path> fib_template_list;
 bool src_data::check_b_table(bool use_template)
 {
-    if(!new_dwi.empty())
+    if(voxel.report.find("rotated") != std::string::npos)
     {
         error_msg = "cannot check b-table after aligning ac-pc or rotating image volume. Please make sure the b-table directions are correct before rotating image volume.";
         return false;
@@ -1095,6 +1093,7 @@ bool src_data::command(std::vector<std::string> cmds)
         for(size_t i = 0;i < n;++i)
             if(!removed[i])
             {
+                dwi_buf[out].swap(dwi_buf[i]);
                 src_dwi_data[out] = src_dwi_data[i];
                 src_bvalues[out] = src_bvalues[i];
                 src_bvectors[out++] = src_bvectors[i];
@@ -1103,6 +1102,7 @@ bool src_data::command(std::vector<std::string> cmds)
             return error_msg = "no DWI matched remove",false;
         if(!out)
             return error_msg = "remove cannot remove all DWI",false;
+        dwi_buf.resize(out);
         src_dwi_data.resize(out);
         src_bvalues.resize(out);
         src_bvectors.resize(out);
@@ -1507,25 +1507,17 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
                       const tipl::vector<3>& new_vs,
                       const tipl::transformation_matrix<double>& T)
 {
-    std::vector<tipl::image<3> > rotated_dwi(src_dwi_data.size());
     tipl::progress prog("rotating");
     std::atomic<size_t> p = 0;
-    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index) // not abortable: each old volume is freed once rotated
     {
-        if(prog.aborted())
-            return;
         prog(p++,src_dwi_data.size());
-        rotated_dwi[index].resize(new_geo);
-        tipl::resample<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T);
-        tipl::lower_threshold(rotated_dwi[index],0.0f);
+        tipl::image<3> I(new_geo);
+        tipl::resample<tipl::interpolation::cubic>(dwi_at(index),I,T);
+        tipl::lower_threshold(I,0.0f);
+        dwi_buf[index].swap(I);
+        src_dwi_data[index] = dwi_buf[index].data();
     });
-    if(prog.aborted())
-        return;
-    new_dwi = std::move(rotated_dwi);
-    nifti_dwi.clear();
-    tipl::io::gz_mat_read().swap(mat_reader);
-    for(size_t index = 0;index < new_dwi.size();++index)
-        src_dwi_data[index] = new_dwi[index].data();
 
     tipl::matrix<3,3,float> r = get_inv_rotation(voxel,T);
     for (auto& vec : src_bvectors)
@@ -1615,12 +1607,10 @@ bool src_data::scheme_balance(void)
     });
     if(prog.aborted())
         return error_msg = "scheme balance canceled",false;
-    new_dwi = std::move(balanced_dwi);
-    nifti_dwi.clear();
-    tipl::io::gz_mat_read().swap(mat_reader);
+    dwi_buf = std::move(balanced_dwi);
     src_dwi_data.resize(new_count);
     for(size_t j = 0;j < new_count;++j)
-        src_dwi_data[j] = new_dwi[j].data();
+        src_dwi_data[j] = dwi_buf[j].data();
     v.bvalues.swap(src_bvalues);
     v.bvectors.swap(src_bvectors);
     update_dwi_sum();
@@ -2504,16 +2494,15 @@ bool src_data::load_topup_eddy_result(void)
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!load_4d_nii(corrected_file(),dwi_files,false,false,error_msg))
         return false;
-    tipl::io::gz_mat_read().swap(mat_reader);
-    nifti_dwi.resize(dwi_files.size());
+    dwi_buf.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
     src_bvectors.resize(dwi_files.size());
     for(size_t index = 0;index < dwi_files.size();++index)
     {
         tipl::reshape(dwi_files[index]->image,voxel.dim);
-        nifti_dwi[index].swap(dwi_files[index]->image);
-        src_dwi_data[index] = nifti_dwi[index].data();
+        dwi_buf[index].swap(dwi_files[index]->image);
+        src_dwi_data[index] = dwi_buf[index].data();
     }
 
     if(topup_eddy_report.empty())
@@ -3238,7 +3227,7 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     voxel.trans_to_mni = dwi_files.front()->trans_to_mni;
     if(voxel.trans_to_mni == tipl::identity_matrix())
         tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
-    nifti_dwi.resize(dwi_files.size());
+    dwi_buf.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
     src_bvectors.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
@@ -3246,8 +3235,8 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     {
         src_bvalues[i] = dwi_files[i]->bvalue;
         src_bvectors[i] = dwi_files[i]->bvec;
-        nifti_dwi[i].swap(dwi_files[i]->image);
-        src_dwi_data[i] = nifti_dwi[i].data();
+        dwi_buf[i].swap(dwi_files[i]->image);
+        src_dwi_data[i] = dwi_buf[i].data();
     }
 
     voxel.report = dwi_files.front()->report + get_report(!dwi_files.front()->report.empty());
@@ -3356,6 +3345,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
     }
     else
     {
+        tipl::io::gz_mat_read mat_reader;
         prepare_idx(dwi_file_name,mat_reader.in);
         if(!mat_reader.load_from_file(dwi_file_name,prog))
             return error_msg = "cannot open file: " + mat_reader.error_msg,false;
@@ -3410,13 +3400,16 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
 
         tipl::progress p2("reading data");
         src_dwi_data.resize(src_bvalues.size());
+        dwi_buf.resize(src_bvalues.size());
         for(size_t index = 0;p2(index,src_dwi_data.size());++index)
         {
             std::string image_name = "image"+std::to_string(index);
-            if(!mat_reader.read(image_name,src_dwi_data[index]))
+            dwi_buf[index].resize(voxel.dim);
+            if(!mat_reader.read(image_name,dwi_buf[index].begin(),dwi_buf[index].end()))
                 return error_msg = "cannot read image matrix: " + std::to_string(index),false;
-            if(!mat_reader[image_name].converted_data_buf.empty())
-                mat_reader[image_name].data_buf = std::vector<unsigned char>();
+            src_dwi_data[index] = dwi_buf[index].data();
+            mat_reader[image_name].data_buf = std::vector<unsigned char>();
+            mat_reader[image_name].converted_data_buf = std::vector<unsigned char>();
         }
     }
 
