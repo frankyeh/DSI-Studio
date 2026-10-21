@@ -8,7 +8,6 @@
 
 class DwiHeader
 {
-	typedef std::vector<short>::iterator image_iterator;
 public:
     std::string report,error_msg;
     std::filesystem::path file_name;
