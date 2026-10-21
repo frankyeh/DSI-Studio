@@ -19,7 +19,7 @@ protected:
 protected:
     std::vector<float> jdet;
 protected:
-    typedef tipl::const_pointer_image<3,unsigned short> point_image_type;
+    typedef tipl::const_pointer_image<3,float> point_image_type;
     std::vector<point_image_type> ptr_images;
 
 public:
