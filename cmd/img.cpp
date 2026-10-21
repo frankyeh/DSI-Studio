@@ -503,7 +503,7 @@ int img(tipl::program_option<tipl::out>& po)
             return tipl::error() << mat_reader.error_msg,1;
 
         show_slice<float>(mat_reader,"fa0");
-        show_slice<unsigned short>(mat_reader,"image0");
+        show_slice<float>(mat_reader,"image0");
 
         for(unsigned int index = 0;index < mat_reader.size();++index)
             tipl::out() << mat_reader[index].get_info();
