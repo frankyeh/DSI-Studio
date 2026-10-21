@@ -429,7 +429,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl
 void calculate_shell(std::vector<float> sorted_bvalues,std::vector<unsigned int>& shell);
 extern int src_ver;
 // average the balanced dwi exported by qsdr (--other_output=dwi) into a template-space sz
-bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg,int thread_count)
+bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg)
 {
     if(std::filesystem::exists(out_name))
         return error_msg = out_name.u8string() + " already exists",false;
@@ -443,25 +443,10 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
     std::vector<int64_t> vi2ai;     // accumulator entry of each template voxel, -1 if not in any mask yet
     std::vector<std::vector<float> > sum;
     std::vector<uint32_t> count;
-    std::mutex mutex;
     tipl::progress p0("averaging dwi",true);
-    std::atomic<size_t> p = 0;
-    // loads and checks a file in parallel, then accumulates it under the lock; the first file is the reference
-    auto add = [&](size_t s)->bool
+    for(size_t s = 0;p0(s,file_names.size());++s)
     {
         auto at = " at " + file_names[s].u8string();
-        auto fail = [&](const std::string& msg)
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            if(error_msg.empty())
-                error_msg = msg + at;
-            return false;
-        };
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            if(p0.aborted() || !error_msg.empty()) // skip the remaining files after an error
-                return false;
-        }
         tipl::io::gz_mat_read in;
         in.delay_read = true;
         tipl::shape<3> d;
@@ -473,24 +458,19 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
         const float* table = nullptr;
         const unsigned char* mask = nullptr;
         if(!in.load_from_file(file_names[s]) || !check_fib_dim_vs(in,d,v,t,is_mni))
-            return fail(in.error_msg);
+            return error_msg = in.error_msg + at,false;
         if(!is_mni)
-            return fail("not a QSDR fz");
+            return error_msg = "not a QSDR fz" + at,false;
         if(!in.read("steps",this_steps) || !tipl::contains(this_steps,"scheme_balance") ||
            !in.read("b_table",row,col,table) || row != 4 || table[0] != 0.0f)
-            return fail("no balanced dwi: run qsdr with --other_output=dwi");
+            return error_msg = "no balanced dwi: run qsdr with --other_output=dwi" + at,false;
         if(!in.read("mask",r,c,mask) || size_t(r)*size_t(c) != d.size())
-            return fail("invalid mask");
+            return error_msg = "invalid mask" + at,false;
         std::vector<float> bvalues(col);
         for(size_t i = 0;i < col;++i)
             bvalues[i] = table[i*4];
         std::vector<unsigned int> this_shell;
         calculate_shell(bvalues,this_shell);
-        auto this_si2vi = tipl::get_sparse_index(tipl::make_image(mask,d));
-
-        std::lock_guard<std::mutex> lock(mutex);
-        if(!error_msg.empty())
-            return false;
         auto inconsistent = [&](const std::string& name,const auto& value,const auto& reference)
         {
             std::ostringstream out;
@@ -532,7 +512,7 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
                     return inconsistent("direction count in shell " + std::to_string(i+1),n,ref_n);
             }
         }
-        p0(p++,file_names.size());
+        auto this_si2vi = tipl::get_sparse_index(tipl::make_image(mask,dim));
         for(auto vi : this_si2vi)
             if(vi2ai[vi] < 0)
             {
@@ -562,11 +542,8 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
             in[name].data_buf = std::vector<unsigned char>();
             in[name].converted_data_buf = std::vector<unsigned char>();
         }
-        return true;
-    };
-    if(add(0))
-        tipl::par_for(file_names.size()-1,[&](size_t s){add(s+1);},thread_count);
-    if(!error_msg.empty() || p0.aborted())
+    }
+    if(p0.aborted())
         return false;
 
     tipl::image<3,unsigned char> mask(dim);
