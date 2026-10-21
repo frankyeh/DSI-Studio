@@ -439,8 +439,7 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
     std::vector<float> b_table;
     std::vector<unsigned int> shell;
     std::string report,steps;
-    std::vector<size_t> si2vi;      // template voxel of each accumulator entry, from the first file's mask
-    std::vector<int64_t> vi2ai;     // accumulator entry of each template voxel, -1 if outside
+    std::vector<size_t> si2vi;      // template voxel of each stored value, identical in all files
     std::vector<std::vector<float> > sum;
     std::vector<uint32_t> count;
     std::filesystem::path file_name;
@@ -467,8 +466,11 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
             if(!is_mni)
                 throw std::runtime_error("not a QSDR fz");
             if(!in.read("steps",this_steps) || !tipl::contains(this_steps,"scheme_balance") ||
-               !in.read("b_table",row,col,table) || row != 4 || table[0] != 0.0f || !in.read("mask",mask))
+               !in.read("b_table",row,col,table) || row != 4 || table[0] != 0.0f)
                 throw std::runtime_error("no balanced dwi: run qsdr with --other_output=dwi");
+            unsigned int r,c;
+            if(!in.read("mask",r,c,mask) || size_t(r)*size_t(c) != d.size())
+                throw std::runtime_error("invalid mask");
             std::vector<float> bvalues(col);
             for(size_t i = 0;i < col;++i)
                 bvalues[i] = table[i*4];
@@ -487,41 +489,34 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
                 for(size_t i = 0;i < shell.size();++i)
                     tipl::out() << "shell " << i+1 << ": " << (i+1 < shell.size() ? shell[i+1] : col)-shell[i] << " directions";
                 si2vi = tipl::get_sparse_index(tipl::make_image(mask,dim));
-                vi2ai.resize(dim.size(),-1);
-                for(size_t ai = 0;ai < si2vi.size();++ai)
-                    vi2ai[si2vi[ai]] = int64_t(ai);
                 sum.resize(col,std::vector<float>(si2vi.size()));
                 count.resize(si2vi.size());
             }
             else
-            if(d != dim || v != vs || t != trans || 4*col != b_table.size() || this_shell != shell)
-                throw std::runtime_error("inconsistent image dimension, voxel size, transformation, shell count, or direction count");
-            auto this_si2vi = tipl::get_sparse_index(tipl::make_image(mask,dim));
-            std::vector<int64_t> ai;    // accumulator entry of each stored value, -1 if outside the template mask or the native fov
+            {
+                if(d != dim || v != vs || t != trans || tipl::get_sparse_index(tipl::make_image(mask,dim)) != si2vi)
+                    throw std::runtime_error("inconsistent image dimension, voxel size, transformation, or mask");
+                if(4*col != b_table.size() || this_shell != shell)
+                    throw std::runtime_error("inconsistent dwi count or shell structure");
+            }
+            std::vector<unsigned char> covered(si2vi.size()); // native fov coverage: b0 > 0
             for(size_t k = 0;k < col;++k)
             {
                 std::string name = "image"+std::to_string(k);
-                unsigned int r,c;
                 const float* I = nullptr;
-                if(!in.read(name,r,c,I))
-                    throw std::runtime_error("cannot read " + name);
-                size_t n = size_t(r)*size_t(c);
-                if(n != this_si2vi.size() && n != dim.size())
-                    throw std::runtime_error("invalid size of " + name);
-                if(!k) // native fov coverage: b0 > 0
+                if(!in.read(name,r,c,I) || size_t(r)*size_t(c) != si2vi.size())
+                    throw std::runtime_error("invalid " + name);
+                if(!k)
+                    for(size_t j = 0;j < si2vi.size();++j)
+                        if(I[j] > 0.0f)
+                        {
+                            covered[j] = 1;
+                            ++count[j];
+                        }
+                tipl::par_for(si2vi.size(),[&](size_t j)
                 {
-                    ai.resize(n);
-                    for(size_t j = 0;j < n;++j)
-                    {
-                        ai[j] = I[j] > 0.0f ? vi2ai[n == dim.size() ? j : this_si2vi[j]] : -1;
-                        if(ai[j] >= 0)
-                            ++count[ai[j]];
-                    }
-                }
-                tipl::par_for(n,[&](size_t j)
-                {
-                    if(ai[j] >= 0)
-                        sum[k][ai[j]] += I[j];
+                    if(covered[j])
+                        sum[k][j] += I[j];
                 });
                 in[name].data_buf = std::vector<unsigned char>();
                 in[name].converted_data_buf = std::vector<unsigned char>();
@@ -539,9 +534,9 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
     }
 
     tipl::image<3,unsigned char> mask(dim);
-    for(size_t ai = 0;ai < count.size();++ai)
-        if(count[ai])
-            mask[si2vi[ai]] = 1;
+    for(size_t j = 0;j < count.size();++j)
+        if(count[j])
+            mask[si2vi[j]] = 1;
     auto temp_file = std::filesystem::path(out_name)+=".tmp";
     tipl::progress prog("saving ",out_name.u8string());
     {
@@ -562,9 +557,9 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
         for(size_t k = 0;prog(k,sum.size());++k)
         {
             tipl::image<3> I(dim);
-            for(size_t ai = 0;ai < count.size();++ai)
-                if(count[ai])
-                    I[si2vi[ai]] = sum[k][ai]/float(count[ai]);
+            for(size_t j = 0;j < count.size();++j)
+                if(count[j])
+                    I[si2vi[j]] = sum[k][j]/float(count[j]);
             sum[k] = std::vector<float>();
             out.write<tipl::io::masked_sloped>("image"+std::to_string(k),I.data(),dim.plane_size(),dim.depth());
         }
