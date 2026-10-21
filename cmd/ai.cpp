@@ -624,14 +624,17 @@ void web_bridge::create_web_session(std::function<void(QString file,QString sess
                              word2{"bison","comet","eagle","falcon","finch","fox","hawk","heron","koala","lion","moose","meteor","otter","owl","panda","raven",
                                    "rocket","seal","shark","star","swan","tiger","orca","wolf","zebra","cloud","flame","leaf","moon","stone","pike","spark"};
     auto random_code = []{return word1[QRandomGenerator::global()->bounded(int(word1.size()))]+"-"+word2[QRandomGenerator::global()->bounded(int(word2.size()))];};
-    auto taken = [this](const QString& code) // exact match through appProperties; a failed search counts as free
-    {
-        return !google_api_wait("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
-                "'"+google_folder_id+"' in parents and appProperties has {key='dsi_code' and value='"+code+"'} and trashed=false")))["files"].toArray().isEmpty();
-    };
     auto code = random_code();
-    for(int tries = 1;taken(code);++tries) // a fresh pair is easier to remember than a number, until pairs keep colliding
+    for(int tries = 1;;++tries) // a fresh pair is easier to remember than a number, until pairs keep colliding
+    {
+        auto found = google_api_wait("GET","https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
+                "'"+google_folder_id+"' in parents and appProperties has {key='dsi_code' and value='"+code+"'} and trashed=false")));
+        if(!found.contains("files")) // a failed search is not "free": never publish an unverified codename
+            return warn("Cannot reach Google Drive.");
+        if(found["files"].toArray().isEmpty())
+            break;
         code = random_code()+(tries < 5 ? QString() : "-"+QString::number(tries));
+    }
     auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
     google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
                {{"name","DSI Studio "+code},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}},
@@ -1128,14 +1131,14 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         if(!po.has("debug")) // from now on only the chat history
             std::cout.rdbuf(&quiet),std::cerr.rdbuf(&quiet);
     };
-    // --session=N resumes the N-th chat listed below (default 0, the most recent), --session=<codename> that chat;
-    // -1 or no chat starts a new one; --remove_session=N or <codename> removes that chat instead
+    // --session=-1 (default) starts a new chat; --session=N resumes the N-th chat listed below (0 = most recent),
+    // --session=<codename> or <uuid> that chat; --remove_session=N, <codename>, or <uuid> removes that chat instead
     QList<QJsonObject> sessions;
     QStringList items;
-    auto session_arg = QString::fromStdString(po.has("remove_session") ? po.get("remove_session") : po.get("session","0"));
+    auto session_arg = QString::fromStdString(po.has("remove_session") ? po.get("remove_session") : po.get("session","-1"));
     bool by_number = false;
-    int choice = session_arg.toInt(&by_number);
-    if(!by_number) // a codename not listed is reported below
+    int choice = session_arg.toInt(&by_number),matches = 0;
+    if(!by_number) // a codename or UUID not listed is reported below
         choice = INT_MAX;
     for(const auto& each : web.list_web_sessions())
     {
@@ -1144,8 +1147,11 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         auto props = file["appProperties"].toObject();
         if(!is_valid_session_id(props["dsi_session"].toString()))
             continue;
-        if(!by_number && props["dsi_code"].toString() == session_arg)
+        if(!by_number && (props["dsi_code"].toString() == session_arg || props["dsi_session"].toString() == session_arg))
+        {
             choice = int(sessions.size());
+            ++matches;
+        }
         sessions << file;
         auto title = name.section(web_title_separator,0,0);
         if(title == name) // never titled through set_title on any machine: the local title, if any
@@ -1156,11 +1162,16 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     chat << "\nDSI Studio AI chats (--session)\n\n";
     for(int i = 0;i < items.size();++i)
         chat << i << ". " << items[i].toStdString() << "\n";
-    if(!sessions.isEmpty() && choice >= int(sessions.size()))
-        return tipl::error() << "--session=" << session_arg.toStdString() << " is not listed; use 0 to " << int(sessions.size())-1 << ", a listed codename, or -1 for a new chat",1;
+    auto option_name = po.has("remove_session") ? "--remove_session=" : "--session=";
+    if(matches > 1)
+        return tipl::error() << option_name << session_arg.toStdString() << " matches multiple chats; use 0 to " << int(sessions.size())-1 << " or the session UUID",1;
+    if(sessions.isEmpty() && choice >= 0)
+        return tipl::error() << option_name << session_arg.toStdString() << ": no chats are listed; use -1 for a new chat",1;
+    if(choice >= int(sessions.size()))
+        return tipl::error() << option_name << session_arg.toStdString() << " is not listed; use 0 to " << int(sessions.size())-1 << ", a listed codename/UUID, or -1 for a new chat",1;
     if(po.has("remove_session"))
     {
-        if(choice < 0 || sessions.isEmpty())
+        if(choice < 0)
             return tipl::error() << "no listed chat to remove",1;
         auto props = sessions[choice]["appProperties"].toObject();
         if(!web.remove_web_session(sessions[choice]["id"].toString(),props["dsi_session"].toString()))
@@ -1168,7 +1179,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         chat << "removed " << props["dsi_code"].toString().toStdString() << std::endl;
         return 0;
     }
-    if(choice < 0 || sessions.isEmpty())
+    if(choice < 0)
         web.create_web_session(start);
     else
     {
