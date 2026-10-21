@@ -374,7 +374,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
             return false;
         new_dwi = std::move(this_new_dwi);
         nifti_dwi.clear();
-        mat_reader = tipl::io::gz_mat_read();
+        tipl::io::gz_mat_read().swap(mat_reader);
         for(size_t v = 0;v < new_dwi.size();++v)
             src_dwi_data[v] = new_dwi[v].data();
     }
@@ -1523,7 +1523,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
         return;
     new_dwi = std::move(rotated_dwi);
     nifti_dwi.clear();
-    mat_reader = tipl::io::gz_mat_read();
+    tipl::io::gz_mat_read().swap(mat_reader);
     for(size_t index = 0;index < new_dwi.size();++index)
         src_dwi_data[index] = new_dwi[index].data();
 
@@ -1617,7 +1617,7 @@ bool src_data::scheme_balance(void)
         return error_msg = "scheme balance canceled",false;
     new_dwi = std::move(balanced_dwi);
     nifti_dwi.clear();
-    mat_reader = tipl::io::gz_mat_read();
+    tipl::io::gz_mat_read().swap(mat_reader);
     src_dwi_data.resize(new_count);
     for(size_t j = 0;j < new_count;++j)
         src_dwi_data[j] = new_dwi[j].data();
@@ -2504,7 +2504,7 @@ bool src_data::load_topup_eddy_result(void)
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!load_4d_nii(corrected_file(),dwi_files,false,false,error_msg))
         return false;
-    mat_reader = tipl::io::gz_mat_read();
+    tipl::io::gz_mat_read().swap(mat_reader);
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
