@@ -149,7 +149,6 @@ struct src_data
     src_data operator=(const src_data&) = delete;
 
 public:
-    std::vector<tipl::image<3> > dwi_buf; // owns the dwi volumes pointed by src_dwi_data
 public:
     Voxel voxel;
     std::filesystem::path file_name,output_file_name;
@@ -173,10 +172,8 @@ public:
     std::vector<tipl::vector<3,float> > src_bvectors;
 public:
     std::vector<float> src_bvalues;
-    std::vector<const float*> src_dwi_data;
+    std::vector<tipl::image<3> > src_dwi_data;
     tipl::image<3,unsigned char>dwi;
-    auto dwi_at(size_t index) {return tipl::make_image(const_cast<float*>(src_dwi_data[index]),voxel.dim);}
-    auto dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
     // max b=4000 -> param=1.25,  optimal param = 1.25*sqrt(4000)/sqrt(max_b)
     float get_optimal_L(void) const {return 80.0f/std::sqrt(tipl::max_value(src_bvalues));}
 public:

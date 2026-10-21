@@ -31,7 +31,7 @@ bool reconstruction_window::load_src(int index)
     if(handle->voxel.is_histology)
         return true;
     update_dimension();
-    double m = double(tipl::max_value(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
+    double m = double(tipl::max_value(handle->src_dwi_data[0]));
     ui->max_value->setMaximum(m*1.5);
     ui->max_value->setMinimum(0.0);
     ui->max_value->setSingleStep(m*0.05);
@@ -193,7 +193,7 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     QImage source_image;
     source_image << v2c[
                     tipl::volume2slice_scaled(
-                       tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),
+                       handle->src_dwi_data[ui->b_table->currentRow()],
                        view_orientation,ui->z_pos->value(),
                        source_ratio)];
 
@@ -806,10 +806,7 @@ void reconstruction_window::on_show_bad_slice_clicked()
 
 void reconstruction_window::on_align_slices_clicked()
 {
-    tipl::image<3> from(handle->voxel.dim);
-    tipl::image<3> to(handle->voxel.dim);
-    std::copy_n(handle->src_dwi_data[0],to.size(),to.begin());
-    std::copy_n(handle->src_dwi_data[ui->b_table->currentRow()],from.size(),from.begin());
+    tipl::image<3> from(handle->src_dwi_data[ui->b_table->currentRow()]),to(handle->src_dwi_data[0]);
     tipl::normalize(from);
     tipl::normalize(to);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
