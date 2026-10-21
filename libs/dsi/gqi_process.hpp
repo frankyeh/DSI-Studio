@@ -83,7 +83,7 @@ public:
     {
         if(!hgqi)
             return;
-        if(int(data.space[0]) == 0)
+        if(data.space[0] <= 0.0f)
         {
             hraw[data.voxel_index] = 0;
             std::fill(data.odf.begin(),data.odf.end(),0.0f);
@@ -119,8 +119,8 @@ class SchemeConverter : public BaseProcess
     std::vector<int> piv;
     std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
-    std::vector<std::vector<unsigned short> > dwi;
-    std::vector<unsigned short> b0;
+    std::vector<std::vector<float> > dwi;
+    std::vector<float> b0;
     std::vector<float> A,Rt;
     unsigned int total_value;
     unsigned int total_negative_value;
@@ -186,7 +186,7 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         {
-            b0[data.voxel_index] = uint16_t(data.space[0]);
+            b0[data.voxel_index] = data.space[0];
             data.space[0] = 0;
         }
         from.run(voxel,data);
@@ -198,7 +198,7 @@ public:
             if(hardi_data[index] < 0.0f)
                 ++total_negative_value;
             else
-                dwi[index][data.voxel_index] = uint16_t(hardi_data[index]);
+                dwi[index][data.voxel_index] = hardi_data[index];
             ++total_value;
         }
     }
