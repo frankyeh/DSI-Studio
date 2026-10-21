@@ -75,7 +75,7 @@ public:
 public:
     tipl::image<3,unsigned char> mask;
 public:
-    std::vector<const unsigned short*> dwi_data;
+    std::vector<const float*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
 
