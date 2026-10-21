@@ -429,7 +429,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl
 void calculate_shell(std::vector<float> sorted_bvalues,std::vector<unsigned int>& shell);
 extern int src_ver;
 // average the balanced dwi exported by qsdr (--other_output=dwi) into a template-space sz
-bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg)
+bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg,int thread_count)
 {
     if(std::filesystem::exists(out_name))
         return error_msg = out_name.u8string() + " already exists",false;
@@ -565,7 +565,7 @@ bool dwi_average(const std::filesystem::path& out_name,std::vector<std::filesyst
         return true;
     };
     if(add(0))
-        tipl::par_for(file_names.size()-1,[&](size_t s){add(s+1);},std::min<int>(4,tipl::max_thread_count));
+        tipl::par_for(file_names.size()-1,[&](size_t s){add(s+1);},thread_count);
     if(!error_msg.empty() || p0.aborted())
         return false;
 
