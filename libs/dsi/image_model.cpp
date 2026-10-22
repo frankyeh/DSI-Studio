@@ -3301,7 +3301,7 @@ bool src_data::load_from_file(const std::vector<std::filesystem::path>& nii_name
 
 QImage read_qimage(QString filename,std::string& error);
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
-extern int src_ver,fib_ver;
+extern int src_ver,fixel_ver;
 bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
 {
     auto result = [&](void)->bool
@@ -3400,7 +3400,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
         if(dwi_file_name.extension() == ".fz" && !mat_reader.has("image0")) // a qsdr fz with the dwi output (cli --action=rec only)
             return error_msg = "the fz file has no dwi output for reconstruction",false;
         int this_src_ver(0);
-        if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > (dwi_file_name.extension() == ".fz" ? fib_ver : src_ver))
+        if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > (dwi_file_name.extension() == ".fz" ? fixel_ver : src_ver))
             return error_msg = "incompatible SRC format. please update DSI Studio to open this file.",false;
         if(!mat_reader.has("mask"))
             voxel.mask.clear();
@@ -3475,7 +3475,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
     }
     return result;
 }
-extern int fib_ver;
+extern int fib_ver,fixel_ver;
 bool src_data::save_fib(void)
 {
     check_output_file_name();
@@ -3495,7 +3495,7 @@ bool src_data::save_fib(void)
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
     mat_writer.write("trans",voxel.trans_to_mni);       
-    mat_writer.write("version",voxel.needs("fixel") ? fib_ver : 202504); // 202504: the indexN format older builds read
+    mat_writer.write("version",voxel.needs("fixel") ? fixel_ver : fib_ver);
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
     if(voxel.qsdr)
     {

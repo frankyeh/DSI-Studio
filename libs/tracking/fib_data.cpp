@@ -722,13 +722,13 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
     }
 }
 
-extern int fib_ver,src_ver;
+extern int fixel_ver,src_ver;
 bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
                       tipl::shape<3>& dim,tipl::vector<3>& vs,tipl::matrix<4,4>& trans,bool& is_mni)
 {
     int this_fib_ver(0);
     if(mat_reader.has("version") && (this_fib_ver = mat_reader.read_as_value<int>("version")) >
-                                    (mat_reader.has("fa0") ? fib_ver : src_ver))
+                                    (mat_reader.has("fa0") ? fixel_ver : src_ver))
     {
         mat_reader.error_msg = "Incompatible format. please update DSI Studio to open this new format file.";
         return false;
@@ -877,7 +877,7 @@ bool fib_data::load_from_mat(void)
     return true;
 }
 
-extern int fib_ver,src_ver,map_ver;
+extern int fib_ver,fixel_ver,src_ver,map_ver;
 bool save_fz(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
@@ -899,7 +899,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
         matfile.write("version",map_ver);
     else
         if(mat_reader.has("fa0"))
-            matfile.write("version",mat_reader.has("fixel0") ? fib_ver : 202504); // 202504: the indexN format older builds read
+            matfile.write("version",mat_reader.has("fixel0") ? fixel_ver : fib_ver);
         else
         if(mat_reader.has("b_table"))
             matfile.write("version",src_ver);
