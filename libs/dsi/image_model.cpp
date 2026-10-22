@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QProcess>
 #include <QApplication>
+#include <QStandardPaths>
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
@@ -2913,12 +2914,27 @@ bool src_data::run_topup(void)
 
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
-bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
+bool download_file(const std::string& url,const std::filesystem::path& local_path,std::string& error_msg,bool check_size);
+bool src_data::regenerate_b_table(std::filesystem::path reference_file)
 {
     tipl::progress prog("regenerate b-table",true);
     src_data reference;
     std::vector<tipl::image<3> > b0,reference_b0;
-    if(!reference.load_from_file(reference_file) || !reference.read_b0(reference_b0))
+    if(reference_file.empty()) // the current template's reference, released as data-others/atlas/<template>/<template>.sz and cached in the temp folder
+    {
+        const auto& name = template_name_list[voxel.template_id];
+        const std::string url = "https://github.com/data-others/atlas/releases/download/" + name + "/" + name + ".sz";
+        reference_file = tipl::qt::to_path(QStandardPaths::writableLocation(QStandardPaths::TempLocation))/"data-others/atlas"/name/(name+".sz");
+        if(!reference.load_from_file(reference_file) || !reference.read_b0(reference_b0)) // missing or invalid cache
+        {
+            std::error_code ec;
+            std::filesystem::remove(reference_file,ec);
+            reference_b0.clear();
+            if(!download_file(url,reference_file,error_msg,false))
+                return error_msg = "cannot download " + url + ": " + error_msg,false;
+        }
+    }
+    if(reference_b0.empty() && (!reference.load_from_file(reference_file) || !reference.read_b0(reference_b0)))
         return error_msg = reference.error_msg,false;
     if(!read_b0(b0))
         return false;
