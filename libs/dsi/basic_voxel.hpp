@@ -95,8 +95,8 @@ public:
     std::string other_output;
     bool needs(const char* metric)
     {
-        if(other_output == "all" && std::string(metric) != "debug" && std::string(metric) != "fixel")
-            return true;
+        if(other_output == "all") // every metric except debug, the large dwi, and the fixel format
+            return std::string(metric) != "debug" && std::string(metric) != "dwi" && std::string(metric) != "fixel";
         std::istringstream in(other_output);
         std::string m;
         while(std::getline(in,m,','))
