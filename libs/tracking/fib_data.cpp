@@ -899,7 +899,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
         matfile.write("version",map_ver);
     else
         if(mat_reader.has("fa0"))
-            matfile.write("version",fib_ver);
+            matfile.write("version",mat_reader.has("fixel0") ? fib_ver : 202504); // 202504: the indexN format older builds read
         else
         if(mat_reader.has("b_table"))
             matfile.write("version",src_ver);

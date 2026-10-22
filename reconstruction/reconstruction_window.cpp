@@ -62,7 +62,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_helix,
         ui->output_rdi,
         ui->output_gfa,
-        ui->output_odf
+        ui->output_odf,
+        ui->output_fixel
     };
     adv_outputs = {
         ui->output_rd12,

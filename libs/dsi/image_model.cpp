@@ -3495,7 +3495,7 @@ bool src_data::save_fib(void)
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
     mat_writer.write("trans",voxel.trans_to_mni);       
-    mat_writer.write("version",fib_ver);
+    mat_writer.write("version",voxel.needs("fixel") ? fib_ver : 202504); // 202504: the indexN format older builds read
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
     if(voxel.qsdr)
     {

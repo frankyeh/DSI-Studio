@@ -394,7 +394,8 @@ struct SaveMetrics : public BaseProcess
 {
 protected:
     SearchLocalMaximum lm;
-    std::vector<tipl::image<3,unsigned short> > fixel; // fiber directions, 0 where there is no fiber
+    std::vector<tipl::image<3,unsigned short> > fixel; // refined fiber directions when "fixel" is requested, 0 where there is no fiber
+    std::vector<tipl::image<3,short> > findex; // otherwise the odf vertex of each fiber
 protected:
     tipl::image<3> iso,gfa;
     std::vector<tipl::image<3> > fa,rdi;
@@ -417,7 +418,10 @@ public:
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
                 rdi.emplace_back(voxel.dim);
         }
-        fixel.resize(voxel.max_fiber_number,tipl::image<3,unsigned short>(voxel.dim));
+        if(voxel.needs("fixel"))
+            fixel.resize(voxel.max_fiber_number,tipl::image<3,unsigned short>(voxel.dim));
+        else
+            findex.resize(voxel.max_fiber_number,tipl::image<3,short>(voxel.dim));
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -430,8 +434,13 @@ public:
         auto end = max_table.end();
         for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
         {
-            tipl::vector<3,float> d(voxel.ti.vertices[iter->second]);
             data.fa[index] = iter->first - min_odf;
+            if(fixel.empty())
+            {
+                findex[index][data.voxel_index] = short(iter->second);
+                continue;
+            }
+            tipl::vector<3,float> d(voxel.ti.vertices[iter->second]);
             fixel[index][data.voxel_index] = encode_fixel(d);
             if(voxel.q_vectors.empty()) // an odf template: no diffusion signals to refine on
                 continue;
@@ -507,6 +516,8 @@ public:
         }
         for (unsigned int index = 0;index < fixel.size();++index)
             mat_writer.write<tipl::io::masked>("fixel" + std::to_string(index),fixel[index],voxel.dim.plane_size());
+        for (unsigned int index = 0;index < findex.size();++index)
+            mat_writer.write<tipl::io::masked>("index" + std::to_string(index),findex[index],voxel.dim.plane_size());
 
     }
 };

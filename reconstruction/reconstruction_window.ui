@@ -1190,6 +1190,16 @@
                      </widget>
                     </item>
                     <item>
+                     <widget class="QCheckBox" name="output_fixel">
+                      <property name="statusTip">
+                       <string>fixel</string>
+                      </property>
+                      <property name="text">
+                       <string>Analytical fixel</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
                      <widget class="QCheckBox" name="output_odf">
                       <property name="statusTip">
                        <string>odf</string>
