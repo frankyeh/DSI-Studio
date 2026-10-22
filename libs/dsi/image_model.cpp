@@ -2923,9 +2923,9 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
     if(!read_b0(b0))
         return false;
 
-    // groups b-values >= min_b into shells, starting a new shell at a b-value more than 100 above the current shell mean;
+    // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean;
     // gives each DWI's shell (-1 if excluded) and the shell mean b-values and sizes
-    auto group_shells = [](const std::vector<float>& bvalues,float min_b,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<size_t>& shell_n)
+    auto group_shells = [](const std::vector<float>& bvalues,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<size_t>& shell_n)
     {
         std::vector<size_t> order(bvalues.size());
         std::iota(order.begin(),order.end(),0);
@@ -2934,7 +2934,7 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
         shell_b.clear();
         shell_n.clear();
         for(auto i : order)
-            if(bvalues[i] >= min_b)
+            if(bvalues[i] >= 500.0f)
             {
                 if(shell_b.empty() || bvalues[i]-shell_b.back()/float(shell_n.back()) > 100.0f)
                 {
@@ -2952,20 +2952,18 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
     std::vector<int> shell_id,ref_shell_id,match;
     std::vector<float> shell_b,ref_shell_b;
     std::vector<size_t> shell_n,ref_shell_n;
-    group_shells(src_bvalues,500.0f,shell_id,shell_b,shell_n);
-    group_shells(reference.src_bvalues,100.0f,ref_shell_id,ref_shell_b,ref_shell_n);
+    group_shells(src_bvalues,shell_id,shell_b,shell_n);
+    group_shells(reference.src_bvalues,ref_shell_id,ref_shell_b,ref_shell_n);
     if(shell_b.empty())
         return error_msg = "no DWI with b-value >= 500 to regenerate",false;
     if(ref_shell_b.empty())
-        return error_msg = "the reference SRC has no nonzero b-value shell",false;
-    std::vector<unsigned char> used(ref_shell_b.size());
+        return error_msg = "the reference SRC has no DWI with b-value >= 500",false;
     for(size_t k = 0;k < shell_b.size();++k)
     {
         match.push_back(int(std::min_element(ref_shell_b.begin(),ref_shell_b.end(),[&](float l,float r)
                         {return std::fabs(l-shell_b[k]) < std::fabs(r-shell_b[k]);})-ref_shell_b.begin()));
         if(ref_shell_n[match.back()] < 3)
             return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[match.back()])) + " has fewer than three DWIs",false;
-        used[match.back()] = 1;
         tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_n[k] << " dwi) uses reference shell b=" << ref_shell_b[match.back()] << " (" << ref_shell_n[match.back()] << " dwi)";
     }
 
@@ -2973,7 +2971,7 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
     {
         size_t out = 0;
         for(size_t j = 0;j < reference.src_bvalues.size();++j)
-            if(ref_shell_id[j] >= 0 && used[ref_shell_id[j]])
+            if(std::find(match.begin(),match.end(),ref_shell_id[j]) != match.end())
             {
                 reference.src_dwi_data[out].swap(reference.src_dwi_data[j]);
                 reference.src_bvalues[out] = reference.src_bvalues[j];
