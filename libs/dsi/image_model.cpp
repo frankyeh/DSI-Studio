@@ -2922,13 +2922,69 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
         return error_msg = reference.error_msg,false;
     if(!read_b0(b0))
         return false;
-    std::vector<unsigned int> shell;
-    calculate_shell(reference.src_bvalues,shell);
-    if(shell.size() != 1 || reference.src_bvalues.size()-shell[0] < 3)
-        return error_msg = "the reference SRC needs one nonzero b-value shell with at least three DWIs",false;
-    std::vector<float> sorted_bvalues(reference.src_bvalues);
-    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
-    float reference_bvalue = sorted_bvalues[(shell[0]+sorted_bvalues.size())/2];
+
+    // groups b-values >= min_b into shells, starting a new shell at a b-value more than 100 above the current shell mean;
+    // gives each DWI's shell (-1 if excluded) and the shell mean b-values and sizes
+    auto group_shells = [](const std::vector<float>& bvalues,float min_b,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<size_t>& shell_n)
+    {
+        std::vector<size_t> order(bvalues.size());
+        std::iota(order.begin(),order.end(),0);
+        std::sort(order.begin(),order.end(),[&](size_t l,size_t r){return bvalues[l] < bvalues[r];});
+        shell_id.assign(bvalues.size(),-1);
+        shell_b.clear();
+        shell_n.clear();
+        for(auto i : order)
+            if(bvalues[i] >= min_b)
+            {
+                if(shell_b.empty() || bvalues[i]-shell_b.back()/float(shell_n.back()) > 100.0f)
+                {
+                    shell_b.push_back(0.0f);
+                    shell_n.push_back(0);
+                }
+                shell_id[i] = int(shell_b.size())-1;
+                shell_b.back() += bvalues[i];
+                ++shell_n.back();
+            }
+        for(size_t k = 0;k < shell_b.size();++k)
+            shell_b[k] /= float(shell_n[k]);
+    };
+    // match each target shell (b >= 500) to the reference shell with the nearest mean b-value
+    std::vector<int> shell_id,ref_shell_id,match;
+    std::vector<float> shell_b,ref_shell_b;
+    std::vector<size_t> shell_n,ref_shell_n;
+    group_shells(src_bvalues,500.0f,shell_id,shell_b,shell_n);
+    group_shells(reference.src_bvalues,100.0f,ref_shell_id,ref_shell_b,ref_shell_n);
+    if(shell_b.empty())
+        return error_msg = "no DWI with b-value >= 500 to regenerate",false;
+    if(ref_shell_b.empty())
+        return error_msg = "the reference SRC has no nonzero b-value shell",false;
+    std::vector<unsigned char> used(ref_shell_b.size());
+    for(size_t k = 0;k < shell_b.size();++k)
+    {
+        match.push_back(int(std::min_element(ref_shell_b.begin(),ref_shell_b.end(),[&](float l,float r)
+                        {return std::fabs(l-shell_b[k]) < std::fabs(r-shell_b[k]);})-ref_shell_b.begin()));
+        if(ref_shell_n[match.back()] < 3)
+            return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[match.back()])) + " has fewer than three DWIs",false;
+        used[match.back()] = 1;
+        tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_n[k] << " dwi) uses reference shell b=" << ref_shell_b[match.back()] << " (" << ref_shell_n[match.back()] << " dwi)";
+    }
+
+    // keep only the matched reference shells before rotate() resamples them
+    {
+        size_t out = 0;
+        for(size_t j = 0;j < reference.src_bvalues.size();++j)
+            if(ref_shell_id[j] >= 0 && used[ref_shell_id[j]])
+            {
+                reference.src_dwi_data[out].swap(reference.src_dwi_data[j]);
+                reference.src_bvalues[out] = reference.src_bvalues[j];
+                reference.src_bvectors[out] = reference.src_bvectors[j];
+                ref_shell_id[out++] = ref_shell_id[j];
+            }
+        reference.src_dwi_data.resize(out);
+        reference.src_bvalues.resize(out);
+        reference.src_bvectors.resize(out);
+        ref_shell_id.resize(out);
+    }
 
     // affine b0-to-b0 registration; rotate() then resamples the reference DWIs into this space and rotates its b-vectors
     tipl::reg::mm_reg<tipl::out> reg;
@@ -2940,29 +2996,30 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
     reg.Its = voxel.dim;
     reg.Itvs = voxel.vs;
     reg.ItR = voxel.trans_to_mni;
+    reg.match_resolution(true);
     reg.linear_reg(tipl::prog_aborted);
     if(prog.aborted())
         return error_msg = "canceled",false;
+    if(reg.r[0] < 0.3f)
+        tipl::warning() << "poor registration to the reference SRC: r=" << reg.r[0];
+    reg.to_I_space(reference.voxel.dim,reference.voxel.trans_to_mni);
+    reg.to_It_space(voxel.dim,voxel.trans_to_mni);
     reference.rotate(voxel.dim,voxel.vs,reg.T());
     if(prog.aborted())
         return error_msg = "canceled",false;
 
-    // each DWI takes the kernel-regression direction of its three best-correlated reference DWIs
-    auto new_bvalues = src_bvalues;
+    // each DWI (b >= 500) takes the kernel-regression direction of its three best-correlated reference DWIs in the matched shell; b-values are kept
     auto new_bvectors = src_bvectors;
     std::atomic<bool> failed = false;
     std::atomic<size_t> p = 0;
     tipl::par_for(src_bvalues.size(),[&](size_t i)
     {
         prog(p++,src_bvalues.size());
-        if(src_bvalues[i] == 0.0f)
-        {
-            new_bvectors[i] = tipl::vector<3,float>();
+        if(shell_id[i] < 0)
             return;
-        }
         std::pair<float,size_t> best[3] = {{-1.0f,0},{-1.0f,0},{-1.0f,0}};
         for(size_t j = 0;j < reference.src_bvalues.size();++j)
-            if(reference.src_bvalues[j] != 0.0f)
+            if(ref_shell_id[j] == match[shell_id[i]])
             {
                 std::pair<float,size_t> c(masked_correlation(src_dwi_data[i].data(),reference.src_dwi_data[j].data(),voxel.mask),j);
                 for(auto& each : best) // keeps best[] sorted: a larger value displaces the rest down
@@ -2978,15 +3035,13 @@ bool src_data::regenerate_b_table(const std::filesystem::path& reference_file)
             return void(failed = true);
         g.normalize();
         new_bvectors[i] = g;
-        new_bvalues[i] = reference_bvalue;
     });
     if(prog.aborted())
         return error_msg = "canceled",false;
     if(failed)
         return error_msg = "cannot estimate one or more b-vectors from the reference SRC",false;
-    src_bvalues.swap(new_bvalues);
     src_bvectors.swap(new_bvectors);
-    voxel.report += " The b-table was regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
+    voxel.report += " The b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
     return true;
 }
 std::string src_data::get_report(bool dwi_part_only)
