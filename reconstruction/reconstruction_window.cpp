@@ -446,6 +446,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         }
         return true;
     }
+    if(cmd == "regenerate_btable" && param.empty() && source == command_source::User) // uses the selected template's reference
+        handle->voxel.template_id = ui->primary_template->currentIndex();
     if(cmd == "mask_from_template" || cmd == "mask_from_unet") // both pick the model by the selected template
     {
         if(param.empty())
