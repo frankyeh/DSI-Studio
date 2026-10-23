@@ -63,7 +63,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_rdi,
         ui->output_gfa,
         ui->output_odf,
-        ui->output_fixel
+        ui->high_accuracy // fixel
     };
     adv_outputs = {
         ui->output_rd12,
@@ -576,6 +576,9 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
 }
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
+    ui->high_accuracy->setVisible(!checked); // GQI and QSDR only
+    if(checked)
+        ui->high_accuracy->setChecked(false);
     ui->qsdr_options->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
     ui->ODF_metrics->setVisible(!checked);
