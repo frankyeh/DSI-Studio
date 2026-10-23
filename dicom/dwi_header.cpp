@@ -142,34 +142,6 @@ bool DwiHeader::open(const std::filesystem::path& filename)
     return true;
 }
 
-/*
-if (sort_and_merge)
-{
-
-    // merge files of the same bvec
-    tipl::progress prog_("Merge bvalue Files");
-    for (unsigned int i = 0;prog(i,dwi_files.size());++i)
-    {
-        unsigned int j = i + 1;
-        for (;j < dwi_files.size() && dwi_files[i] == dwi_files[j];++j)
-            ;
-        if (j == i + 1)
-            continue;
-        std::vector<unsigned int> sum(dwi_files[i]->size());
-        for (unsigned int l = i; l < j;++l)
-        {
-            const DwiHeader& dwi_image = dwi_files[l];
-            for (unsigned int index = 0;index < sum.size();++index)
-                sum[index] += dwi_image[index];
-        }
-        unsigned int count = j-i;
-        DwiHeader& dwi_image = dwi_files[i];
-        for (unsigned int index = 0;index < sum.size();++index)
-            dwi_image[index] = (unsigned short)(sum[index] / count);
-        dwi_files.erase(dwi_files.begin()+i+1,dwi_files.begin()+j);
-    }
-}
-*/
 
 
 
