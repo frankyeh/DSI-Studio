@@ -55,7 +55,7 @@ bool download_file(const std::string& url,
     fs::create_directories(local_path.parent_path());
 
     auto tmp = local_path;
-    tmp += ".download" + std::to_string(QCoreApplication::applicationPid()); // per process, so parallel downloads do not collide
+    tmp += ".download";
     fs::remove(tmp);
 
     QFile out(tipl::qt::to_qstring(tmp));
@@ -84,13 +84,10 @@ bool download_file(const std::string& url,
     if(!ok)
         return fs::remove(tmp),has_local;
 
-    std::error_code ec;
     if(has_local)
-        fs::remove(local_path,ec);
-    fs::rename(tmp,local_path,ec);
-    if(ec) // another process installed the file first
-        fs::remove(tmp,ec);
-    return fs::exists(local_path);
+        fs::remove(local_path);
+    fs::rename(tmp,local_path);
+    return true;
 }
 
 extern std::vector<std::vector<std::string> > unet_http;
