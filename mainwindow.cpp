@@ -970,7 +970,7 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite,s
         tipl::matrix<4,4> trans;
         tipl::io::initial_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
 
-        tipl::image<4,unsigned short> buffer(dicom->image.shape().expand(dicom_files.size()));
+        tipl::image<4> buffer(dicom->image.shape().expand(dicom_files.size()));
         for(unsigned int index = 0;index < dicom_files.size();++index)
         {
             std::copy(dicom_files[index]->image.begin(),
