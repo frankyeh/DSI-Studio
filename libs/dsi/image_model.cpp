@@ -2930,15 +2930,8 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
             std::error_code ec;
             std::filesystem::remove(reference_file,ec);
             reference_b0.clear();
-            auto download = reference_file;
-            download += "." + std::to_string(QCoreApplication::applicationPid()) + ".sz"; // per process; becomes the cache only after it loads
-            if(!download_file(url,download,error_msg,false))
+            if(!download_file(url,reference_file,error_msg,false))
                 return error_msg = "cannot download " + url + ": " + error_msg,false;
-            if(!reference.load_from_file(download) || !reference.read_b0(reference_b0))
-                return std::filesystem::remove(download,ec),error_msg = "invalid reference downloaded from " + url + ": " + reference.error_msg,false;
-            if(!std::filesystem::exists(reference_file)) // another process may have installed it first
-                std::filesystem::rename(download,reference_file,ec);
-            std::filesystem::remove(download,ec);
         }
     }
     if(reference_b0.empty() && (!reference.load_from_file(reference_file) || !reference.read_b0(reference_b0)))
