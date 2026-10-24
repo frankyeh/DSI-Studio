@@ -462,8 +462,7 @@ void FiberDataHub::on_github_repo_currentIndexChanged(int index)
     {
         auto object = release.toObject();
         auto tag = object.value("tag_name").toString();
-        if(tag.length() > 2 && tag[tag.length()-2] == '_' && tag[tag.length()-1] >= '1' && tag[tag.length()-1] <= '9')
-            tag.chop(2);
+        tag.remove(QRegularExpression("_[1-9][0-9]?$")); // <name>_1 ... <name>_99 aggregate into <name>
 
         notes[tag] = object.value("body").toString();
         auto& agg_at_tag = agg[tag];
