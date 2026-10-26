@@ -273,6 +273,14 @@ AIAgent::AIAgent(MainWindow* parent):
             info->save_config();
         }
     });
+    connect(ui->ai_approval,QOverload<int>::of(&QComboBox::activated),this,[this](int index) // a user choice, never a programmatic sync
+    {
+        if(auto* info = selected_info())
+        {
+            info->model_settings["approval"] = index == 1 ? "auto" : "manual";
+            info->save_config();
+        }
+    });
     auto* send = new QShortcut(
         QKeySequence(Qt::CTRL|Qt::Key_Return),ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
@@ -367,6 +375,7 @@ AIAgent::AIAgent(MainWindow* parent):
             ui->ai_chat_history->clear();
             ui->ai_chat_history->setEnabled(false);
             ui->ai_chat_input->setEnabled(false);
+            ui->ai_approval->setEnabled(false);
             update_send_button();
             return ui->ai_status->hide();
         }
@@ -377,6 +386,8 @@ AIAgent::AIAgent(MainWindow* parent):
             return;
         ui->ai_chat_history->setEnabled(true);
         ui->ai_chat_input->setEnabled(true);
+        ui->ai_approval->setEnabled(true);
+        ui->ai_approval->setCurrentIndex(info->model_settings.value("approval").toString() == "auto" ? 1 : 0);
         ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
             info->model_settings["cwd"].toString() : main_window.work_dir());
         update_model_list();
@@ -418,6 +429,7 @@ AIAgent::AIAgent(MainWindow* parent):
     {
         ui->ai_chat_history->setEnabled(false);
         ui->ai_chat_input->setEnabled(false);
+        ui->ai_approval->setEnabled(false);
         update_send_button();
     }
     // Web chats are never auto-reconnected at startup; use Resume to reconnect a chat explicitly
