@@ -52,6 +52,8 @@ class AIAgent : public QMainWindow
     Q_OBJECT
     MainWindow& main_window;
     ai_info* dispatching_info = nullptr; // set around dispatch_cmd() in ai_request(); lets open_fib/open_src/open_image report their new window via update_current_window()
+    QString ai_chat_context; // the dispatching request's chat text, shown in approve()'s confirmation dialog
+    bool ai_auto_approve = false; // the dispatching chat's approval mode, snapshotted at request start
     Ui::AIAgent* ui;
     QSettings settings;
     QMenu* ai_project_menu = nullptr;
@@ -98,7 +100,8 @@ public:
     ~AIAgent();
     void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
     void update_current_window(QWidget*); // called where open_fib/open_src/open_image create their window; no-op unless an AI dispatch is in progress
-    QJsonObject web_file(const ai_info& info,const std::vector<std::string>& cmd,const ai_approval& approve,QString& error); // web_upload, web_download_prepare, web_download for this chat's Web session
+    bool approve(const QString& title,const QString& request); // the local user's confirmation of an AI file write, shell command, or upload
+    QJsonObject web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error); // web_upload, web_download_prepare, web_download for this chat's Web session
 
 signals:
     void agent_status_changed(const QString& provider);
