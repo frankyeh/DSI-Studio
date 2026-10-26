@@ -31,9 +31,6 @@ class MainWindow : public QMainWindow
     void updateRecentList(void);
     void addRecent(QString,const char*);
     QSettings settings;
-    QString ai_chat_context; // the current AI request's accompanying chat text, if any; set/restored around dispatch_cmd() so run_shell's confirmation dialog can explain purpose -- used only within this class
-    bool ai_auto_approve = false; // true during dispatch_cmd when the dispatching chat's approval mode is auto; checked by ai_approve()
-    bool ai_approve(const QString& title,const QString& request); // the local user's confirmation of an AI file write, shell command, or upload
 
 public:
     QNetworkAccessManager manager;
