@@ -1137,20 +1137,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
     };
     bool has_chat = !request["chat"].toString().trimmed().isEmpty() ||
                     !request["reasoning"].toString().trimmed().isEmpty();
-    struct chat_context_guard
-    {
-        QString& target;
-        QString prev;
-        chat_context_guard(QString& target_,QString value):target(target_),prev(target_) {target = std::move(value);}
-        ~chat_context_guard() {target = prev;}
-    } chat_guard(ai_chat_context,request["chat"].toString().trimmed());
-    struct auto_approve_guard
-    {
-        bool& target;
-        bool prev;
-        auto_approve_guard(bool& target_,bool value):target(target_),prev(target_) {target = value;}
-        ~auto_approve_guard() {target = prev;}
-    } approve_guard(ai_auto_approve,info.model_settings.value("approval").toString() == "auto");
     auto no_command_or_fail = [&]{return has_chat ? QJsonObject{{"status","success"},{"result",QJsonArray()}} : fail("missing command field");};
     auto command_json = request["command"];
     if(command_json.isUndefined() || command_json.isNull())
@@ -1301,7 +1287,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     ai_agent->web_title(info,info.project_titles);
             }
             else if(command_name == "web_upload" || command_name == "web_download_prepare" || command_name == "web_download")
-                attachment = ai_agent->web_file(info,cmd,[&](const QString& title,const QString& request,bool){return ai_approve(title,request);},error);
+                attachment = ai_agent->web_file(info,cmd,error);
             else if(command_name == "log")
             {
                 std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -1416,21 +1402,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     return QJsonObject{
         {"status",results.last().toObject()["status"]},{"result",results}};
-}
-
-bool MainWindow::ai_approve(const QString& title,const QString& request)
-{
-    if(ai_auto_approve)
-    {
-        ai_agent->web_step("running");
-        return true;
-    }
-    ai_agent->web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
-    if(QMessageBox::question(this,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
-                             QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
-        return false;
-    ai_agent->web_step("running");
-    return true;
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
@@ -2019,7 +1990,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     }
     auto approve = [&](const QString& title,const QString& request,bool) // every AI file write or shell command needs the local user's approval
     {
-        return source != command_source::AI || ai_approve(title,request);
+        return source != command_source::AI || (ai_agent && ai_agent->approve(title,request));
     };
     if(cmd[0] == "write_text_file")
         return ai_write_text_file(cmd,approve,error_msg);
