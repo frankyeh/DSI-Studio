@@ -54,6 +54,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <utility>
 #include "ai_agent.hpp"
 #include "cmd/ai.hpp"
 #include "ui_ai_agent.h"
@@ -574,9 +575,25 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     ai_log("received: "+QString::fromUtf8(data));
     auto chat = request["chat"].toString().trimmed();
     auto reasoning = request["reasoning"].toString().trimmed();
-    dispatching_info = &info;
-    auto result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
-    dispatching_info = nullptr;
+    QJsonObject result;
+    {
+        // dispatch state for update_current_window() and approve(); a nested ai_request() restores the outer request's state
+        struct dispatch_guard
+        {
+            AIAgent& agent;
+            ai_info* prev_info;
+            QString prev_chat;
+            bool prev_auto_approve;
+            ~dispatch_guard()
+            {
+                agent.dispatching_info = prev_info;
+                agent.ai_chat_context = prev_chat;
+                agent.ai_auto_approve = prev_auto_approve;
+            }
+        } guard{*this,std::exchange(dispatching_info,&info),std::exchange(ai_chat_context,chat),
+                std::exchange(ai_auto_approve,info.model_settings.value("approval").toString() == "auto")};
+        result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
+    }
     if(&info == selected_info()) // set_work_dir may have moved this chat's directory
         ui->ai_work_dir->setText(info.model_settings["cwd"].toString(main_window.work_dir()));
     // a live local process is still mid-turn (this was one of its tool calls); Web or no transport is idle now
@@ -598,6 +615,21 @@ void AIAgent::update_current_window(QWidget* window)
 {
     if(dispatching_info)
         dispatching_info->current_window = command_window_id(window);
+}
+
+bool AIAgent::approve(const QString& title,const QString& request)
+{
+    if(dispatching_info && ai_auto_approve) // outside an AI dispatch, fail closed to manual approval
+    {
+        web_step("running");
+        return true;
+    }
+    web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
+    if(QMessageBox::question(&main_window,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
+                             QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
+        return false;
+    web_step("running");
+    return true;
 }
 
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
@@ -1368,11 +1400,11 @@ void AIAgent::start_web(ai_info& info)
     QApplication::clipboard()->setText(web.prompt()); // on every start and Resume: the agent may be a new chat
     QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
 }
-QJsonObject AIAgent::web_file(const ai_info& info,const std::vector<std::string>& cmd,const ai_approval& approve,QString& error)
+QJsonObject AIAgent::web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error)
 {
     if(info.provider != "Web" || !web_connected(info))
         return error = QString::fromStdString(cmd[0])+" is available only in the active Web session",QJsonObject();
-    return web.web_file(cmd,approve,error);
+    return web.web_file(cmd,[this](const QString& title,const QString& request,bool){return approve(title,request);},error);
 }
 bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopback); true once a token is held
 {
