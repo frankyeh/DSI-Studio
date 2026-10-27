@@ -608,16 +608,16 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         if(cur_node->id == "tract_color_metrics")
         {
             setMinMax("tract_color_min_value",min_v,max_v,(max_v-min_v)/20);
-            setMinMax("tract_color_max_value",min_v,max_v,(max_v-min_v)/20);
+            setMinMax("tract_color_max_value",min_v,std::max(max_v*10.0f,1000.0f),(max_v-min_v)/20);
             setData("tract_color_min_value",min_v);
-            setData("tract_color_max_value",min_v+(max_v-min_v)/2);
+            setData("tract_color_max_value",max_v);
         }
         else
         {
             setMinMax("region_color_min_value",min_v,max_v,(max_v-min_v)/20);
-            setMinMax("region_color_max_value",min_v,max_v,(max_v-min_v)/20);
+            setMinMax("region_color_max_value",min_v,std::max(max_v*10.0f,1000.0f),(max_v-min_v)/20);
             setData("region_color_min_value",min_v);
-            setData("region_color_max_value",min_v+(max_v-min_v)/2);
+            setData("region_color_max_value",max_v);
             cur_tracking_window.regionWidget->color_map_values.clear();
         }
     }
