@@ -1224,7 +1224,7 @@ void dicom_parser::on_actionOpen_bvec_triggered()
              b_index = bvec.size()-1;index >=0 && b_index >=0 ;--index)
     {
         for(int j = 2;j >= 0 && b_index >=0;--j,--b_index)
-            ui->tableWidget->item(index,j+2)->setText(QString::number(bvec[b_index]));
+            ui->tableWidget->item(index,j+2)->setText(QString::number(j == 1 ? -bvec[b_index] : bvec[b_index]));
     }
 }
 
