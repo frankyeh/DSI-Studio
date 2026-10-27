@@ -688,7 +688,101 @@ bool DeviceTableWidget::command(std::vector<std::string> cmd)
             }
         return run->succeed();
     }
-
+    if(cmd[0] == "load_device")
+    {
+        // cmd[1]: device file (default: open file dialog)
+        if(cmd[1].empty())
+        {
+            load_device();
+            return run->succeed();
+        }
+        if(!load_device(cmd[1]))
+            return run->failed("cannot load device file: " + cmd[1]);
+        return run->succeed();
+    }
+    if(cmd[0] == "list_devices" || cmd[0] == "list_device")
+    {
+        tipl::out() << "index\tshown\tname\ttype\tcolor\tlength\tx\ty\tz\tphi\ttheta";
+        for(int row = 0;row < rowCount();++row)
+            tipl::out() << row << "\t" << (item(row,0)->checkState() == Qt::Checked) << "\t"
+                        << item(row,0)->text().toStdString() << "\t"
+                        << item(row,1)->text().toStdString() << "\t"
+                        << item(row,2)->text().toStdString() << "\t"
+                        << item(row,3)->text().toStdString() << "\t"
+                        << item(row,4)->text().toStdString() << "\t"
+                        << item(row,5)->text().toStdString() << "\t"
+                        << item(row,6)->text().toStdString() << "\t"
+                        << item(row,7)->text().toStdString() << "\t"
+                        << item(row,8)->text().toStdString();
+        return run->succeed();
+    }
+    if(cmd[0] == "list_device_types")
+    {
+        if(device_types.empty())
+            load_device_content();
+        for(const auto& each : device_types)
+            tipl::out() << each;
+        return run->succeed();
+    }
+    if(cmd[0] == "set_device_type")
+    {
+        // cmd[1]: device type
+        // cmd[2]: device index (default: current)
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(device_types.empty())
+            load_device_content();
+        auto type = std::find(device_types.begin(),device_types.end(),cmd[1]);
+        if(type == device_types.end())
+            type = std::find_if(device_types.begin(),device_types.end(),[&](const std::string& each)
+            {
+                return QString::fromStdString(each).compare(QString::fromStdString(cmd[1]),Qt::CaseInsensitive) == 0;
+            });
+        if(type == device_types.end())
+            return run->failed("unknown device type: " + cmd[1]);
+        // triggers updateDevices to apply type, default name, and length rules
+        item(cur_row,1)->setText(QString::fromStdString(*type));
+        return run->succeed();
+    }
+    if(cmd[0] == "set_device_direction" || cmd[0] == "set_device_dir")
+    {
+        // cmd[1]: "phi theta" (degrees) or "dx dy dz"
+        // cmd[2]: device index (default: current)
+        const double PI = 3.14159265358979323846;
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        std::istringstream in(cmd[1]);
+        float v[3] = {};
+        int count = 0;
+        while(count < 3 && (in >> v[count]))
+            ++count;
+        if(count < 2)
+            return run->failed("please specify direction as 'phi theta' (degrees) or 'dx dy dz' vector");
+        if(count == 2)
+        {
+            float phi = float(v[0]*PI/180.0);
+            float theta = float(v[1]*PI/180.0);
+            float sin_theta = std::sin(theta);
+            devices[cur_row]->dir = tipl::vector<3>(sin_theta*std::cos(phi),sin_theta*std::sin(phi),std::cos(theta));
+        }
+        else
+        {
+            tipl::vector<3> dir(v[0],v[1],v[2]);
+            if(dir.length() == 0.0f)
+                return run->failed("direction vector cannot be zero");
+            dir.normalize();
+            devices[cur_row]->dir = dir;
+        }
+        {
+            QSignalBlocker blocker(this); // don't let updateDevices react to our own writes below
+            item(cur_row,7)->setText(QString::number(double(std::atan2(devices[cur_row]->dir[1],devices[cur_row]->dir[0]))*180.0/PI));
+            item(cur_row,8)->setText(QString::number(double(std::acos(devices[cur_row]->dir[2]))*180.0/PI));
+        }
+        emit cur_tracking_window.need_gl_update();
+        return run->succeed();
+    }
 
     return run->not_processed();
 }
