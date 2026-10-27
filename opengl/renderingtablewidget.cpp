@@ -605,21 +605,13 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
             min_v = cur_tracking_window.handle->slices[item_index]->min_value;
             max_v = cur_tracking_window.handle->slices[item_index]->max_value;
         }
-        if(cur_node->id == "tract_color_metrics")
-        {
-            setMinMax("tract_color_min_value",min_v,max_v,(max_v-min_v)/20);
-            setMinMax("tract_color_max_value",min_v,std::max(max_v*10.0f,1000.0f),(max_v-min_v)/20);
-            setData("tract_color_min_value",min_v);
-            setData("tract_color_max_value",max_v);
-        }
-        else
-        {
-            setMinMax("region_color_min_value",min_v,max_v,(max_v-min_v)/20);
-            setMinMax("region_color_max_value",min_v,std::max(max_v*10.0f,1000.0f),(max_v-min_v)/20);
-            setData("region_color_min_value",min_v);
-            setData("region_color_max_value",max_v);
+        QString prefix = cur_node->id.chopped(7); // "tract_color_" or "region_color_"
+        setMinMax(prefix+"min_value",min_v,max_v,(max_v-min_v)/20);
+        setMinMax(prefix+"max_value",min_v,std::max(max_v*10.0f,1000.0f),(max_v-min_v)/20);
+        setData(prefix+"min_value",min_v);
+        setData(prefix+"max_value",max_v);
+        if(prefix[0] == 'r')
             cur_tracking_window.regionWidget->color_map_values.clear();
-        }
     }
 
     if(cur_node->id == "fa_threshold" ||
