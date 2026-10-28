@@ -90,6 +90,12 @@ void kill_process_tree(QProcess* process);
 QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {});
 QByteArray muse_initialize();
 QByteArray grok_initialize();
+QJsonObject ai_agent_record(const QString& provider,const QString& scope,const QString& executable,ai_agent_status status,
+                            const QString& info,const QStringList& models,const QDateTime& checked); // one get_agent_settings entry; scope: "gui" or "headless"
+// read-only system commands shared by MainWindow's command center and headless --action=ai: get_agent_settings [agent|ready],
+// get_chat [-N | session_id [all|-N|N|N-|N-M]]; false if cmd is neither. agent_records supplies readiness for the given agents on this host
+bool ai_system_command(const std::vector<std::string>& cmd,const std::function<QJsonArray(const QStringList&)>& agent_records,
+                       QString& output,QString& error);
 
 // shared by MainWindow's command center and headless --action=ai
 using ai_approval = std::function<bool(const QString& title,const QString& request,bool read_only)>; // true approves; read_only: a shell command that cannot change anything
