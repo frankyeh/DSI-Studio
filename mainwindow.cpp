@@ -1375,6 +1375,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
+            else if(ai_system_command(cmd,[this](const QStringList& providers){return ai_agent->agent_settings(providers);},output,error)) {}
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
