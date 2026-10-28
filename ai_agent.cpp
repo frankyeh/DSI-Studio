@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QColor>
 #include <QComboBox>
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -63,48 +64,112 @@
 #include "TIPL/tipl.hpp"
 
 constexpr qsizetype ai_debug_truncate_length = 300; // level 1 (truncated) caps each logged line to this many characters
-static const QStringList local_agents{"Codex","Claude","Muse","Antigravity","Grok"}; // every local CLI agent, in settings order
-QProcessEnvironment agent_environment(const QString& provider)
+
+static void stop_blink(QWidget* row)
 {
-    auto env = QProcessEnvironment::systemEnvironment();
-#if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
-    if(provider == "Muse" && !env.contains("TBH_CREDENTIAL_BACKEND"))
-        env.insert("TBH_CREDENTIAL_BACKEND","file");
-#endif
-    return env;
-}
-void start_process(QProcess& process,const QString& executable,QStringList args)
-{
-#ifdef Q_OS_WIN
-    if(executable.endsWith(".cmd",Qt::CaseInsensitive) ||
-       executable.endsWith(".bat",Qt::CaseInsensitive))
-    {
-        process.start(qEnvironmentVariable("ComSpec","cmd.exe"),QStringList{"/d","/c",executable}+args);
+    if(!row)
         return;
-    }
-#endif
-    process.start(executable,args);
+    row->findChild<QTimer*>()->stop();
+    row->setStyleSheet({});
 }
-void kill_process_tree(QProcess* process) // kill(): a windowless console child never sees terminate()'s WM_CLOSE
+
+static void update_status_dot(QLabel* dot,session_status status,bool pulse) // presentational: sets a sidebar/status dot's color and pulse animation for the given status
 {
-    if(!process || process->state() == QProcess::NotRunning)
+    if(!dot)
         return;
-#ifdef Q_OS_WIN
-    if(auto pid = process->processId()) // taskkill /T first: it walks descendants (e.g. node under the cmd.exe wrapper) only while the parent PID lives
+    // pulse advances the animation, otherwise it resets; the caller decides when (ai_info::is_running())
+    int phase = dot->property("pulse").toInt();
+    phase = pulse ? (phase+1)%24 : 0;
+    dot->setProperty("pulse",phase);
+
+    QColor color;
+    switch(status)
     {
-        QProcess taskkill; // not QProcess::execute(): that forwards taskkill's "SUCCESS: ..." lines to DSI Studio's console
-        taskkill.start("taskkill",{"/PID",QString::number(pid),"/T","/F"});
-        taskkill.waitForFinished();
+    case session_status::New:          color = "#9aa0a6"; break;
+    case session_status::WaitingUser:  color = "#34a853"; break;
+    case session_status::Thinking:     color = "#4285f4"; break;
+    case session_status::Completed:    color = "#9aa0a6"; break;
+    case session_status::Failed:       color = "#ea4335"; break;
     }
-#endif
-    if(process->state() != QProcess::NotRunning)
-    {
-        process->kill();
-        // reap only a parentless (stack) QProcess; a parented one finishes asynchronously, never inside the caller's stdout loop
-        if(!process->parent())
-            process->waitForFinished(1000);
-    }
+    int intensity = phase <= 12 ? phase : 24-phase;
+    color = color.lighter(100+intensity*3);
+    dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
+    dot->setToolTip(session_status_text(status));
 }
+
+// shared look for the new-chat/settings dialogs, scoped by objectName so it cannot bleed into other dialogs
+static QString ai_dialog_style()
+{
+    return
+        "QLabel#ai_dialog_title{font-size:15px;font-weight:600;color:#202124;}"
+        "QLabel#ai_dialog_subtitle{color:#5f6368;}"
+        "QFrame#ai_step_card{background-color:#f7f7f8;border:1px solid #dddddd;border-radius:10px;}"
+        "QLabel#ai_step_heading{font-weight:600;color:#202124;}"
+        "QLabel#ai_step_body{color:#3c4043;}"
+        "QFrame#ai_field_frame{border:1px solid #d9d9dc;border-radius:10px;background-color:#ffffff;}"
+        "QFrame#ai_field_frame QLineEdit{border:none;background:transparent;padding:6px 4px;}"
+        "QLabel#ai_helper{color:#1a73e8;}"
+        "QLineEdit{border:1px solid #d9d9dc;border-radius:7px;padding:5px 8px;background-color:#f7f7f8;}"
+        "QLineEdit:focus{border-color:#8a8a8f;}"
+        "QComboBox{border:1px solid #d9d9dc;border-radius:7px;padding:4px 24px 4px 8px;background-color:#f7f7f8;min-height:22px;}"
+        "QComboBox:hover{background-color:#eeeeef;border-color:#c8c8cc;}"
+        "QComboBox:focus{border-color:#8a8a8f;}"
+        "QComboBox::drop-down{border:0;width:22px;}" // otherwise Qt draws the platform's native (raised/beveled) button here
+        "QComboBox QAbstractItemView{background-color:#ffffff;border:1px solid #d9d9dc;outline:0;padding:2px;selection-background-color:#e5e5e7;selection-color:#202124;}"
+        "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:6px 14px;}"
+        "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
+        "QPushButton:pressed{background-color:#dddddf;}"
+        "QPushButton:disabled{color:#9aa0a6;background-color:#f1f1f2;border-color:#e4e4e6;}"
+        "QPushButton#ai_primary_button{background-color:#1a73e8;color:#ffffff;border:none;font-weight:600;}"
+        "QPushButton#ai_primary_button:hover{background-color:#1765cc;}"
+        "QPushButton#ai_primary_button:pressed{background-color:#175dc1;}"
+        "QPushButton#ai_primary_button:disabled{background-color:#a8c7f0;color:#eef3fc;}";
+}
+
+static QString model_combo_key(const QComboBox& model) // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
+{
+    auto key = model.currentText().section(" (Ollama@",0,0);
+    return key == "default" ? QString() : key;
+}
+
+// populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) --
+// selected_info backs an unrecognized selected value so it still shows up as a real entry
+static void set_model_selector(QComboBox& model,const QJsonObject& profiles,
+                               QString selected = {},QString fallback = {},
+                               QJsonObject selected_info = {})
+{
+    // grouped, not one alphabetical sort: native models first, then Ollama models together as their own block
+    QStringList native_names,ollama_names;
+    for(const auto& name : profiles.keys())
+        (profiles[name].toObject().contains("provider") ? ollama_names : native_names) << name;
+    native_names.sort(Qt::CaseInsensitive);
+    ollama_names.sort(Qt::CaseInsensitive);
+
+    auto ollama_host = ai_ollama_url().first.host();
+    auto display_text = [&](const QString& name,const QJsonObject& info)
+    {
+        return info.contains("provider") ?
+               name+" (Ollama@"+(info.contains("url") ? QUrl(info["url"].toString()).host() : ollama_host)+")" : name;
+    };
+    model.clear();
+    model.addItem("default");
+    for(const auto& name : native_names+ollama_names)
+        model.addItem(display_text(name,profiles[name].toObject()),profiles[name].toObject());
+
+    auto target = selected.isEmpty() ? fallback : selected;
+    int selected_index = -1;
+    for(int i = 0;i < model.count() && selected_index < 0;++i)
+        if((model.itemText(i) == target || model.itemText(i).startsWith(target+" (")) &&
+           (selected_info.isEmpty() || model.itemData(i).toJsonObject().value("url") == selected_info.value("url"))) // same name on another Ollama server is a different model
+            selected_index = i;
+    if(selected_index < 0 && !selected.isEmpty())
+    {
+        model.addItem(display_text(selected,selected_info),selected_info);
+        selected_index = model.count()-1;
+    }
+    model.setCurrentIndex(std::max(0,selected_index));
+}
+
 void stop_agent_process(QProcess* process)
 {
     if(!process)
@@ -149,31 +214,11 @@ QString muse_uuid_v7()
     bytes[8] = char((quint8(bytes[8])&0x3f)|0x80);
     return QUuid::fromRfc4122(bytes).toString(QUuid::WithoutBraces);
 }
-QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {})
-{
-    QJsonObject msg{{"jsonrpc","2.0"},{"method",method}};
-    if(!id.isEmpty())
-        msg["id"] = id;
-    if(!params.isEmpty())
-        msg["params"] = params;
-    return json_line(msg);
-}
 QByteArray muse_command(const QString& id,const QString& method,QJsonObject params)
 {
     params["commandId"] = id;
     return jsonrpc(id,method,params);
 }
-QByteArray muse_initialize() // one handshake for the status probe, model list and chat; the probe checks experimentalApi in the reply
-{
-    return jsonrpc("initialize","initialize",
-        {{"clientInfo",QJsonObject{{"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
-         {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}});
-}
-QByteArray grok_initialize()
-{
-    return jsonrpc("initialize","initialize",{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}});
-}
-
 void AIAgent::ai_log(QString text)
 {
     if(ai_debug_level <= 0)
@@ -395,33 +440,9 @@ AIAgent::AIAgent(MainWindow* parent):
         show_ai_project(*info);
     });
 
-    for(const auto& info : QDir(ai_project_dir).entryInfoList(
-            {"*.jsonl"},QDir::Files,QDir::Time|QDir::Reversed))
+    for(auto* ai : load_ai_projects())
     {
-        auto session = QUrl::fromPercentEncoding(
-                           info.completeBaseName().toLatin1());
-        QList<QJsonObject> history;
-        QFile file(info.filePath());
-        if(!file.open(QIODevice::ReadOnly))
-            continue;
-        while(!file.atEnd())
-            if(auto doc = QJsonDocument::fromJson(file.readLine());doc.isObject())
-                history.append(doc.object());
-        if(history.isEmpty() || session.isEmpty())
-            continue;
-        QJsonObject config;
-        if(QFile config_file(ai_info::config_file(session));config_file.open(QIODevice::ReadOnly))
-            config = QJsonDocument::fromJson(config_file.readAll()).object();
-        auto* ai = ai_info::create(
-            session,config["provider"].toString(),config["agent"].toString());
-        if(!ai)
-            continue;
-        bool established = config["established"].toBool();
-        set_ai_status(ai->sessions,established ? session_status::Completed : session_status::New,
-                      established ? "Previous chat loaded." : "Previous attempt never connected.");
-        ai->model_settings = config["model_settings"].toObject();
-        ai->project_titles = settings.value("ai/title/"+session).toString();
-        ai->projects = std::move(history);
+        set_ai_status(ai->sessions,ai->status,ai->status_message); // logs and presents the restored status
         show_ai_project(*ai);
     }
     if(ui->ai_project_list->count())
@@ -904,37 +925,11 @@ void AIAgent::update_agent_models(
 }
 void AIAgent::refresh_agent_executables() // re-discover CLIs, so one installed while DSI Studio runs is picked up
 {
-    auto set_executable = [this](const QString& provider,const QString& name,QString fallback)
+    for(const auto& provider : local_agents)
     {
-        auto path = QStandardPaths::findExecutable(name);
-        if(path.isEmpty() && QFileInfo::exists(fallback))
-            path = fallback;
-        agent_entries[provider].executable = path;
+        auto path = agent_entries[provider].executable = find_agent_executable(provider);
         ai_log(path.isEmpty() ? provider+" not found" : provider+": "+path);
-    };
-
-    QString codex_path;
-    if(QStandardPaths::findExecutable("codex").isEmpty())
-    {
-        QDir dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
-        for(const auto& name : dir.entryList(QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
-            if(QFileInfo::exists(codex_path = dir.filePath(name+"/codex.exe")))
-                break;
     }
-    set_executable("Codex","codex",codex_path);
-#ifdef Q_OS_WIN
-    auto local_app_data = qEnvironmentVariable("LOCALAPPDATA");
-    set_executable("Claude","claude",QDir::homePath()+"/.local/bin/claude.exe");
-    set_executable("Muse","muse",local_app_data.isEmpty() ? QString() : local_app_data+"/Programs/muse/muse.cmd");
-    set_executable("Antigravity","agy",local_app_data+"/agy/bin/agy.exe");
-    set_executable("Grok","grok",QDir::homePath()+"/.grok/bin/grok.exe");
-#else
-    set_executable("Claude","claude",{});
-    set_executable("Muse","muse",QDir::homePath()+"/.local/bin/muse");
-    set_executable("Antigravity","agy",QDir::homePath()+"/.local/bin/agy");
-    set_executable("Grok","grok",QDir::homePath()+"/.grok/bin/grok");
-#endif
-
     if(!agent_entries["Claude"].executable.isEmpty())
     {
         // claude has no equivalent of "codex debug models" to query live, so use its known model aliases
@@ -1072,137 +1067,6 @@ void AIAgent::refresh_ollama_models()
 void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& text)
 {
     show_ai_project(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
-}
-
-static ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
-{
-    info.clear();
-    if(!local_agents.contains(provider))
-        return ai_agent_status::Error;
-    if(executable.isEmpty())
-        return ai_agent_status::NotInstalled;
-
-    QProcess process;
-    process.setProcessEnvironment(agent_environment(provider));
-    start_process(process,executable,provider == "Grok" ?        QStringList{"agent","stdio"} :
-                                     provider == "Antigravity" ? QStringList{"--output-format","json","models"} :
-                                     provider == "Muse" ?        QStringList{"serve"} :
-                                     provider == "Codex" ?       QStringList{"login","status"} : QStringList{"auth","status"});
-    if(!process.waitForStarted(3000))
-        return kill_process_tree(&process),ai_agent_status::Error;
-
-    if(provider == "Antigravity")
-    {
-        process.closeWriteChannel();
-        // agy started, so a failed or stalled "models" means no usable credential (after /logout it waits for a browser sign-in);
-        // Sign In then opens agy in a terminal, which shows any other error itself
-        if(!process.waitForFinished(10000) || process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
-            return kill_process_tree(&process),ai_agent_status::SignInRequired;
-        info = "Signed in";
-        return ai_agent_status::Ready;
-    }
-
-    if(provider == "Grok" || provider == "Muse")
-    {
-        auto deadline = QDateTime::currentMSecsSinceEpoch()+(provider == "Grok" ? 10000 : 5000);
-        auto read_response = [&](const QString& id)
-        {
-            while((process.state() != QProcess::NotRunning || process.canReadLine()) &&
-                  QDateTime::currentMSecsSinceEpoch() < deadline)
-            {
-                if(!process.canReadLine())
-                    process.waitForReadyRead(int(deadline-QDateTime::currentMSecsSinceEpoch()));
-                while(process.canReadLine())
-                    if(auto msg = QJsonDocument::fromJson(process.readLine()).object();msg["id"].toString() == id)
-                        return msg;
-            }
-            return QJsonObject();
-        };
-        auto status = ai_agent_status::Error;
-        if(provider == "Grok") // ACP initialize reports the agent's own credential choice: _meta.defaultAuthMethodId, null when none is usable
-        {
-            process.write(grok_initialize());
-            if(auto reply = read_response("initialize");reply.contains("result"))
-            {
-                auto method = reply["result"].toObject()["_meta"].toObject()["defaultAuthMethodId"].toString();
-                if(method.isEmpty())
-                    status = ai_agent_status::SignInRequired;
-                else
-                {
-                    info = method == "xai.api_key" ? "API key" : "Signed in";
-                    status = ai_agent_status::Ready;
-                }
-            }
-        }
-        else
-        {
-            process.write(muse_initialize());
-            if(read_response("initialize")["result"].toObject()["experimentalApi"].toBool())
-            {
-                process.write(jsonrpc({},"initialized"));
-                process.write(jsonrpc("account_read","account/read"));
-                if(auto account = read_response("account_read")["result"].toObject();!account.isEmpty())
-                {
-                    auto state = account["state"].toString();
-                    bool credential_required = account["credentialRequired"].toBool();
-                    if(credential_required && state == "loggedOut")
-                        status = ai_agent_status::SignInRequired;
-                    else
-                    {
-                        info = account["label"].toString().trimmed();
-                        if(info.isEmpty())
-                            info = state == "apiKey" ? "API key" :
-                                   state == "envKey" ? "Environment key" :
-                                   state == "accountLogin" ? "Signed in" :
-                                   credential_required ? "Signed in" : "Ready";
-                        status = ai_agent_status::Ready;
-                    }
-                }
-            }
-        }
-        process.closeWriteChannel();
-        if(!process.waitForFinished(1000))
-            kill_process_tree(&process);
-        return status;
-    }
-
-    if(!process.waitForFinished(10000))
-        return kill_process_tree(&process),ai_agent_status::Error; // the stack QProcess destructor would kill only the .cmd wrapper
-    if(process.exitStatus() != QProcess::NormalExit)
-        return ai_agent_status::Error;
-    if(provider == "Codex")
-    {
-        if(process.exitCode() != 0)
-            return QString::fromUtf8(process.readAllStandardError()).contains(
-                       "Not logged in",Qt::CaseInsensitive) ?
-                       ai_agent_status::SignInRequired : ai_agent_status::Error;
-        // codex login status has no --json/structured output (email/plan aren't exposed), only this
-        // free-text auth-method line -- see https://github.com/openai/codex/issues/19866
-        auto output = QString::fromUtf8(process.readAllStandardOutput());
-        info = output.contains("API key",Qt::CaseInsensitive) ? "API key" :
-               output.contains("ChatGPT",Qt::CaseInsensitive) ? "ChatGPT" :
-               output.contains("Agent Identity",Qt::CaseInsensitive) ? "Agent Identity" : "Signed in";
-        return ai_agent_status::Ready;
-    }
-    if(process.exitCode() != 0)
-        return ai_agent_status::Error;
-    auto object = QJsonDocument::fromJson(process.readAllStandardOutput()).object(); // unparsable or not an object: empty
-    if(!object["loggedIn"].isBool())
-        return ai_agent_status::Error;
-    if(!object["loggedIn"].toBool())
-        return ai_agent_status::SignInRequired;
-    auto email = object["email"].toString();
-    if(!email.isEmpty())
-    {
-        auto tier = object["subscriptionType"].toString();
-        info = tier.isEmpty() ? email : email+" · "+tier.left(1).toUpper()+tier.mid(1);
-    }
-    else
-    {
-        auto api_provider = object["apiProvider"].toString();
-        info = api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
-    }
-    return ai_agent_status::Ready;
 }
 
 void AIAgent::refresh_agent_status(const QString& provider)
@@ -1864,6 +1728,8 @@ ai_info* AIAgent::establish_agent_session(QProcess* process,QString new_session)
             return fail_agent_process(process,"Agent resumed a different session."),nullptr;
         if(!(info = assign_ai_session(old_session,new_session)))
             return fail_agent_process(process,"Agent session could not be assigned."),nullptr;
+        if(info->project_items)
+            info->project_items->setData(Qt::UserRole,new_session);
         process->setObjectName(new_session);
         info->processes = process;
     }
