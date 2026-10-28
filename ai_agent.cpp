@@ -632,6 +632,18 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     show_ai_project(info,entry);
 }
 
+QJsonArray AIAgent::agent_settings(const QStringList& providers) const
+{
+    QJsonArray records;
+    for(const auto& provider : providers)
+    {
+        auto entry = agent_entries.value(provider);
+        records << ai_agent_record(provider,"gui",entry.executable,entry.status,entry.status_info,entry.profiles.keys(),
+                                   entry.status == ai_agent_status::Checking ? QDateTime() : entry.status_time);
+    }
+    return records;
+}
+
 void AIAgent::update_current_window(QWidget* window)
 {
     if(dispatching_info)
@@ -1077,6 +1089,7 @@ void AIAgent::refresh_agent_status(const QString& provider)
         auto check_id = ++entry.status_check_id;
         entry.status_info.clear();
         entry.status = entry.executable.isEmpty() ? ai_agent_status::NotInstalled : ai_agent_status::Checking;
+        entry.status_time = QDateTime::currentDateTime();
         emit agent_status_changed(provider);
         if(entry.executable.isEmpty())
             return;
@@ -1098,6 +1111,7 @@ void AIAgent::refresh_agent_status(const QString& provider)
                 return;
             entry.status = result->status;
             entry.status_info = result->info;
+            entry.status_time = QDateTime::currentDateTime();
             emit agent_status_changed(provider);
         });
         connect(worker,&QThread::finished,worker,&QObject::deleteLater);
