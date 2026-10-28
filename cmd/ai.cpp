@@ -10,6 +10,8 @@
 
 #include <algorithm>
 #include <climits>
+#include <future>
+#include <map>
 #include <utility>
 
 #include <QCoreApplication>
@@ -25,6 +27,8 @@
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSet>
+#include <QSysInfo>
 #include <QStandardPaths>
 
 #include <iostream>
@@ -359,6 +363,153 @@ QList<ai_info*> load_ai_projects()
         loaded << ai;
     }
     return loaded;
+}
+
+QJsonObject ai_agent_record(const QString& provider,const QString& scope,const QString& executable,ai_agent_status status,
+                            const QString& info,const QStringList& models,const QDateTime& checked)
+{
+    // in ai_agent_status order; "ready": installed and signed in by the noninteractive check, usage limits are not checked
+    static const char* status_text[] = {"unknown","checking","not_installed","sign_in_required","ready","error"};
+    static const char* reason[] = {"not checked yet","check in progress; retry shortly","not installed; see ",
+                                   "sign-in required; sign in from DSI Studio's AI Agent settings on this host","","status check failed"};
+    bool ready = status == ai_agent_status::Ready;
+    return QJsonObject{{"agent",provider},{"host",QSysInfo::machineHostName()},{"scope",scope},
+                       {"executable",executable},{"status",status_text[int(status)]},
+                       {ready ? "account" : "reason",ready ? info : reason[int(status)]+
+                           (status == ai_agent_status::NotInstalled ? agent_install_url(provider).toString() : QString())},
+                       {"models",models.isEmpty() ? QJsonValue("unknown") : QJsonValue(QJsonArray::fromStringList(models))},
+                       {"checked",checked.isValid() ? QJsonValue(checked.toString(Qt::ISODate)) : QJsonValue()}};
+}
+
+bool ai_system_command(const std::vector<std::string>& cmd,const std::function<QJsonArray(const QStringList&)>& agent_records,
+                       QString& output,QString& error)
+{
+    if(cmd[0] == "get_agent_settings") // get_agent_settings [agent|ready]: all agents, one agent, or only the invocable ones
+    {
+        auto providers = local_agents;
+        auto name = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
+        bool ready_only = !name.compare("ready",Qt::CaseInsensitive);
+        if(!name.isEmpty() && !ready_only)
+        {
+            auto found = std::find_if(local_agents.begin(),local_agents.end(),[&](const QString& each){return !each.compare(name,Qt::CaseInsensitive);});
+            if(found == local_agents.end())
+                return error = "unknown agent: "+name+"; available: "+local_agents.join(", "),true;
+            providers = QStringList{*found};
+        }
+        QJsonArray records;
+        for(const auto& each : agent_records(providers))
+            if(!ready_only || each.toObject()["status"].toString() == "ready")
+                records << each;
+        output = QJsonDocument(records).toJson(QJsonDocument::Compact);
+        return true;
+    }
+    if(cmd[0] == "get_chat")
+    {
+        auto chat_metadata = [](const QString& id) -> QJsonObject // live chat first, otherwise its saved files; empty if neither exists
+        {
+            if(auto* info = ai_info::find(id))
+                return QJsonObject{{"id",id},{"title",info->project_titles},{"agent",info->agent_name},{"provider",info->provider},
+                                   {"model",info->model_settings.value("model").toString()},{"status",session_status_text(info->status)},
+                                   {"live",true},{"window",info->current_window},
+                                   {"last_activity",info->projects.isEmpty() ? QString() : info->projects.last().value("time").toString()}};
+            QFileInfo history(ai_info::history_file(id)),config_file(ai_info::config_file(id));
+            if(!history.exists() && !config_file.exists())
+                return {};
+            QJsonObject config;
+            if(QFile file(config_file.filePath());file.open(QIODevice::ReadOnly))
+                config = QJsonDocument::fromJson(file.readAll()).object();
+            return QJsonObject{{"id",id},{"title",QSettings().value("ai/title/"+id).toString()},{"agent",config["agent"].toString()},
+                               {"provider",config["provider"].toString()},{"model",config["model_settings"].toObject()["model"].toString()},
+                               {"status",config["established"].toBool() ? "Completed" : "New"},{"live",false}, // saved state only: not loaded, so not running
+                               {"last_activity",(history.exists() ? history : config_file).lastModified().toString(Qt::ISODate)}};
+        };
+        // get_chat [-N]: every chat's metadata (or the N most recent), newest first; read only -- never loads, selects, wakes or changes a chat
+        auto id = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
+        if(id.isEmpty() || id.startsWith('-'))
+        {
+            bool okay = true;
+            int recent = id.isEmpty() ? INT_MAX : -id.toInt(&okay);
+            if(!okay || recent <= 0)
+                return error = "usage: get_chat [-N] lists all (or the N most recent) chats; get_chat <session_id> [range] reads one",true;
+            QSet<QString> ids; // live chats and saved ones, once each
+            for(const auto& each : ai_infos)
+                ids << each.first;
+            for(const auto& file : QDir(ai_project_dir).entryInfoList({"*.jsonl","*.json"},QDir::Files))
+                if(auto session = QUrl::fromPercentEncoding(file.completeBaseName().toLatin1());is_valid_session_id(session))
+                    ids << session;
+            QList<QJsonObject> chats;
+            for(const auto& each : ids)
+                chats << chat_metadata(each);
+            std::sort(chats.begin(),chats.end(),[](const QJsonObject& a,const QJsonObject& b){return a["last_activity"].toString() > b["last_activity"].toString();});
+            QJsonArray list;
+            for(const auto& each : chats.mid(0,recent))
+                list << each;
+            output = QJsonDocument(list).toJson(QJsonDocument::Compact);
+            return true;
+        }
+        // get_chat <id> [range]: all (default), -N (last N messages), N (message N, 1 = first), N- (message N onward), N-M;
+        // a message (user or assistant) comes with the command/activity/error entries that follow it
+        auto range = cmd.size() > 2 && !cmd[2].empty() ? QString::fromStdString(cmd[2]) : QString("all");
+        int from = 1,to = INT_MAX; // message numbers; from < 0: the last -from messages, resolved once the count is known
+        bool okay = true;
+        if(range.startsWith('-'))
+            okay = (from = range.toInt(&okay)) < 0 && okay;
+        else if(range != "all")
+        {
+            auto parts = range.split('-');
+            to = from = parts[0].toInt(&okay);
+            if(okay && parts.size() == 2)
+                to = parts[1].isEmpty() ? INT_MAX : parts[1].toInt(&okay);
+            okay = okay && parts.size() <= 2 && from > 0 && to >= from;
+        }
+        if(!okay)
+            return error = "usage: get_chat <session_id> [all|-N|N|N-|N-M]: all (default), the last N messages, message N, message N onward, or messages N to M",true;
+        if(!is_valid_session_id(id))
+            return error = "invalid session id: "+id,true;
+        auto chat = chat_metadata(id);
+        if(chat.isEmpty())
+            return error = "chat not found: "+id,true;
+        QList<QJsonObject> history;
+        int skipped = 0;
+        if(auto* info = ai_info::find(id))
+            history = info->projects;
+        else if(QFile file(ai_info::history_file(id));file.open(QIODevice::ReadOnly))
+        {
+            while(!file.atEnd())
+                if(auto line = file.readLine().trimmed();!line.isEmpty())
+                {
+                    if(auto doc = QJsonDocument::fromJson(line);doc.isObject())
+                        history << doc.object();
+                    else
+                        ++skipped; // e.g. a partial last line
+                }
+        }
+        else
+            chat["history_unavailable"] = true; // no saved transcript (e.g. "keep history" is off)
+        auto is_message = [](const QJsonObject& entry){auto type = entry.value("type").toString();return type == "user" || type == "assistant";};
+        int messages = int(std::count_if(history.begin(),history.end(),is_message));
+        if(from == to && from > messages)
+            return error = "message "+range+" not found; this chat has "+QString::number(messages)+" messages",true;
+        if(from < 0)
+            from += messages+1;
+        if(from <= 1)
+            from = 0; // the whole chat also takes the entries before the first message
+        QJsonArray entries; // a range past the end is empty: nothing new since that message
+        for(int i = 0,n = 0;i < history.size();++i)
+            if((n += is_message(history[i])) >= from && n <= to)
+            {
+                auto entry = history[i];
+                entry["message"] = n;
+                entries << entry;
+            }
+        chat["messages"] = messages;
+        chat["history"] = entries;
+        if(skipped)
+            chat["skipped_lines"] = skipped;
+        output = QJsonDocument(chat).toJson(QJsonDocument::Compact);
+        return true;
+    }
+    return false;
 }
 
 QByteArray json_line(const QJsonObject& message)
@@ -1205,8 +1356,33 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     std::string approval = po.has("approval") ? po.get("approval") : std::string("manual");
     if(approval != "manual" && approval != "read_only" && approval != "auto")
         return tipl::error() << "--approval must be manual, read_only, or auto",1;
+    std::map<QString,QJsonObject> agent_cache; // readiness on this host: probed in parallel, reused for 5 minutes
+    auto agent_records = [&](const QStringList& providers)
+    {
+        std::map<QString,std::future<QJsonObject>> probes;
+        for(const auto& provider : providers)
+            if(auto it = agent_cache.find(provider);it == agent_cache.end() ||
+               QDateTime::fromString(it->second["checked"].toString(),Qt::ISODate).secsTo(QDateTime::currentDateTime()) > 300)
+                probes[provider] = std::async(std::launch::async,[provider]
+                {
+                    QString info;
+                    auto executable = find_agent_executable(provider);
+                    auto status = check_agent_status(provider,executable,info);
+                    return ai_agent_record(provider,"headless",executable,status,info,{},QDateTime::currentDateTime());
+                });
+        QJsonArray records;
+        for(const auto& provider : providers)
+        {
+            if(auto it = probes.find(provider);it != probes.end())
+                agent_cache[provider] = it->second.get();
+            records << agent_cache[provider];
+        }
+        return records;
+    };
     web.dispatch = [&](const QJsonObject& request)
     {
+        auto* info = ai_info::create(web.web_session_id,"Web","Web"); // recorded like a GUI Web chat, so get_chat can read it
+        info->model_settings["google_file_id"] = web.google_file_id;
         if(auto text = request["chat"].toString().trimmed();!text.isEmpty())
             chat << "\nAgent: " << text.toStdString() << std::endl;
         auto approve = [&](const QString& title,const QString& text,bool read_only) // --approval decides, otherwise the terminal user; no terminal declines
@@ -1254,14 +1430,21 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             }
             else if(cmd[0] == "set_title") // saved like a GUI chat's title, and names the Doc
             {
-                auto* info = ai_info::create(web.web_session_id,"Web","Web");
                 if(!(ok = cmd.size() == 2 && info->save_title(QString::fromStdString(cmd[1]))))
                     error = "usage: set_title <title>";
                 else
                     web.set_web_title(info->project_titles);
             }
+            else if(QString text,system_error;ai_system_command(cmd,agent_records,text,system_error))
+            {
+                if(!(ok = system_error.isEmpty()))
+                    error = system_error.toStdString();
+                else
+                    std::cout << text.toStdString() << std::endl;
+            }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, or set_title, and dispatch long work with run_shell \"sbatch ...\"";
+                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
+            info->record_history(QJsonObject{{"type","request"},{"text",QString::fromStdString(cmd[0])},{"window","main"}});
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())
@@ -1280,6 +1463,9 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             if(!ok)
                 break;
         }
+        info->status = session_status::WaitingUser;
+        info->record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed());
+        info->save_config();
         return QJsonObject{{"status",results.isEmpty() ? "success" : results.last().toObject()["status"].toString()},{"result",results}};
     };
     if(web.google_refresh_token.isEmpty() && !web.sign_in_device())
