@@ -638,8 +638,7 @@ QJsonArray AIAgent::agent_settings(const QStringList& providers) const
     for(const auto& provider : providers)
     {
         auto entry = agent_entries.value(provider);
-        records << ai_agent_record(provider,"gui",entry.executable,entry.status,entry.status_info,entry.profiles.keys(),
-                                   entry.status == ai_agent_status::Checking ? QDateTime() : entry.status_time);
+        records << ai_agent_record(provider,"gui",entry.executable,entry.status,entry.status_info,entry.profiles.keys(),entry.status_time);
     }
     return records;
 }
