@@ -20,12 +20,10 @@
 #include <unordered_map>
 #include <vector>
 
-class QComboBox;
-class QLabel;
 class QListWidgetItem;
 class QProcess;
+class QProcessEnvironment;
 class QSettings;
-class QWidget;
 
 enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declaration order is not meaningful -- ai_info::is_running() classifies by name, not ordinal comparison
 // New: no confirmed backend id yet (never launched, or a launch/reconnect awaiting the agent's own confirmation);
@@ -67,17 +65,31 @@ extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, befo
 
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, Web sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
+QList<ai_info*> load_ai_projects(); // restores saved chats from ai_project_dir into ai_infos, oldest first; sessions already in ai_infos are skipped, never reloaded over
 ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to; nullptr (nothing changed) if to already exists or from is missing
 QUrl agent_install_url(const QString& provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
-void stop_blink(QWidget* row); // stops a sidebar row's attention-getting blink animation and clears its stylesheet
-void update_status_dot(QLabel* dot,session_status status,bool pulse); // presentational: sets a sidebar/status dot's color and pulse animation for the given status
-QString ai_dialog_style(); // shared stylesheet for the new-chat/settings dialogs
 QByteArray json_line(const QJsonObject&); // one compact JSON message per line, the framing every agent protocol and the history file use
 QPair<QUrl,bool> ai_ollama_url(QString host = QSettings().value("ai/ollama_host","localhost").toString(),int port = QSettings().value("ai/ollama_port",11434).toInt()); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
-QString model_combo_key(const QComboBox& model); // strips the " (Ollama@host)" suffix off an Ollama model's display text; "default" is a UI label only -- its data value is empty, the one universal representation of "no explicit choice"
-void set_model_selector(QComboBox& model,const QJsonObject& profiles,
-                        QString selected = {},QString fallback = {},
-                        QJsonObject selected_info = {}); // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) -- selected_info backs an unrecognized selected value so it still shows up as a real entry
+
+// local CLI agents: discovery and noninteractive readiness probes (no login, no model turn, no widgets)
+enum class ai_agent_status
+{
+    Unknown = 0,
+    Checking,
+    NotInstalled,
+    SignInRequired,
+    Ready,
+    Error
+};
+extern const QStringList local_agents; // every local CLI agent, in settings order
+QString find_agent_executable(const QString& provider); // PATH first, then the provider's known install location; empty if not found
+ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info); // blocking; info: the credential description when Ready
+QProcessEnvironment agent_environment(const QString& provider);
+void start_process(QProcess& process,const QString& executable,QStringList args);
+void kill_process_tree(QProcess* process);
+QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {});
+QByteArray muse_initialize();
+QByteArray grok_initialize();
 
 // shared by MainWindow's command center and headless --action=ai
 using ai_approval = std::function<bool(const QString& title,const QString& request,bool read_only)>; // true approves; read_only: a shell command that cannot change anything
