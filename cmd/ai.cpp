@@ -3,6 +3,8 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
@@ -157,6 +159,21 @@ QByteArray muse_initialize() // one handshake for the status probe, model list a
     return jsonrpc("initialize","initialize",
         {{"clientInfo",QJsonObject{{"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
          {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}});
+}
+QString muse_uuid_v7()
+{
+    auto bytes = QUuid::createUuid().toRfc4122();
+    auto ms = quint64(QDateTime::currentMSecsSinceEpoch());
+    for(int i = 5;i >= 0;--i,ms >>= 8)
+        bytes[i] = char(ms);
+    bytes[6] = char((quint8(bytes[6])&0x0f)|0x70);
+    bytes[8] = char((quint8(bytes[8])&0x3f)|0x80);
+    return QUuid::fromRfc4122(bytes).toString(QUuid::WithoutBraces);
+}
+QByteArray muse_command(const QString& id,const QString& method,QJsonObject params)
+{
+    params["commandId"] = id;
+    return jsonrpc(id,method,params);
 }
 QByteArray grok_initialize()
 {
@@ -510,6 +527,680 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         return true;
     }
     return false;
+}
+
+bool start_agent(ai_info& info,const QString& text,const QString& executable,const QString& work_dir,QObject* owner,const agent_hooks& hooks)
+{
+    auto provider = info.provider;
+    auto session = info.sessions; // captured by value below for every async handler -- info itself must never be captured across them (Codex can still rename/rekey the session)
+    auto name = provider;
+    auto model = info.model_settings["model"].toString().trimmed();
+    QUrl model_url;
+    auto set_status = [hooks](ai_info& info,session_status status,const QString& message)
+    {
+        info.status = status;
+        info.status_message = message;
+        hooks.status(info);
+    };
+    auto add_history = [hooks](ai_info& info,const QString& type,const QString& text)
+    {
+        hooks.shown(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
+    };
+    // the one stdin boundary for every local agent's user input; records nothing
+    auto write_input = [](const ai_info& info,const QString& text)
+    {
+        auto* process = info.processes;
+        auto session = process->objectName(); // the established id, in case establishment renamed it
+        if(info.provider == "Claude")
+            process->write(json_line({{"type","user"},{"message",QJsonObject{{"role","user"},
+                {"content",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}));
+        else if(info.provider == "Muse")
+            process->write(muse_command(muse_uuid_v7(),"turn/start",{{"sessionId",session},{"ifBusy","steer"},
+                {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
+        else if(info.provider == "Antigravity")
+            process->write(json_line({{"event","user"},{"message",QJsonObject{{"content",text}}}}));
+        else if(info.provider == "Grok")
+        {
+            process->setProperty("turn_active",true); // Grok has no turn id: Stop cancels in-protocol only while a prompt is in flight
+            process->write(jsonrpc("prompt","session/prompt",
+                {{"sessionId",session},{"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
+        }
+        else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
+        {
+            auto turn_id = process->property("turn_id").toString();
+            QJsonObject params{{"threadId",session},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
+            if(!turn_id.isEmpty())
+                params["expectedTurnId"] = turn_id;
+            process->write(json_line({{"id",turn_id.isEmpty() ? "turn_start" : "turn_steer"},
+                                      {"method",turn_id.isEmpty() ? "turn/start" : "turn/steer"},{"params",params}}));
+        }
+    };
+    // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
+    auto fail_process = [](QProcess* process,const QString& message)
+    {
+        process->setProperty("fatal_error",message);
+        kill_process_tree(process);
+    };
+    // one turn-end rule for every agent whose protocol reports it
+    auto finish_turn = [=](QProcess* process,QString error = {},bool cancelled = false)
+    {
+        process->setProperty("turn_active",false);
+        process->setProperty("turn_id",QString());
+        auto* info = ai_info::find(process->objectName());
+        if(!info)
+            return;
+        if(error.isEmpty())
+            return set_status(*info,session_status::WaitingUser,cancelled ? "Stopped by user." : "Waiting for user");
+        if(!error.startsWith("ERROR:"))
+            error.prepend("ERROR: ");
+        set_status(*info,session_status::Failed,error);
+        add_history(*info,"error",error);
+    };
+    // the one session-identity rule for every local agent: a fresh launch adopts the agent's own id (empty: the agent runs
+    // under DSI Studio's id); a resume must keep its id; nullptr when the launch must stop
+    auto establish = [=](QProcess* process,QString new_session = {}) -> ai_info*
+    {
+        auto old_session = process->objectName();
+        auto* info = ai_info::find(old_session);
+        if(!info) // the chat was deleted while launching -- deletion stays deleted
+            return kill_process_tree(process),nullptr;
+        if(new_session.isEmpty())
+            new_session = old_session;
+        if(!is_valid_session_id(new_session))
+            return fail_process(process,"Agent returned an invalid session ID."),nullptr;
+        if(new_session != old_session)
+        {
+            if(info->status != session_status::New)
+                return fail_process(process,"Agent resumed a different session."),nullptr;
+            if(!(info = assign_ai_session(old_session,new_session)))
+                return fail_process(process,"Agent session could not be assigned."),nullptr;
+            process->setObjectName(new_session);
+            info->processes = process;
+        }
+        set_status(*info,session_status::Thinking,"Session started; waiting for agent");
+        info->save_config();
+        return info;
+    };
+    // a parsed agent reply; an empty one is ignored
+    auto add_reply = [=](QProcess* process,const QString& chat,const QString& reasoning)
+    {
+        if(chat.isEmpty() && reasoning.isEmpty())
+            return;
+        if(auto* info = ai_info::find(process->objectName()))
+        {
+            process->setProperty("had_reply",true);
+            auto entry = info->record_reply(chat,reasoning);
+            set_status(*info,chat.isEmpty() ? session_status::Thinking : session_status::WaitingUser,
+                       chat.isEmpty() ? "Agent is thinking" : "Agent replied; waiting for your message.");
+            hooks.shown(*info,entry); // the new reply lets a background chat blink
+        }
+    };
+    const bool launching = !info.processes;
+    if(launching)
+    {
+        auto fail_launch = [&](QString message)
+        {
+            if(!message.startsWith("ERROR:"))
+                message.prepend("ERROR: ");
+            set_status(info,info.status == session_status::New ?
+                       session_status::New : session_status::Failed,message);
+            add_history(info,"error",message);
+            info.save_config();
+            return false;
+        };
+
+        if(executable.isEmpty())
+            return fail_launch(name+" is not installed: "+agent_install_url(provider).toString());
+
+        if(auto model_info = info.model_settings["info"].toObject();model_info.contains("provider"))
+        {
+            // the chat's own Ollama server, saved with its model; chats saved before servers were recorded use the current setting
+            auto [url,configured] = model_info.contains("url") ? QPair<QUrl,bool>{QUrl(model_info["url"].toString()),true} :
+                                                                 ai_ollama_url();
+            model_url = url;
+            name += "/Ollama("+model_url.host()+")";
+            if(!configured)
+                return fail_launch("Set the Ollama host/IP in AI Settings first.");
+            if(url.host().isEmpty()) // never let a damaged Ollama profile fall through to native/cloud routing
+                return fail_launch("This chat's saved Ollama server is invalid; choose its model again in Change Model.");
+        }
+        else if(hooks.sign_in && !hooks.sign_in(provider))
+            return fail_launch(name+" sign-in was not completed.");
+
+        auto* process = new QProcess(owner);
+        process->setObjectName(session);
+        process->setWorkingDirectory(provider == "Antigravity" ? work_dir : QCoreApplication::applicationDirPath()+"/ai");
+        auto env = agent_environment(provider);
+        if(!model_url.isEmpty()) // agents inherit HTTP(S)_PROXY; keep LAN Ollama traffic direct
+            env.insert("NO_PROXY",model_url.host()+
+                       (env.contains("NO_PROXY") ? ","+env.value("NO_PROXY") : QString()));
+        env.insert("DSI_STUDIO_AGENT",provider);
+        if(provider == "Muse")
+            env.insert("MUSE_SESSION_ID",session);
+        if(provider == "Claude" && !model_url.isEmpty()) // Claude on Ollama; agent_environment() already dropped any inherited redirect
+        {
+            env.insert("ANTHROPIC_BASE_URL",model_url.toString());
+            env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
+            env.insert("ANTHROPIC_API_KEY","");
+            env.insert("CLAUDE_CODE_USE_POWERSHELL_TOOL","1");
+            if(!model.isEmpty())
+                for(auto var : {"ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
+                                "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"})
+                    env.insert(var,model);
+        }
+#ifdef Q_OS_WIN
+        // locate bash for windows
+        for(const auto& path : {qEnvironmentVariable("ProgramFiles") + "/Git/bin",
+                                qEnvironmentVariable("LOCALAPPDATA") + "/Programs/Git/bin"})
+            if(QFile::exists(path + "/bash.exe"))
+            {
+                hooks.log("bash found: "+path+"/bash.exe");
+                env.insert("PATH",path + ";" + env.value("PATH"));
+                break;
+            }
+#endif
+        process->setProcessEnvironment(env);
+        info.processes = process;
+    }
+
+    // recorded once, here, before the launch or write -- never replayed from an async establishment event
+    add_history(info,"user",text);
+    info.save_config();
+    if(!launching)
+    {
+        write_input(info,text);
+        set_status(info,session_status::Thinking,"Message sent; waiting for agent");
+        return true;
+    }
+
+    auto* process = info.processes;
+    const bool first_launch = info.status == session_status::New; // pre-launch status: a never-established chat returns to New, not Failed
+    const bool resuming = !first_launch;
+    auto workspace = info.model_settings["cwd"].toString().trimmed();
+    if(workspace.isEmpty())
+        workspace = work_dir;
+    auto cwd = process->workingDirectory(); // the fixed ai folder (except Antigravity): Grok groups persisted sessions by cwd
+    // the first message of every launch/resume carries the same instructions; later messages are the raw text
+    auto ai_dir = QCoreApplication::applicationDirPath()+"/ai";
+    // relative wherever the agent runs in the ai folder: Claude's --allowedTools pre-approves only "bash ./dsi.sh"
+    auto dsi_sh = QDir::cleanPath(cwd) == QDir::cleanPath(ai_dir) ?
+                  QString("./dsi.sh") : "\""+ai_dir+"/dsi.sh\"";
+    auto prompt = "Read and follow "+QDir::toNativeSeparators(ai_dir+"/AGENTS.md")+" before handling this request. "
+                  "Use `bash "+dsi_sh+"` for DSI Studio commands. "
+                  "The selected DSI Studio work directory is "+QDir::toNativeSeparators(workspace)+".\n\n"+text;
+
+    auto send_prompt = [=]
+    {
+        if(auto* current = ai_info::find(process->objectName()))
+            write_input(*current,prompt);
+    };
+    // one ending for a failed start and for an exit: an unestablished first launch has no real id to preserve,
+    // so it returns to New (its recorded message stays); a reconnect keeps its id
+    auto end_process = [=](bool failed,bool user_stopped,QString message)
+    {
+        if(failed)
+            hooks.log(message);
+        process->deleteLater(); // deferred: process stays usable below
+        auto* info = ai_info::find(process->objectName());
+        if(!info)
+            return;
+        info->processes = nullptr;
+        if(first_launch && info->status == session_status::New)
+        {
+            if(!failed && !user_stopped)
+                message = "ERROR: AI agent ended before creating a new chat.";
+            set_status(*info,session_status::New,message);
+            add_history(*info,user_stopped ? "activity" : "error",message);
+            info->save_config(); // so the recorded messages have a config.json naming their agent on reload
+        }
+        else if(failed || user_stopped)
+        {
+            set_status(*info,failed ? session_status::Failed : session_status::Completed,message);
+            add_history(*info,failed ? "error" : "activity",message);
+        }
+        else if(!process->property("had_reply").toBool())
+        {
+            set_status(*info,session_status::Completed,"No reply from AI agent.");
+            add_history(*info,"activity","No reply from AI agent.");
+        }
+        else
+        {
+            set_status(*info,session_status::Completed,"Agent process finished.");
+            hooks.shown(*info,{});
+        }
+    };
+
+    QObject::connect(process,&QProcess::readyReadStandardError,owner,[=]
+    {
+        auto error = process->property("stderr").toByteArray()+
+                     process->readAllStandardError();
+        process->setProperty("stderr",error.right(8*1024));
+    });
+
+    QObject::connect(process,&QProcess::started,owner,[=]
+    {
+        // stdin stays open for every local provider: Codex app-server, Claude stream-json, and Muse MSP
+        auto current_session = process->objectName();
+        hooks.log("connecting to "+ name + "@" + current_session+
+            " pid:"+QString::number(process->processId()));
+        // only the provider's own establish event confirms a session: a first launch stays New until then, while a
+        // reconnect shows Thinking so a save mid-reconnect cannot persist established:false (see save_config())
+        if(auto* info = ai_info::find(current_session))
+        {
+            set_status(*info,first_launch ? session_status::New : session_status::Thinking,
+                       "Waiting for "+name+" connection");
+            hooks.shown(*info,{});
+        }
+        if(provider == "Codex")
+            process->write(json_line({{"id","initialize"},{"method","initialize"},
+                {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","DSI Studio"},{"version","1.0"}}}}}}));
+        else if(provider == "Muse")
+            process->write(muse_initialize());
+        else if(provider == "Grok")
+            process->write(grok_initialize());
+        else if(provider == "Claude") // Claude's system/init only arrives after its first input
+            if(auto* info = ai_info::find(current_session))
+                write_input(*info,prompt);
+    });
+
+    QObject::connect(process,&QProcess::errorOccurred,owner,
+            [=](QProcess::ProcessError error)
+    {
+        if(error == QProcess::FailedToStart)
+            end_process(true,false,"ERROR: Cannot start "+name+": "+process->errorString());
+    });
+
+    QObject::connect(process,
+            QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+            owner,[=](int exit_code,QProcess::ExitStatus exit_status)
+    {
+        bool user_stopped = process->property("user_stopped").toBool();
+        hooks.log(name + " finished session ");
+        auto error = (process->property("stderr").toByteArray()+
+                      process->readAllStandardError()).trimmed();
+        auto fatal_error = process->property("fatal_error").toString();
+        bool failed = !user_stopped && (!fatal_error.isEmpty() || exit_code ||
+                                         exit_status == QProcess::CrashExit);
+        auto error_message = user_stopped ? QString("Stopped by user.") :
+                             !fatal_error.isEmpty() ? "ERROR: "+fatal_error :
+                             !error.isEmpty() ? "ERROR: "+QString::fromUtf8(error) :
+                             "ERROR: "+name+" exited with code "+QString::number(exit_code)+".";
+        end_process(failed,user_stopped,error_message);
+    });
+
+    QObject::connect(process,&QProcess::readyReadStandardOutput,owner,[=]
+    {
+        while(process->canReadLine())
+        {
+            auto line = process->readLine();
+            hooks.log("stdout:"+QString::fromUtf8(line).trimmed());
+            auto msg = QJsonDocument::fromJson(line).object();
+            if(provider == "Codex")
+            {
+                // app-server JSON-RPC over stdio: initialize -> initialized -> thread/start|resume -> turn/start;
+                // item/completed carries each item's complete text, so no delta accumulation
+                if(!msg.contains("method") && (msg.contains("result") || msg.contains("error")))
+                {
+                    auto id = msg["id"].toString();
+                    if(msg.contains("error"))
+                    {
+                        auto error = msg["error"].toObject()["message"].toString().trimmed();
+                        auto message = "Codex "+id+" failed: "+(error.isEmpty() ? "Unknown error." : error);
+                        if(auto* info = ai_info::find(process->objectName()))
+                        {
+                            set_status(*info,info->status == session_status::New ? session_status::New :
+                                       process->property("turn_id").toString().isEmpty() ? session_status::Failed :
+                                       session_status::Thinking,message);
+                            if(id == "initialize" || id == "thread_start" || id == "thread_resume")
+                            {
+                                // The finish handler records the failure and releases the process for a fresh attempt.
+                                process->setProperty("stderr",process->property("stderr").toByteArray()+'\n'+message.toUtf8());
+                                kill_process_tree(process);
+                                continue;
+                            }
+                            add_history(*info,"error",message);
+                        }
+                        continue;
+                    }
+                    if(id == "initialize")
+                    {
+                        process->write(json_line({{"method","initialized"}}));
+                        // "never": an unanswered approval request would hang the turn. No "cwd": the thread stays in the ai folder
+                        // so Codex finds AGENTS.md; work_dir is granted as extra sandbox access instead
+                        QJsonObject params{{"approvalPolicy","never"},
+                            {"sandboxPolicy",QJsonObject{{"type","workspaceWrite"},
+                                {"writableRoots",QJsonArray{work_dir}}}}};
+                        if(!model.isEmpty() && model != "default") // Codex's own code-assigned alias for "no explicit choice" -- omit the field instead
+                            params["model"] = model;
+                        if(resuming)
+                            params["threadId"] = session;
+                        process->write(json_line({{"id",resuming ? "thread_resume" : "thread_start"},
+                                                  {"method",resuming ? "thread/resume" : "thread/start"},{"params",params}}));
+                    }
+                    else if((id == "thread_start" || id == "thread_resume") &&
+                            establish(process,msg["result"].toObject()["thread"].toObject()["id"].toString()))
+                        send_prompt();
+                    continue;
+                }
+                auto method = msg["method"].toString();
+                if(method == "turn/started") // tracks the active turn id -- start_ai()'s Codex send path needs it to steer into a running turn instead of starting a conflicting one
+                    process->setProperty("turn_id",msg["params"].toObject()["turn"].toObject()["id"].toString());
+                else if(method == "item/completed")
+                {
+                    auto item = msg["params"].toObject()["item"].toObject();
+                    auto type = item["type"].toString();
+                    if(type == "agentMessage")
+                        add_reply(process,item["text"].toString().trimmed(),QString());
+                    else if(type == "reasoning")
+                    {
+                        QStringList lines;
+                        for(auto key : {"summary","content"})
+                            for(auto v : item[key].toArray())
+                                lines << v.toString();
+                        add_reply(process,QString(),lines.join('\n').trimmed());
+                    }
+                }
+                else if(method == "turn/completed")
+                {
+                    // idle again: the next Codex send starts a fresh turn instead of steering into this one
+                    auto turn = msg["params"].toObject()["turn"].toObject();
+                    auto turn_status = turn["status"].toString();
+                    auto error = turn["error"].toObject()["message"].toString();
+                    finish_turn(process,turn_status != "failed" ? QString() : error.isEmpty() ? "Turn failed" : error,
+                                turn_status == "interrupted");
+                }
+                else if(method == "error")
+                {
+                    auto error = msg["params"].toObject()["error"].toObject()["message"].toString().trimmed();
+                    auto message = "Codex error: "+(error.isEmpty() ? QString("Unknown error.") : error);
+                    if(auto* info = ai_info::find(process->objectName()))
+                    {
+                        // An error notification can precede recovery; turn/completed owns the final status.
+                        set_status(*info,info->status,message);
+                        add_history(*info,"error",message);
+                    }
+                }
+            }
+            else if(provider == "Muse")
+            {
+                auto id = msg["id"].toString();
+                auto session_request = process->property("muse_session_request").toString();
+                if(msg.contains("error"))
+                {
+                    auto message = msg["error"].toObject()["message"].toString().trimmed();
+                    message = "Muse "+(message.isEmpty() ? QString("request failed.") : message);
+                    if(id == "initialize" || id == session_request)
+                        fail_process(process,message);
+                    else
+                        finish_turn(process,message);
+                    continue;
+                }
+                if(id == "initialize")
+                {
+                    process->write(jsonrpc({},"initialized"));
+                    auto request_id = muse_uuid_v7();
+                    process->setProperty("muse_session_request",request_id);
+                    QJsonObject params{{"sessionId",session}};
+                    if(!resuming)
+                    {
+                        params["approvalMode"] = "allowAll";
+                        params["workspaceRoot"] = workspace;
+                        if(!model.isEmpty())
+                            params["modelId"] = model;
+                    }
+                    process->write(muse_command(request_id,resuming ? "session/resume" : "session/start",params));
+                    continue;
+                }
+                if(id == session_request)
+                {
+                    if(establish(process,msg["result"].toObject()["session"].toObject()["sessionId"].toString()))
+                        send_prompt();
+                    continue;
+                }
+                auto result = msg["result"].toObject();
+                if(result.contains("turnId"))
+                    process->setProperty("turn_id",result["turnId"].toString());
+                auto method = msg["method"].toString();
+                if(method == "turn/started")
+                    process->setProperty("turn_id",msg["params"].toObject()["turnId"].toString());
+                else if(method == "item/completed")
+                {
+                    auto item = msg["params"].toObject()["item"].toObject();
+                    auto kind = item["kind"].toString();
+                    auto value = item["text"].toString().trimmed();
+                    if(kind == "agentMessage" || kind == "reasoning")
+                        add_reply(process,kind == "agentMessage" ? value : QString(),kind == "reasoning" ? value : QString());
+                }
+                else if(method == "turn/completed")
+                {
+                    auto params = msg["params"].toObject();
+                    auto terminal = params["terminal"].toString();
+                    auto error = params["error"].toObject()["message"].toString();
+                    if(error.isEmpty())
+                        error = params["reason"].toString();
+                    finish_turn(process,terminal != "failed" ? QString() : error.isEmpty() ? "Muse turn failed." : error,
+                                terminal == "cancelled");
+                }
+            }
+            else if(provider == "Antigravity")
+            {
+                auto event = msg["event"].toString();
+                if(event == "init")
+                {
+                    if(establish(process,msg["conversation_id"].toString()))
+                        send_prompt();
+                    continue;
+                }
+                if(event != "result")
+                    continue;
+                auto result = msg["result"].toObject();
+                auto terminal = result["status"].toString();
+                bool cancelled = terminal == "CANCELED" || terminal == "INTERRUPTED";
+                auto reply = result["response"].toString().trimmed();
+                if(terminal == "SUCCESS")
+                    add_reply(process,reply,{});
+                auto error = result["error"].toString().trimmed();
+                finish_turn(process,terminal == "SUCCESS" || cancelled ? QString() :
+                            "Antigravity "+(!error.isEmpty() ? error : terminal.isEmpty() ? QString("request failed.") : terminal.toLower()+"."),
+                            cancelled);
+            }
+            else if(provider == "Grok")
+            {
+                auto method = msg["method"].toString();
+                if(method == "session/update")
+                {
+                    // streamed chunks are collected and recorded once per turn: each add_reply() is a persisted history entry
+                    auto update = msg["params"].toObject()["update"].toObject();
+                    auto type = update["sessionUpdate"].toString();
+                    auto value = update["content"].toObject()["text"].toString();
+                    if(type == "agent_message_chunk" || type == "agent_thought_chunk")
+                    {
+                        auto key = type == "agent_message_chunk" ? "grok_chat" : "grok_reasoning";
+                        process->setProperty(key,process->property(key).toString()+value);
+                    }
+                    else if(auto title = update["title"].toString().trimmed();type == "tool_call" && !title.isEmpty())
+                        if(auto* current = ai_info::find(process->objectName()))
+                            set_status(*current,session_status::Thinking,title);
+                    continue;
+                }
+                if(method == "session/request_permission") // not expected with --always-approve; an unanswered reverse request would stall the turn
+                {
+                    process->write(json_line({{"jsonrpc","2.0"},{"id",msg.value("id")},
+                           {"result",QJsonObject{{"outcome",QJsonObject{{"outcome","cancelled"}}}}}}));
+                    if(auto* current = ai_info::find(process->objectName()))
+                        add_history(*current,"error","ERROR: Grok requested an interactive permission; the request was cancelled.");
+                    continue;
+                }
+                auto id = msg["id"].toString();
+                if(id.isEmpty())
+                    continue; // other Grok notifications are not used
+                if(msg.contains("error"))
+                {
+                    auto error = msg["error"].toObject()["message"].toString().trimmed();
+                    auto message = "Grok "+id+" failed: "+(error.isEmpty() ? QString("request failed.") : error);
+                    if(id != "prompt")
+                        fail_process(process,message);
+                    else
+                    {
+                        process->setProperty("grok_chat",QString());
+                        process->setProperty("grok_reasoning",QString());
+                        finish_turn(process,message);
+                    }
+                    continue;
+                }
+                if(id == "initialize") // authenticate as Grok's own headless client does, failing closed without a usable credential
+                {
+                    auto auth = msg["result"].toObject()["_meta"].toObject()["defaultAuthMethodId"].toString();
+                    if(auth.isEmpty())
+                    {
+                        if(hooks.signed_out)
+                            hooks.signed_out(provider);
+                        fail_process(process,"Grok is not signed in.");
+                        continue;
+                    }
+                    process->write(jsonrpc("authenticate","authenticate",{{"methodId",auth}}));
+                }
+                else if(id == "authenticate")
+                {
+                    QJsonObject meta{{"sessionId",session}};
+                    if(resuming)
+                        meta = QJsonObject{{"noReplay",true}}; // DSI Studio already holds the transcript
+                    else if(!model.isEmpty())
+                        meta["modelId"] = model;
+                    QJsonObject params{{"cwd",cwd},{"mcpServers",QJsonArray()},{"_meta",meta}};
+                    if(resuming)
+                        params["sessionId"] = session;
+                    process->write(jsonrpc("session",resuming ? "session/load" : "session/new",params));
+                }
+                else if(id == "session")
+                {
+                    if(!establish(process,msg["result"].toObject()["sessionId"].toString()))
+                        continue;
+                    if(resuming && !model.isEmpty()) // a new session got its model through _meta.modelId
+                        process->write(jsonrpc("set_model","session/set_config_option",
+                               {{"sessionId",process->objectName()},{"configId","model"},{"value",model}}));
+                    else
+                        send_prompt();
+                }
+                else if(id == "set_model")
+                    send_prompt();
+                else if(id == "prompt")
+                {
+                    auto chat = process->property("grok_chat").toString().trimmed();
+                    auto reasoning = process->property("grok_reasoning").toString().trimmed();
+                    process->setProperty("grok_chat",QString());
+                    process->setProperty("grok_reasoning",QString());
+                    add_reply(process,chat,reasoning);
+                    finish_turn(process,{},msg["result"].toObject()["stopReason"].toString() == "cancelled");
+                }
+            }
+            else // Claude
+            {
+                if(msg.contains("error"))
+                {
+                    if(auto* info = ai_info::find(process->objectName()))
+                    {
+                        auto details = "Error: "+QString::fromUtf8(QJsonDocument(msg).toJson(QJsonDocument::Compact));
+                        set_status(*info,session_status::Failed,details); // red dot; a later reply restores the status
+                                   add_history(*info,"error",details);
+                        // an expired OAuth login is not detected by "claude auth status"; require sign-in before the next launch
+                        if(msg["error"].toString() == "authentication_failed" &&
+                           details.contains("OAuth",Qt::CaseInsensitive) && hooks.signed_out)
+                            hooks.signed_out(provider);
+                    }
+                    continue;
+                }
+                auto event_type = msg["type"].toString();
+                if(event_type == "system")
+                {
+                    auto subtype = msg["subtype"].toString();
+                    if(subtype == "init") // the session-established event; Claude runs under DSI Studio's own --session-id/--resume id
+                        establish(process);
+                    else if(subtype == "thinking_tokens")
+                    {
+                        if(auto* info = ai_info::find(process->objectName());
+                           info && info->status != session_status::Thinking)
+                            set_status(*info,session_status::Thinking,"Agent is thinking");
+                    }
+                    continue;
+                }
+                if(event_type != "assistant")
+                    continue;
+                auto message = msg["message"].toObject();
+                QStringList chats,reasonings;
+                for(const auto& value : message["content"].toArray())
+                {
+                    auto content = value.toObject();
+                    auto type = content["type"].toString();
+                    if(type == "text")
+                        chats << content["text"].toString();
+                    else if(type == "thinking" || type == "reasoning")
+                    {
+                        auto reasoning = content[type].toString();
+                        reasonings << (reasoning.isEmpty() ? content["text"].toString() : reasoning);
+                    }
+                }
+                auto chat_text = chats.join('\n').trimmed();
+                auto reasoning_text = reasonings.join('\n').trimmed();
+                if(!chat_text.isEmpty() || !reasoning_text.isEmpty())
+                    add_reply(process,chat_text,reasoning_text);
+                else if(auto* info = ai_info::find(process->objectName()))
+                {
+                    set_status(*info,session_status::Thinking,"Agent is thinking");
+                    hooks.shown(*info,{});
+                }
+            }
+        }
+    });
+
+    QStringList args;
+    if(provider == "Codex")
+    {
+        if(!model_url.isEmpty()) // Ollama: a custom provider id -- Codex forces localhost for its reserved "ollama"/"oss" ids (openai/codex#8240)
+        {
+            auto endpoint = model_url;
+            endpoint.setPath("/v1");
+            // every -c goes before app-server
+            args << "-c" << "model_providers.dsi_ollama.name=\"DSI Studio Ollama\""
+                 << "-c" << "model_providers.dsi_ollama.base_url=\""+endpoint.toString()+"\""
+                 << "-c" << "model_providers.dsi_ollama.wire_api=\"responses\""
+                 << "-c" << "model_providers.dsi_ollama.requires_openai_auth=false"
+                 << "-c" << "model_provider=\"dsi_ollama\"";
+        }
+        args << "app-server";
+    }
+    else if(provider == "Muse")
+        args = {"serve","--trust-workspace","--disable-sandbox"};
+    else if(provider == "Antigravity")
+    {
+        args = {"--input-format","stream-json",
+                "--output-format","stream-json",
+                "--dangerously-skip-permissions",
+                "--add-dir",work_dir};
+        if(!model.isEmpty())
+            args << "--model" << model;
+        if(resuming)
+            args << "--conversation" << session;
+    }
+    else if(provider == "Grok")
+        args = {"agent","--always-approve","stdio"};
+    else // Claude: an absent --model falls back to whatever the Claude CLI last remembered from an unrelated session, not a real default
+        args = {"-p",
+                "--input-format","stream-json",
+                "--output-format","stream-json",
+                "--verbose",
+                "--add-dir",work_dir,
+                "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
+                resuming ? "--resume" : "--session-id",session,
+                "--model",model.isEmpty() ? "sonnet" : model};
+
+    hooks.log("start " + executable +
+              " args: " + args.join(" ").remove("\n"));
+    // New only for a never-established launch; a resumed session shows Thinking (see the started handler above)
+    set_status(info,resuming ? session_status::Thinking : session_status::New,
+               "Starting "+name);
+    start_process(*process,executable,args);
+    return true;
 }
 
 QByteArray json_line(const QJsonObject& message)
@@ -1379,11 +2070,9 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         }
         return records;
     };
-    web.dispatch = [&](const QJsonObject& request)
+    auto dispatch = [&](ai_info& info,const QJsonObject& request) // one request from the Web agent or a local agent this process launched
     {
-        auto* info = ai_info::create(web.web_session_id,"Web","Web"); // recorded like a GUI Web chat, so get_chat can read it
-        info->model_settings["google_file_id"] = web.google_file_id;
-        info->record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed()); // the agent's message precedes the commands it sends
+        info.record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed()); // the agent's message precedes the commands it sends
         if(auto text = request["chat"].toString().trimmed();!text.isEmpty())
             chat << "\nAgent: " << text.toStdString() << std::endl;
         auto approve = [&](const QString& title,const QString& text,bool read_only) // --approval decides, otherwise the terminal user; no terminal declines
@@ -1431,10 +2120,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             }
             else if(cmd[0] == "set_title") // saved like a GUI chat's title, and names the Doc
             {
-                if(!(ok = cmd.size() == 2 && info->save_title(QString::fromStdString(cmd[1]))))
+                if(!(ok = cmd.size() == 2 && info.save_title(QString::fromStdString(cmd[1]))))
                     error = "usage: set_title <title>";
-                else
-                    web.set_web_title(info->project_titles);
+                else if(info.sessions == web.web_session_id)
+                    web.set_web_title(info.project_titles);
             }
             else if(QString text,system_error;ai_system_command(cmd,agent_records,text,system_error))
             {
@@ -1452,7 +2141,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             QJsonObject entry{{"type","request"},{"text",QString::fromStdString(cmd[0])},{"window","main"}};
             if(!ok)
                 entry["error"] = QString::fromStdString(error);
-            info->record_history(entry);
+            info.record_history(entry);
             QJsonObject result{{"cmd",QString::fromStdString(cmd[0])},{"status",ok ? "success" : "error"}};
             if(!out.str().empty())
                 result["output"] = QString::fromStdString(out.str());
@@ -1467,10 +2156,37 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             if(!ok)
                 break;
         }
-        info->status = session_status::WaitingUser;
-        info->save_config();
+        // a live local process is still mid-turn (this was one of its tool calls); Web is idle now
+        info.status = info.processes && info.processes->state() != QProcess::NotRunning ? session_status::Thinking : session_status::WaitingUser;
+        info.save_config();
         return QJsonObject{{"status",results.isEmpty() ? "success" : results.last().toObject()["status"].toString()},{"result",results}};
     };
+    web.dispatch = [&](const QJsonObject& request)
+    {
+        auto* info = ai_info::create(web.web_session_id,"Web","Web"); // recorded like a GUI Web chat, so get_chat can read it
+        info->model_settings["google_file_id"] = web.google_file_id;
+        return dispatch(*info,request);
+    };
+    QLocalServer server; // callbacks from the local agents this process launches: per process and same user, so they never reach a GUI instance
+    server.setSocketOptions(QLocalServer::UserAccessOption);
+    if(!server.listen("dsi-studio-"+QString::number(QCoreApplication::applicationPid())))
+        return tipl::error() << "cannot start local server: " << server.errorString().toStdString(),1;
+    qputenv("DSI_STUDIO_SOCKET",server.fullServerName().toUtf8()); // inherited by launched agents: dsi.sh and dsi.ps1 then use only this server
+    QObject::connect(&server,&QLocalServer::newConnection,[&]
+    {
+        auto* socket = server.nextPendingConnection();
+        socket->waitForReadyRead(500);
+        auto data = socket->readAll();
+        while(QJsonDocument::fromJson(data).isNull() && socket->waitForReadyRead(5000)) // a large request arrives in several chunks
+            data += socket->readAll();
+        auto request = QJsonDocument::fromJson(data).object();
+        auto* info = ai_info::find(request["session"].toString().trimmed());
+        socket->write(QJsonDocument(info ? dispatch(*info,request) : QJsonObject{{"status","error"},{"error","session not found"}}).toJson(QJsonDocument::Compact));
+        socket->flush();
+        socket->waitForBytesWritten(500);
+        socket->disconnectFromServer();
+        socket->deleteLater();
+    });
     load_ai_projects(); // a resumed chat keeps its saved history, title and settings
     if(web.google_refresh_token.isEmpty() && !web.sign_in_device())
         return 1;

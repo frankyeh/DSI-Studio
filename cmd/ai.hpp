@@ -90,6 +90,20 @@ void kill_process_tree(QProcess* process);
 QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {});
 QByteArray muse_initialize();
 QByteArray grok_initialize();
+QString muse_uuid_v7(); // a time-ordered UUID, as Muse expects for session and command ids
+QByteArray muse_command(const QString& id,const QString& method,QJsonObject params);
+// how a caller presents a local agent's turn; sign_in and signed_out are optional
+struct agent_hooks
+{
+    std::function<void(ai_info&)> status;                   // info.status and status_message changed
+    std::function<void(ai_info&,const QJsonObject&)> shown; // refresh the chat; entry: the entry just recorded, if any
+    std::function<bool(const QString&)> sign_in;            // before a launch: true when the provider may start
+    std::function<void(const QString&)> signed_out;         // the provider rejected its credential
+    std::function<void(const QString&)> log;                // debug line
+};
+// sends text to info's local agent, launching or resuming its process when needed (shared by the GUI and headless);
+// false, with the failure recorded, when the launch cannot start
+bool start_agent(ai_info& info,const QString& text,const QString& executable,const QString& work_dir,QObject* owner,const agent_hooks& hooks);
 QJsonObject ai_agent_record(const QString& provider,const QString& scope,const QString& executable,ai_agent_status status,
                             const QString& info,const QStringList& models,const QDateTime& checked); // one get_agent_settings entry; scope: "gui" or "headless"
 // read-only system commands shared by MainWindow's command center and headless --action=ai: get_agent_settings [agent|ready],

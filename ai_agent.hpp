@@ -70,10 +70,7 @@ class AIAgent : public QMainWindow
     void update_send_button(); // reflects Send / Stop / Resume / disabled, purely from current_send_action() and whether a chat is selected
 
     void add_ai_history(ai_info&,const QString&,const QString&);
-    void add_ai_reply(QProcess*,const QString& chat,const QString& reasoning);
     bool run_agent_login(const QString& provider);
-    void finish_agent_turn(QProcess* process,QString error = {},bool cancelled = false); // one turn-end rule: idle (WaitingUser) or Failed with an error entry
-    ai_info* establish_agent_session(QProcess* process,QString new_session = {}); // the one session-identity rule for every local agent; nullptr when the launch must stop
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself only when this chat is the one currently selected
