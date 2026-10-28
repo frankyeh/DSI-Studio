@@ -100,6 +100,11 @@ QProcessEnvironment agent_environment(const QString& provider)
     if(provider == "Muse" && !env.contains("TBH_CREDENTIAL_BACKEND"))
         env.insert("TBH_CREDENTIAL_BACKEND","file");
 #endif
+    if(provider == "Claude") // real Anthropic baseline for status, sign-in and chat: drop any inherited Ollama redirect; an Ollama launch re-adds its own
+        for(auto var : {"ANTHROPIC_BASE_URL","ANTHROPIC_AUTH_TOKEN","CLAUDE_CODE_USE_POWERSHELL_TOOL",
+                        "ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
+                        "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"})
+            env.remove(var);
     return env;
 }
 void start_process(QProcess& process,const QString& executable,QStringList args)
@@ -286,13 +291,12 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
         return ai_agent_status::Error;
     if(provider == "Codex")
     {
-        if(process.exitCode() != 0)
-            return QString::fromUtf8(process.readAllStandardError()).contains(
-                       "Not logged in",Qt::CaseInsensitive) ?
-                       ai_agent_status::SignInRequired : ai_agent_status::Error;
         // codex login status has no --json/structured output (email/plan aren't exposed), only this
-        // free-text auth-method line -- see https://github.com/openai/codex/issues/19866
-        auto output = QString::fromUtf8(process.readAllStandardOutput());
+        // free-text auth-method line -- see https://github.com/openai/codex/issues/19866 -- on stdout or stderr depending on version
+        auto output = QString::fromUtf8(process.readAllStandardOutput()+process.readAllStandardError());
+        if(process.exitCode() != 0)
+            return output.contains("Not logged in",Qt::CaseInsensitive) ?
+                       ai_agent_status::SignInRequired : ai_agent_status::Error;
         info = output.contains("API key",Qt::CaseInsensitive) ? "API key" :
                output.contains("ChatGPT",Qt::CaseInsensitive) ? "ChatGPT" :
                output.contains("Agent Identity",Qt::CaseInsensitive) ? "Agent Identity" : "Signed in";
