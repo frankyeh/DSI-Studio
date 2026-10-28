@@ -809,10 +809,11 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                          cell+"<td width=\"20%\"></td>"));
     };
 
+    // rebuild when a request is involved: a local agent's reply follows its requests; a Web/AgentServer message precedes the requests it sent
     if(added_type.isEmpty() || added_type == "request" ||
        (added_type == "assistant" &&
-        history.size() > 1 &&
-        history[history.size()-2]["type"] == "request"))
+        (history.last()["type"] == "request" ||
+         (history.size() > 1 && history[history.size()-2]["type"] == "request"))))
     {
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();)
