@@ -34,6 +34,7 @@ struct ai_agent_entry
     QJsonObject profiles;
     QString status_info;
     ai_agent_status status = ai_agent_status::Unknown;
+    QDateTime status_time; // when status was last determined
     quint64 status_check_id = 0;
 };
 
@@ -92,6 +93,7 @@ public:
     void update_current_window(QWidget*); // called where open_fib/open_src/open_image create their window; no-op unless an AI dispatch is in progress
     bool approve(const QString& title,const QString& request); // the local user's confirmation of an AI file write, shell command, or upload
     QJsonObject web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error); // web_upload, web_download_prepare, web_download for this chat's Web session
+    QJsonArray agent_settings(const QStringList& providers) const; // cached readiness for get_agent_settings; never probes
 
 signals:
     void agent_status_changed(const QString& provider);
