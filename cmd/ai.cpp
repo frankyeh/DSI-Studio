@@ -387,6 +387,8 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
     if(cmd[0] == "get_agent_settings") // get_agent_settings [agent|ready]: all agents, one agent, or only the invocable ones
     {
         auto providers = local_agents;
+        if(cmd.size() > 2)
+            return error = "usage: get_agent_settings [agent|ready]",true;
         auto name = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
         bool ready_only = !name.compare("ready",Qt::CaseInsensitive);
         if(!name.isEmpty() && !ready_only)
@@ -428,8 +430,8 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         if(id.isEmpty() || id.startsWith('-'))
         {
             bool okay = true;
-            int recent = id.isEmpty() ? INT_MAX : -id.toInt(&okay);
-            if(!okay || recent <= 0)
+            int recent = id.isEmpty() ? INT_MAX : id.mid(1).toInt(&okay);
+            if(!okay || recent <= 0 || cmd.size() > 2)
                 return error = "usage: get_chat [-N] lists all (or the N most recent) chats; get_chat <session_id> [range] reads one",true;
             QSet<QString> ids; // live chats and saved ones, once each
             for(const auto& each : ai_infos)
@@ -450,10 +452,10 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         // get_chat <id> [range]: all (default), -N (last N messages), N (message N, 1 = first), N- (message N onward), N-M;
         // a message (user or assistant) comes with the command/activity/error entries that follow it
         auto range = cmd.size() > 2 && !cmd[2].empty() ? QString::fromStdString(cmd[2]) : QString("all");
-        int from = 1,to = INT_MAX; // message numbers; from < 0: the last -from messages, resolved once the count is known
+        int from = 0,to = INT_MAX; // message numbers, 0 = the entries before the first message; from < 0: the last -from messages
         bool okay = true;
         if(range.startsWith('-'))
-            okay = (from = range.toInt(&okay)) < 0 && okay;
+            okay = (from = -range.mid(1).toInt(&okay)) < 0 && okay;
         else if(range != "all")
         {
             auto parts = range.split('-');
@@ -462,7 +464,7 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
                 to = parts[1].isEmpty() ? INT_MAX : parts[1].toInt(&okay);
             okay = okay && parts.size() <= 2 && from > 0 && to >= from;
         }
-        if(!okay)
+        if(!okay || cmd.size() > 3)
             return error = "usage: get_chat <session_id> [all|-N|N|N-|N-M]: all (default), the last N messages, message N, message N onward, or messages N to M",true;
         if(!is_valid_session_id(id))
             return error = "invalid session id: "+id,true;
@@ -490,10 +492,8 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         int messages = int(std::count_if(history.begin(),history.end(),is_message));
         if(from == to && from > messages)
             return error = "message "+range+" not found; this chat has "+QString::number(messages)+" messages",true;
-        if(from < 0)
-            from += messages+1;
-        if(from <= 1)
-            from = 0; // the whole chat also takes the entries before the first message
+        if(from < 0 && (from += messages+1) <= 1)
+            from = 0; // the last N covers the whole chat
         QJsonArray entries; // a range past the end is empty: nothing new since that message
         for(int i = 0,n = 0;i < history.size();++i)
             if((n += is_message(history[i])) >= from && n <= to)
@@ -1383,6 +1383,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     {
         auto* info = ai_info::create(web.web_session_id,"Web","Web"); // recorded like a GUI Web chat, so get_chat can read it
         info->model_settings["google_file_id"] = web.google_file_id;
+        info->record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed()); // the agent's message precedes the commands it sends
         if(auto text = request["chat"].toString().trimmed();!text.isEmpty())
             chat << "\nAgent: " << text.toStdString() << std::endl;
         auto approve = [&](const QString& title,const QString& text,bool read_only) // --approval decides, otherwise the terminal user; no terminal declines
@@ -1444,11 +1445,14 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             }
             else
                 ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
-            info->record_history(QJsonObject{{"type","request"},{"text",QString::fromStdString(cmd[0])},{"window","main"}});
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())
                 error = upload_error.toStdString();
+            QJsonObject entry{{"type","request"},{"text",QString::fromStdString(cmd[0])},{"window","main"}};
+            if(!ok)
+                entry["error"] = QString::fromStdString(error);
+            info->record_history(entry);
             QJsonObject result{{"cmd",QString::fromStdString(cmd[0])},{"status",ok ? "success" : "error"}};
             if(!out.str().empty())
                 result["output"] = QString::fromStdString(out.str());
@@ -1464,10 +1468,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                 break;
         }
         info->status = session_status::WaitingUser;
-        info->record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed());
         info->save_config();
         return QJsonObject{{"status",results.isEmpty() ? "success" : results.last().toObject()["status"].toString()},{"result",results}};
     };
+    load_ai_projects(); // a resumed chat keeps its saved history, title and settings
     if(web.google_refresh_token.isEmpty() && !web.sign_in_device())
         return 1;
     auto start = [&](QString file,QString session)
