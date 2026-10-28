@@ -27,16 +27,6 @@ namespace Ui {
 class AIAgent;
 }
 
-enum class ai_agent_status
-{
-    Unknown = 0,
-    Checking,
-    NotInstalled,
-    SignInRequired,
-    Ready,
-    Error
-};
-
 // one entry per local agent name: executable, discovered model profiles, and cached status
 struct ai_agent_entry
 {
