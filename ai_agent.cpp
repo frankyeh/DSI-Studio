@@ -1806,28 +1806,16 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
         env.insert("DSI_STUDIO_AGENT",provider);
         if(provider == "Muse")
             env.insert("MUSE_SESSION_ID",session);
-        if(provider == "Claude")
+        if(provider == "Claude" && !model_url.isEmpty()) // Claude on Ollama; agent_environment() already dropped any inherited redirect
         {
-            static const char* ollama_model_vars[] = {
-                "ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
-                "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"};
-            if(!model_url.isEmpty())
-            {
-                env.insert("ANTHROPIC_BASE_URL",model_url.toString());
-                env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
-                env.insert("ANTHROPIC_API_KEY","");
-                env.insert("CLAUDE_CODE_USE_POWERSHELL_TOOL","1");
-                if(!model.isEmpty())
-                    for(auto var : ollama_model_vars)
-                        env.insert(var,model);
-            }
-            else // real Anthropic model: strip any Ollama redirect inherited from the system environment
-            {
-                for(auto var : {"ANTHROPIC_BASE_URL","ANTHROPIC_AUTH_TOKEN","CLAUDE_CODE_USE_POWERSHELL_TOOL"})
-                    env.remove(var);
-                for(auto var : ollama_model_vars)
-                    env.remove(var);
-            }
+            env.insert("ANTHROPIC_BASE_URL",model_url.toString());
+            env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
+            env.insert("ANTHROPIC_API_KEY","");
+            env.insert("CLAUDE_CODE_USE_POWERSHELL_TOOL","1");
+            if(!model.isEmpty())
+                for(auto var : {"ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_SONNET_MODEL",
+                                "ANTHROPIC_DEFAULT_OPUS_MODEL","CLAUDE_CODE_SUBAGENT_MODEL"})
+                    env.insert(var,model);
         }
 #ifdef Q_OS_WIN
         // locate bash for windows
