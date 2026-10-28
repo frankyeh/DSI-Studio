@@ -596,6 +596,7 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     ai_log("received: "+QString::fromUtf8(data));
     auto chat = request["chat"].toString().trimmed();
     auto reasoning = request["reasoning"].toString().trimmed();
+    auto entry = info.record_reply(chat,reasoning); // the agent's message precedes the commands it sends
     QJsonObject result;
     {
         // dispatch state for update_current_window() and approve(); a nested ai_request() restores the outer request's state
@@ -624,7 +625,6 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     else
         set_ai_status(session,session_status::WaitingUser,"Request completed; waiting for next request.");
 
-    auto entry = info.record_reply(chat,reasoning);
     reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
     ai_log(QString("reply for %1@%2: %3 ...")
                .arg(info.agent_name,session,
