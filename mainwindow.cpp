@@ -1234,6 +1234,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             QJsonObject entry{{"type","request"},{"text",command_name},{"window",command_window_type(info.current_window)}};
             if(!title.isEmpty())
                 entry["title"] = title;
+            if(!error.isEmpty())
+                entry["error"] = error;
             info.record_history(entry);
 
             QJsonObject result{{"cmd",command_name},{"status",error.isEmpty() ? "success" : "error"}};
