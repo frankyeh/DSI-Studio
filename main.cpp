@@ -569,7 +569,7 @@ int main(int ac, char *av[])
             w.openFile(QStringList() << av[1]);
 
         QLocalServer server;
-        server.setSocketOptions(QLocalServer::WorldAccessOption);
+        server.setSocketOptions(QLocalServer::UserAccessOption);
         w.setProperty("ai_available",server.listen("dsi-studio"));
         if(w.property("ai_available").toBool())
         {
