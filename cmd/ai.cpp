@@ -401,6 +401,14 @@ QJsonObject ai_agent_record(const QString& provider,const QString& scope,const Q
 bool ai_system_command(const std::vector<std::string>& cmd,const std::function<QJsonArray(const QStringList&)>& agent_records,
                        QString& output,QString& error)
 {
+    auto find_agent = [&](const QString& name) // the local agent's own name; empty, with the error set, when name is none of them
+    {
+        auto found = std::find_if(local_agents.begin(),local_agents.end(),[&](const QString& each){return !each.compare(name,Qt::CaseInsensitive);});
+        if(found != local_agents.end())
+            return *found;
+        error = "unknown agent: "+name+"; available: "+local_agents.join(", ");
+        return QString();
+    };
     if(cmd[0] == "get_agent_settings") // get_agent_settings [agent|ready]: all agents, one agent, or only the invocable ones
     {
         auto providers = local_agents;
@@ -410,16 +418,39 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         bool ready_only = !name.compare("ready",Qt::CaseInsensitive);
         if(!name.isEmpty() && !ready_only)
         {
-            auto found = std::find_if(local_agents.begin(),local_agents.end(),[&](const QString& each){return !each.compare(name,Qt::CaseInsensitive);});
-            if(found == local_agents.end())
-                return error = "unknown agent: "+name+"; available: "+local_agents.join(", "),true;
-            providers = QStringList{*found};
+            providers = QStringList{find_agent(name)};
+            if(providers[0].isEmpty())
+                return true;
         }
         QJsonArray records;
         for(const auto& each : agent_records(providers))
             if(!ready_only || each.toObject()["status"].toString() == "ready")
                 records << each;
         output = QJsonDocument(records).toJson(QJsonDocument::Compact);
+        return true;
+    }
+    if(cmd[0] == "new_chat") // new_chat <agent> [model] [title]: a DSI-managed chat, launched by its first message
+    {
+        if(cmd.size() < 2 || cmd.size() > 4 || cmd[1].empty())
+            return error = "usage: new_chat <agent> [model] [title]",true;
+        auto agent = find_agent(QString::fromStdString(cmd[1]));
+        if(agent.isEmpty())
+            return true;
+        auto model = cmd.size() > 2 && cmd[2] != "default" ? QString::fromStdString(cmd[2]) : QString();
+        auto record = agent_records({agent}).first().toObject();
+        if(record["status"].toString() != "ready")
+            return error = agent+" cannot start on this host ("+record["status"].toString()+"): "+record["reason"].toString(),true;
+        if(auto models = record["models"].toArray();!model.isEmpty() && !models.isEmpty() && !models.contains(model)) // an "unknown" list accepts any model
+            return error = "unknown model for "+agent+": "+model+"; available: "+QVariant(models.toVariantList()).toStringList().join(", "),true;
+        auto* info = ai_info::create(agent == "Muse" ? muse_uuid_v7() : QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
+        info->model_settings = QJsonObject{{"model",model}};
+        info->status_message = "Ready for a message.";
+        if(cmd.size() > 3 && !cmd[3].empty() && !info->save_title(QString::fromStdString(cmd[3])))
+            return error = "chat "+info->sessions+" created, but its title cannot be saved",true;
+        info->record_history(QJsonObject{{"type","activity"},{"text","Chat created by new_chat."}}); // saved now, so the chat survives placeholder cleanup and restarts
+        info->save_config();
+        output = QJsonDocument(QJsonObject{{"id",info->sessions},{"agent",agent},{"model",model},
+                                           {"title",info->project_titles},{"status",session_status_text(info->status)}}).toJson(QJsonDocument::Compact);
         return true;
     }
     if(cmd[0] == "get_chat")
@@ -2133,7 +2164,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                     std::cout << text.toStdString() << std::endl;
             }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
+                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, new_chat, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())

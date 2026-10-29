@@ -106,8 +106,8 @@ struct agent_hooks
 bool start_agent(ai_info& info,const QString& text,const QString& executable,const QString& work_dir,QObject* owner,const agent_hooks& hooks);
 QJsonObject ai_agent_record(const QString& provider,const QString& scope,const QString& executable,ai_agent_status status,
                             const QString& info,const QStringList& models,const QDateTime& checked); // one get_agent_settings entry; scope: "gui" or "headless"
-// read-only system commands shared by MainWindow's command center and headless --action=ai: get_agent_settings [agent|ready],
-// get_chat [-N | session_id [all|-N|N|N-|N-M]]; false if cmd is neither. agent_records supplies readiness for the given agents on this host
+// system commands shared by MainWindow's command center and headless --action=ai: get_agent_settings [agent|ready],
+// new_chat <agent> [model] [title], get_chat [-N | session_id [all|-N|N|N-|N-M]]; false if cmd is none of them. agent_records supplies readiness for the given agents on this host
 bool ai_system_command(const std::vector<std::string>& cmd,const std::function<QJsonArray(const QStringList&)>& agent_records,
                        QString& output,QString& error);
 

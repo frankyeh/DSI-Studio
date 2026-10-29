@@ -596,6 +596,9 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
                .arg(info.agent_name,session,
                     QString::fromUtf8(reply).left(32)));
     show_ai_project(info,entry);
+    for(auto& each : ai_infos) // e.g. a chat this request created with new_chat
+        if(!each.second.project_items)
+            show_ai_project(each.second);
 }
 
 QJsonArray AIAgent::agent_settings(const QStringList& providers) const
@@ -604,7 +607,11 @@ QJsonArray AIAgent::agent_settings(const QStringList& providers) const
     for(const auto& provider : providers)
     {
         auto entry = agent_entries.value(provider);
-        records << ai_agent_record(provider,"gui",entry.executable,entry.status,entry.status_info,entry.profiles.keys(),entry.status_time);
+        QStringList models; // native models only: new_chat cannot carry an Ollama server profile
+        for(auto it = entry.profiles.begin();it != entry.profiles.end();++it)
+            if(!it.value().toObject().contains("provider"))
+                models << it.key();
+        records << ai_agent_record(provider,"gui",entry.executable,entry.status,entry.status_info,models,entry.status_time);
     }
     return records;
 }
