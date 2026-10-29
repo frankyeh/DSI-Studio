@@ -429,10 +429,13 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
         output = QJsonDocument(records).toJson(QJsonDocument::Compact);
         return true;
     }
-    if(cmd[0] == "new_chat") // new_chat <agent> [model] [title]: a DSI-managed chat, launched by its first message
+    if(cmd[0] == "new_chat") // new_chat <agent> [model] [title] [work_dir]: a DSI-managed chat, launched by its first message
     {
-        if(cmd.size() < 2 || cmd.size() > 4 || cmd[1].empty())
-            return error = "usage: new_chat <agent> [model] [title]",true;
+        if(cmd.size() < 2 || cmd.size() > 5 || cmd[1].empty())
+            return error = "usage: new_chat <agent> [model] [title] [work_dir]",true;
+        QFileInfo work_dir(cmd.size() > 4 ? QString::fromStdString(cmd[4]) : QString()); // relative to the caller's work directory
+        if(cmd.size() > 4 && !work_dir.isDir())
+            return error = "work directory not found: "+work_dir.absoluteFilePath(),true;
         auto agent = find_agent(QString::fromStdString(cmd[1]));
         if(agent.isEmpty())
             return true;
@@ -444,6 +447,8 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             return error = "unknown model for "+agent+": "+model+"; available: "+QVariant(models.toVariantList()).toStringList().join(", "),true;
         auto* info = ai_info::create(agent == "Muse" ? muse_uuid_v7() : QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
         info->model_settings = QJsonObject{{"model",model}};
+        if(cmd.size() > 4)
+            info->model_settings["cwd"] = work_dir.absoluteFilePath(); // the agent's writable folder from its first launch
         info->status_message = "Ready for a message.";
         if(cmd.size() > 3 && !cmd[3].empty() && !info->save_title(QString::fromStdString(cmd[3])))
             return ai_infos.erase(QString(info->sessions)),error = "cannot save the title; no chat was created",true;
@@ -561,7 +566,7 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
         hooks.shown(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
     };
     // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)
-    auto write_input = [](const ai_info& info,const QString& text)
+    auto write_input = [work_dir](const ai_info& info,const QString& text)
     {
         auto* process = info.processes;
         auto session = process->objectName(); // the established id, in case establishment renamed it
@@ -579,11 +584,14 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
             return process->write(jsonrpc("prompt","session/prompt",
                 {{"sessionId",session},{"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
         }
-        // Codex app-server: steer into the currently active turn, or start a fresh one if idle
+        // Codex app-server: steer into the currently active turn, or start a fresh one if idle; a new turn re-grants
+        // the chat's current work_dir (set_work_dir moves it), as thread/start|resume accept only a sandbox mode
         auto turn_id = process->property("turn_id").toString();
         QJsonObject params{{"threadId",session},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
         if(!turn_id.isEmpty())
             params["expectedTurnId"] = turn_id;
+        else if(!work_dir.isEmpty()) // Codex rejects a non-absolute writable root
+            params["sandboxPolicy"] = QJsonObject{{"type","workspaceWrite"},{"writableRoots",QJsonArray{QFileInfo(work_dir).absoluteFilePath()}}};
         return process->write(json_line({{"id",turn_id.isEmpty() ? "turn_start" : "turn_steer"},
                                          {"method",turn_id.isEmpty() ? "turn/start" : "turn/steer"},{"params",params}}));
     };
@@ -882,10 +890,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                     {
                         process->write(json_line({{"method","initialized"}}));
                         // "never": an unanswered approval request would hang the turn. No "cwd": the thread stays in the ai folder
-                        // so Codex finds AGENTS.md; work_dir is granted as extra sandbox access instead
-                        QJsonObject params{{"approvalPolicy","never"},
-                            {"sandboxPolicy",QJsonObject{{"type","workspaceWrite"},
-                                {"writableRoots",QJsonArray{work_dir}}}}};
+                        // so Codex finds AGENTS.md; each turn/start grants work_dir as a writable root
+                        QJsonObject params{{"approvalPolicy","never"},{"sandbox","workspace-write"}};
                         if(!model.isEmpty() && model != "default") // Codex's own code-assigned alias for "no explicit choice" -- omit the field instead
                             params["model"] = model;
                         if(resuming)
@@ -1404,18 +1410,75 @@ static bool read_only_shell(const QString& text) // conservative: one simple com
                (args[0] == "file" && (arg.startsWith("--co") || QRegularExpression("^-[^-]*C").match(arg).hasMatch()));
     });
 }
-bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error)
+bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error) // write_text_file <filename> <content> or patch_text_file <filename> <unified diff>
 {
+    bool patch = cmd[0] == "patch_text_file";
     if(cmd.size() != 3 || cmd[1].empty())
-        return error = "usage: write_text_file <filename> <content>",false;
+        return error = patch ? "usage: patch_text_file <filename> <unified diff>" : "usage: write_text_file <filename> <content>",false;
     auto file_name = QFileInfo(QString::fromUtf8(cmd[1].c_str())).absoluteFilePath(); // relative to the working directory (set_work_dir)
-    if(!approve("AI File Write Request","The AI agent wants to write "+QString::number(cmd[2].size())+
-                   " bytes to this file, replacing it if it exists:\n\n"+file_name,false))
+    auto content = QByteArray::fromStdString(cmd[2]);
+    if(patch)
+    {
+        // each hunk applies where its context and removed lines match exactly, nearest its stated line; any mismatch changes nothing
+        QFile file(file_name);
+        if(!file.open(QIODevice::ReadOnly))
+            return error = "cannot read "+file_name.toStdString(),false;
+        auto text = QString::fromUtf8(file.readAll());
+        bool crlf = text.contains("\r\n");
+        auto lines = text.replace("\r\n","\n").split('\n');
+        auto diff = QString::fromUtf8(content).replace("\r\n","\n");
+        if(diff.endsWith('\n'))
+            diff.chop(1);
+        QStringList old_lines,new_lines;
+        int hunks = 0,expected = 0,cursor = 0,offset = 0;
+        auto apply = [&]
+        {
+            int found = -1;
+            for(int i = cursor;i+old_lines.size() <= lines.size();++i)
+                if((found < 0 || std::abs(i-expected) < std::abs(found-expected)) && std::equal(old_lines.begin(),old_lines.end(),lines.begin()+i))
+                    found = i;
+            if(found < 0)
+                return false;
+            lines = lines.mid(0,found)+new_lines+lines.mid(found+old_lines.size());
+            cursor = found+int(new_lines.size());
+            offset += int(new_lines.size()-old_lines.size());
+            return true;
+        };
+        auto mismatch = [&]{return error = "hunk "+std::to_string(hunks)+" does not match "+file_name.toStdString()+"; nothing was changed",false;};
+        QRegularExpression header("^@@ -(\\d+)(?:,(\\d+))? \\+\\d+(?:,\\d+)? @@");
+        for(const auto& line : diff.split('\n'))
+        {
+            if(auto match = header.match(line);match.hasMatch())
+            {
+                if(hunks && !apply())
+                    return mismatch();
+                ++hunks;
+                old_lines.clear();
+                new_lines.clear();
+                expected = match.captured(1).toInt()-(match.captured(2) == "0" ? 0 : 1)+offset; // -N,0 inserts after line N
+                continue;
+            }
+            if(!hunks || line.startsWith('\\')) // file headers, "\ No newline at end of file"
+                continue;
+            if(!line.startsWith('+'))
+                old_lines << line.mid(1);
+            if(!line.startsWith('-'))
+                new_lines << line.mid(1);
+        }
+        if(!hunks)
+            return error = "no @@ hunk in the patch",false;
+        if(!apply())
+            return mismatch();
+        text = lines.join('\n');
+        content = (crlf ? text.replace("\n","\r\n") : text).toUtf8();
+    }
+    if(!approve("AI File Write Request",patch ? "The AI agent wants to apply this patch to "+file_name+":\n\n"+QString::fromUtf8(cmd[2].c_str()) :
+                "The AI agent wants to write "+QString::number(content.size())+" bytes to this file, replacing it if it exists:\n\n"+file_name,false))
         return error = "user declined to write this file",false;
     QFile file(file_name); // binary: the UTF-8 content and its newlines are written exactly, no BOM
-    if(!file.open(QIODevice::WriteOnly) || file.write(cmd[2].data(),qint64(cmd[2].size())) != qint64(cmd[2].size()))
+    if(!file.open(QIODevice::WriteOnly) || file.write(content) != content.size())
         return error = "cannot write to "+file_name.toStdString(),false;
-    tipl::out() << "wrote " << cmd[2].size() << " bytes to " << file_name.toStdString();
+    tipl::out() << "wrote " << content.size() << " bytes to " << file_name.toStdString();
     return true;
 }
 bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve,std::string& error,
@@ -2145,7 +2208,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                 ok = false,error = "this chat's work directory "+work_dir.toStdString()+" is unavailable; use set_work_dir";
             else if(cmd[0] == "run_shell")
                 ok = ai_run_shell(cmd,approve,error,[&](qint64 pid){web.report_step("running",{},pid);});
-            else if(cmd[0] == "write_text_file")
+            else if(cmd[0] == "write_text_file" || cmd[0] == "patch_text_file")
                 ok = ai_write_text_file(cmd,approve,error);
             else if(cmd[0] == "web_upload" || cmd[0] == "web_download_prepare" || cmd[0] == "web_download")
                 ok = !(attachment = web.web_file(cmd,approve,upload_error)).isEmpty();
@@ -2175,7 +2238,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                     std::cout << text.toStdString() << std::endl;
             }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, new_chat, send_chat, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
+                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, patch_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, new_chat, send_chat, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())
