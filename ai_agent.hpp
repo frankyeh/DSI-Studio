@@ -62,7 +62,7 @@ class AIAgent : public QMainWindow
 
     web_bridge web; // the Web channel: Google tokens and the connected chat's session Doc
     bool sign_in_google(); // system-browser sign-in (PKCE + loopback); true once a token is held
-    void start_web(ai_info&); // starts (or resumes) polling this chat's Doc and copies the connection prompt
+    void start_web(ai_info&); // starts (or resumes) polling this chat's Doc and posts the connection prompt to its history
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
     enum class send_action {Disabled,Send,Stop,Resume}; // local agents use persistent stdin/stdout processes; send-vs-queue is only internal startup timing

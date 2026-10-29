@@ -1,7 +1,6 @@
 #include <QAction>
 #include <QApplication>
 #include <QCheckBox>
-#include <QClipboard>
 #include <QCloseEvent>
 #include <QColor>
 #include <QComboBox>
@@ -1248,8 +1247,8 @@ void AIAgent::update_send_button()
 void AIAgent::start_web(ai_info& info)
 {
     web.start_web(info.model_settings["google_file_id"].toString(),info.sessions);
-    QApplication::clipboard()->setText(web.prompt()); // on every start and Resume: the agent may be a new chat
-    QMessageBox::information(this,"Web","The connection prompt is copied. Paste it into any web-based AI agent and send.");
+    // on every start and Resume (the agent may be a new chat): the user copies it from the chat history
+    add_ai_history(info,"activity","Paste this connection prompt into any web-based AI agent and send it:\n\n```\n"+web.prompt()+"\n```");
 }
 QJsonObject AIAgent::web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error)
 {
@@ -1396,9 +1395,8 @@ void AIAgent::on_ai_new_chat_clicked()
         {
             auto* info = ai_info::create(session,"Web","Web"); // agent agnostic: any web-based agent can join
             info->model_settings["google_file_id"] = file;
-            add_ai_history(*info,"activity","Web session started.");
+            start_web(*info); // the first poll writes "ready" into the empty Doc; the posted prompt also creates the chat's row
             ui->ai_project_list->setCurrentItem(info->project_items);
-            start_web(*info); // the first poll writes "ready" into the empty Doc
             info->save_config(); // after start_web(), so the chat is saved as established
         });
     }
