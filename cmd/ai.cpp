@@ -29,7 +29,6 @@
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSaveFile>
-#include <QSet>
 #include <QSysInfo>
 #include <QStandardPaths>
 
@@ -447,7 +446,7 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
         info->model_settings = QJsonObject{{"model",model}};
         info->status_message = "Ready for a message.";
         if(cmd.size() > 3 && !cmd[3].empty() && !info->save_title(QString::fromStdString(cmd[3])))
-            return error = "chat "+info->sessions+" created, but its title cannot be saved",true;
+            return ai_infos.erase(QString(info->sessions)),error = "cannot save the title; no chat was created",true;
         info->record_history(QJsonObject{{"type","activity"},{"text","Chat created by new_chat."}}); // saved now, so the chat survives placeholder cleanup and restarts
         info->save_config();
         output = QJsonDocument(QJsonObject{{"id",info->sessions},{"agent",agent},{"model",model},
@@ -475,25 +474,15 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
     }
     if(cmd[0] == "get_chat")
     {
-        auto chat_metadata = [](const QString& id) -> QJsonObject // live chat first, otherwise its saved files; empty if neither exists
+        auto chat_metadata = [](const ai_info& info)
         {
-            if(auto* info = ai_info::find(id))
-                return QJsonObject{{"id",id},{"title",info->project_titles},{"agent",info->agent_name},{"provider",info->provider},
-                                   {"model",info->model_settings.value("model").toString()},{"status",session_status_text(info->status)},
-                                   {"live",true},{"window",info->current_window},
-                                   {"last_activity",info->projects.isEmpty() ? QString() : info->projects.last().value("time").toString()}};
-            QFileInfo history(ai_info::history_file(id)),config_file(ai_info::config_file(id));
-            if(!history.exists() && !config_file.exists())
-                return {};
-            QJsonObject config;
-            if(QFile file(config_file.filePath());file.open(QIODevice::ReadOnly))
-                config = QJsonDocument::fromJson(file.readAll()).object();
-            return QJsonObject{{"id",id},{"title",QSettings().value("ai/title/"+id).toString()},{"agent",config["agent"].toString()},
-                               {"provider",config["provider"].toString()},{"model",config["model_settings"].toObject()["model"].toString()},
-                               {"status",config["established"].toBool() ? "Completed" : "New"},{"live",false}, // saved state only: not loaded, so not running
-                               {"last_activity",(history.exists() ? history : config_file).lastModified().toString(Qt::ISODate)}};
+            return QJsonObject{{"id",info.sessions},{"title",info.project_titles},{"agent",info.agent_name},{"provider",info.provider},
+                               {"model",info.model_settings.value("model").toString()},{"status",session_status_text(info.status)},
+                               {"window",info.current_window},
+                               {"last_activity",info.projects.isEmpty() ? QString() : info.projects.last().value("time").toString()}};
         };
-        // get_chat [-N]: every chat's metadata (or the N most recent), newest first; read only -- never loads, selects, wakes or changes a chat
+        // get_chat [-N]: every chat this instance holds (saved chats load at startup), or the N most recent, newest first;
+        // read only -- never selects, wakes or changes a chat
         auto id = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
         if(id.isEmpty() || id.startsWith('-'))
         {
@@ -501,15 +490,9 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             int recent = id.isEmpty() ? INT_MAX : id.mid(1).toInt(&okay);
             if(!okay || recent <= 0 || cmd.size() > 2)
                 return error = "usage: get_chat [-N] lists all (or the N most recent) chats; get_chat <session_id> [range] reads one",true;
-            QSet<QString> ids; // live chats and saved ones, once each
-            for(const auto& each : ai_infos)
-                ids << each.first;
-            for(const auto& file : QDir(ai_project_dir).entryInfoList({"*.jsonl","*.json"},QDir::Files))
-                if(auto session = QUrl::fromPercentEncoding(file.completeBaseName().toLatin1());is_valid_session_id(session))
-                    ids << session;
             QList<QJsonObject> chats;
-            for(const auto& each : ids)
-                chats << chat_metadata(each);
+            for(const auto& each : ai_infos)
+                chats << chat_metadata(each.second);
             std::sort(chats.begin(),chats.end(),[](const QJsonObject& a,const QJsonObject& b){return a["last_activity"].toString() > b["last_activity"].toString();});
             QJsonArray list;
             for(const auto& each : chats.mid(0,recent))
@@ -534,28 +517,11 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
         }
         if(!okay || cmd.size() > 3)
             return error = "usage: get_chat <session_id> [all|-N|N|N-|N-M]: all (default), the last N messages, message N, message N onward, or messages N to M",true;
-        if(!is_valid_session_id(id))
-            return error = "invalid session id: "+id,true;
-        auto chat = chat_metadata(id);
-        if(chat.isEmpty())
+        auto* info = ai_info::find(id);
+        if(!info)
             return error = "chat not found: "+id,true;
-        QList<QJsonObject> history;
-        int skipped = 0;
-        if(auto* info = ai_info::find(id))
-            history = info->projects;
-        else if(QFile file(ai_info::history_file(id));file.open(QIODevice::ReadOnly))
-        {
-            while(!file.atEnd())
-                if(auto line = file.readLine().trimmed();!line.isEmpty())
-                {
-                    if(auto doc = QJsonDocument::fromJson(line);doc.isObject())
-                        history << doc.object();
-                    else
-                        ++skipped; // e.g. a partial last line
-                }
-        }
-        else
-            chat["history_unavailable"] = true; // no saved transcript (e.g. "keep history" is off)
+        auto chat = chat_metadata(*info);
+        const auto& history = info->projects;
         int messages = int(std::count_if(history.begin(),history.end(),is_message));
         if(from == to && from > messages)
             return error = "message "+range+" not found; this chat has "+QString::number(messages)+" messages",true;
@@ -571,8 +537,6 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             }
         chat["messages"] = messages;
         chat["history"] = entries;
-        if(skipped)
-            chat["skipped_lines"] = skipped;
         output = QJsonDocument(chat).toJson(QJsonDocument::Compact);
         return true;
     }
