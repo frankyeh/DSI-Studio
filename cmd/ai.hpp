@@ -107,9 +107,10 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
 QJsonObject ai_agent_record(const QString& provider,const QString& scope,const QString& executable,ai_agent_status status,
                             const QString& info,const QStringList& models,const QDateTime& checked); // one get_agent_settings entry; scope: "gui" or "headless"
 // system commands shared by MainWindow's command center and headless --action=ai: get_agent_settings [agent|ready],
-// new_chat <agent> [model] [title], get_chat [-N | session_id [all|-N|N|N-|N-M]]; false if cmd is none of them. agent_records supplies readiness for the given agents on this host
-bool ai_system_command(const std::vector<std::string>& cmd,const std::function<QJsonArray(const QStringList&)>& agent_records,
-                       QString& output,QString& error);
+// new_chat <agent> [model] [title], send_chat <session_id> <message>, get_chat [-N | session_id [all|-N|N|N-|N-M]]; false if cmd
+// is none of them. caller: the requesting chat; agent_records: readiness for the given agents on this host; send: deliver text to a chat's agent
+bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller,const std::function<QJsonArray(const QStringList&)>& agent_records,
+                       const std::function<bool(ai_info&,const QString&)>& send,QString& output,QString& error);
 
 // shared by MainWindow's command center and headless --action=ai
 using ai_approval = std::function<bool(const QString& title,const QString& request,bool read_only)>; // true approves; read_only: a shell command that cannot change anything

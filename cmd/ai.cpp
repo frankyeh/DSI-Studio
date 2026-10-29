@@ -398,9 +398,10 @@ QJsonObject ai_agent_record(const QString& provider,const QString& scope,const Q
                        {"checked",checked.isValid() ? QJsonValue(checked.toString(Qt::ISODate)) : QJsonValue()}};
 }
 
-bool ai_system_command(const std::vector<std::string>& cmd,const std::function<QJsonArray(const QStringList&)>& agent_records,
-                       QString& output,QString& error)
+bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller,const std::function<QJsonArray(const QStringList&)>& agent_records,
+                       const std::function<bool(ai_info&,const QString&)>& send,QString& output,QString& error)
 {
+    auto is_message = [](const QJsonObject& entry){auto type = entry.value("type").toString();return type == "user" || type == "assistant";};
     auto find_agent = [&](const QString& name) // the local agent's own name; empty, with the error set, when name is none of them
     {
         auto found = std::find_if(local_agents.begin(),local_agents.end(),[&](const QString& each){return !each.compare(name,Qt::CaseInsensitive);});
@@ -451,6 +452,25 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         info->save_config();
         output = QJsonDocument(QJsonObject{{"id",info->sessions},{"agent",agent},{"model",model},
                                            {"title",info->project_titles},{"status",session_status_text(info->status)}}).toJson(QJsonDocument::Compact);
+        return true;
+    }
+    if(cmd[0] == "send_chat") // send_chat <session_id> <message>: a message to another DSI-managed local agent chat
+    {
+        if(cmd.size() != 3 || cmd[2].empty())
+            return error = "usage: send_chat <session_id> <message>",true;
+        auto* target = ai_info::find(QString::fromStdString(cmd[1]));
+        if(!target)
+            return error = "chat not found: "+QString::fromStdString(cmd[1]),true;
+        if(!local_agents.contains(target->provider))
+            return error = "unsupported: DSI Studio has no channel to send a message to a "+target->provider+" chat",true;
+        if(target->is_running())
+            return error = "busy: "+target->title()+" is still working; check get_chat and retry",true;
+        bool delivered = target->processes; // a live process reads it now; otherwise the agent starts or resumes and receives it once connected
+        target->record_history(QJsonObject{{"type","activity"},{"text","Message from "+caller.title()+" via send_chat."}});
+        if(!send(*target,QString::fromStdString(cmd[2])))
+            return error = "error: "+target->status_message,true;
+        output = QJsonDocument(QJsonObject{{"id",target->sessions},{"status",delivered ? "delivered" : "queued"},
+                                           {"message",int(std::count_if(target->projects.begin(),target->projects.end(),is_message))}}).toJson(QJsonDocument::Compact);
         return true;
     }
     if(cmd[0] == "get_chat")
@@ -536,7 +556,6 @@ bool ai_system_command(const std::vector<std::string>& cmd,const std::function<Q
         }
         else
             chat["history_unavailable"] = true; // no saved transcript (e.g. "keep history" is off)
-        auto is_message = [](const QJsonObject& entry){auto type = entry.value("type").toString();return type == "user" || type == "assistant";};
         int messages = int(std::count_if(history.begin(),history.end(),is_message));
         if(from == to && from > messages)
             return error = "message "+range+" not found; this chat has "+QString::number(messages)+" messages",true;
@@ -2101,6 +2120,14 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         }
         return records;
     };
+    auto send = [&](ai_info& target,const QString& text) // send_chat: this host's agent CLI, with progress in the terminal
+    {
+        return start_agent(target,text,find_agent_executable(target.provider),target.model_settings.value("cwd").toString(QDir::currentPath()),&web,
+            {[&](ai_info& info){chat << "\n" << info.title().toStdString() << ": " << info.status_message.toStdString() << std::endl;}, // status
+             [](ai_info&,const QJsonObject&){}, // shown: no transcript view
+             {},{}, // sign_in, signed_out: no interactive sign-in without a GUI
+             [](const QString& text){tipl::out() << text.toStdString();}}); // log
+    };
     auto dispatch = [&](ai_info& info,const QJsonObject& request) // one request from the Web agent or a local agent this process launched
     {
         info.record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed()); // the agent's message precedes the commands it sends
@@ -2156,7 +2183,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                 else if(info.sessions == web.web_session_id)
                     web.set_web_title(info.project_titles);
             }
-            else if(QString text,system_error;ai_system_command(cmd,agent_records,text,system_error))
+            else if(QString text,system_error;ai_system_command(cmd,info,agent_records,send,text,system_error))
             {
                 if(!(ok = system_error.isEmpty()))
                     error = system_error.toStdString();
@@ -2164,7 +2191,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                     std::cout << text.toStdString() << std::endl;
             }
             else
-                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, new_chat, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
+                ok = false,error = "not available in headless mode (--action=ai); use run_shell, write_text_file, web_upload, web_download_prepare, web_download, set_work_dir, set_title, get_agent_settings, new_chat, send_chat, or get_chat, and dispatch long work with run_shell \"sbatch ...\"";
             std::cout.rdbuf(cout_buf);
             std::cout << out.str() << std::flush;
             if(!upload_error.isEmpty())

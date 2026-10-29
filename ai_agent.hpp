@@ -79,7 +79,6 @@ class AIAgent : public QMainWindow
     void refresh_agent_status(const QString& provider = {});
     void refresh_agent_models(const QString& provider); // one model-list probe per local agent
     void refresh_ollama_models();
-    void start_ai(ai_info&,const QString&);
 
 public:
     void web_step(const QString& step,const QString& approval = {},qint64 pid = 0){web.report_step(step,approval,pid);} // see web_bridge::report_step
@@ -91,6 +90,7 @@ public:
     bool approve(const QString& title,const QString& request); // the local user's confirmation of an AI file write, shell command, or upload
     QJsonObject web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error); // web_upload, web_download_prepare, web_download for this chat's Web session
     QJsonArray agent_settings(const QStringList& providers) const; // cached readiness for get_agent_settings; never probes
+    bool start_ai(ai_info&,const QString& text,const QString& work_dir); // the Send button and send_chat: true when the message was recorded and sent or the launch began
 
 signals:
     void agent_status_changed(const QString& provider);

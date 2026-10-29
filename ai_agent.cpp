@@ -1656,10 +1656,8 @@ bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active 
         return false;
     return true;
 }
-void AIAgent::start_ai(ai_info& info,const QString& text)
+bool AIAgent::start_ai(ai_info& info,const QString& text,const QString& work_dir) // callers pass local-agent chats only
 {
-    if(!local_agents.contains(info.provider))
-        return;
     auto& agent = agent_entries[info.provider];
     if(!info.processes) // launching: GUI-only preparation
     {
@@ -1667,11 +1665,8 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
             refresh_agent_executables();
         if(agent.executable.isEmpty())
             QDesktopServices::openUrl(agent_install_url(info.provider)); // same as the sidebar's Install button
-        auto project_dir = ui->ai_work_dir->text().trimmed();
-        ui->ai_work_dir->setText(
-            project_dir.isEmpty() ? main_window.work_dir() : project_dir);
     }
-    if(start_agent(info,text,agent.executable,ui->ai_work_dir->text(),this,
+    return start_agent(info,text,agent.executable,work_dir,this,
         {[this](ai_info& info) // status
          {
              if(info.project_items) // a provider rekey moved this chat to its real id
@@ -1696,8 +1691,7 @@ void AIAgent::start_ai(ai_info& info,const QString& text)
              entry.status_info.clear();
              emit agent_status_changed(provider);
          },
-         [this](const QString& text){ai_log(text);}})) // log
-        ui->ai_chat_input->clear();
+         [this](const QString& text){ai_log(text);}}); // log
 }
 
 void AIAgent::on_ai_send_message_clicked()
@@ -1724,7 +1718,10 @@ void AIAgent::on_ai_send_message_clicked()
         }
         return;
     case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
-        start_ai(*info,text);
+        if(!info->processes && ui->ai_work_dir->text().trimmed().isEmpty())
+            ui->ai_work_dir->setText(main_window.work_dir());
+        if(start_ai(*info,text,ui->ai_work_dir->text().trimmed()))
+            ui->ai_chat_input->clear();
         update_send_button();
         return;
     }
