@@ -2194,8 +2194,16 @@ bool src_data::run_plugin(std::string exec_name,
         exec = fsl_path/exec_name;
         if(!fsl_path.empty() && (exec_name == "eddy" || exec_name == "eddy_cuda"))
         {
-            if(has_cuda && std::filesystem::exists(fsl_path/"eddy_cuda"))
-                exec = fsl_path/"eddy_cuda";
+            auto cuda_exec = fsl_path/"eddy_cuda";
+            if(has_cuda && !std::filesystem::exists(cuda_exec))
+                for(const auto& name:QDir(tipl::qt::to_qstring(fsl_path)).entryList({"eddy_cuda*"},QDir::Files | QDir::Executable,QDir::Name))
+                    if(QRegularExpression(R"(^eddy_cuda[0-9]+(\.[0-9]+)?$)").match(name).hasMatch())
+                    {
+                        cuda_exec = fsl_path/tipl::qt::to_path(name);
+                        break;
+                    }
+            if(has_cuda && std::filesystem::exists(cuda_exec))
+                exec = cuda_exec;
             else if(std::filesystem::exists(fsl_path/"eddy_openmp"))
                 exec = fsl_path/"eddy_openmp";
             else if(std::filesystem::exists(fsl_path/"eddy_cpu"))
