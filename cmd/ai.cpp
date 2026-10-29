@@ -446,7 +446,7 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
         if(auto models = record["models"].toArray();!model.isEmpty() && !models.isEmpty() && !models.contains(model)) // an "unknown" list accepts any model
             return error = "unknown model for "+agent+": "+model+"; available: "+QVariant(models.toVariantList()).toStringList().join(", "),true;
         auto* info = ai_info::create(agent == "Muse" ? muse_uuid_v7() : QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
-        info->model_settings = QJsonObject{{"model",model}};
+        info->model_settings = QJsonObject{{"model",model},{"approval",caller.model_settings.value("approval")}}; // the creating chat's auto/manual approval (none: manual)
         if(cmd.size() > 4)
             info->model_settings["cwd"] = work_dir.absoluteFilePath(); // the agent's writable folder from its first launch
         info->status_message = "Ready for a message.";
