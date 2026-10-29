@@ -560,34 +560,32 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
     {
         hooks.shown(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
     };
-    // the one stdin boundary for every local agent's user input; records nothing
+    // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)
     auto write_input = [](const ai_info& info,const QString& text)
     {
         auto* process = info.processes;
         auto session = process->objectName(); // the established id, in case establishment renamed it
         if(info.provider == "Claude")
-            process->write(json_line({{"type","user"},{"message",QJsonObject{{"role","user"},
+            return process->write(json_line({{"type","user"},{"message",QJsonObject{{"role","user"},
                 {"content",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}));
-        else if(info.provider == "Muse")
-            process->write(muse_command(muse_uuid_v7(),"turn/start",{{"sessionId",session},{"ifBusy","steer"},
+        if(info.provider == "Muse")
+            return process->write(muse_command(muse_uuid_v7(),"turn/start",{{"sessionId",session},{"ifBusy","steer"},
                 {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
-        else if(info.provider == "Antigravity")
-            process->write(json_line({{"event","user"},{"message",QJsonObject{{"content",text}}}}));
-        else if(info.provider == "Grok")
+        if(info.provider == "Antigravity")
+            return process->write(json_line({{"event","user"},{"message",QJsonObject{{"content",text}}}}));
+        if(info.provider == "Grok")
         {
             process->setProperty("turn_active",true); // Grok has no turn id: Stop cancels in-protocol only while a prompt is in flight
-            process->write(jsonrpc("prompt","session/prompt",
+            return process->write(jsonrpc("prompt","session/prompt",
                 {{"sessionId",session},{"prompt",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
         }
-        else // Codex app-server: steer into the currently active turn, or start a fresh one if idle
-        {
-            auto turn_id = process->property("turn_id").toString();
-            QJsonObject params{{"threadId",session},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
-            if(!turn_id.isEmpty())
-                params["expectedTurnId"] = turn_id;
-            process->write(json_line({{"id",turn_id.isEmpty() ? "turn_start" : "turn_steer"},
-                                      {"method",turn_id.isEmpty() ? "turn/start" : "turn/steer"},{"params",params}}));
-        }
+        // Codex app-server: steer into the currently active turn, or start a fresh one if idle
+        auto turn_id = process->property("turn_id").toString();
+        QJsonObject params{{"threadId",session},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
+        if(!turn_id.isEmpty())
+            params["expectedTurnId"] = turn_id;
+        return process->write(json_line({{"id",turn_id.isEmpty() ? "turn_start" : "turn_steer"},
+                                         {"method",turn_id.isEmpty() ? "turn/start" : "turn/steer"},{"params",params}}));
     };
     // a provider-protocol failure: the finished handler reports fatal_error ahead of stderr
     auto fail_process = [](QProcess* process,const QString& message)
@@ -721,7 +719,12 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
     info.save_config();
     if(!launching)
     {
-        write_input(info,text);
+        if(write_input(info,text) < 0)
+        {
+            set_status(info,session_status::Failed,"ERROR: "+name+" refused the message: "+info.processes->errorString());
+            add_history(info,"error",info.status_message);
+            return false;
+        }
         set_status(info,session_status::Thinking,"Message sent; waiting for agent");
         return true;
     }
@@ -2099,7 +2102,11 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     };
     auto dispatch = [&](ai_info& info,const QJsonObject& request) // one request from the Web agent or a local agent this process launched
     {
-        QDir::setCurrent(info.model_settings.value("cwd").toString(start_dir)); // each chat runs in its own work directory
+        // each chat runs in its own work directory; if that directory is gone, only set_work_dir runs (from the start directory)
+        auto work_dir = info.model_settings.value("cwd").toString(start_dir);
+        bool work_dir_ok = QDir::setCurrent(work_dir);
+        if(!work_dir_ok)
+            QDir::setCurrent(start_dir);
         info.record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed()); // the agent's message precedes the commands it sends
         if(auto text = request["chat"].toString().trimmed();!text.isEmpty())
             chat << "\nAgent: " << text.toStdString() << std::endl;
@@ -2133,7 +2140,9 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             std::ostringstream out;
             auto* cout_buf = std::cout.rdbuf(out.rdbuf()); // the command's output is returned to the agent
             bool ok = true;
-            if(cmd[0] == "run_shell")
+            if(!work_dir_ok && cmd[0] != "set_work_dir")
+                ok = false,error = "this chat's work directory "+work_dir.toStdString()+" is unavailable; use set_work_dir";
+            else if(cmd[0] == "run_shell")
                 ok = ai_run_shell(cmd,approve,error,[&](qint64 pid){web.report_step("running",{},pid);});
             else if(cmd[0] == "write_text_file")
                 ok = ai_write_text_file(cmd,approve,error);
@@ -2146,6 +2155,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                 else
                 {
                     info.model_settings["cwd"] = QDir::currentPath(); // saved with the chat's config
+                    work_dir_ok = true;
                     std::cout << QDir::currentPath().toStdString() << std::endl;
                 }
             }
