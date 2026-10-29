@@ -1438,20 +1438,19 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
                 if((found < 0 || std::abs(i-expected) < std::abs(found-expected)) && std::equal(old_lines.begin(),old_lines.end(),lines.begin()+i))
                     found = i;
             if(found < 0)
-                return false;
+                return error = "hunk "+std::to_string(hunks)+" does not match "+file_name.toStdString()+"; nothing was changed",false;
             lines = lines.mid(0,found)+new_lines+lines.mid(found+old_lines.size());
             cursor = found+int(new_lines.size());
             offset += int(new_lines.size()-old_lines.size());
             return true;
         };
-        auto mismatch = [&]{return error = "hunk "+std::to_string(hunks)+" does not match "+file_name.toStdString()+"; nothing was changed",false;};
         QRegularExpression header("^@@ -(\\d+)(?:,(\\d+))? \\+\\d+(?:,\\d+)? @@");
         for(const auto& line : diff.split('\n'))
         {
             if(auto match = header.match(line);match.hasMatch())
             {
                 if(hunks && !apply())
-                    return mismatch();
+                    return false;
                 ++hunks;
                 old_lines.clear();
                 new_lines.clear();
@@ -1468,7 +1467,7 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
         if(!hunks)
             return error = "no @@ hunk in the patch",false;
         if(!apply())
-            return mismatch();
+            return false;
         text = lines.join('\n');
         content = (crlf ? text.replace("\n","\r\n") : text).toUtf8();
     }
@@ -2172,17 +2171,22 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
             chat << "\nAgent: " << text.toStdString() << std::endl;
         auto approve = [&](const QString& title,const QString& text,bool read_only) // --approval decides, otherwise the terminal user; no terminal declines
         {
+            auto decided = [&](bool approved,const QString& decision) // every decision stays in the chat's history
+            {
+                info.record_history(QJsonObject{{"type","activity"},{"text",title+": "+decision+"\n\n```\n"+text+"\n```"}});
+                return approved;
+            };
             if(approval == "auto" || (approval == "read_only" && read_only))
-                return true;
+                return decided(true,"auto-approved");
             web.report_step("waiting_approval",text);
             chat << "\n" << title.toStdString() << "\n" << text.toStdString() << "\nApprove? [y/N/a = approve all from now on] " << std::flush;
             std::string answer;
             if(!std::getline(std::cin,answer) || (answer != "y" && answer != "Y" && answer != "a" && answer != "A"))
-                return false;
+                return decided(false,"declined");
             if(answer == "a" || answer == "A")
                 approval = "auto";
             web.report_step("running");
-            return true;
+            return decided(true,"approved");
         };
         std::vector<std::vector<std::string> > cmds;
         QJsonArray results;
