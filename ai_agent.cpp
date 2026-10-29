@@ -623,17 +623,18 @@ void AIAgent::update_current_window(QWidget* window)
 
 bool AIAgent::approve(const QString& title,const QString& request)
 {
-    if(dispatching_info && ai_auto_approve) // outside an AI dispatch, fail closed to manual approval
+    bool approved = dispatching_info && ai_auto_approve; // outside an AI dispatch, fail closed to manual approval
+    if(!approved)
     {
-        web_step("running");
-        return true;
+        web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
+        approved = QMessageBox::question(&main_window,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
+                                         QMessageBox::Yes|QMessageBox::No,QMessageBox::No) == QMessageBox::Yes;
     }
-    web_step("waiting_approval",request); // a Web agent sees that nothing has run yet
-    if(QMessageBox::question(&main_window,title,(ai_chat_context.isEmpty() ? QString() : "The AI agent says:\n\n"+ai_chat_context+"\n\n")+request,
-                             QMessageBox::Yes|QMessageBox::No,QMessageBox::No) != QMessageBox::Yes)
-        return false;
-    web_step("running");
-    return true;
+    if(approved)
+        web_step("running");
+    if(dispatching_info) // every decision stays in the chat's history
+        add_ai_history(*dispatching_info,"activity",title+": "+(!approved ? "declined" : ai_auto_approve ? "auto-approved" : "approved")+"\n\n```\n"+request+"\n```");
+    return approved;
 }
 
 void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
