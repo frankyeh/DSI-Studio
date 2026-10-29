@@ -2210,7 +2210,11 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         return dispatch(*info,request);
     };
     QLocalServer server; // callbacks from the local agents this process launches: per process and same user, so they never reach a GUI instance
+#ifdef Q_OS_WIN // a user-only pipe ACL refuses the restricted (sandboxed) tokens that agents run commands under
+    server.setSocketOptions(QLocalServer::WorldAccessOption);
+#else
     server.setSocketOptions(QLocalServer::UserAccessOption);
+#endif
     if(!server.listen("dsi-studio-"+QString::number(QCoreApplication::applicationPid())))
         return tipl::error() << "cannot start local server: " << server.errorString().toStdString(),1;
     qputenv("DSI_STUDIO_SOCKET",server.fullServerName().toUtf8()); // inherited by launched agents: dsi.sh and dsi.ps1 then use only this server
