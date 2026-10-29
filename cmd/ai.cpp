@@ -1615,7 +1615,7 @@ void web_bridge::google_api(const QByteArray& verb,const QString& url,const QJso
 {
     auto failed = [this,done]
     {
-        if(!google_file_id.isEmpty()) // a live Web chat shows it; polling retries until the idle limit stops it
+        if(!google_file_id.isEmpty()) // a live Web chat shows it; polling retries until Stop or exit
             status(session_status::Failed,"Web: "+google_error+"; retrying.");
         done({});
     };
@@ -1800,9 +1800,6 @@ void web_bridge::poll_web(const QString& modified_time)
     if(!web_pending_result.isEmpty())
         return publish_web_result(); // a previous result write failed; retry it, never re-execute
     auto idle = web_idle.elapsed();
-    if(stop_when_idle && idle > 3600000) // also bounds failing reads; headless Web serves until the process ends
-        return stop_web(google_error.isEmpty() ? QString("Web stopped after 1 hour without a request; press Resume to continue.") :
-                        "Web stopped: "+google_error+"; press Resume to retry.");
     // idle for 3 minutes: Drive modifiedTime (not file.version) is polled, and the body is read only when it changes; the first
     // idle poll always reads, since web_modified_time is empty after any fast-mode read. A Docs body edit can take minutes to
     // reach modifiedTime, but a rename reaches it at once, so an agent that gets no reply renames the Doc to wake DSI Studio
@@ -2126,7 +2123,6 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     auto* cerr_buf = std::cerr.rdbuf();
     struct : std::streambuf {int_type overflow(int_type c) override {return traits_type::not_eof(c);}} quiet;
     web_bridge web;
-    web.stop_when_idle = false;
     web.status = [](session_status,const QString& message){tipl::out() << message.toStdString();};
     web.warn = [&](const QString& text){chat << "\nerror: " << text.toStdString() << std::endl;QCoreApplication::exit(1);}; // std::cerr is silenced after start
     std::string approval = po.has("approval") ? po.get("approval") : std::string("manual");
