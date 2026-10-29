@@ -1,5 +1,6 @@
 // ai_info's data layer (session registry, history/config persistence), free helpers, the Web channel, and the headless --action=ai entry point
 #include <QDateTime>
+#include <QLocale>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -1438,19 +1439,20 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
                 if((found < 0 || std::abs(i-expected) < std::abs(found-expected)) && std::equal(old_lines.begin(),old_lines.end(),lines.begin()+i))
                     found = i;
             if(found < 0)
-                return error = "hunk "+std::to_string(hunks)+" does not match "+file_name.toStdString()+"; nothing was changed",false;
+                return false;
             lines = lines.mid(0,found)+new_lines+lines.mid(found+old_lines.size());
             cursor = found+int(new_lines.size());
             offset += int(new_lines.size()-old_lines.size());
             return true;
         };
+        auto mismatch = [&]{return error = "hunk "+std::to_string(hunks)+" does not match "+file_name.toStdString()+"; nothing was changed",false;};
         QRegularExpression header("^@@ -(\\d+)(?:,(\\d+))? \\+\\d+(?:,\\d+)? @@");
         for(const auto& line : diff.split('\n'))
         {
             if(auto match = header.match(line);match.hasMatch())
             {
                 if(hunks && !apply())
-                    return false;
+                    return mismatch();
                 ++hunks;
                 old_lines.clear();
                 new_lines.clear();
@@ -1467,7 +1469,7 @@ bool ai_write_text_file(const std::vector<std::string>& cmd,const ai_approval& a
         if(!hunks)
             return error = "no @@ hunk in the patch",false;
         if(!apply())
-            return false;
+            return mismatch();
         text = lines.join('\n');
         content = (crlf ? text.replace("\n","\r\n") : text).toUtf8();
     }
@@ -1776,8 +1778,10 @@ void web_bridge::start_web(const QString& file,const QString& session)
 }
 QString web_bridge::prompt() const
 {
-    return "Read the public GitHub file frankyeh/DSI-Studio-AI/DSI_STUDIO_AI_SKILL_WEB.md and follow it "
-           "to connect to DSI Studio "+web_code+"."; // the agent finds the Doc by its codename in the DSI Studio AI folder
+    // the manuals as of this build's compile date, so later GitHub changes cannot mismatch the running binary
+    auto build_date = QLocale::c().toDate(QString(__DATE__).simplified(),"MMM d yyyy").toString(Qt::ISODate);
+    return "In the GitHub repository frankyeh/DSI-Studio-AI, find the latest commit dated on or before "+build_date+". "
+           "From that commit, read DSI_STUDIO_AI_SKILL_WEB.md and the manuals it references, then follow them to connect to DSI Studio "+web_code+"."; // the agent finds the Doc by its codename in the DSI Studio AI folder
 }
 void web_bridge::stop_web(const QString& message)
 {
