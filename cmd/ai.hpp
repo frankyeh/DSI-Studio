@@ -137,8 +137,7 @@ public:
     QString google_error; // the last Google failure, shown in the Web status; never holds a token
     QString google_file_id,web_session_id,web_code; // the connected Doc (empty when stopped), session, and codename (e.g. neon-raven)
     qint64 web_last_id = 0;
-    QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling and, if stop_when_idle, stops polling after 1 hour
-    bool stop_when_idle = true;
+    QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling
     QString web_modified_time; // Drive modifiedTime of the last body read that needed no action
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     bool web_dispatching = false; // a Web request is running: report_step() may rewrite its "processing" message
