@@ -1997,7 +1997,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     {
         return source != command_source::AI || (ai_agent && ai_agent->approve(title,request));
     };
-    if(cmd[0] == "write_text_file")
+    if(cmd[0] == "write_text_file" || cmd[0] == "patch_text_file")
         return ai_write_text_file(cmd,approve,error_msg);
     if(cmd[0] == "run_shell")
         return ai_run_shell(cmd,approve,error_msg,[&](qint64 pid){ai_agent->web_step("running",{},pid);});
