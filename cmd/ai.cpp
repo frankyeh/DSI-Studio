@@ -462,9 +462,9 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             return error = "chat not found: "+QString::fromStdString(cmd[1]),true;
         if(!local_agents.contains(target->provider))
             return error = "unsupported: DSI Studio has no channel to send a message to a "+target->provider+" chat",true;
-        if(target->is_running())
-            return error = "busy: "+target->title()+" is still working; check get_chat and retry",true;
-        bool delivered = target->processes; // a live process reads it now; otherwise the agent starts or resumes and receives it once connected
+        if(target->is_running() || (target->processes && target->processes->state() != QProcess::Running))
+            return error = "busy: "+target->title()+" is working, starting or exiting; check get_chat and retry",true;
+        bool delivered = target->processes; // written to the running agent's input now; otherwise the agent starts or resumes and receives it once connected
         target->record_history(QJsonObject{{"type","activity"},{"text","Message from "+caller.title()+" via send_chat."}});
         if(!send(*target,QString::fromStdString(cmd[2])))
             return error = "error: "+target->status_message,true;
@@ -644,8 +644,7 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
         {
             process->setProperty("had_reply",true);
             auto entry = info->record_reply(chat,reasoning);
-            set_status(*info,chat.isEmpty() ? session_status::Thinking : session_status::WaitingUser,
-                       chat.isEmpty() ? "Agent is thinking" : "Agent replied; waiting for your message.");
+            set_status(*info,session_status::Thinking,chat.isEmpty() ? "Agent is thinking" : "Agent replied; its turn is still running"); // finish_turn ends the turn
             hooks.shown(*info,entry); // the new reply lets a background chat blink
         }
     };
@@ -1136,6 +1135,11 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                            info && info->status != session_status::Thinking)
                             set_status(*info,session_status::Thinking,"Agent is thinking");
                     }
+                    continue;
+                }
+                if(event_type == "result") // the turn's end
+                {
+                    finish_turn(process,msg["is_error"].toBool() ? "Claude turn failed: "+msg["subtype"].toString()+" "+msg["result"].toString().trimmed() : QString());
                     continue;
                 }
                 if(event_type != "assistant")
@@ -2084,9 +2088,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         }
         return records;
     };
+    auto start_dir = QDir::currentPath(); // the work directory of a chat that has not chosen one
     auto send = [&](ai_info& target,const QString& text) // send_chat: this host's agent CLI, with progress in the terminal
     {
-        return start_agent(target,text,find_agent_executable(target.provider),target.model_settings.value("cwd").toString(QDir::currentPath()),&web,
+        return start_agent(target,text,find_agent_executable(target.provider),target.model_settings.value("cwd").toString(start_dir),&web,
             {[&](ai_info& info){chat << "\n" << info.title().toStdString() << ": " << info.status_message.toStdString() << std::endl;}, // status
              [](ai_info&,const QJsonObject&){}, // shown: no transcript view
              {},{}, // sign_in, signed_out: no interactive sign-in without a GUI
@@ -2094,6 +2099,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     };
     auto dispatch = [&](ai_info& info,const QJsonObject& request) // one request from the Web agent or a local agent this process launched
     {
+        QDir::setCurrent(info.model_settings.value("cwd").toString(start_dir)); // each chat runs in its own work directory
         info.record_reply(request["chat"].toString().trimmed(),request["reasoning"].toString().trimmed()); // the agent's message precedes the commands it sends
         if(auto text = request["chat"].toString().trimmed();!text.isEmpty())
             chat << "\nAgent: " << text.toStdString() << std::endl;
@@ -2138,7 +2144,10 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
                 if(!(ok = cmd.size() == 2 && QFileInfo(QString::fromStdString(cmd[1])).isDir() && QDir::setCurrent(QString::fromStdString(cmd[1]))))
                     error = "usage: set_work_dir <existing directory>";
                 else
+                {
+                    info.model_settings["cwd"] = QDir::currentPath(); // saved with the chat's config
                     std::cout << QDir::currentPath().toStdString() << std::endl;
+                }
             }
             else if(cmd[0] == "set_title") // saved like a GUI chat's title, and names the Doc
             {

@@ -573,6 +573,7 @@ int main(int ac, char *av[])
         w.setProperty("ai_available",server.listen("dsi-studio"));
         if(w.property("ai_available").toBool())
         {
+            qputenv("DSI_STUDIO_SOCKET",server.fullServerName().toUtf8()); // inherited by the agents this instance launches
             QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
             {
                 QLocalSocket *clientSocket = server.nextPendingConnection();

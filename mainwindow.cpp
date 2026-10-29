@@ -1378,7 +1378,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
             else if(ai_system_command(cmd,info,[this](const QStringList& providers){return ai_agent->agent_settings(providers);},
-                                      [this](ai_info& target,const QString& text){return ai_agent->start_ai(target,text,target.model_settings.value("cwd").toString(work_dir()));},
+                                      [this](ai_info& target,const QString& text){return ai_agent->start_ai(target,text,target.model_settings.value("cwd").toString(work_dir()),false);},
                                       output,error)) {}
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])

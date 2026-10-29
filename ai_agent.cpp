@@ -1656,14 +1656,14 @@ bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active 
         return false;
     return true;
 }
-bool AIAgent::start_ai(ai_info& info,const QString& text,const QString& work_dir) // callers pass local-agent chats only
+bool AIAgent::start_ai(ai_info& info,const QString& text,const QString& work_dir,bool interactive) // callers pass local-agent chats only
 {
     auto& agent = agent_entries[info.provider];
     if(!info.processes) // launching: GUI-only preparation
     {
         if(agent.executable.isEmpty()) // stale showEvent() check -- the window may have stayed open since before an install finished, so retry once before assuming it's still missing
             refresh_agent_executables();
-        if(agent.executable.isEmpty())
+        if(agent.executable.isEmpty() && interactive)
             QDesktopServices::openUrl(agent_install_url(info.provider)); // same as the sidebar's Install button
     }
     return start_agent(info,text,agent.executable,work_dir,this,
@@ -1673,12 +1673,15 @@ bool AIAgent::start_ai(ai_info& info,const QString& text,const QString& work_dir
                  info.project_items->setData(Qt::UserRole,info.sessions);
              set_ai_status(info.sessions,info.status,info.status_message);
          },
-         [this](ai_info& info,const QJsonObject& entry){show_ai_project(info,entry);}, // shown
-         [this](const QString& provider) // sign_in
+         [this](ai_info& info,const QJsonObject& entry) // shown; a new message rebuilds the chat, so a send_chat source line shows with it and the chat is not selected
+         {
+             show_ai_project(info,entry.value("type").toString() == "user" ? QJsonObject() : entry);
+         },
+         [this,interactive](const QString& provider) // sign_in
          {
              if(agent_entries[provider].status != ai_agent_status::SignInRequired)
                  return true;
-             if(!run_agent_login(provider))
+             if(!interactive || !run_agent_login(provider))
                  return false;
              refresh_agent_status(provider);
              return true;
@@ -1720,7 +1723,7 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
         if(!info->processes && ui->ai_work_dir->text().trimmed().isEmpty())
             ui->ai_work_dir->setText(main_window.work_dir());
-        if(start_ai(*info,text,ui->ai_work_dir->text().trimmed()))
+        if(start_ai(*info,text,ui->ai_work_dir->text().trimmed(),true))
             ui->ai_chat_input->clear();
         update_send_button();
         return;
