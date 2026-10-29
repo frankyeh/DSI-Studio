@@ -1596,7 +1596,8 @@ void web_bridge::write_google_doc(const QJsonObject& doc,QJsonObject message,std
     else
         google_api("POST",url,body,[done](QJsonObject reply){done(!reply.isEmpty());});
 }
-static const QString web_title_separator = QString(" ")+QChar(0x00B7)+" DSI Studio "; // a Doc named "<title> <middle dot> DSI Studio <codename>"
+static const QString web_title_separator = QString(" ")+QChar(0x00B7)+" DSI Studio "; // a Doc named "<title> <middle dot> DSI Studio <codename> on <computer>"
+static const QString web_host_suffix = " on "+QSysInfo::machineHostName(); // the computer running this DSI Studio
 static const QString web_folder_search = "https://www.googleapis.com/drive/v3/files?fields=files(id)&q="+QString::fromLatin1(QUrl::toPercentEncoding(
                                          "name='DSI Studio AI' and mimeType='application/vnd.google-apps.folder' and trashed=false"));
 QJsonArray web_bridge::list_web_sessions(void)
@@ -1622,7 +1623,7 @@ bool web_bridge::remove_web_session(const QString& file_id,const QString& sessio
 void web_bridge::set_web_title(const QString& title)
 {
     if(!google_file_id.isEmpty()) // the codename stays at the end of the name, so an agent can still find the Doc by it
-        google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+google_file_id,{{"name",title+web_title_separator+web_code}},[](QJsonObject){});
+        google_api("PATCH","https://www.googleapis.com/drive/v3/files/"+google_file_id,{{"name",title+web_title_separator+web_code+web_host_suffix}},[](QJsonObject){});
 }
 void web_bridge::create_web_session(std::function<void(QString file,QString session)> done)
 {
@@ -1662,7 +1663,7 @@ void web_bridge::create_web_session(std::function<void(QString file,QString sess
     }
     auto session = QUuid::createUuid().toString(QUuid::WithoutBraces);
     google_api("POST","https://www.googleapis.com/drive/v3/files?fields=id",
-               {{"name","DSI Studio "+code},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}},
+               {{"name","DSI Studio "+code+web_host_suffix},{"mimeType","application/vnd.google-apps.document"},{"parents",QJsonArray{google_folder_id}},
                 {"appProperties",QJsonObject{{"dsi_session",session},{"dsi_code",code}}}},
                [this,session,done](QJsonObject file)
     {
