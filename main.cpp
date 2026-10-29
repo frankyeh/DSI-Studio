@@ -569,7 +569,11 @@ int main(int ac, char *av[])
             w.openFile(QStringList() << av[1]);
 
         QLocalServer server;
+#ifdef Q_OS_WIN // a user-only pipe ACL refuses the restricted (sandboxed) tokens that agents run commands under
+        server.setSocketOptions(QLocalServer::WorldAccessOption);
+#else
         server.setSocketOptions(QLocalServer::UserAccessOption);
+#endif
         w.setProperty("ai_available",server.listen("dsi-studio"));
         if(w.property("ai_available").toBool())
         {
