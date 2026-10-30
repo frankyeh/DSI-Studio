@@ -2285,7 +2285,7 @@ bool src_data::run_plugin(std::string exec_name,
         return false;
     }
 
-    if(program.exitCode() == QProcess::CrashExit)
+    if(program.exitStatus() != QProcess::NormalExit || program.exitCode())
     {
         error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
         if(error_msg.empty())
