@@ -1193,7 +1193,13 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                  << "-c" << "model_providers.dsi_ollama.base_url=\""+endpoint.toString()+"\""
                  << "-c" << "model_providers.dsi_ollama.wire_api=\"responses\""
                  << "-c" << "model_providers.dsi_ollama.requires_openai_auth=false"
-                 << "-c" << "model_provider=\"dsi_ollama\"";
+                 << "-c" << "model_provider=\"dsi_ollama\""
+                 << "-c" << "web_search=\"disabled\""
+                 << "-c" << "features.apps=false"
+                 << "-c" << "features.computer_use=false"
+                 << "-c" << "features.browser_use=false"
+                 << "-c" << "features.goals=false"
+                 << "-c" << "mcp_servers={}";
         }
         args << "app-server";
     }
