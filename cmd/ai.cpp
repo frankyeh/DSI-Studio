@@ -1194,6 +1194,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                  << "-c" << "model_providers.dsi_ollama.wire_api=\"responses\""
                  << "-c" << "model_providers.dsi_ollama.requires_openai_auth=false"
                  << "-c" << "model_provider=\"dsi_ollama\""
+                 << "-c" << "model_context_window=65536"
+                 << "-c" << "model_auto_compact_token_limit=48000"
                  << "-c" << "web_search=\"disabled\""
                  << "-c" << "features.apps=false"
                  << "-c" << "features.computer_use=false"
