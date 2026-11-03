@@ -107,7 +107,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
     matfile.write("events",event_text);
     matfile.write("TR",tr);
-    matfile.write("R2",fib.R2);
+    matfile.write("R2",R2);
     matfile.write("template",template_name_list[fib.template_id]);
     matfile.write("report",fib.report);
     matfile.write("intro",fib.intro);
