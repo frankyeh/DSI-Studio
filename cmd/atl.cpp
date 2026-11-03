@@ -23,7 +23,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,tipl::io::gz_mat_write& matfile,
 // native 4D BOLD + BIDS events -> fmri.dz on the template fib mask
 int fmri_db(tipl::program_option<tipl::out>& po)
 {
-    const std::filesystem::path source = po.get("source"),events = po.get("events");
+    const std::filesystem::path source = po.get("source");
     tipl::io::gz_nifti nii;
     if(!nii.open(source,std::ios::in))
         return tipl::error() << nii.error_msg,1;
@@ -31,11 +31,11 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     if(!T)
         return tipl::error() << "no BOLD frame in " << source,1;
 
-    // TR from --tr, otherwise NIfTI pixdim[4] with xyzt time units (8: s, 16: ms, 24: us)
+    // TR (optional) from --tr, otherwise NIfTI pixdim[4] with xyzt time units (8: s, 16: ms, 24: us)
     const int units = nii.nif_header.xyzt_units & 0x38;
     const float tr = po.get("tr",nii.nif_header.pixdim[4]*(units == 8 ? 1.0f : units == 16 ? 1.0e-3f : units == 24 ? 1.0e-6f : 0.0f));
     if(!(tr > 0.0f))
-        return tipl::error() << "cannot resolve TR from the NIfTI header. please specify --tr",1;
+        tipl::warning() << "no TR in the NIfTI header. TR can be specified later";
 
     std::vector<tipl::image<3> > frames(T);
     tipl::vector<3> vs;
@@ -46,11 +46,15 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     if(!nii.error_msg.empty())
         return tipl::error() << nii.error_msg,1;
 
-    // events file stored as text (like demo), parsed with the HRF after loading the .dz
-    std::ifstream in(events);
-    if(!in)
-        return tipl::error() << "cannot read " << events,1;
-    const std::string event_text((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
+    // events file (optional) stored as text (like demo), parsed with the HRF after loading the .dz
+    std::string event_text;
+    if(po.has("events"))
+    {
+        std::ifstream in(po.get("events"));
+        if(!in)
+            return tipl::error() << "cannot read " << po.get("events"),1;
+        event_text.assign(std::istreambuf_iterator<char>(in),std::istreambuf_iterator<char>());
+    }
 
     fib_data fib;
     if(!fib.load_template_fib(po.get("template",template_name_list,size_t(0)),po.get("template_reso",2.0f)))
@@ -88,10 +92,9 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     tipl::segmentation::normalize_otsu_median(bold);
     tipl::normalize(bold);
 
-    fib.report += " The task fMRI BOLD image (" + source.filename().u8string() + ", TR=" + std::to_string(tr) +
-                  " s) was registered to the T2w template using linear and nonlinear registration (R2=" + std::to_string(R2) +
-                  ") and sampled at the template mask using cubic interpolation. The BOLD signals were normalized by the Otsu median. Task events were taken from " +
-                  events.filename().u8string() + ".";
+    fib.report += " The task fMRI BOLD image (" + source.filename().u8string() + (tr > 0.0f ? ", TR=" + std::to_string(tr) + " s" : std::string()) +
+                  ") was registered to the T2w template using linear and nonlinear registration (R2=" + std::to_string(R2) +
+                  ") and sampled at the template mask using cubic interpolation. The BOLD signals were normalized by the Otsu median.";
 
     // fmri .dz: template fib backbone + masked, sloped bold[T,M], events text, and TR (cf. fib_data::save_to_file for dwi .dz)
     // no subject_names, so older DSI Studio does not load it as a db; the current one uses index_name
@@ -100,8 +103,10 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     if(!save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
         return tipl::error() << "cannot save fmri db file " << output << " " << fib.mat_reader.error_msg,1;
     matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
-    matfile.write("events",event_text);
-    matfile.write("TR",tr);
+    if(!event_text.empty())
+        matfile.write("events",event_text);
+    if(tr > 0.0f)
+        matfile.write("TR",tr);
     matfile.write("index_name",std::string("bold"));
     matfile.write("R2",R2);
     matfile.write("template",template_name_list[fib.template_id]);
@@ -111,7 +116,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
 }
 int db(tipl::program_option<tipl::out>& po)
 {
-    if(po.has("events"))
+    if(po.has("events") || (po.has("source") && tipl::ends_with(po.get("source"),{".nii.gz",".nii"})))
         return fmri_db(po);
     if(po.has("match")) // turn an existing database into a longitudinal-change database
     {
