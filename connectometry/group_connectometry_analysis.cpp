@@ -219,7 +219,10 @@ void group_connectometry_analysis::save_result(void)
         if(!has_result)
             dec_track->clear();
     }
-
+    save_tracts_and_t();
+}
+void group_connectometry_analysis::save_tracts_and_t(void)
+{
     {
         tipl::progress prog("deleting repeated tracts");
         inc_track->delete_repeated(1.0);
@@ -1130,28 +1133,14 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         generate_report();
         return true;
     }
-    for(auto [track,name] : {std::pair{inc_track,".inc"},std::pair{dec_track,".dec"}})
+    for(auto track : {inc_track,dec_track})
     {
         for(size_t i = 0;i < tip_iteration;++i)
             track->trim();
         if(region_pruning)
             track->region_pruning(0.2f);
-        track->delete_repeated(1.0);
-        if(track->get_visible_track_count())
-            track->save_tracts_to_file(output_file_name+name+".tt.gz");
-        else
-            std::ofstream(output_file_name+name+".no_tract.txt");
     }
-    {
-        tipl::io::gz_mat_write mat_write(output_file_name+".t_statistics.fz");
-        if(!save_fz(handle->mat_reader,mat_write,{"odf_faces","odf_vertices","z0","mapping","report","steps","bold"},{"subject"}))
-            return error_msg = "cannot save " + output_file_name + ".t_statistics.fz",false;
-        for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
-        {
-            mat_write.write<tipl::io::masked_sloped>(std::string("inc_t")+std::to_string(i),spm_map->inc_ptr[i],handle->dim.plane_size(),handle->dim.depth());
-            mat_write.write<tipl::io::masked_sloped>(std::string("dec_t")+std::to_string(i),spm_map->dec_ptr[i],handle->dim.plane_size(),handle->dim.depth());
-        }
-    }
+    save_tracts_and_t();
     std::ofstream(output_file_name+".report.txt") << handle->report << report << std::endl;
     return true;
 }
