@@ -31,8 +31,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
 
     // TR from --tr, otherwise NIfTI pixdim[4] with xyzt time units (8: s, 16: ms, 24: us)
     const int units = nii.nif_header.xyzt_units & 0x38;
-    const float tr = po.has("tr") ? po.get("tr",0.0f) :
-                     nii.nif_header.pixdim[4]*(units == 8 ? 1.0f : units == 16 ? 1.0e-3f : units == 24 ? 1.0e-6f : 0.0f);
+    const float tr = po.get("tr",nii.nif_header.pixdim[4]*(units == 8 ? 1.0f : units == 16 ? 1.0e-3f : units == 24 ? 1.0e-6f : 0.0f));
     if(tr <= 0.0f)
         return tipl::error() << "cannot resolve TR from the NIfTI header. please specify --tr",1;
 
@@ -74,24 +73,17 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     r.to_I_space(frames[0].shape(),trans);
     r.to_It_space(fib.dim,fib.trans_to_mni);
 
-    // warp each frame with cubic interpolation and sample at the template mask
+    // cubic interpolation of each frame at the warped template mask voxels
     const auto& si2vi = fib.mat_reader.si2vi;
     const size_t M = si2vi.size();
     std::vector<float> bold(T*M);
+    tipl::par_for(bold.size(),[&](size_t i)
     {
-        tipl::progress prog("warp BOLD frames");
-        for(size_t t = 0;prog(t,T);++t)
-        {
-            auto J = r.apply_warping<true,tipl::interpolation::cubic>(frames[t]);
-            for(size_t s = 0;s < M;++s)
-                bold[t*M+s] = J[si2vi[s]];
-        }
-        if(prog.aborted())
-            return tipl::error() << "aborted",1;
-    }
+        bold[i] = tipl::estimate<tipl::interpolation::cubic>(frames[i/M],r.to2from[si2vi[i%M]]);
+    });
 
     // like subject_image_pre: Otsu-median normalization with cutoff at 1.0, then scaled to a maximum of 1.0
-    tipl::segmentation::normalize_otsu_median(bold,1.0f);
+    tipl::segmentation::normalize_otsu_median(bold);
     tipl::normalize(bold);
 
     fib.report += " The task fMRI BOLD image (" + source.filename().u8string() + ", TR=" + std::to_string(tr) +
@@ -102,7 +94,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     // fmri .dz: template fib backbone + masked, sloped bold[T,M], events text, and TR (cf. fib_data::save_to_file for dwi .dz)
     auto output = po.get("output","fmri.dz");
     tipl::io::gz_mat_write matfile(output);
-    if(!matfile || !save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
+    if(!save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
         return tipl::error() << "cannot save fmri db file " << output << " " << fib.mat_reader.error_msg,1;
     matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
     matfile.write("events",event_text);
