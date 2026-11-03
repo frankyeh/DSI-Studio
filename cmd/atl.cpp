@@ -69,8 +69,8 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     r.nonlinear_reg(tipl::prog_aborted);
     if(tipl::prog_aborted)
         return tipl::error() << "aborted",1;
-    const float R2 = tipl::max_value(r.r);
-    if(R2 < 0.3f)
+    const float R2 = r.r[0]*r.r[0]; // r squared, as QSDR saves R2
+    if(R2 < 0.09f) // r < 0.3, as in fib_data::map_to_mni
         return tipl::error() << "registration failed. R2=" << R2,1;
     r.to_I_space(frames[0].shape(),trans);
     r.to_It_space(fib.dim,fib.trans_to_mni);
