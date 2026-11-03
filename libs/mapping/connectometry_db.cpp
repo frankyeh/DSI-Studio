@@ -1352,8 +1352,7 @@ double stat_model::operator()(const std::vector<float>& original_population) con
         else
         {
             for(unsigned int index = 0;index < permutation_order.size();++index)
-                if(permutation_order[index])
-                    permuted_population[index] = -population[index];
+                permuted_population[index] = permutation_order[index] ? -population[index] : population[index];
         }
         permuted_population.swap(population);
     }
