@@ -63,7 +63,7 @@ void CreateDBDialog::update_list(void)
             }
         }
     }    
-    if(create_db && !group.empty() && sample_fib != group[0])
+    if(create_db && !group.empty() && sample_fib != group[0] && !tipl::ends_with(group[0].toStdString(),{".nii.gz",".nii"}))
     {
         sample_fib = group[0];
         if(create_db)
@@ -93,7 +93,7 @@ void CreateDBDialog::on_group1open_clicked()
 {
     QStringList filenames = tipl::qt::open_image_files(this,"",
                                      create_db ?
-                                     "Fib Files (*.fz *fib.gz);;All Files (*)" :
+                                     "Fib Files (*.fz *fib.gz);;fMRI BOLD (*nii *nii.gz);;All Files (*)" :
                                      "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)");
     if (filenames.isEmpty())
         return;
@@ -207,6 +207,7 @@ void CreateDBDialog::on_select_output_file_clicked()
     ui->output_file_name->setText(filename);
 }
 bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg);
+int db(tipl::program_option<tipl::out>& po);
 void CreateDBDialog::on_create_data_base_clicked()
 {
     if(ui->output_file_name->text().isEmpty())
@@ -220,7 +221,19 @@ void CreateDBDialog::on_create_data_base_clicked()
         return;
     }
 
-    if(create_db)
+    if(create_db && tipl::ends_with(group[0].toStdString(),{".nii.gz",".nii"})) // fMRI .dz from one 4D BOLD; events and TR can be specified later
+    {
+        tipl::program_option<tipl::out> po;
+        po.set("source",group[0].toStdString());
+        po.set("output",ui->output_file_name->text().toStdString());
+        if(group.size() != 1)
+            QMessageBox::critical(this,"ERROR","Please assign one 4D BOLD file");
+        else if(db(po))
+            QMessageBox::critical(this,"ERROR","Cannot create the fMRI database");
+        else
+            QMessageBox::information(this,QApplication::applicationName(),"database created");
+    }
+    else if(create_db)
     {
         std::vector<std::filesystem::path> name_list;
         for(auto each : group)
@@ -267,7 +280,7 @@ void CreateDBDialog::update_output_file_name(void)
                         std::mismatch(front.begin(),front.begin()+
                         int64_t(std::min(front.length(),back.length())),back.begin()).first).c_str();
         if(create_db)
-            ui->output_file_name->setText(base_name + ".dz");
+            ui->output_file_name->setText(base_name.remove(".nii.gz") + ".dz");
         else
             ui->output_file_name->setText(base_name + (tipl::ends_with(front,{".nii.gz",".nii"}) ? ".nii.gz" : ".avg.fz"));
     }
