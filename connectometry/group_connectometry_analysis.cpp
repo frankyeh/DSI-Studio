@@ -8,6 +8,7 @@
 #include "tracking/region/regiontablewidget.h"
 #include <algorithm>
 #include <filesystem>
+#include <random>
 
 
 bool group_connectometry_analysis::load_database(const char* database_name)
@@ -242,7 +243,7 @@ void group_connectometry_analysis::save_result(void)
         tipl::io::gz_mat_write mat_write(output_file_name+".t_statistics.fz");
         if(!mat_write)
             return;
-        save_fz(handle->mat_reader,mat_write,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
+        save_fz(handle->mat_reader,mat_write,{"odf_faces","odf_vertices","z0","mapping","report","steps","bold"},{"subject"});
         for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
         {
             mat_write.write<tipl::io::masked_sloped>(std::string("inc_t")+std::to_string(i),spm_map->inc_ptr[i],handle->dim.plane_size(),handle->dim.depth());
@@ -1003,24 +1004,60 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         Xw[i] = X[i+P]-rho*X[i];
     if(!mr.set_variables(Xw.data(),P,T-1))
         return error_msg = "invalid whitened design matrix",false;
-    spm_map = std::make_shared<connectometry_result>();
-    spm_map->clear_result(handle->dir.num_fiber,handle->dim.size());
-    tipl::par_for(voxels.size(),[&](size_t i)
+    auto whitened = [&](size_t i,size_t j){return bold[(j+1)*M+voxels[i]]-rho*bold[j*M+voxels[i]];};
+    // signed GLS task t of the fiber voxels from whitened time series y(voxel,row)
+    auto calculate_t = [&](connectometry_result& data,auto y_at)
     {
-        std::vector<double> y(T-1),b(P),t(P);
-        for(size_t j = 0;j+1 < T;++j)
-            y[j] = bold[(j+1)*M+voxels[i]]-rho*bold[j*M+voxels[i]];
-        mr.regress(y.data(),b.data(),t.data());
-        auto pos = si2vi[voxels[i]];
-        for(size_t fib = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][pos] > fiber_threshold;++fib)
-            (t[1+task] > 0.0 ? spm_map->inc : spm_map->dec)[fib][pos] = float(std::fabs(t[1+task]));
-    });
+        data.clear_result(handle->dir.num_fiber,handle->dim.size());
+        tipl::par_for(voxels.size(),[&](size_t i)
+        {
+            std::vector<double> y(T-1),b(P),t(P);
+            for(size_t j = 0;j+1 < T;++j)
+                y[j] = y_at(i,j);
+            mr.regress(y.data(),b.data(),t.data());
+            auto pos = si2vi[voxels[i]];
+            for(size_t fib = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][pos] > fiber_threshold;++fib)
+                (t[1+task] > 0.0 ? data.inc : data.dec)[fib][pos] = float(std::fabs(t[1+task]));
+        });
+    };
+    spm_map = std::make_shared<connectometry_result>();
+    calculate_t(*spm_map,whitened);
 
-    // exploratory correlational tractography on the positive and negative task t-maps
+    // Phase-2 candidate null (unvalidated): residuals e0 of the whitened nuisance-only model (intercept and DCT),
+    // multiplied by one Rademacher sign per whitened row shared by all voxels; the observed task effect is never re-added
+    const unsigned int permutation_count = po.get("permutation",0);
+    std::vector<float> e0;
+    if(permutation_count)
+    {
+        std::vector<double> X0((T-1)*(1+D));
+        for(size_t j = 0;j+1 < T;++j)
+        {
+            X0[j*(1+D)] = Xw[j*P];
+            std::copy_n(Xw.begin()+j*P+1+K,D,X0.begin()+j*(1+D)+1);
+        }
+        tipl::multiple_regression<double> mr0;
+        if(!mr0.set_variables(X0.data(),1+D,T-1))
+            return error_msg = "invalid nuisance design matrix",false;
+        e0.resize((T-1)*voxels.size());
+        tipl::par_for(voxels.size(),[&](size_t i)
+        {
+            std::vector<double> y(T-1),b(1+D);
+            for(size_t j = 0;j+1 < T;++j)
+                y[j] = whitened(i,j);
+            mr0.regress(y.data(),b.data());
+            mr0.residual(y.data(),b.data());
+            std::copy(y.begin(),y.end(),e0.begin()+i*(T-1));
+        });
+    }
+
+    // correlational tractography on the task t-maps, repeated with each null resample as in run_permutation
     t_threshold = po.get("t_threshold",2.5f);
     length_threshold_voxels = po.get("length_threshold",(handle->dim[0]/4)/5*5);
     tip_iteration = po.get("tip_iteration",16);
     region_pruning = (po.get("region_pruning",1) == 1);
+    fdr_threshold = po.get("fdr_threshold",0.0f);
+    seed_count = po.get("seed_count",10000);
+    no_tractogram = !tipl::show_prog || po.get("no_tractogram",1);
     output_file_name = po.get("output",po.get("source") + "." + names[task]);
     roi_mgr = std::make_shared<RoiMgr>(handle);
     if(po.get("exclude_cb",0))
@@ -1029,28 +1066,81 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         return error_msg = "cannot load roi",false;
     if(roi_mgr->seeds.empty())
         roi_mgr->setWholeBrainSeed(fiber_threshold);
+
+    size_t max_dimension = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
+    for(auto each : {&tract_count_inc,&tract_count_dec,&tract_count_inc_null,&tract_count_dec_null})
+        each->assign(max_dimension,0);
+    fdr_inc.assign(max_dimension,0.0f);
+    fdr_dec.assign(max_dimension,0.0f);
+    for(auto each : {&inc_track,&dec_track,&pos_null_corr_track,&neg_null_corr_track})
+        *each = std::make_shared<TractModel>(handle);
     {
-        tipl::progress prog("tracking task t-maps");
+        tipl::progress p("tracking task t-maps");
         std::shared_ptr<tracking_data> fib(new tracking_data);
         fib->read(handle);
-        for(auto [track,ptr,name,color] : {std::tuple{&inc_track,&spm_map->inc_ptr,".inc",0x00F04040},
-                                           std::tuple{&dec_track,&spm_map->dec_ptr,".dec",0x004040F0}})
+        auto track = [&](const std::vector<const float*>& t_map,unsigned int seed,TractModel& model,std::vector<unsigned int>& hist,uint32_t color)
         {
             std::vector<std::vector<float> > tracks;
-            fib->dt_fa = *ptr;
-            run_track(fib,tracks,po.get("seed_count",100000),0,tipl::max_thread_count);
-            *track = std::make_shared<TractModel>(handle);
-            (*track)->add_tracts(tracks,length_threshold_voxels,tipl::rgb(uint32_t(color)));
-            for(size_t i = 0;i < tip_iteration;++i)
-                (*track)->trim();
-            if(region_pruning)
-                (*track)->region_pruning(0.2f);
-            (*track)->delete_repeated(1.0);
-            if((*track)->get_visible_track_count())
-                (*track)->save_tracts_to_file(output_file_name+name+".tt.gz");
-            else
-                std::ofstream(output_file_name+name+".no_tract.txt");
+            fib->dt_fa = t_map;
+            run_track(fib,tracks,seed_count,seed,tipl::max_thread_count);
+            cal_hist(tracks,hist);
+            model.add_tracts(tracks,length_threshold_voxels,tipl::rgb(color));
+        };
+        connectometry_result null_map;
+        for(unsigned int i = 0;p(i,std::max(1u,permutation_count));++i)
+        {
+            track(spm_map->inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
+            track(spm_map->dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
+            if(!permutation_count)
+                continue;
+            std::mt19937 gen(i);
+            std::vector<float> sign(T-1);
+            for(auto& s : sign)
+                s = (gen() & 1) ? 1.0f : -1.0f;
+            calculate_t(null_map,[&](size_t v,size_t j){return sign[j]*e0[v*(T-1)+j];});
+            track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
+            track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
         }
+        if(p.aborted())
+            return error_msg = "aborted",false;
+    }
+
+    std::ostringstream out;
+    out << " A first-level task fMRI analysis modeled the " << tipl::merge(names,',') << " events with the SPM canonical hemodynamic response function"
+        << " sampled at " << 7.0*tr/16.0 << " s after each volume onset (no slice-timing correction), an intercept, and " << D
+        << " discrete cosine high-pass regressors (128-s cutoff). A global AR(1) coefficient (rho = " << rho
+        << ", median over voxels of full-model OLS residuals) was removed by Cochrane-Orcutt whitening, and the GLS t statistics of "
+        << names[task] << " (df = " << T-1-P << ") were used in correlational tractography with a T threshold of " << t_threshold
+        << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report;
+    if(permutation_count)
+        out << " The null distribution of track length was estimated from " << permutation_count
+            << " synchronized residual wild-bootstrap resamples, sign-flipping the whitened residuals of the nuisance-only model"
+               " with one Rademacher sign per volume shared by all voxels. This null is a candidate that has not been validated"
+               " for type-I error or false discovery rate control.";
+    else
+        out << " The results are exploratory without false discovery rate or family-wise error control.";
+    report = out.str();
+    tipl::out() << report;
+    if(permutation_count)
+    {
+        hypothesis_inc = "positive " + names[task] + " response";
+        hypothesis_dec = "negative " + names[task] + " response";
+        save_result();
+        prog = 100;
+        generate_report();
+        return true;
+    }
+    for(auto [track,name] : {std::pair{inc_track,".inc"},std::pair{dec_track,".dec"}})
+    {
+        for(size_t i = 0;i < tip_iteration;++i)
+            track->trim();
+        if(region_pruning)
+            track->region_pruning(0.2f);
+        track->delete_repeated(1.0);
+        if(track->get_visible_track_count())
+            track->save_tracts_to_file(output_file_name+name+".tt.gz");
+        else
+            std::ofstream(output_file_name+name+".no_tract.txt");
     }
     {
         tipl::io::gz_mat_write mat_write(output_file_name+".t_statistics.fz");
@@ -1062,16 +1152,6 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             mat_write.write<tipl::io::masked_sloped>(std::string("dec_t")+std::to_string(i),spm_map->dec_ptr[i],handle->dim.plane_size(),handle->dim.depth());
         }
     }
-    std::ostringstream out;
-    out << " A first-level task fMRI analysis modeled the " << tipl::merge(names,',') << " events with the SPM canonical hemodynamic response function"
-        << " sampled at " << 7.0*tr/16.0 << " s after each volume onset (no slice-timing correction), an intercept, and " << D
-        << " discrete cosine high-pass regressors (128-s cutoff). A global AR(1) coefficient (rho = " << rho
-        << ", median over voxels of full-model OLS residuals) was removed by Cochrane-Orcutt whitening, and the GLS t statistics of "
-        << names[task] << " (df = " << T-1-P << ") were used in correlational tractography with a T threshold of " << t_threshold
-        << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report
-        << " The results are exploratory without false discovery rate or family-wise error control.";
-    report = out.str();
     std::ofstream(output_file_name+".report.txt") << handle->report << report << std::endl;
-    tipl::out() << report;
     return true;
 }
