@@ -18,6 +18,8 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
 
 extern std::vector<std::string> template_name_list;
 extern std::vector<std::filesystem::path> t2w_template_list;
+bool save_fz(tipl::io::gz_mat_read& mat_reader,tipl::io::gz_mat_write& matfile,
+             const std::vector<std::string>& skip_list,const std::vector<std::string>& skip_head_list);
 // native 4D BOLD + BIDS events -> fmri.dz on the template fib mask
 int fmri_db(tipl::program_option<tipl::out>& po)
 {
@@ -79,10 +81,8 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     // warp each frame with cubic interpolation and sample at the template mask
     const auto& si2vi = fib.mat_reader.si2vi;
     const size_t M = si2vi.size();
-    auto bold_mat = std::make_shared<tipl::io::mat_matrix>("bold",float(0),uint32_t(T),uint32_t(M));
-    fib.mat_reader.push_back(bold_mat);
+    std::vector<float> bold(T*M);
     {
-        auto bold = bold_mat->get_data<float>();
         tipl::progress prog("warp BOLD frames");
         for(size_t t = 0;prog(t,T);++t)
         {
@@ -94,15 +94,23 @@ int fmri_db(tipl::program_option<tipl::out>& po)
             return tipl::error() << "aborted",1;
     }
 
-    // fib_data::save_to_file keeps the template backbone and stores masked bold[T,M] sloped
-    fib.mat_reader.write("events",event_text.c_str(),1,uint32_t(event_text.size()+1));
-    fib.mat_reader.write("TR",&tr,1,1);
     fib.report += " The task fMRI BOLD image (" + source.filename().u8string() + ", TR=" + std::to_string(tr) +
                   " s) was registered to the T2w template using linear and nonlinear registration (R2=" + std::to_string(R2) +
                   ") and sampled at the template mask using cubic interpolation. Task events were taken from " +
                   events.filename().u8string() + ".";
-    if(!fib.save_to_file(po.get("output","fmri.dz")))
-        return tipl::error() << "cannot save fmri db file: " << fib.error_msg,1;
+
+    // fmri .dz: template fib backbone + masked, sloped bold[T,M], events text, and TR (cf. fib_data::save_to_file for dwi .dz)
+    auto output = po.get("output","fmri.dz");
+    tipl::io::gz_mat_write matfile(output);
+    if(!matfile || !save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
+        return tipl::error() << "cannot save fmri db file " << output << " " << fib.mat_reader.error_msg,1;
+    matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
+    matfile.write("events",event_text);
+    matfile.write("TR",tr);
+    matfile.write("R2",fib.R2);
+    matfile.write("template",template_name_list[fib.template_id]);
+    matfile.write("report",fib.report);
+    matfile.write("intro",fib.intro);
     return 0;
 }
 int db(tipl::program_option<tipl::out>& po)
