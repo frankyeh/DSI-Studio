@@ -28,11 +28,13 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     if(!nii.open(source,std::ios::in))
         return tipl::error() << nii.error_msg,1;
     const size_t T = nii.dim(4);
+    if(!T)
+        return tipl::error() << "no BOLD frame in " << source,1;
 
     // TR from --tr, otherwise NIfTI pixdim[4] with xyzt time units (8: s, 16: ms, 24: us)
     const int units = nii.nif_header.xyzt_units & 0x38;
     const float tr = po.get("tr",nii.nif_header.pixdim[4]*(units == 8 ? 1.0f : units == 16 ? 1.0e-3f : units == 24 ? 1.0e-6f : 0.0f));
-    if(tr <= 0.0f)
+    if(!(tr > 0.0f))
         return tipl::error() << "cannot resolve TR from the NIfTI header. please specify --tr",1;
 
     std::vector<tipl::image<3> > frames(T);
