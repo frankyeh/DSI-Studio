@@ -46,7 +46,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     if(!nii.error_msg.empty())
         return tipl::error() << nii.error_msg,1;
 
-    // events file (optional) stored as text (like demo), parsed with the HRF after loading the .dz
+    // events file (optional) stored as text in the demo field, parsed with the HRF after loading the .dz
     std::string event_text;
     if(po.has("events"))
     {
@@ -104,7 +104,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
         return tipl::error() << "cannot save fmri db file " << output << " " << fib.mat_reader.error_msg,1;
     matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
     if(!event_text.empty())
-        matfile.write("events",event_text);
+        matfile.write("demo",event_text);
     if(tr > 0.0f)
         matfile.write("TR",tr);
     matfile.write("index_name",std::string("bold"));
