@@ -70,6 +70,7 @@ public:// Multiple regression
     void calculate_FDR(void);
     void save_result(void);
     std::string generate_report(void);
+    bool run_fmri(tipl::program_option<tipl::out>& po);
 };
 
 #endif // VBC_DATABASE_H

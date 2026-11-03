@@ -10,6 +10,8 @@ int cnt(tipl::program_option<tipl::out>& po)
     auto vbc = std::make_shared<group_connectometry_analysis>();
     if(!vbc->load_database(po.get("source").c_str()))
         return tipl::error() << vbc->error_msg,1;
+    if(vbc->handle->mat_reader.has("bold"))
+        return vbc->run_fmri(po) ? 0 : (tipl::error() << vbc->error_msg,1);
 
     auto& db = vbc->handle->db;
     if(db.demo.empty() || po.has("demo"))

@@ -884,3 +884,194 @@ std::string group_connectometry_analysis::generate_report(void)
     return output;
 }
 
+bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+// first-level task fMRI of one run stored as bold[t*M+s]: SPM canonical HRF design, 128-s DCT high-pass and intercept,
+// global AR(1) Cochrane-Orcutt GLS task t-map, and exploratory correlational tractography (no FDR or inference)
+bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
+{
+    const auto& bold_mat = handle->mat_reader["bold"];
+    const size_t T = bold_mat.rows,M = bold_mat.cols;
+    const float* bold = bold_mat.get_data<float>();
+
+    float tr = 0.0f;
+    handle->mat_reader.read("TR",tr);
+    if(!((tr = po.get("tr",tr)) > 0.0f))
+        return error_msg = "no TR in the database. please specify --tr",false;
+
+    // raw BIDS events (onset, duration, optional trial_type) from --events or the database,
+    // as boxcars on a TR/16 microtime grid that starts 32 s before volume 0 to keep pre-scan onsets
+    std::string events;
+    if(po.has("events"))
+    {
+        std::ifstream in(po.get("events"));
+        events.assign(std::istreambuf_iterator<char>(in),std::istreambuf_iterator<char>());
+    }
+    else
+        handle->mat_reader.read("events",events);
+    const size_t micro = 16;
+    const double dt = double(tr)/micro;
+    std::vector<double> hrf(size_t(32.0/dt)+1); // SPM canonical HRF [6,16,1,1,6,0,32]
+    for(size_t i = 1;i < hrf.size();++i)
+    {
+        double t = i*dt;
+        hrf[i] = std::pow(t,5.0)*std::exp(-t)/std::tgamma(6.0)-std::pow(t,15.0)*std::exp(-t)/std::tgamma(16.0)/6.0;
+    }
+    const size_t pre = hrf.size(),N = pre+T*micro;
+    auto bin = [&](double time){return size_t(std::clamp(double(pre)+std::floor(time/dt),0.0,double(N)));};
+    std::vector<std::string> names;
+    std::vector<std::vector<double> > u;
+    {
+        std::istringstream in(events);
+        std::string line;
+        auto read_line = [&](void)
+        {
+            if(!std::getline(in,line))
+                return false;
+            if(!line.empty() && line.back() == '\r')
+                line.pop_back();
+            return true;
+        };
+        read_line();
+        const auto header = tipl::split(line,'\t');
+        auto col = [&](const char* name){return size_t(std::find(header.begin(),header.end(),name)-header.begin());};
+        auto to_num = [](const std::string& s,double& v){char* end = nullptr;v = std::strtod(s.c_str(),&end);return end != s.c_str() && *end == 0 && std::isfinite(v);};
+        const size_t onset_col = col("onset"),duration_col = col("duration"),type_col = col("trial_type");
+        if(onset_col == header.size() || duration_col == header.size())
+            return error_msg = "events require onset and duration columns. please specify --events",false;
+        for(size_t row = 2;read_line();++row)
+        {
+            if(line.empty())
+                continue;
+            const auto v = tipl::split(line,'\t');
+            double onset,duration;
+            if(v.size() != header.size() || !to_num(v[onset_col],onset) || !to_num(v[duration_col],duration) || duration < 0.0)
+                return error_msg = "invalid event at line " + std::to_string(row),false;
+            const std::string name = type_col == header.size() ? "task" : v[type_col];
+            auto k = size_t(std::find(names.begin(),names.end(),name)-names.begin());
+            if(k == names.size())
+                names.push_back(name),u.push_back(std::vector<double>(N));
+            size_t from = bin(onset),to = std::min(N,std::max(from+1,bin(onset+duration)));
+            std::fill(u[k].begin()+std::min(from,to),u[k].begin()+to,1.0);
+        }
+    }
+    const size_t task = po.has("condition") ? size_t(std::find(names.begin(),names.end(),po.get("condition"))-names.begin()) : 0;
+    if(task >= names.size())
+        return error_msg = "cannot find the task condition",false;
+
+    // design X[T,P]: intercept, HRF-convolved conditions sampled at SPM12 microtime 8 of 16, nonconstant DCT (128 s)
+    const size_t K = names.size(),D = size_t(2.0*T*tr/128.0+1.0)-1,P = 1+K+D;
+    std::vector<double> X(T*P);
+    for(size_t t = 0;t < T;++t)
+    {
+        auto x = X.data()+t*P;
+        x[0] = 1.0;
+        for(size_t k = 0,pos = pre+t*micro+7;k < K;++k)
+            for(size_t j = 0;j < hrf.size();++j)
+                x[1+k] += u[k][pos-j]*hrf[j];
+        for(size_t d = 1;d <= D;++d)
+            x[K+d] = std::sqrt(2.0/T)*std::cos(3.14159265358979323846*(2*t+1)*d/(2.0*T));
+    }
+
+    // global AR(1) rho: median lag-1 autocorrelation of full-model OLS residuals in fiber voxels
+    const auto& si2vi = handle->mat_reader.si2vi;
+    std::vector<size_t> voxels;
+    for(size_t s = 0;s < M;++s)
+        if(handle->dir.fa[0][si2vi[s]] > fiber_threshold)
+            voxels.push_back(s);
+    tipl::multiple_regression<double> mr;
+    if(!mr.set_variables(X.data(),P,T))
+        return error_msg = "invalid design matrix",false;
+    std::vector<double> voxel_rho(voxels.size());
+    tipl::par_for(voxels.size(),[&](size_t i)
+    {
+        std::vector<double> y(T),b(P);
+        for(size_t t = 0;t < T;++t)
+            y[t] = bold[t*M+voxels[i]];
+        mr.regress(y.data(),b.data());
+        mr.residual(y.data(),b.data());
+        double num = 0.0,den = y[0]*y[0];
+        for(size_t t = 1;t < T;++t)
+            num += y[t]*y[t-1],den += y[t]*y[t];
+        voxel_rho[i] = den > 0.0 ? num/den : 0.0;
+    });
+    std::nth_element(voxel_rho.begin(),voxel_rho.begin()+voxel_rho.size()/2,voxel_rho.end());
+    const double rho = voxel_rho[voxel_rho.size()/2];
+
+    // Cochrane-Orcutt whitening z't = zt-rho*z(t-1), t = 1..T-1, then GLS t of the task regressor
+    std::vector<double> Xw((T-1)*P);
+    for(size_t i = 0;i < Xw.size();++i)
+        Xw[i] = X[i+P]-rho*X[i];
+    if(!mr.set_variables(Xw.data(),P,T-1))
+        return error_msg = "invalid whitened design matrix",false;
+    spm_map = std::make_shared<connectometry_result>();
+    spm_map->clear_result(handle->dir.num_fiber,handle->dim.size());
+    tipl::par_for(voxels.size(),[&](size_t i)
+    {
+        std::vector<double> y(T-1),b(P),t(P);
+        for(size_t j = 0;j+1 < T;++j)
+            y[j] = bold[(j+1)*M+voxels[i]]-rho*bold[j*M+voxels[i]];
+        mr.regress(y.data(),b.data(),t.data());
+        auto pos = si2vi[voxels[i]];
+        for(size_t fib = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][pos] > fiber_threshold;++fib)
+            (t[1+task] > 0.0 ? spm_map->inc : spm_map->dec)[fib][pos] = float(std::fabs(t[1+task]));
+    });
+
+    // exploratory correlational tractography on the positive and negative task t-maps
+    t_threshold = po.get("t_threshold",2.5f);
+    length_threshold_voxels = po.get("length_threshold",(handle->dim[0]/4)/5*5);
+    tip_iteration = po.get("tip_iteration",16);
+    region_pruning = (po.get("region_pruning",1) == 1);
+    output_file_name = po.get("output",po.get("source") + "." + names[task]);
+    roi_mgr = std::make_shared<RoiMgr>(handle);
+    if(po.get("exclude_cb",0))
+        exclude_cerebellum();
+    if(!load_roi(po,handle,roi_mgr))
+        return error_msg = "cannot load roi",false;
+    if(roi_mgr->seeds.empty())
+        roi_mgr->setWholeBrainSeed(fiber_threshold);
+    {
+        tipl::progress prog("tracking task t-maps");
+        std::shared_ptr<tracking_data> fib(new tracking_data);
+        fib->read(handle);
+        for(auto [track,ptr,name,color] : {std::tuple{&inc_track,&spm_map->inc_ptr,".inc",0x00F04040},
+                                           std::tuple{&dec_track,&spm_map->dec_ptr,".dec",0x004040F0}})
+        {
+            std::vector<std::vector<float> > tracks;
+            fib->dt_fa = *ptr;
+            run_track(fib,tracks,po.get("seed_count",100000),0,tipl::max_thread_count);
+            *track = std::make_shared<TractModel>(handle);
+            (*track)->add_tracts(tracks,length_threshold_voxels,tipl::rgb(uint32_t(color)));
+            for(size_t i = 0;i < tip_iteration;++i)
+                (*track)->trim();
+            if(region_pruning)
+                (*track)->region_pruning(0.2f);
+            (*track)->delete_repeated(1.0);
+            if((*track)->get_visible_track_count())
+                (*track)->save_tracts_to_file(output_file_name+name+".tt.gz");
+            else
+                std::ofstream(output_file_name+name+".no_tract.txt");
+        }
+    }
+    {
+        tipl::io::gz_mat_write mat_write(output_file_name+".t_statistics.fz");
+        if(!save_fz(handle->mat_reader,mat_write,{"odf_faces","odf_vertices","z0","mapping","report","steps","bold"},{"subject"}))
+            return error_msg = "cannot save " + output_file_name + ".t_statistics.fz",false;
+        for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
+        {
+            mat_write.write<tipl::io::masked_sloped>(std::string("inc_t")+std::to_string(i),spm_map->inc_ptr[i],handle->dim.plane_size(),handle->dim.depth());
+            mat_write.write<tipl::io::masked_sloped>(std::string("dec_t")+std::to_string(i),spm_map->dec_ptr[i],handle->dim.plane_size(),handle->dim.depth());
+        }
+    }
+    std::ostringstream out;
+    out << " A first-level task fMRI analysis modeled the " << tipl::merge(names,',') << " events with the SPM canonical hemodynamic response function"
+        << " sampled at " << 7.0*tr/16.0 << " s after each volume onset (no slice-timing correction), an intercept, and " << D
+        << " discrete cosine high-pass regressors (128-s cutoff). A global AR(1) coefficient (rho = " << rho
+        << ", median over voxels of full-model OLS residuals) was removed by Cochrane-Orcutt whitening, and the GLS t statistics of "
+        << names[task] << " (df = " << T-1-P << ") were used in correlational tractography with a T threshold of " << t_threshold
+        << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report
+        << " The results are exploratory without false discovery rate or family-wise error control.";
+    report = out.str();
+    std::ofstream(output_file_name+".report.txt") << handle->report << report << std::endl;
+    tipl::out() << report;
+    return true;
+}
