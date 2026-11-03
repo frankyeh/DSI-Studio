@@ -948,6 +948,12 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
             continue;
         }
 
+        // masked rows (e.g. fMRI bold[T,M]) are stored sloped
+        if(mat_reader[index].cols == matfile.si2vi.size() && mat_reader[index].is_type<float>())
+        {
+            matfile.write<tipl::io::sloped>(name,mat_reader.read_as_type<float>(index),mat_reader[index].rows,mat_reader[index].cols);
+            continue;
+        }
         tipl::out() << "store " << name << " as is";
         matfile.write(mat_reader[index]);
     }
