@@ -37,11 +37,11 @@ bool connectometry_db::load_db_from_fib(fib_data* handle_)
         std::string subject_names_str,name;
         if(!handle->mat_reader.read("subject_names",subject_names_str))
         {
-            // fMRI .dz has no subject_names: each row (frame) of the index_name matrix is a subject
-            if(!handle->mat_reader.read("index_name",name) || !handle->mat_reader.has(name))
+            if(!handle->mat_reader.has("bold")) // fMRI .dz
                 return true;
+            name = "bold";
             for(size_t i = 0;i < handle->mat_reader[name].rows;++i)
-                subject_names_str += std::to_string(i) + "\n";
+                subject_names_str += name + std::to_string(i) + "\n"; // e.g. bold0, bold1, ...
         }
         std::istringstream in(subject_names_str);
         while(std::getline(in,name))
