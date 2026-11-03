@@ -92,6 +92,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
                   events.filename().u8string() + ".";
 
     // fmri .dz: template fib backbone + masked, sloped bold[T,M], events text, and TR (cf. fib_data::save_to_file for dwi .dz)
+    // no subject_names, so older DSI Studio does not load it as a db; the current one uses index_name
     auto output = po.get("output","fmri.dz");
     tipl::io::gz_mat_write matfile(output);
     if(!save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
@@ -99,6 +100,7 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
     matfile.write("events",event_text);
     matfile.write("TR",tr);
+    matfile.write("index_name",std::string("bold"));
     matfile.write("R2",R2);
     matfile.write("template",template_name_list[fib.template_id]);
     matfile.write("report",fib.report);
