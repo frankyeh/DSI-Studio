@@ -69,6 +69,7 @@ public:// Multiple regression
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
     void save_result(void);
+    void save_tracts_and_t(void);
     std::string generate_report(void);
     bool run_fmri(tipl::program_option<tipl::out>& po);
 };
