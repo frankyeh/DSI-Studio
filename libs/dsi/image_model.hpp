@@ -243,7 +243,8 @@ private:
                     std::string keyword,
                     size_t total_keyword_count,std::vector<std::string> param,
                     const std::filesystem::path& working_dir,
-                    std::filesystem::path exec);
+                    std::filesystem::path exec,
+                    std::function<bool(void)> check = nullptr);
     bool generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
                                      std::vector<tipl::image<3> >& rev_b0,
                                      std::filesystem::path& b0_appa_file,

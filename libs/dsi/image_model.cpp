@@ -2166,15 +2166,20 @@ bool src_data::run_plugin(std::string exec_name,
                           std::string keyword,
                           size_t total_keyword_count,std::vector<std::string> param,
                           const std::filesystem::path& working_dir,
-                          std::filesystem::path exec)
+                          std::filesystem::path exec,
+                          std::function<bool(void)> check)
 {
     std::filesystem::path plugin_dir = tipl::qt::to_path(QCoreApplication::applicationDirPath())/"plugin";
-    if(exec.empty())
+    // executables tried in order until one exits normally and passes check; an explicit exec has no fallback
+    std::vector<std::filesystem::path> exec_list;
+    if(!exec.empty())
+        exec_list.push_back(exec);
+    else
     {
         #ifdef _WIN32
-        exec = plugin_dir/(exec_name + ".exe");
-        if(!std::filesystem::exists(exec))
-            return error_msg = "cannot find plugin: " + exec.u8string(),false;
+        exec_list.push_back(plugin_dir/(exec_name + ".exe"));
+        if(!std::filesystem::exists(exec_list.back()))
+            return error_msg = "cannot find plugin: " + exec_list.back().u8string(),false;
         #else
         std::filesystem::path fsl_path;
         if(std::filesystem::exists(plugin_dir/exec_name))
@@ -2191,30 +2196,29 @@ bool src_data::run_plugin(std::string exec_name,
         if(fsl_path.empty())
             tipl::warning() << "Cannot locate bundled TinyFSL or system FSL. Proceeding to call FSL tools via PATH.";
 
-        exec = fsl_path/exec_name;
         if(!fsl_path.empty() && (exec_name == "eddy" || exec_name == "eddy_cuda"))
         {
-            auto cuda_exec = fsl_path/"eddy_cuda";
-            if(has_cuda && !std::filesystem::exists(cuda_exec))
-                for(const auto& name:QDir(tipl::qt::to_qstring(fsl_path)).entryList({"eddy_cuda*"},QDir::Files | QDir::Executable,QDir::Name))
+            // eddy_cuda, versioned eddy_cudaX.Y from newest to oldest, then eddy_openmp, eddy_cpu, and eddy
+            if(has_cuda)
+            {
+                if(std::filesystem::exists(fsl_path/"eddy_cuda"))
+                    exec_list.push_back(fsl_path/"eddy_cuda");
+                auto names = QDir(tipl::qt::to_qstring(fsl_path)).entryList({"eddy_cuda*"},QDir::Files | QDir::Executable);
+                std::sort(names.begin(),names.end(),[](const QString& a,const QString& b){return a.mid(9).toFloat() > b.mid(9).toFloat();});
+                for(const auto& name : names)
                     if(QRegularExpression(R"(^eddy_cuda[0-9]+(\.[0-9]+)?$)").match(name).hasMatch())
-                    {
-                        cuda_exec = fsl_path/tipl::qt::to_path(name);
-                        break;
-                    }
-            if(has_cuda && std::filesystem::exists(cuda_exec))
-                exec = cuda_exec;
-            else if(std::filesystem::exists(fsl_path/"eddy_openmp"))
-                exec = fsl_path/"eddy_openmp";
-            else if(std::filesystem::exists(fsl_path/"eddy_cpu"))
-                exec = fsl_path/"eddy_cpu";
-            else
-                exec = fsl_path/"eddy";
+                        exec_list.push_back(fsl_path/tipl::qt::to_path(name));
+            }
+            for(auto each : {"eddy_openmp","eddy_cpu"})
+                if(std::filesystem::exists(fsl_path/each))
+                    exec_list.push_back(fsl_path/each);
+            exec_list.push_back(fsl_path/"eddy");
         }
+        else
+            exec_list.push_back(fsl_path/exec_name);
         #endif
     }
 
-    QProcess program;
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("FSLOUTPUTTYPE","NIFTI_GZ");
     #ifndef _WIN32
@@ -2225,10 +2229,6 @@ bool src_data::run_plugin(std::string exec_name,
         env.insert("PATH",p + ":" + env.value("PATH"));
     }
     #endif
-    program.setProcessEnvironment(env);
-    program.setWorkingDirectory(tipl::qt::to_qstring(working_dir));
-
-    tipl::out() << "run " << exec;
     tipl::out() << "path: " << working_dir;
     QStringList p;
     for(auto s:param)
@@ -2236,66 +2236,80 @@ bool src_data::run_plugin(std::string exec_name,
         tipl::out() << s;
         p << s.c_str();
     }
-    program.start(tipl::qt::to_qstring(exec),p);
-    if(!program.waitForStarted())
+    for(const auto& cur_exec : exec_list)
     {
-        switch(program.error())
+        if(&cur_exec != &exec_list.front())
+            tipl::warning() << "trying the next executable after: " << error_msg;
+        tipl::out() << "run " << cur_exec;
+        QProcess program;
+        program.setProcessEnvironment(env);
+        program.setWorkingDirectory(tipl::qt::to_qstring(working_dir));
+        program.start(tipl::qt::to_qstring(cur_exec),p);
+        if(!program.waitForStarted())
         {
-        case QProcess::FailedToStart:
-            error_msg = exec_name + " failed to start. Either " + exec_name + " is missing, or you have no permission to run it.";
-        break;
-        case QProcess::Crashed:
-            error_msg = exec_name + " crashed some time after starting successfully.";
-        break;
-        case QProcess::WriteError:
-            error_msg = "An error occurred when attempting to write to the process. For example, the process may not be running, or it may have closed its input channel.";
-        break;
-        case QProcess::ReadError:
-            error_msg = "An error occurred when attempting to read from the process. For example, the process may not be running.";
-        break;
-        default:
-            error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
-        break;
-        }
-        tipl::error() << error_msg;
-        return false;
-    }
-    unsigned int keyword_seen = 0;
-    tipl::progress prog("calling external program");
-    while(!program.waitForFinished(1000) && !prog.aborted())
-    {
-        prog(keyword_seen,total_keyword_count);
-        QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
-        if(output.isEmpty())
+            switch(program.error())
+            {
+            case QProcess::FailedToStart:
+                error_msg = exec_name + " failed to start. Either " + exec_name + " is missing, or you have no permission to run it.";
+            break;
+            case QProcess::Crashed:
+                error_msg = exec_name + " crashed some time after starting successfully.";
+            break;
+            case QProcess::WriteError:
+                error_msg = "An error occurred when attempting to write to the process. For example, the process may not be running, or it may have closed its input channel.";
+            break;
+            case QProcess::ReadError:
+                error_msg = "An error occurred when attempting to read from the process. For example, the process may not be running.";
+            break;
+            default:
+                error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
+            break;
+            }
             continue;
-        if(output.contains(keyword.c_str()))
-            ++keyword_seen;
-        QStringList output_lines = output.remove('\r').split('\n');
-        output_lines.removeAll("");
-        for(int i = 0;i+1 < output_lines.size();++i)
-            tipl::out() << output_lines[i].toStdString() << std::endl;
-        tipl::out() << output_lines.back().toStdString();
-        if(keyword_seen >= total_keyword_count)
-            ++total_keyword_count;
-    }
-    if(prog.aborted())
-    {
-        program.kill();
-        error_msg = "process aborted";
-        return false;
-    }
+        }
+        unsigned int keyword_seen = 0;
+        tipl::progress prog("calling external program");
+        while(!program.waitForFinished(1000) && !prog.aborted())
+        {
+            prog(keyword_seen,total_keyword_count);
+            QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
+            if(output.isEmpty())
+                continue;
+            if(output.contains(keyword.c_str()))
+                ++keyword_seen;
+            QStringList output_lines = output.remove('\r').split('\n');
+            output_lines.removeAll("");
+            for(int i = 0;i+1 < output_lines.size();++i)
+                tipl::out() << output_lines[i].toStdString() << std::endl;
+            tipl::out() << output_lines.back().toStdString();
+            if(keyword_seen >= total_keyword_count)
+                ++total_keyword_count;
+        }
+        if(prog.aborted())
+        {
+            program.kill();
+            error_msg = "process aborted";
+            return false;
+        }
 
-    if(program.exitStatus() != QProcess::NormalExit || program.exitCode())
-    {
-        error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
-        if(error_msg.empty())
-            error_msg = "process failed";
-        tipl::error() << error_msg;
-        return false;
+        if(program.exitStatus() != QProcess::NormalExit || program.exitCode())
+        {
+            error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
+            if(error_msg.empty())
+                error_msg = "process failed";
+            continue;
+        }
+        if(check && !check())
+        {
+            error_msg += " " + cur_exec.filename().u8string() + " terminated prematurely";
+            continue;
+        }
+        tipl::out() << "process completed." << std::endl;
+        error_msg.clear();
+        return true;
     }
-    tipl::out() << "process completed." << std::endl;
-    error_msg.clear();
-    return true;
+    tipl::error() << error_msg;
+    return false;
 }
 
 void src_data::setup_topup_eddy_volume(void)
@@ -2724,19 +2738,13 @@ bool src_data::run_eddy(std::string exec)
     if(rev_pe_src.get())
         topup_eddy_report += " and " + std::to_string(rev_pe_src->src_bvalues.size()) + " opposite phase DWI";
     topup_eddy_report += " were corrected using FSL eddy.";
-    if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,file_name.parent_path(),exec))
+    // each eddy build is accepted only if its result loads, otherwise the next build is tried
+    if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,file_name.parent_path(),exec,
+                   [&](void){return load_topup_eddy_result();}))
     {
         if(!has_topup)
             return false;
         return run_applytopup();
-    }
-    if(!load_topup_eddy_result())
-    {
-        if(has_cuda)
-            error_msg += " please install CUDA toolkit to run eddy";
-        else
-            error_msg += " eddy terminated prematurely likely due to insufficient memory";
-        return false;
     }
     std::filesystem::remove(temp_nifti());
     std::filesystem::remove(mask_nifti);
