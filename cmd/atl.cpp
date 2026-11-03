@@ -20,32 +20,15 @@ extern std::vector<std::string> template_name_list;
 extern std::vector<std::filesystem::path> t2w_template_list;
 bool save_fz(tipl::io::gz_mat_read& mat_reader,tipl::io::gz_mat_write& matfile,
              const std::vector<std::string>& skip_list,const std::vector<std::string>& skip_head_list);
-// native 4D BOLD + BIDS events -> fmri.dz on the template fib mask
+// native 4D BOLD (one or more subjects) + BIDS events -> fmri.dz on the template fib mask
 int fmri_db(tipl::program_option<tipl::out>& po)
 {
-    const std::filesystem::path source = po.get("source"),events = po.get("events");
-    tipl::io::gz_nifti nii;
-    if(!nii.open(source,std::ios::in))
-        return tipl::error() << nii.error_msg,1;
-    const size_t T = nii.dim(4);
-
-    // TR from --tr, otherwise NIfTI pixdim[4] with xyzt time units (8: s, 16: ms, 24: us)
-    const int units = nii.nif_header.xyzt_units & 0x38;
-    const float tr = po.has("tr") ? po.get("tr",0.0f) :
-                     nii.nif_header.pixdim[4]*(units == 8 ? 1.0f : units == 16 ? 1.0e-3f : units == 24 ? 1.0e-6f : 0.0f);
-    if(tr <= 0.0f)
-        return tipl::error() << "cannot resolve TR from the NIfTI header. please specify --tr",1;
-
-    std::vector<tipl::image<3> > frames(T);
-    tipl::vector<3> vs;
-    tipl::matrix<4,4> trans;
-    for(auto& each : frames)
-        nii >> each;
-    nii >> vs >> trans;
-    if(!nii.error_msg.empty())
-        return tipl::error() << nii.error_msg,1;
+    auto name_list = po.get_files("source");
+    if(name_list.empty())
+        return tipl::error() << po.error_msg,1;
 
     // events file stored as text (like demo), parsed with the HRF after loading the .dz
+    const std::filesystem::path events = po.get("events");
     std::ifstream in(events);
     if(!in)
         return tipl::error() << "cannot read " << events,1;
@@ -55,62 +38,109 @@ int fmri_db(tipl::program_option<tipl::out>& po)
     if(!fib.load_template_fib(po.get("template",template_name_list,size_t(0)),po.get("template_reso",2.0f)))
         return tipl::error() << fib.error_msg,1;
 
-    // register mean BOLD to the t2w template, then map onto the template fib grid
-    tipl::image<3> mean(frames[0].shape());
-    for(const auto& each : frames)
-        for(size_t i = 0;i < mean.size();++i)
-            mean[i] += each[i]/float(T);
-    tipl::reg::mm_reg<tipl::out> r;
-    if(!r.load_template<tipl::io::gz_nifti>(0,t2w_template_list[fib.template_id]))
-        return tipl::error() << "cannot load t2w template: " << r.error_msg,1;
-    r.I[0] = tipl::reg::subject_image_pre(std::move(mean));
-    r.Is = frames[0].shape();
-    r.Ivs = vs;
-    r.IR = trans;
-    r.match_resolution(true);
-    r.linear_reg(tipl::prog_aborted);
-    r.nonlinear_reg(tipl::prog_aborted);
-    if(tipl::prog_aborted)
-        return tipl::error() << "aborted",1;
-    const float R2 = tipl::max_value(r.r);
-    if(R2 < 0.3f)
-        return tipl::error() << "registration failed. R2=" << R2,1;
-    r.to_I_space(frames[0].shape(),trans);
-    r.to_It_space(fib.dim,fib.trans_to_mni);
+    // template fib backbone first, then the other matrices, so that matfile.has() rejects names that collide with them
+    auto output = po.get("output","fmri.dz");
+    tipl::io::gz_mat_write matfile(output);
+    if(!matfile || !save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
+        return tipl::error() << "cannot save fmri db file " << output << " " << fib.mat_reader.error_msg,1;
 
-    // warp each frame with cubic interpolation and sample at the template mask
+    // headers first: each BOLD matrix is named after its file name, with identical frame counts and TR
+    std::vector<std::string> index_list;
+    size_t T = 0;
+    float TR = 0.0f;
+    for(const auto& each : name_list)
+    {
+        tipl::io::gz_nifti nii;
+        if(!nii.open(each,std::ios::in))
+            return tipl::error() << nii.error_msg,1;
+        if(T && nii.dim(4) != T)
+            return tipl::error() << each << " has " << nii.dim(4) << " frames, different from " << T,1;
+        T = nii.dim(4);
+        // TR from --tr, otherwise NIfTI pixdim[4] with xyzt time units (8: s, 16: ms, 24: us)
+        const int units = nii.nif_header.xyzt_units & 0x38;
+        const float tr = po.has("tr") ? po.get("tr",0.0f) :
+                         nii.nif_header.pixdim[4]*(units == 8 ? 1.0f : units == 16 ? 1.0e-3f : units == 24 ? 1.0e-6f : 0.0f);
+        if(tr <= 0.0f)
+            return tipl::error() << "cannot resolve TR from the NIfTI header of " << each << ". please specify --tr",1;
+        if(TR != 0.0f && std::fabs(tr-TR) > 1.0e-4f)
+            return tipl::error() << each << " has TR=" << tr << " s, different from " << TR << " s",1;
+        TR = tr;
+        index_list.push_back(tipl::split(each.filename().u8string(),'.')[0]);
+    }
+
+    fib.report += " A total of " + std::to_string(name_list.size()) + " task fMRI BOLD images were registered to the T2w template"
+                  " using linear and nonlinear registration and sampled at the template mask using cubic interpolation."
+                  " The BOLD signals were normalized by the Otsu median. Task events were taken from " + events.filename().u8string() + ".";
+    matfile.write("index_name",tipl::merge(index_list,','));
+    matfile.write("events",event_text);
+    matfile.write("TR",TR);
+    matfile.write("template",template_name_list[fib.template_id]);
+    matfile.write("report",fib.report);
+    matfile.write("intro",fib.intro);
+
+    // t2w template loaded once and copied for each subject's registration
+    tipl::reg::mm_reg<tipl::out> t2w;
+    if(!t2w.load_template<tipl::io::gz_nifti>(0,t2w_template_list[fib.template_id]))
+        return tipl::error() << "cannot load t2w template: " << t2w.error_msg,1;
+
     const auto& si2vi = fib.mat_reader.si2vi;
     const size_t M = si2vi.size();
-    std::vector<float> bold(T*M);
+    std::vector<float> R2_list;
+    tipl::progress prog("create fmri db",true);
+    for(size_t i = 0;prog(i,name_list.size());++i)
     {
-        tipl::progress prog("warp BOLD frames");
-        for(size_t t = 0;prog(t,T);++t)
+        // R2 is written last, so it is checked by name
+        if(index_list[i] == "R2" || matfile.has(index_list[i]))
+            return tipl::error() << "duplicated or reserved name " << index_list[i] << " from " << name_list[i],1;
+        tipl::io::gz_nifti nii;
+        if(!nii.open(name_list[i],std::ios::in))
+            return tipl::error() << nii.error_msg,1;
+        std::vector<tipl::image<3> > frames(T);
+        tipl::vector<3> vs;
+        tipl::matrix<4,4> trans;
+        for(auto& each : frames)
+            nii >> each;
+        nii >> vs >> trans;
+        if(!nii.error_msg.empty())
+            return tipl::error() << nii.error_msg,1;
+
+        // register summed BOLD to the t2w template, then map onto the template fib grid
+        auto r = t2w;
+        r.I[0] = tipl::reg::subject_image_pre(tipl::sum(frames.begin(),frames.end())); // sum: scale is normalized by subject_image_pre
+        r.Is = frames[0].shape();
+        r.Ivs = vs;
+        r.IR = trans;
+        r.match_resolution(true);
+        r.linear_reg(tipl::prog_aborted);
+        r.nonlinear_reg(tipl::prog_aborted);
+        if(tipl::prog_aborted)
+            return tipl::error() << "aborted",1;
+        const float R2 = tipl::max_value(r.r);
+        if(R2 < 0.3f)
+            return tipl::error() << "registration failed at " << name_list[i] << ". R2=" << R2,1;
+        r.to_I_space(frames[0].shape(),trans);
+        r.to_It_space(fib.dim,fib.trans_to_mni);
+
+        // warp each frame with cubic interpolation and sample at the template mask
+        std::vector<float> bold(T*M);
+        for(size_t t = 0;t < T;++t)
         {
             auto J = r.apply_warping<true,tipl::interpolation::cubic>(frames[t]);
             for(size_t s = 0;s < M;++s)
                 bold[t*M+s] = J[si2vi[s]];
         }
-        if(prog.aborted())
-            return tipl::error() << "aborted",1;
+
+        // like subject_image_pre: Otsu-median normalization with cutoff at 1.0, then scaled to a maximum of 1.0
+        tipl::segmentation::normalize_otsu_median(bold,1.0f);
+        tipl::normalize(bold);
+
+        matfile.write<tipl::io::sloped>(index_list[i],bold.data(),T,M);
+        R2_list.push_back(R2);
     }
+    if(prog.aborted())
+        return tipl::error() << "aborted",1;
 
-    fib.report += " The task fMRI BOLD image (" + source.filename().u8string() + ", TR=" + std::to_string(tr) +
-                  " s) was registered to the T2w template using linear and nonlinear registration (R2=" + std::to_string(R2) +
-                  ") and sampled at the template mask using cubic interpolation. Task events were taken from " +
-                  events.filename().u8string() + ".";
-
-    // fmri .dz: template fib backbone + masked, sloped bold[T,M], events text, and TR (cf. fib_data::save_to_file for dwi .dz)
-    auto output = po.get("output","fmri.dz");
-    tipl::io::gz_mat_write matfile(output);
-    if(!matfile || !save_fz(fib.mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","intro","R2","template","index_name","demo","steps"},{"subject"}))
-        return tipl::error() << "cannot save fmri db file " << output << " " << fib.mat_reader.error_msg,1;
-    matfile.write<tipl::io::sloped>("bold",bold.data(),T,M);
-    matfile.write("events",event_text);
-    matfile.write("TR",tr);
-    matfile.write("R2",R2);
-    matfile.write("template",template_name_list[fib.template_id]);
-    matfile.write("report",fib.report);
-    matfile.write("intro",fib.intro);
+    matfile.write("R2",R2_list);
     return 0;
 }
 int db(tipl::program_option<tipl::out>& po)
