@@ -124,6 +124,12 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     if(!db.demo.empty())
         load_demographics();
     on_effect_size_valueChanged(0.3);
+
+    // fMRI database: no demographics; AR(1) and null resampling are optional check boxes
+    const bool fmri = vbc->handle->mat_reader.has("bold");
+    ui->gb_regression->setVisible(!fmri);
+    ui->fmri_ar1->setVisible(fmri);
+    ui->fmri_null->setVisible(fmri);
 }
 
 group_connectometry::~group_connectometry()
@@ -474,6 +480,52 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
     {
         if(timer) // same condition "stop" itself checks, rather than reading the button's display text
             return command({"stop"},source);
+        // study region from the GUI, shared by the fMRI and diffusion analyses
+        auto setup_roi = [&](void)
+        {
+            vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
+            if(ui->exclude_cb->isChecked())
+                vbc->exclude_cerebellum();
+
+            // apply ROI
+            if(!ui->roi_whole_brain->isChecked())
+            {
+                std::vector<unsigned char> roi_type(roi_list.size());
+                std::vector<std::string> roi_name(roi_list.size());
+                for(unsigned int index = 0;index < roi_list.size();++index)
+                {
+                    roi_type[index] = uint8_t(ui->roi_table->item(int(index),2)->text().toInt());
+                    roi_name[index] = ui->roi_table->item(int(index),0)->text().toStdString();
+                }
+                for(unsigned int index = 0;index < roi_list.size();++index)
+                    vbc->roi_mgr->setRegions(roi_list[index],roi_type[index],roi_name[index].c_str());
+            }
+
+            // if no seed assigned, assign whole brain
+            if(vbc->roi_mgr->seeds.empty())
+                vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
+        };
+        // fMRI database: run_fmri with the GUI parameters, skipping demographics and the cohort model
+        if(vbc->handle->mat_reader.has("bold"))
+        {
+            setup_roi();
+            tipl::program_option<tipl::out> po;
+            po.set("source",db_file_name.toStdString());
+            po.set("t_threshold",ui->threshold->value());
+            po.set("length_threshold",ui->length_threshold->value());
+            po.set("tip_iteration",ui->tip->value());
+            po.set("region_pruning",int(ui->region_pruning->isChecked()));
+            po.set("fdr_threshold",ui->fdr_control->isChecked() ? ui->fdr_threshold->value() : 0.0);
+            po.set("permutation",ui->fmri_null->isChecked() ? ui->permutation_count->value() : 0);
+            po.set("ar1",int(ui->fmri_ar1->isChecked()));
+            po.set("no_tractogram",int(ui->no_tractogram->isChecked()));
+            if(!ui->output_name->text().isEmpty())
+                po.set("output",ui->output_name->text().toStdString());
+            if(!vbc->run_fmri(po))
+                return fail(vbc->error_msg);
+            ui->textBrowser->setText(QString::fromStdString(vbc->handle->report + vbc->report));
+            return true;
+        }
         // longitudinal data without loading demographics
         if(db.type != connectometry_db::longitudinal_type::plain && !model.get())
         {
@@ -512,30 +564,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
                 return fail(vbc->model->error_msg);
         }
 
-        // setup roi
-        {
-            vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
-            if(ui->exclude_cb->isChecked())
-                vbc->exclude_cerebellum();
-
-            // apply ROI
-            if(!ui->roi_whole_brain->isChecked())
-            {
-                std::vector<unsigned char> roi_type(roi_list.size());
-                std::vector<std::string> roi_name(roi_list.size());
-                for(unsigned int index = 0;index < roi_list.size();++index)
-                {
-                    roi_type[index] = uint8_t(ui->roi_table->item(int(index),2)->text().toInt());
-                    roi_name[index] = ui->roi_table->item(int(index),0)->text().toStdString();
-                }
-                for(unsigned int index = 0;index < roi_list.size();++index)
-                    vbc->roi_mgr->setRegions(roi_list[index],roi_type[index],roi_name[index].c_str());
-            }
-
-            // if no seed assigned, assign whole brain
-            if(vbc->roi_mgr->seeds.empty())
-                vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
-        }
+        setup_roi();
 
         run_started = true;
         run_completed = false;
