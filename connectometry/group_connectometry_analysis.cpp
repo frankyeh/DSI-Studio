@@ -976,7 +976,8 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             x[K+d] = std::sqrt(2.0/T)*std::cos(3.14159265358979323846*(2*t+1)*d/(2.0*T));
     }
 
-    // global AR(1) rho: median lag-1 autocorrelation of full-model OLS residuals in fiber voxels
+    // optional (--ar1, default 1) global AR(1) rho: median lag-1 autocorrelation of full-model OLS residuals in fiber voxels;
+    // --ar1=0 gives plain OLS with all T volumes
     const auto& si2vi = handle->mat_reader.si2vi;
     std::vector<size_t> voxels;
     for(size_t s = 0;s < M;++s)
@@ -985,8 +986,9 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     tipl::multiple_regression<double> mr;
     if(!mr.set_variables(X.data(),P,T))
         return error_msg = "invalid design matrix",false;
-    std::vector<double> voxel_rho(voxels.size());
-    tipl::par_for(voxels.size(),[&](size_t i)
+    const size_t w = po.get("ar1",1) ? 1 : 0,Tw = T-w;
+    std::vector<double> voxel_rho(w ? voxels.size() : 1);
+    tipl::par_for(w ? voxels.size() : 0,[&](size_t i)
     {
         std::vector<double> y(T),b(P);
         for(size_t t = 0;t < T;++t)
@@ -1001,23 +1003,25 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     std::nth_element(voxel_rho.begin(),voxel_rho.begin()+voxel_rho.size()/2,voxel_rho.end());
     const double rho = voxel_rho[voxel_rho.size()/2];
 
-    // Cochrane-Orcutt whitening z't = zt-rho*z(t-1), t = 1..T-1, then GLS t of the task regressor
-    std::vector<double> Xw((T-1)*P);
+    // Cochrane-Orcutt whitening z't = zt-rho*z(t-1), t = 1..T-1 (identity for OLS), then the t of the task regressor
+    std::vector<double> Xw(Tw*P);
     for(size_t i = 0;i < Xw.size();++i)
-        Xw[i] = X[i+P]-rho*X[i];
-    if(!mr.set_variables(Xw.data(),P,T-1))
+        Xw[i] = X[i+w*P]-rho*X[i];
+    if(!mr.set_variables(Xw.data(),P,Tw))
         return error_msg = "invalid whitened design matrix",false;
-    auto whitened = [&](size_t i,size_t j){return bold[(j+1)*M+voxels[i]]-rho*bold[j*M+voxels[i]];};
+    auto whitened = [&](size_t i,size_t j){return bold[(j+w)*M+voxels[i]]-rho*bold[j*M+voxels[i]];};
     // signed GLS task t of the fiber voxels from whitened time series y(voxel,row)
     auto calculate_t = [&](connectometry_result& data,auto y_at)
     {
         data.clear_result(handle->dir.num_fiber,handle->dim.size());
         tipl::par_for(voxels.size(),[&](size_t i)
         {
-            std::vector<double> y(T-1),b(P),t(P);
-            for(size_t j = 0;j+1 < T;++j)
+            std::vector<double> y(Tw),b(P),t(P);
+            for(size_t j = 0;j < Tw;++j)
                 y[j] = y_at(i,j);
             mr.regress(y.data(),b.data(),t.data());
+            if(!std::isfinite(t[1+task])) // constant voxel
+                return;
             auto pos = si2vi[voxels[i]];
             for(size_t fib = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][pos] > fiber_threshold;++fib)
                 (t[1+task] > 0.0 ? data.inc : data.dec)[fib][pos] = float(std::fabs(t[1+task]));
@@ -1032,24 +1036,24 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     std::vector<float> e0;
     if(permutation_count)
     {
-        std::vector<double> X0((T-1)*(1+D));
-        for(size_t j = 0;j+1 < T;++j)
+        std::vector<double> X0(Tw*(1+D));
+        for(size_t j = 0;j < Tw;++j)
         {
             X0[j*(1+D)] = Xw[j*P];
             std::copy_n(Xw.begin()+j*P+1+K,D,X0.begin()+j*(1+D)+1);
         }
         tipl::multiple_regression<double> mr0;
-        if(!mr0.set_variables(X0.data(),1+D,T-1))
+        if(!mr0.set_variables(X0.data(),1+D,Tw))
             return error_msg = "invalid nuisance design matrix",false;
-        e0.resize((T-1)*voxels.size());
+        e0.resize(Tw*voxels.size());
         tipl::par_for(voxels.size(),[&](size_t i)
         {
-            std::vector<double> y(T-1),b(1+D);
-            for(size_t j = 0;j+1 < T;++j)
+            std::vector<double> y(Tw),b(1+D);
+            for(size_t j = 0;j < Tw;++j)
                 y[j] = whitened(i,j);
             mr0.regress(y.data(),b.data());
             mr0.residual(y.data(),b.data());
-            std::copy(y.begin(),y.end(),e0.begin()+i*(T-1));
+            std::copy(y.begin(),y.end(),e0.begin()+i*Tw);
         });
     }
 
@@ -1097,10 +1101,10 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             if(!permutation_count)
                 continue;
             std::mt19937 gen(i);
-            std::vector<float> sign(T-1);
+            std::vector<float> sign(Tw);
             for(auto& s : sign)
                 s = (gen() & 1) ? 1.0f : -1.0f;
-            calculate_t(null_map,[&](size_t v,size_t j){return sign[j]*e0[v*(T-1)+j];});
+            calculate_t(null_map,[&](size_t v,size_t j){return sign[j]*e0[v*Tw+j];});
             track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
             track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
         }
@@ -1111,9 +1115,12 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     std::ostringstream out;
     out << " A first-level task fMRI analysis modeled the " << tipl::merge(names,',') << " events with the SPM canonical hemodynamic response function"
         << " sampled at " << 7.0*tr/16.0 << " s after each volume onset (no slice-timing correction), an intercept, and " << D
-        << " discrete cosine high-pass regressors (128-s cutoff). A global AR(1) coefficient (rho = " << rho
-        << ", median over voxels of full-model OLS residuals) was removed by Cochrane-Orcutt whitening, and the GLS t statistics of "
-        << names[task] << " (df = " << T-1-P << ") were used in correlational tractography with a T threshold of " << t_threshold
+        << " discrete cosine high-pass regressors (128-s cutoff).";
+    if(w)
+        out << " A global AR(1) coefficient (rho = " << rho
+            << ", median over voxels of full-model OLS residuals) was removed by Cochrane-Orcutt whitening.";
+    out << " The " << (w ? "GLS" : "uncorrected OLS") << " t statistics of "
+        << names[task] << " (df = " << Tw-P << ") were used in correlational tractography with a T threshold of " << t_threshold
         << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report;
     if(permutation_count)
         out << " The null distribution of track length was estimated from " << permutation_count
