@@ -11,7 +11,13 @@ int cnt(tipl::program_option<tipl::out>& po)
     if(!vbc->load_database(po.get("source").c_str()))
         return tipl::error() << vbc->error_msg,1;
     if(vbc->handle->mat_reader.has("bold"))
-        return vbc->run_fmri(po) ? 0 : (tipl::error() << vbc->error_msg,1);
+    {
+        if(!vbc->run_fmri(po))
+            return tipl::error() << vbc->error_msg,1;
+        vbc->wait();
+        vbc->generate_report();
+        return 0;
+    }
 
     auto& db = vbc->handle->db;
     if(db.demo.empty() || po.has("demo"))
