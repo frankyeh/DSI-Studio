@@ -153,20 +153,16 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
 void group_connectometry_analysis::save_result(void)
 {
     tipl::progress p("save correlational tractography results");
-    for(size_t index = 0;index < tip_iteration;++index)
-    {
-        neg_null_corr_track->trim();
-        pos_null_corr_track->trim();
-        dec_track->trim();
-        inc_track->trim();
-    }
-    if(region_pruning)
-    {
-        neg_null_corr_track->region_pruning(0.2f);
-        pos_null_corr_track->region_pruning(0.2f);
-        dec_track->region_pruning(0.2f);
-        inc_track->region_pruning(0.2f);
-    }
+    for(auto each : {neg_null_corr_track,pos_null_corr_track,dec_track,inc_track})
+        if(each)
+        {
+            for(size_t index = 0;index < tip_iteration;++index)
+                each->trim();
+            if(region_pruning)
+                each->region_pruning(0.2f);
+        }
+    if(!pos_null_corr_track) // no null (fMRI without resampling): no FDR
+        return save_tracts_and_t();
     // update fdr table
     std::fill(tract_count_dec_null.begin(),tract_count_dec_null.end(),0);
     std::fill(tract_count_inc_null.begin(),tract_count_inc_null.end(),0);
@@ -622,6 +618,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
 void group_connectometry_analysis::calculate_FDR(void)
 {
+    if(!pos_null_corr_track) // no null (fMRI without resampling): FDR stays 1
+        return;
     double sum_inc_null = 0.0;
     double sum_dec_null = 0.0;
     double sum_inc = 0.0;
@@ -665,6 +663,8 @@ void group_connectometry_analysis::calculate_FDR(void)
 
 std::string group_connectometry_analysis::generate_report(void)
 {
+    if(!pos_null_corr_track) // no null (fMRI without resampling): method report only
+        return handle->report + report;
     std::ostringstream html_report(output_file_name+".report.html");
     html_report << "<!DOCTYPE html>" << std::endl;
     html_report << "<html><head><title>Report</title></head>" << std::endl;
@@ -1010,9 +1010,10 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     if(!mr.set_variables(Xw.data(),P,Tw))
         return error_msg = "invalid whitened design matrix",false;
     auto whitened = [&](size_t i,size_t j){return bold[(j+w)*M+voxels[i]]-rho*bold[j*M+voxels[i]];};
-    // signed GLS task t of the fiber voxels from whitened time series y(voxel,row)
-    auto calculate_t = [&](connectometry_result& data,auto y_at)
+    // signed GLS task t of the fiber voxels from whitened time series y(voxel,row); captured by value for the tracking thread
+    auto calculate_t = [this,voxels,mr,Tw,P,task](connectometry_result& data,auto y_at)
     {
+        const auto& si2vi = handle->mat_reader.si2vi;
         data.clear_result(handle->dir.num_fiber,handle->dim.size());
         tipl::par_for(voxels.size(),[&](size_t i)
         {
@@ -1030,7 +1031,7 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     spm_map = std::make_shared<connectometry_result>();
     calculate_t(*spm_map,whitened);
 
-    // Phase-2 candidate null (unvalidated): residuals e0 of the whitened nuisance-only model (intercept and DCT),
+    // Phase-2 candidate null: residuals e0 of the whitened nuisance-only model (intercept and DCT),
     // multiplied by one Rademacher sign per whitened row shared by all voxels; the observed task effect is never re-added
     const unsigned int permutation_count = po.get("permutation",0);
     std::vector<float> e0;
@@ -1077,44 +1078,6 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             roi_mgr->setWholeBrainSeed(fiber_threshold);
     }
 
-    size_t max_dimension = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
-    for(auto each : {&tract_count_inc,&tract_count_dec,&tract_count_inc_null,&tract_count_dec_null})
-        each->assign(max_dimension,0);
-    fdr_inc.assign(max_dimension,0.0f);
-    fdr_dec.assign(max_dimension,0.0f);
-    for(auto each : {&inc_track,&dec_track,&pos_null_corr_track,&neg_null_corr_track})
-        *each = std::make_shared<TractModel>(handle);
-    {
-        tipl::progress p("tracking task t-maps");
-        std::shared_ptr<tracking_data> fib(new tracking_data);
-        fib->read(handle);
-        auto track = [&](const std::vector<const float*>& t_map,unsigned int seed,TractModel& model,std::vector<unsigned int>& hist,uint32_t color)
-        {
-            std::vector<std::vector<float> > tracks;
-            fib->dt_fa = t_map;
-            run_track(fib,tracks,seed_count,seed,tipl::max_thread_count);
-            cal_hist(tracks,hist);
-            model.add_tracts(tracks,length_threshold_voxels,tipl::rgb(color));
-        };
-        connectometry_result null_map;
-        for(unsigned int i = 0;p(i,std::max(1u,permutation_count));++i)
-        {
-            track(spm_map->inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
-            track(spm_map->dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
-            if(!permutation_count)
-                continue;
-            std::mt19937 gen(i);
-            std::vector<float> sign(Tw);
-            for(auto& s : sign)
-                s = (gen() & 1) ? 1.0f : -1.0f;
-            calculate_t(null_map,[&](size_t v,size_t j){return sign[j]*e0[v*Tw+j];});
-            track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
-            track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
-        }
-        if(p.aborted())
-            return error_msg = "aborted",false;
-    }
-
     std::ostringstream out;
     out << " A first-level task fMRI analysis modeled the " << tipl::merge(names,',') << " events with the SPM canonical hemodynamic response function"
         << " sampled at " << 7.0*tr/16.0 << " s after each volume onset (no slice-timing correction), an intercept, and " << D
@@ -1136,21 +1099,54 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     tipl::out() << report;
     hypothesis_inc = "positive " + names[task] + " response";
     hypothesis_dec = "negative " + names[task] + " response";
-    if(permutation_count)
+
+    // histograms and tracks read by the GUI timer as in run_permutation; without the null, FDR stays 1 and null tracks are absent
+    clear();
+    size_t max_dimension = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
+    for(auto each : {&tract_count_inc,&tract_count_dec,&tract_count_inc_null,&tract_count_dec_null})
+        each->assign(max_dimension,0);
+    fdr_inc.assign(max_dimension,1.0f);
+    fdr_dec.assign(max_dimension,1.0f);
+    inc_track = std::make_shared<TractModel>(handle);
+    dec_track = std::make_shared<TractModel>(handle);
+    pos_null_corr_track = permutation_count ? std::make_shared<TractModel>(handle) : nullptr;
+    neg_null_corr_track = permutation_count ? std::make_shared<TractModel>(handle) : nullptr;
+    prog = 0;
+    threads.push_back(std::thread([this,calculate_t,e0 = std::move(e0),Tw,permutation_count]()
     {
+        std::shared_ptr<tracking_data> fib(new tracking_data);
+        fib->read(handle);
+        auto track = [&](const std::vector<const float*>& t_map,unsigned int seed,TractModel& model,std::vector<unsigned int>& hist,uint32_t color)
+        {
+            std::vector<std::vector<float> > tracks;
+            fib->dt_fa = t_map;
+            run_track(fib,tracks,seed_count,seed,tipl::max_thread_count);
+            cal_hist(tracks,hist);
+            model.add_tracts(tracks,length_threshold_voxels,tipl::rgb(color));
+        };
+        connectometry_result null_map;
+        const unsigned int n = std::max(1u,permutation_count);
+        for(unsigned int i = 0;i < n && !terminated;++i)
+        {
+            track(spm_map->inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
+            track(spm_map->dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
+            if(permutation_count)
+            {
+                std::mt19937 gen(i);
+                std::vector<float> sign(Tw);
+                for(auto& s : sign)
+                    s = (gen() & 1) ? 1.0f : -1.0f;
+                calculate_t(null_map,[&](size_t v,size_t j){return sign[j]*e0[v*Tw+j];});
+                track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
+                track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
+            }
+            prog = (i+1)*95/n;
+        }
+        if(terminated)
+            return;
         save_result();
+        std::ofstream(output_file_name+".report.txt") << handle->report << report << std::endl;
         prog = 100;
-        generate_report();
-        return true;
-    }
-    for(auto track : {inc_track,dec_track})
-    {
-        for(size_t i = 0;i < tip_iteration;++i)
-            track->trim();
-        if(region_pruning)
-            track->region_pruning(0.2f);
-    }
-    save_tracts_and_t();
-    std::ofstream(output_file_name+".report.txt") << handle->report << report << std::endl;
+    }));
     return true;
 }
