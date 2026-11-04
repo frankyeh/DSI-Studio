@@ -1134,10 +1134,10 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         out << " The results are exploratory without false discovery rate or family-wise error control.";
     report = out.str();
     tipl::out() << report;
+    hypothesis_inc = "positive " + names[task] + " response";
+    hypothesis_dec = "negative " + names[task] + " response";
     if(permutation_count)
     {
-        hypothesis_inc = "positive " + names[task] + " response";
-        hypothesis_dec = "negative " + names[task] + " response";
         save_result();
         prog = 100;
         generate_report();
