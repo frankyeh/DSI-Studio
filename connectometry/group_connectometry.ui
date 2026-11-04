@@ -986,6 +986,36 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QComboBox" name="fmri_model">
+                  <property name="toolTip">
+                   <string>fMRI: ordinary least squares, or global AR(1) prewhitening (Cochrane-Orcutt GLS)</string>
+                  </property>
+                  <property name="currentIndex">
+                   <number>1</number>
+                  </property>
+                  <item>
+                   <property name="text">
+                    <string>OLS</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>AR(1)</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="fmri_null">
+                  <property name="toolTip">
+                   <string>fMRI: wild-bootstrap null for FDR</string>
+                  </property>
+                  <property name="text">
+                   <string>Null resampling</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <spacer name="horizontalSpacer_8">
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
