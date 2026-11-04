@@ -505,6 +505,21 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             if(vbc->roi_mgr->seeds.empty())
                 vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
         };
+        // starts a background run polled by calculate_FDR every second
+        auto start_run = [&](auto run)->bool
+        {
+            run_started = true;
+            run_completed = false;
+            suppress_run_dialogs = (source != command_source::User);
+            if(!run())
+                return fail(vbc->error_msg);
+            ui->run->setText("Stop");
+            timer.reset(new QTimer(this));
+            timer->setInterval(1000);
+            connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
+            timer->start();
+            return true;
+        };
         // fMRI database: run_fmri with the GUI parameters, skipping demographics and the cohort model
         if(vbc->handle->mat_reader.has("bold"))
         {
@@ -540,11 +555,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
                     return source == command_source::User ? false : fail("the database has no TR");
                 po.set("tr",tr);
             }
-            if(!vbc->run_fmri(po))
-                return fail(vbc->error_msg);
-            run_started = run_completed = true;
-            ui->textBrowser->setText(QString::fromStdString(vbc->handle->report + vbc->report));
-            return true;
+            return start_run([&](void){return vbc->run_fmri(po);});
         }
         // longitudinal data without loading demographics
         if(db.type != connectometry_db::longitudinal_type::plain && !model.get())
@@ -586,24 +597,18 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
 
         setup_roi();
 
-        run_started = true;
-        run_completed = false;
-        suppress_run_dialogs = (source != command_source::User);
-        vbc->run_permutation(uint32_t(ui->thread_count->value()),uint32_t(ui->permutation_count->value()));
-
-        ui->run->setText("Stop");
-        timer.reset(new QTimer(this));
-        timer->setInterval(1000);
-        connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
-        timer->start();
-        return true;
+        return start_run([&](void)
+        {
+            vbc->run_permutation(uint32_t(ui->thread_count->value()),uint32_t(ui->permutation_count->value()));
+            return true;
+        });
     }
 
     if(name == "get_result")
     {
         if(!run_completed)
             return fail(timer ? "run still in progress" : "no completed run to report");
-        tipl::out() << (vbc->handle->mat_reader.has("bold") ? vbc->report : vbc->generate_report());
+        tipl::out() << vbc->generate_report();
         return true;
     }
 
