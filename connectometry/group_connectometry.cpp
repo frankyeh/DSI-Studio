@@ -125,10 +125,10 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         load_demographics();
     on_effect_size_valueChanged(0.3);
 
-    // fMRI database: no demographics; AR(1) and null resampling are optional check boxes
+    // fMRI database: no demographics; OLS/AR(1) model and optional null resampling
     const bool fmri = vbc->handle->mat_reader.has("bold");
     ui->gb_regression->setVisible(!fmri);
-    ui->fmri_ar1->setVisible(fmri);
+    ui->fmri_model->setVisible(fmri);
     ui->fmri_null->setVisible(fmri);
 }
 
@@ -517,7 +517,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             po.set("region_pruning",int(ui->region_pruning->isChecked()));
             po.set("fdr_threshold",ui->fdr_control->isChecked() ? ui->fdr_threshold->value() : 0.0);
             po.set("permutation",ui->fmri_null->isChecked() ? ui->permutation_count->value() : 0);
-            po.set("ar1",int(ui->fmri_ar1->isChecked()));
+            po.set("ar1",ui->fmri_model->currentIndex());
             po.set("no_tractogram",int(ui->no_tractogram->isChecked()));
             if(!ui->output_name->text().isEmpty())
                 po.set("output",ui->output_name->text().toStdString());
