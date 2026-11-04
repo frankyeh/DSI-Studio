@@ -542,6 +542,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             }
             if(!vbc->run_fmri(po))
                 return fail(vbc->error_msg);
+            run_started = run_completed = true;
             ui->textBrowser->setText(QString::fromStdString(vbc->handle->report + vbc->report));
             return true;
         }
@@ -602,7 +603,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
     {
         if(!run_completed)
             return fail(timer ? "run still in progress" : "no completed run to report");
-        tipl::out() << vbc->generate_report();
+        tipl::out() << (vbc->handle->mat_reader.has("bold") ? vbc->report : vbc->generate_report());
         return true;
     }
 
@@ -613,10 +614,15 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(vbc->handle);
         {
-            result_fib.reset(new connectometry_result);
-            stat_model info;
-            info.resample(*(vbc->model.get()),false,false,0);
-            vbc->calculate_spm(*result_fib.get(),info);
+            if(vbc->handle->mat_reader.has("bold")) // fMRI task t-maps are kept from run_fmri
+                result_fib = vbc->spm_map;
+            else
+            {
+                result_fib.reset(new connectometry_result);
+                stat_model info;
+                info.resample(*(vbc->model.get()),false,false,0);
+                vbc->calculate_spm(*result_fib.get(),info);
+            }
             new_data->slices.push_back(std::make_shared<slice_model>("dec_t",result_fib->dec_ptr[0],new_data->dim));
             new_data->slices.push_back(std::make_shared<slice_model>("inc_t",result_fib->inc_ptr[0],new_data->dim));
         }
