@@ -1066,13 +1066,16 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     seed_count = po.get("seed_count",10000);
     no_tractogram = !tipl::show_prog || po.get("no_tractogram",1);
     output_file_name = po.get("output",po.get("source") + "." + names[task]);
-    roi_mgr = std::make_shared<RoiMgr>(handle);
-    if(po.get("exclude_cb",0))
-        exclude_cerebellum();
-    if(!load_roi(po,handle,roi_mgr))
-        return error_msg = "cannot load roi",false;
-    if(roi_mgr->seeds.empty())
-        roi_mgr->setWholeBrainSeed(fiber_threshold);
+    if(!roi_mgr) // the GUI sets its own study region
+    {
+        roi_mgr = std::make_shared<RoiMgr>(handle);
+        if(po.get("exclude_cb",0))
+            exclude_cerebellum();
+        if(!load_roi(po,handle,roi_mgr))
+            return error_msg = "cannot load roi",false;
+        if(roi_mgr->seeds.empty())
+            roi_mgr->setWholeBrainSeed(fiber_threshold);
+    }
 
     size_t max_dimension = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
     for(auto each : {&tract_count_inc,&tract_count_dec,&tract_count_inc_null,&tract_count_dec_null})
