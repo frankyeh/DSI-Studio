@@ -1009,7 +1009,7 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         Xw[i] = X[i+w*P]-rho*X[i];
     if(!mr.set_variables(Xw.data(),P,Tw))
         return error_msg = "invalid whitened design matrix",false;
-    auto whitened = [&](size_t i,size_t j){return bold[(j+w)*M+voxels[i]]-rho*bold[j*M+voxels[i]];};
+    auto whitened = [bold,M,w,rho,voxels](size_t i,size_t j){return bold[(j+w)*M+voxels[i]]-rho*bold[j*M+voxels[i]];};
     // signed GLS task t of the fiber voxels from whitened time series y(voxel,row); captured by value for the tracking thread
     auto calculate_t = [this,voxels,mr,Tw,P,task](connectometry_result& data,auto y_at)
     {
@@ -1031,10 +1031,11 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     spm_map = std::make_shared<connectometry_result>();
     calculate_t(*spm_map,whitened);
 
-    // Phase-2 candidate null: residuals e0 of the whitened nuisance-only model (intercept and DCT),
-    // multiplied by one Rademacher sign per whitened row shared by all voxels; the observed task effect is never re-added
+    // wild bootstrap with one Rademacher sign per whitened row shared by all voxels, as the subject resampling of run_permutation:
+    // nonpermuted: observed data with sign-flipped full-model residuals e1; null: sign-flipped residuals e0 of the
+    // nuisance-only model (intercept and DCT), where the observed task effect is never re-added
     const unsigned int permutation_count = po.get("permutation",0);
-    std::vector<float> e0;
+    std::vector<float> e0,e1;
     if(permutation_count)
     {
         std::vector<double> X0(Tw*(1+D));
@@ -1047,14 +1048,18 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         if(!mr0.set_variables(X0.data(),1+D,Tw))
             return error_msg = "invalid nuisance design matrix",false;
         e0.resize(Tw*voxels.size());
+        e1.resize(Tw*voxels.size());
         tipl::par_for(voxels.size(),[&](size_t i)
         {
-            std::vector<double> y(Tw),b(1+D);
+            std::vector<double> y(Tw),y0(Tw),b(P);
             for(size_t j = 0;j < Tw;++j)
-                y[j] = whitened(i,j);
-            mr0.regress(y.data(),b.data());
-            mr0.residual(y.data(),b.data());
-            std::copy(y.begin(),y.end(),e0.begin()+i*Tw);
+                y0[j] = y[j] = whitened(i,j);
+            mr.regress(y.data(),b.data());
+            mr.residual(y.data(),b.data());
+            std::copy(y.begin(),y.end(),e1.begin()+i*Tw);
+            mr0.regress(y0.data(),b.data());
+            mr0.residual(y0.data(),b.data());
+            std::copy(y0.begin(),y0.end(),e0.begin()+i*Tw);
         });
     }
 
@@ -1089,9 +1094,9 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         << names[task] << " (df = " << Tw-P << ") were used in correlational tractography with a T threshold of " << t_threshold
         << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report;
     if(permutation_count)
-        out << " The null distribution of track length was estimated from " << permutation_count
-            << " synchronized residual wild-bootstrap resamples, sign-flipping the whitened residuals of the nuisance-only model"
-               " with one Rademacher sign per volume shared by all voxels. This null is a candidate that has not been validated"
+        out << " A total of " << permutation_count << " synchronized residual wild-bootstrap resamples, with one Rademacher sign per volume"
+               " shared by all voxels, were applied to the whitened full-model residuals of the observed data and to the whitened"
+               " residuals of the nuisance-only model to obtain the nonpermuted and null distributions of the track length. This null is a candidate that has not been validated"
                " for type-I error or false discovery rate control.";
     else
         out << " The results are exploratory without false discovery rate or family-wise error control.";
@@ -1112,7 +1117,7 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     pos_null_corr_track = permutation_count ? std::make_shared<TractModel>(handle) : nullptr;
     neg_null_corr_track = permutation_count ? std::make_shared<TractModel>(handle) : nullptr;
     prog = 0;
-    threads.push_back(std::thread([this,calculate_t,e0 = std::move(e0),Tw,permutation_count]()
+    threads.push_back(std::thread([this,calculate_t,whitened,e0 = std::move(e0),e1 = std::move(e1),Tw,permutation_count]()
     {
         std::shared_ptr<tracking_data> fib(new tracking_data);
         fib->read(handle);
@@ -1124,22 +1129,24 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             cal_hist(tracks,hist);
             model.add_tracts(tracks,length_threshold_voxels,tipl::rgb(color));
         };
-        connectometry_result null_map;
+        connectometry_result obs_map,null_map;
         const unsigned int n = std::max(1u,permutation_count);
         for(unsigned int i = 0;i < n && !terminated;++i)
         {
-            track(spm_map->inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
-            track(spm_map->dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
             if(permutation_count)
             {
                 std::mt19937 gen(i);
-                std::vector<float> sign(Tw);
-                for(auto& s : sign)
-                    s = (gen() & 1) ? 1.0f : -1.0f;
-                calculate_t(null_map,[&](size_t v,size_t j){return sign[j]*e0[v*Tw+j];});
+                std::vector<float> s1(Tw),s0(Tw);
+                for(size_t j = 0;j < Tw;++j)
+                    s1[j] = (gen() & 1) ? 1.0f : -1.0f,s0[j] = (gen() & 1) ? 1.0f : -1.0f;
+                calculate_t(obs_map,[&](size_t v,size_t j){return whitened(v,j)+(s1[j]-1.0f)*e1[v*Tw+j];});
+                calculate_t(null_map,[&](size_t v,size_t j){return s0[j]*e0[v*Tw+j];});
                 track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
                 track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
             }
+            const auto& t_map = permutation_count ? obs_map : *spm_map;
+            track(t_map.inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
+            track(t_map.dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
             prog = (i+1)*95/n;
         }
         if(terminated)
