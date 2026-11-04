@@ -521,6 +521,25 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             po.set("no_tractogram",int(ui->no_tractogram->isChecked()));
             if(!ui->output_name->text().isEmpty())
                 po.set("output",ui->output_name->text().toStdString());
+            // events and TR not stored in the database are asked at run time
+            if(!vbc->handle->mat_reader.has("events"))
+            {
+                if(source != command_source::User)
+                    return fail("the database has no events");
+                QString file = QFileDialog::getOpenFileName(this,"Open BIDS events",work_dir,"Events (*.tsv);;All files (*)");
+                if(file.isEmpty())
+                    return false; // canceled, not an error
+                po.set("events",file.toStdString());
+            }
+            if(!vbc->handle->mat_reader.has("TR"))
+            {
+                bool ok = false;
+                double tr = (source == command_source::User) ?
+                            QInputDialog::getDouble(this,"fMRI","Repetition time (TR) in seconds:",2.0,0.001,100.0,3,&ok) : 0.0;
+                if(!ok)
+                    return source == command_source::User ? false : fail("the database has no TR");
+                po.set("tr",tr);
+            }
             if(!vbc->run_fmri(po))
                 return fail(vbc->error_msg);
             ui->textBrowser->setText(QString::fromStdString(vbc->handle->report + vbc->report));
