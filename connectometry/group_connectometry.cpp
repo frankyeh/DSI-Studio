@@ -125,10 +125,14 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         load_demographics();
     on_effect_size_valueChanged(0.3);
 
-    // fMRI database: no demographics; OLS/AR(1) model
+    // fMRI database: no demographics; OLS/AR(1) model; T threshold only, as the CLI default
     const bool fmri = vbc->handle->mat_reader.has("bold");
     ui->gb_regression->setVisible(!fmri);
     ui->fmri_model->setVisible(fmri);
+    for(QWidget* each : {static_cast<QWidget*>(ui->effect_size),static_cast<QWidget*>(ui->label_9),static_cast<QWidget*>(ui->label_10)})
+        each->setVisible(!fmri);
+    if(fmri)
+        ui->threshold->setValue(2.5);
 }
 
 group_connectometry::~group_connectometry()
