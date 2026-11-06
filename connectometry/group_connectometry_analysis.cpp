@@ -274,6 +274,9 @@ void group_connectometry_analysis::clear(void)
 std::string group_connectometry_analysis::get_file_post_fix(void)
 {
     std::string postfix = handle->db.index_name + ".";
+    if(handle->mat_reader.has("bold")) // fMRI: task condition and T threshold
+        postfix += foi_str + ".t" + std::to_string(int(t_threshold*10));
+    else
     {
         if(foi_str.find("increased") == 0 || foi_str.find("decreased") == 0)
             postfix += foi_str.substr(10);
@@ -296,6 +299,22 @@ std::string group_connectometry_analysis::get_file_post_fix(void)
         postfix += value;
     }
     return postfix;
+}
+
+// study region, pruning, and track selection, shared by the diffusion and fMRI reports
+std::string group_connectometry_analysis::tracking_report(void) const
+{
+    std::ostringstream out;
+    if(!roi_mgr->report.empty())
+        out << roi_mgr->report << std::endl;
+    if(tip_iteration)
+        out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
+            << tip_iteration << " iteration(s).";
+    if(fdr_threshold == 0.0f)
+        out << " A length threshold of " << length_threshold_voxels << " voxel distance was used to select tracks.";
+    else
+        out << " An FDR threshold of " << fdr_threshold << " was used to select tracks.";
+    return out.str();
 }
 
 bool can_be_normalized_by_iso(const std::string& name)
@@ -539,15 +558,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
             out << " A T-score threshold of " << t_threshold << " (effect size = " << rho_threshold;
         out << ") was used in the fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
 
-        if(!roi_mgr->report.empty())
-            out << roi_mgr->report << std::endl;
-        if(tip_iteration)
-            out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
-                << tip_iteration << " iteration(s).";
-        if(fdr_threshold == 0.0f)
-            out << " A length threshold of " << length_threshold_voxels << " voxel distance was used to select tracks.";
-        else
-            out << " An FDR threshold of " << fdr_threshold << " was used to select tracks.";
+        out << tracking_report();
 
         out << " To estimate the false discovery rate, a total of "
             << permutation_count
@@ -1067,7 +1078,8 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     region_pruning = (po.get("region_pruning",1) == 1);
     fdr_threshold = po.get("fdr_threshold",0.0f);
     no_tractogram = !tipl::show_prog || po.get("no_tractogram",1);
-    output_file_name = po.get("output",po.get("source") + "." + names[task]);
+    foi_str = names[task];
+    output_file_name = po.has("output") ? po.get("output") : get_file_post_fix();
     if(!roi_mgr) // the GUI sets its own study region
     {
         roi_mgr = std::make_shared<RoiMgr>(handle);
@@ -1088,7 +1100,7 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             << ", median over voxels of full-model OLS residuals) was removed by Cochrane-Orcutt whitening.";
     out << " The " << (w ? "GLS" : "uncorrected OLS") << " t statistics of "
         << names[task] << " (df = " << Tw-P << ") were used in correlational tractography with a T threshold of " << t_threshold
-        << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report;
+        << "." << tracking_report();
     out << " A total of " << permutation_count << " synchronized residual wild-bootstrap resamples, with one Rademacher sign per volume"
            " shared by all voxels, were applied to the whitened full-model residuals of the observed data and to the whitened"
            " residuals of the nuisance-only model to obtain the nonpermuted and null distributions of the track length.";
