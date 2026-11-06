@@ -66,6 +66,7 @@ void xnat_facade::get_html(std::string url,std::string auth)
         cur_response->abort();
     download_prog = std::make_shared<tipl::progress>("downloading ",url.c_str());
     QNetworkRequest xnat_request(QUrl(url.c_str()));
+    xnat_request.setAttribute(QNetworkRequest::Http2AllowedAttribute,false);
     xnat_request.setRawHeader("Authorization", QString("Basic " + QString(auth.c_str()).toLocal8Bit().toBase64()).toLocal8Bit());
     error_msg.clear();
     cur_response = xnat_manager.get(xnat_request);
