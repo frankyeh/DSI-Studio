@@ -1077,6 +1077,35 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QLabel" name="otsu_threshold_label">
+                  <property name="text">
+                   <string>Default Otsu:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="otsu_threshold">
+                  <property name="toolTip">
+                   <string>the anisotropy threshold is randomly selected between (default Otsu -/+ 0.1) x Otsu threshold</string>
+                  </property>
+                  <property name="decimals">
+                   <number>2</number>
+                  </property>
+                  <property name="minimum">
+                   <double>0.200000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.050000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>0.600000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <spacer name="horizontalSpacer_9">
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
