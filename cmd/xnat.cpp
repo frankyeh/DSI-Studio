@@ -31,7 +31,7 @@ int xnat(tipl::program_option<tipl::out>& po)
             return 1;
         }
         tipl::out() << "saving output to " << output << std::endl;
-        xnat_connection.get_scans_data(po.get("source","https://central.xnat.org/"),po.get("auth"),po.get("id"),output);
+        xnat_connection.get_scans_data(po.get("source","https://central.xnat.org/"),po.get("auth"),{{po.get("id"),output}});
     }
 
     while(xnat_connection.is_running())
