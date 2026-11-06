@@ -63,7 +63,9 @@ bool download_file(const std::string& url,
         return error_msg = "failed to save " + tmp.u8string(),false;
 
     QNetworkAccessManager manager;
-    auto* reply = manager.get(QNetworkRequest{QUrl(QString::fromStdString(url))});
+    QNetworkRequest request{QUrl(QString::fromStdString(url))};
+    request.setAttribute(QNetworkRequest::Http2AllowedAttribute,false);
+    auto* reply = manager.get(request);
 
     qint64 received = 0,total = 1;
     QObject::connect(reply,&QNetworkReply::readyRead,[&]{out.write(reply->readAll());});
@@ -421,6 +423,7 @@ bool download_private_github_asset(QString conceptualUrlString, QString accessTo
 
     QNetworkRequest downloadReq;
     downloadReq.setUrl(QUrl(actualDownloadUrl));
+    downloadReq.setAttribute(QNetworkRequest::Http2AllowedAttribute,false);
     downloadReq.setRawHeader("Accept", "application/octet-stream");
     downloadReq.setRawHeader("Authorization", QString("token %1").arg(accessToken).toUtf8());
 
