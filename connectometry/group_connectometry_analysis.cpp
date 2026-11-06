@@ -32,8 +32,14 @@ bool group_connectometry_analysis::load_database(const char* database_name)
         error_msg = "invalid database: empty fiber directions";
         return false;
     }
-    fiber_threshold = 0.6f*handle->dir.fa_otsu;
+    set_default_otsu(default_otsu);
     return true;
+}
+// fiber_threshold, for statistics and seeding, is the lower end of the randomized tracking threshold
+void group_connectometry_analysis::set_default_otsu(float v)
+{
+    default_otsu = v;
+    fiber_threshold = (default_otsu-0.1f)*handle->dir.fa_otsu;
 }
 
 
@@ -45,7 +51,8 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
 {
     ThreadData tracking_thread(handle);
     tracking_thread.param.random_seed = random_seed;
-    tracking_thread.param.threshold = fiber_threshold;
+    tracking_thread.param.threshold = 0.0f; // randomized per seed between (default_otsu -/+ 0.1) x Otsu, as in regular tracking
+    tracking_thread.param.default_otsu = default_otsu;
     tracking_thread.param.dt_threshold = t_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
@@ -310,6 +317,7 @@ std::string group_connectometry_analysis::tracking_report(void) const
     if(tip_iteration)
         out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
             << tip_iteration << " iteration(s).";
+    out << " The anisotropy threshold was randomly selected between " << default_otsu-0.1f << " and " << default_otsu+0.1f << " of the Otsu threshold.";
     if(fdr_threshold == 0.0f)
         out << " A length threshold of " << length_threshold_voxels << " voxel distance was used to select tracks.";
     else
