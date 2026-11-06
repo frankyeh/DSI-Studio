@@ -1006,16 +1006,6 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QCheckBox" name="fmri_null">
-                  <property name="toolTip">
-                   <string>fMRI: wild-bootstrap null for FDR</string>
-                  </property>
-                  <property name="text">
-                   <string>Null resampling</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
                  <spacer name="horizontalSpacer_8">
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
