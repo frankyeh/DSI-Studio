@@ -1084,6 +1084,7 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 {
     QNetworkRequest request;
     request.setUrl(url);
+    request.setAttribute(QNetworkRequest::Http2AllowedAttribute,false);
     if(url.toString().contains("releases/assets/"))
         request.setRawHeader("Accept", "application/octet-stream");
     else
