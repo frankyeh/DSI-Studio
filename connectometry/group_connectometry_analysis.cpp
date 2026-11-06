@@ -585,9 +585,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     prog = 0;
     // preliminary run
     {
-        std::shared_ptr<tracking_data> fib(new tracking_data);
-        fib->read(handle);
-
         calculate_adjusted_qa(*model.get());
 
         stat_model info;
@@ -595,26 +592,34 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         tipl::out() << "preliminary run to determine seed count" << std::endl;
         calculate_spm(*spm_map.get(),info);
         preprocess = 0;
-        seed_count = 1000;
-
-        const size_t expected_tract_count = 50000;
-        auto expected_tract_per_permutation = expected_tract_count/permutation_count;
-        while(seed_count < 128000)
-        {
-            std::vector<std::vector<float> > tracks;
-            fib->dt_fa = spm_map->dec_ptr;
-            run_track(fib,tracks,seed_count,0,tipl::max_thread_count);
-            fib->dt_fa = spm_map->inc_ptr;
-            run_track(fib,tracks,seed_count,0,tipl::max_thread_count);
-            if(tracks.size() > expected_tract_per_permutation)
-                break;
-            seed_count *= 2;
-        }
-        tipl::out() << "seed count: " << seed_count << std::endl;
+        set_seed_count(permutation_count);
     }
 
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::thread([=](){run_permutation_multithread(index,thread_count,permutation_count);}));
+}
+
+// doubles the seed count from 1000 until the spm_map yields about 50000 tracts over all permutations
+void group_connectometry_analysis::set_seed_count(unsigned int permutation_count)
+{
+    std::shared_ptr<tracking_data> fib(new tracking_data);
+    fib->read(handle);
+    seed_count = 1000;
+
+    const size_t expected_tract_count = 50000;
+    auto expected_tract_per_permutation = expected_tract_count/permutation_count;
+    while(seed_count < 128000)
+    {
+        std::vector<std::vector<float> > tracks;
+        fib->dt_fa = spm_map->dec_ptr;
+        run_track(fib,tracks,seed_count,0,tipl::max_thread_count);
+        fib->dt_fa = spm_map->inc_ptr;
+        run_track(fib,tracks,seed_count,0,tipl::max_thread_count);
+        if(tracks.size() > expected_tract_per_permutation)
+            break;
+        seed_count *= 2;
+    }
+    tipl::out() << "seed count: " << seed_count << std::endl;
 }
 
 void group_connectometry_analysis::calculate_FDR(void)
@@ -1061,7 +1066,6 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     tip_iteration = po.get("tip_iteration",16);
     region_pruning = (po.get("region_pruning",1) == 1);
     fdr_threshold = po.get("fdr_threshold",0.0f);
-    seed_count = po.get("seed_count",10000);
     no_tractogram = !tipl::show_prog || po.get("no_tractogram",1);
     output_file_name = po.get("output",po.get("source") + "." + names[task]);
     if(!roi_mgr) // the GUI sets its own study region
@@ -1093,7 +1097,8 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     hypothesis_inc = "positive " + names[task] + " response";
     hypothesis_dec = "negative " + names[task] + " response";
 
-    // histograms and tracks read by the GUI timer as in run_permutation
+    // seed count from the observed t-maps and histograms and tracks read by the GUI timer, as in run_permutation
+    set_seed_count(permutation_count);
     clear();
     size_t max_dimension = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
     for(auto each : {&tract_count_inc,&tract_count_dec,&tract_count_inc_null,&tract_count_dec_null})
