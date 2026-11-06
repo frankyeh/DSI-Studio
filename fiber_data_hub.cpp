@@ -22,6 +22,7 @@
 #include <QVBoxLayout>
 #include <QTimer>
 #include <set>
+#include <functional>
 
 #include "fiber_data_hub.hpp"
 #include "ui_fiber_data_hub.h"
@@ -539,6 +540,44 @@ QString showQNetworkReplyError(QNetworkReply* reply)
     return reply->errorString();
 }
 
+// streams a reply to file_name chunk by chunk; progress(received,total) returns false to cancel.
+// returns false on failure or cancel (error stays empty for a cancel), removing the partial file
+static bool download_to_file(QSharedPointer<QNetworkReply> reply,const QString& file_name,
+                             std::function<bool(qint64,qint64)> progress,QString& error)
+{
+    error.clear();
+    QFile file(file_name);
+    if(!file.open(QFile::WriteOnly))
+        return reply->abort(),error = "Failed to open file for writing",false;
+    bool write_failed = false;
+    auto write = [&](void)
+    {
+        auto data = reply->readAll();
+        if(file.write(data) != data.size())
+            write_failed = true,reply->abort();
+    };
+    QEventLoop loop;
+    QObject::connect(reply.get(),&QNetworkReply::readyRead,&loop,write);
+    QObject::connect(reply.get(),&QNetworkReply::downloadProgress,&loop,[&](qint64 received,qint64 total)
+    {
+        if(!progress(received,total))
+            reply->abort();
+    });
+    QObject::connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
+    if(!reply->isFinished())
+        loop.exec();
+    write();
+    file.close();
+    if(!write_failed && reply->error() == QNetworkReply::NoError)
+        return true;
+    file.remove();
+    if(write_failed)
+        error = "Failed to save file to disk";
+    else if(reply->error() != QNetworkReply::OperationCanceledError)
+        error = showQNetworkReplyError(reply.get());
+    return false;
+}
+
 void FiberDataHub::update_rate_limit(QSharedPointer<QNetworkReply> reply)
 {
     if(reply->rawHeader("X-RateLimit-Remaining").toInt() == 0)
@@ -825,39 +864,20 @@ void FiberDataHub::on_github_download_clicked()
 
         tipl::out() << url.toStdString();
 
-        QSharedPointer<QNetworkReply> reply;
-        int retry = 0;
-        const int max_retry = 5;
-        while (retry < max_retry)
+        QString error;
+        bool done = false;
+        for(int retry = 0;retry < 5 && !done && !p.aborted();++retry)
         {
-            reply = main_window.get(url);
-            while (!reply->isFinished() && !p.aborted())
-            {
-                QCoreApplication::processEvents();
-                QThread::msleep(100); // Check every 100ms
-            }
-            if (reply->error() == QNetworkReply::NoError)
-                break;
-            retry++;
-            QThread::sleep(3);
+            if(retry)
+                QThread::sleep(3);
+            done = download_to_file(main_window.get(url),filePath,[&](qint64,qint64){return !p.aborted();},error);
         }
-
-        if (retry >= max_retry)
-        {
-            QMessageBox::critical(this, "ERROR", showQNetworkReplyError(reply.get()));
+        if(p.aborted())
             return;
-        }
-        if (p.aborted())
-            return;
-
+        if(!done)
         {
-            QFile file(filePath);
-            auto data = reply->readAll();
-            if(!file.open(QFile::WriteOnly) ||file.write(data) != data.size())
-            {
-                QMessageBox::critical(this,"ERROR","Failed to save file to disk");
-                return;
-            }
+            QMessageBox::critical(this,"ERROR",error);
+            return;
         }
     }
 }
@@ -961,49 +981,22 @@ void FiberDataHub::on_github_open_file_clicked()
         return;
     }
     tipl::out() << "download file to " << filePath.toStdString();
-    auto reply = main_window.get(ui->github_release_files->item(row, 4)->text());
-
-    // Create a progress dialog
     QProgressDialog progressDialog("Downloading...", "Cancel", 0, 100, this);
     progressDialog.setModal(true);
     progressDialog.show();
-    qint64 bytesReceived = 0;
-    QEventLoop loop;
-
-    QObject::connect(reply.get(), &QNetworkReply::readyRead, this,
-                     [this, &progressDialog, &bytesReceived, bytesTotal,reply]()
+    QString error;
+    bool done = download_to_file(main_window.get(ui->github_release_files->item(row, 4)->text()),filePath,
+                                 [&](qint64 received,qint64 total)
     {
-        progressDialog.setValue((reply->bytesAvailable() * 100) / (bytesTotal));
-    });
-    QObject::connect(reply.get(), &QNetworkReply::finished, this,
-                     [this, filePath, git_open, &progressDialog, &loop,reply]() // Pass the loop to the lambda
-    {
-        if (reply->error() != QNetworkReply::NoError)
-        {
-            if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this, "ERROR", showQNetworkReplyError(reply.get()));
-        }
-        else
-        {
-            auto downloadFile = std::make_shared<QFile>(filePath);
-            if (!downloadFile->open(QFile::WriteOnly))
-            {
-                QMessageBox::critical(this, "ERROR", "Failed to open file for writing");
-                return;
-            }
-            downloadFile->write(reply->readAll());
-            downloadFile->close();
-            QTimer::singleShot(0, this, [git_open](){git_open();});
-        }
-        progressDialog.close();
-        loop.quit();
-    });
-
-    QObject::connect(&progressDialog, &QProgressDialog::canceled, this, [this,&loop,reply]() // Pass the loop to the lambda
-    {
-        if (reply && reply->isRunning())
-            reply->abort();
-    });
-
-    loop.exec();
+        if(total <= 0)
+            total = bytesTotal;
+        if(total > 0)
+            progressDialog.setValue(int(received*100/total));
+        return !progressDialog.wasCanceled();
+    },error);
+    progressDialog.close();
+    if(done)
+        QTimer::singleShot(0, this, [git_open](){git_open();});
+    else if(!error.isEmpty())
+        QMessageBox::critical(this, "ERROR", error);
 }
