@@ -2008,6 +2008,7 @@ QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,const ai_ap
             if(token.isEmpty())
                 return finish("Google Drive download failed: "+google_error);
             QNetworkRequest request{QUrl(file_url+"?alt=media")};
+            request.setAttribute(QNetworkRequest::Http2AllowedAttribute,false);
             request.setRawHeader("Authorization","Bearer "+token.toUtf8());
             auto* reply = web_manager.get(request); // streamed to disk, never held in memory; the 30 s timeout counts idle time
             connect(reply,&QNetworkReply::readyRead,this,[&,reply]{file.write(reply->readAll());});
