@@ -34,6 +34,21 @@ class FiberDataHub : public QMainWindow
     void loadFiles(void);
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 
+    // parallel downloads across repos in queue order, reply is null while queued
+    struct download_item
+    {
+        QString repo,url,file_name;
+        int retry = 0;
+        QSharedPointer<QNetworkReply> reply;
+    };
+    std::vector<download_item> downloads;
+    std::map<QString,float> download_progress; // url to downloaded fraction, -1 for a failed file
+    QString download_error;
+    bool repo_downloading(const QString& repo) const;
+    void show_download_progress(const QString& url);
+    void download_selected(void);
+    void download_next(void);
+
 public:
     explicit FiberDataHub(MainWindow* parent);
     ~FiberDataHub();
