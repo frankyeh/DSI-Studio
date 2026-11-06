@@ -483,8 +483,23 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
     {
         if(timer) // same condition "stop" itself checks, rather than reading the button's display text
             return command({"stop"},source);
-        // study region from the GUI, shared by the fMRI and diffusion analyses
-        auto setup_roi = [&](void)
+
+        // setup parameters, shared by the fMRI and diffusion analyses
+        {
+            vbc->no_tractogram = ui->no_tractogram->isChecked();
+            vbc->foi_str = ui->foi->currentText().toStdString();
+            vbc->handle->db.set_current_index(ui->index_name->currentIndex());
+            vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
+            vbc->tip_iteration = uint32_t(ui->tip->value());
+            vbc->fdr_threshold = ui->fdr_control->isChecked() ? float(ui->fdr_threshold->value()) : 0.0f;
+            vbc->t_threshold = float(ui->threshold->value());
+            vbc->rho_threshold = float(ui->effect_size->value());
+            vbc->region_pruning = ui->region_pruning->isChecked();
+            vbc->normalize_iso = (db.type != connectometry_db::longitudinal_type::plain) ? false : ui->normalize_iso->isChecked();
+            vbc->output_file_name = ui->output_name->text().toStdString();
+        }
+
+        // setup roi
         {
             vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
             if(ui->exclude_cb->isChecked())
@@ -507,7 +522,8 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             // if no seed assigned, assign whole brain
             if(vbc->roi_mgr->seeds.empty())
                 vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
-        };
+        }
+
         // starts a background run polled by calculate_FDR every second
         auto start_run = [&](auto run)->bool
         {
@@ -523,22 +539,12 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             timer->start();
             return true;
         };
-        // fMRI database: run_fmri with the GUI parameters, skipping demographics and the cohort model
+        // fMRI database: run_fmri with the fMRI options, skipping demographics and the cohort model
         if(vbc->handle->mat_reader.has("bold"))
         {
-            setup_roi();
             tipl::program_option<tipl::out> po;
-            po.set("source",db_file_name.toStdString());
-            po.set("t_threshold",ui->threshold->value());
-            po.set("length_threshold",ui->length_threshold->value());
-            po.set("tip_iteration",ui->tip->value());
-            po.set("region_pruning",int(ui->region_pruning->isChecked()));
-            po.set("fdr_threshold",ui->fdr_control->isChecked() ? ui->fdr_threshold->value() : 0.0);
             po.set("permutation",ui->permutation_count->value());
             po.set("ar1",ui->fmri_model->currentIndex());
-            po.set("no_tractogram",int(ui->no_tractogram->isChecked()));
-            if(!ui->output_name->text().isEmpty())
-                po.set("output",ui->output_name->text().toStdString());
             // events and TR not stored in the database are asked at run time
             if(!vbc->handle->mat_reader.has("events"))
             {
@@ -575,21 +581,6 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
         if(model->remove_list.empty()) // select cohort failed
             return fail("cohort selection failed");
 
-        // setup parameters
-        {
-            vbc->no_tractogram = ui->no_tractogram->isChecked();
-            vbc->foi_str = ui->foi->currentText().toStdString();
-            vbc->handle->db.set_current_index(ui->index_name->currentIndex());
-            vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
-            vbc->tip_iteration = uint32_t(ui->tip->value());
-            vbc->fdr_threshold = ui->fdr_control->isChecked() ? float(ui->fdr_threshold->value()) : 0.0f;
-            vbc->t_threshold = float(ui->threshold->value());
-            vbc->rho_threshold = float(ui->effect_size->value());
-            vbc->region_pruning = ui->region_pruning->isChecked();
-            vbc->normalize_iso = (db.type != connectometry_db::longitudinal_type::plain) ? false : ui->normalize_iso->isChecked();
-            vbc->output_file_name = ui->output_name->text().toStdString();
-        }
-
         // setup statistical model
         {
             vbc->model.reset(new stat_model);
@@ -597,8 +588,6 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             if(!vbc->model->select_feature(db,ui->foi->currentText().toStdString()))
                 return fail(vbc->model->error_msg);
         }
-
-        setup_roi();
 
         return start_run([&](void)
         {
