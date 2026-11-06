@@ -135,6 +135,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     {
         ui->threshold->setValue(2.5);
         ui->exclude_cb->setChecked(true);
+        ui->otsu_threshold->setValue(0.3);
     }
 }
 
@@ -498,6 +499,7 @@ bool group_connectometry::command(std::vector<std::string> cmd,command_source so
             vbc->t_threshold = float(ui->threshold->value());
             vbc->rho_threshold = float(ui->effect_size->value());
             vbc->region_pruning = ui->region_pruning->isChecked();
+            vbc->set_default_otsu(float(ui->otsu_threshold->value()));
             vbc->normalize_iso = (db.type != connectometry_db::longitudinal_type::plain) ? false : ui->normalize_iso->isChecked();
             vbc->output_file_name = ui->output_name->text().toStdString();
         }
