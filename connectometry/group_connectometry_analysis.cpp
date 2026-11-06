@@ -901,7 +901,6 @@ std::string group_connectometry_analysis::generate_report(void)
     return output;
 }
 
-bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 // first-level task fMRI of one run stored as bold[t*M+s]: SPM canonical HRF design, 128-s DCT high-pass and intercept,
 // global AR(1) Cochrane-Orcutt GLS task t-map, and exploratory correlational tractography (no FDR or inference)
 bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
@@ -1071,25 +1070,11 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
         std::copy(y0.begin(),y0.end(),e0.begin()+i*Tw);
     });
 
-    // correlational tractography on the task t-maps, repeated with each null resample as in run_permutation
-    t_threshold = po.get("t_threshold",2.5f);
-    length_threshold_voxels = po.get("length_threshold",(handle->dim[0]/4)/5*5);
-    tip_iteration = po.get("tip_iteration",16);
-    region_pruning = (po.get("region_pruning",1) == 1);
-    fdr_threshold = po.get("fdr_threshold",0.0f);
-    no_tractogram = !tipl::show_prog || po.get("no_tractogram",1);
+    // correlational tractography on the task t-maps, repeated with each null resample as in run_permutation;
+    // the tracking parameters and study region are set by the caller, as for run_permutation
     foi_str = names[task];
-    output_file_name = po.has("output") ? po.get("output") : get_file_post_fix();
-    if(!roi_mgr) // the GUI sets its own study region
-    {
-        roi_mgr = std::make_shared<RoiMgr>(handle);
-        if(po.get("exclude_cb",0))
-            exclude_cerebellum();
-        if(!load_roi(po,handle,roi_mgr))
-            return error_msg = "cannot load roi",false;
-        if(roi_mgr->seeds.empty())
-            roi_mgr->setWholeBrainSeed(fiber_threshold);
-    }
+    if(output_file_name.empty())
+        output_file_name = get_file_post_fix();
 
     std::ostringstream out;
     out << " A first-level task fMRI analysis modeled the " << tipl::merge(names,',') << " events with the SPM canonical hemodynamic response function"
