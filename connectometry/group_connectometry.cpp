@@ -132,7 +132,10 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     for(QWidget* each : {static_cast<QWidget*>(ui->effect_size),static_cast<QWidget*>(ui->label_9),static_cast<QWidget*>(ui->label_10)})
         each->setVisible(!fmri);
     if(fmri)
+    {
         ui->threshold->setValue(2.5);
+        ui->exclude_cb->setChecked(true);
+    }
 }
 
 group_connectometry::~group_connectometry()
