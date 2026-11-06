@@ -7,19 +7,21 @@
 #include <QTimer>
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
+#include "fiber_data_hub.hpp" // download_queue
 
 class xnat_facade{
 public:
     QNetworkAccessManager xnat_manager;
     QNetworkReply* cur_response = nullptr;
     std::shared_ptr<tipl::progress> download_prog;
-    size_t prog = 0;
-    size_t total = 0;
-    std::string result,error_msg;
+    std::string auth,result,error_msg;
+    download_queue downloads; // scan files, keyed by experiment id
 public:
+    xnat_facade(void);
+    QNetworkReply* get(const std::string& url);
     void get_html(std::string url,std::string auth);
-    void get_data(std::string site,std::string auth,const std::vector<std::string>& urls,std::string output_dir);
-    void get_scans_data(std::string site,std::string auth,std::string experiment,std::string output_dir,std::string filter = "ALL");
+    // experiments: id and output directory, listed one after another while their files download
+    void get_scans_data(std::string site,std::string auth,std::vector<std::pair<std::string,std::string> > experiments,std::string filter = "ALL");
 public:
     void get_info(std::string site,std::string auth,std::string path);
     void get_experiments_info(std::string site,std::string auth)
@@ -31,7 +33,7 @@ public:
 public:
     bool good(void);
     void clear(void);
-    bool is_running(void)const{return cur_response;}
+    bool is_running(void)const{return cur_response || downloads.running;}
     bool has_error(void)const{return !error_msg.empty();}
 };
 
@@ -49,13 +51,10 @@ public:
     ~xnat_dialog();
 private:
     QStringList experiment_header = {"date","project","label","insert_date","ID"};
-    std::shared_ptr<QTimer> experiment_view_timer,download_timer;
-    int cur_download_index = 0;
-    std::vector<std::string> output_dirs;
+    std::shared_ptr<QTimer> experiment_view_timer;
 private slots:
     void on_connect_clicked();
     void experiment_view_updated();
-    void download_status();
 
     void on_open_dir_clicked();
 

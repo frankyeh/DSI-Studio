@@ -9,7 +9,6 @@
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QLinearGradient>
 #include <QMessageBox>
 #include <QNetworkReply>
 #include <QProgressDialog>
@@ -22,8 +21,6 @@
 #include <QVBoxLayout>
 #include <QTimer>
 #include <set>
-#include <algorithm>
-#include <utility>
 #include <functional>
 
 #include "fiber_data_hub.hpp"
@@ -47,15 +44,21 @@ FiberDataHub::FiberDataHub(MainWindow* parent):
         ui->github_note->setOpenExternalLinks(true);
     }
 
+    downloads.get = [this](const QString& url){return main_window.get(url);};
+    downloads.on_progress = [this](const QString& url){downloads.paint(ui->github_release_files,4,0,url);};
+    downloads.on_change = [this](void){on_github_release_files_itemSelectionChanged();};
+    downloads.on_finished = [this](const QString& error)
+    {
+        if(!error.isEmpty())
+            QMessageBox::critical(this,"ERROR",error);
+    };
+
     if(!initialize())
         QMessageBox::warning(this,"Fiber Data Hub",QString::fromStdString(error_msg));
 }
 
 FiberDataHub::~FiberDataHub()
 {
-    for(auto each : std::vector<download_item>(downloads)) // abort removes partial files and erases the entry
-        if(each.reply)
-            each.reply->abort();
     delete ui;
 }
 
@@ -427,7 +430,7 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
             return true;
         }))
             return false;
-        while(repo_downloading(arg(1)))
+        while(downloads.busy(arg(1)))
             QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
         return any || fail("no matching tag with a matching file found");
     }
@@ -546,35 +549,6 @@ QString showQNetworkReplyError(QNetworkReply* reply)
                                       }).value(http_error,"error code: " + QString::number(http_error));
 
     return reply->errorString();
-}
-
-// streams a reply (owned by the caller) to file_name chunk by chunk without blocking; done(ok,error) is called
-// once at the end, with an empty error for a cancel (reply->abort()), and the partial file is removed unless ok
-static void download_to_file(QNetworkReply* reply,const QString& file_name,
-                             std::function<void(qint64,qint64)> progress,std::function<void(bool,QString)> done)
-{
-    auto file = QSharedPointer<QFile>::create(file_name);
-    if(!file->open(QFile::WriteOnly))
-        return reply->abort(),done(false,"Failed to open file for writing");
-    auto write_failed = QSharedPointer<bool>::create(false);
-    auto write = [=](void)
-    {
-        auto data = reply->readAll();
-        if(file->write(data) != data.size())
-            *write_failed = true,reply->abort();
-    };
-    QObject::connect(reply,&QNetworkReply::readyRead,reply,write);
-    QObject::connect(reply,&QNetworkReply::downloadProgress,reply,progress);
-    QObject::connect(reply,&QNetworkReply::finished,reply,[=](void)
-    {
-        write();
-        file->close();
-        if(!*write_failed && reply->error() == QNetworkReply::NoError)
-            return done(true,QString());
-        file->remove();
-        done(false,*write_failed ? QString("Failed to save file to disk") :
-                   reply->error() == QNetworkReply::OperationCanceledError ? QString() : showQNetworkReplyError(reply));
-    });
 }
 
 void FiberDataHub::update_rate_limit(QSharedPointer<QNetworkReply> reply)
@@ -705,8 +679,7 @@ void FiberDataHub::loadFiles()
             github_tsv_link.push_back(assetObject.value("browser_download_url").toString());
         }
     }
-    for(const auto& each : download_progress)
-        show_download_progress(each.first);
+    downloads.on_progress(QString());
     ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
     ui->github_release_files->setUpdatesEnabled(true);
     ui->github_release_files->resizeColumnToContents(0);
@@ -805,7 +778,7 @@ void FiberDataHub::on_browseDownloadDir_clicked()
 void FiberDataHub::on_github_release_files_itemSelectionChanged()
 {
     int selectedRows = ui->github_release_files->selectionModel()->selectedRows().size();
-    bool downloading = repo_downloading(ui->github_repo->currentData().toString());
+    bool downloading = downloads.busy(ui->github_repo->currentData().toString());
     ui->github_release_files->setColumnWidth(3,50);
     ui->github_download->setEnabled(downloading || selectedRows > 0);
     if(selectedRows == 1 && ui->github_release_files->currentRow() >= 0)
@@ -844,108 +817,20 @@ void FiberDataHub::on_github_select_all_clicked()
 void FiberDataHub::on_github_download_clicked()
 {
     QString repo = ui->github_repo->currentData().toString();
-    if(!repo_downloading(repo))
-    {
-        for(const auto& each : std::map<QString,float>(download_progress)) // clear the bars of finished files
-            if(std::none_of(downloads.begin(),downloads.end(),[&](const auto& item){return item.url == each.first;}))
-                download_progress.erase(each.first),show_download_progress(each.first);
-        return download_selected();
-    }
-    // cancel this repo: abort active files, whose callbacks erase them, then drop queued ones
-    for(auto each : std::vector<download_item>(downloads))
-        if(each.repo == repo && each.reply)
-            each.reply->abort();
-    downloads.erase(std::remove_if(downloads.begin(),downloads.end(),[&](const auto& each){return each.repo == repo;}),downloads.end());
-    on_github_release_files_itemSelectionChanged();
-}
-
-bool FiberDataHub::repo_downloading(const QString& repo) const
-{
-    return std::any_of(downloads.begin(),downloads.end(),[&](const auto& each){return each.repo == repo;});
-}
-
-void FiberDataHub::show_download_progress(const QString& url)
-{
-    // fill the file name cell from the left: blue for the downloaded fraction, red for a failed file
-    QBrush brush;
-    if(auto progress = download_progress.find(url);progress != download_progress.end())
-    {
-        float x = progress->second < 0.0f ? 1.0f : progress->second;
-        QLinearGradient gradient(0,0,1,0);
-        gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
-        gradient.setColorAt(x,progress->second < 0.0f ? QColor(244,160,160) : QColor(159,208,245));
-        if(x < 1.0f)
-            gradient.setColorAt(std::min(x+0.001f,1.0f),Qt::transparent);
-        brush = gradient;
-    }
-    for(int row = 0;row < ui->github_release_files->rowCount();++row)
-        if(ui->github_release_files->item(row,4)->text() == url)
-            ui->github_release_files->item(row,0)->setBackground(brush);
+    if(downloads.busy(repo))
+        return downloads.cancel(repo);
+    downloads.clear_finished();
+    download_selected();
 }
 
 void FiberDataHub::download_selected(void)
 {
     QString repo = ui->github_repo->currentData().toString();
     for(const auto& index : ui->github_release_files->selectionModel()->selectedRows())
-    {
-        QString url = ui->github_release_files->item(index.row(),4)->text();
-        QString file_name = ui->download_dir->text() + "/" + ui->github_release_files->item(index.row(),0)->text();
-        if(std::any_of(downloads.begin(),downloads.end(),[&](const auto& each){return each.url == url;}))
-            continue;
-        if(QFile::exists(file_name) && !ui->download_overwrite->isChecked())
-        {
-            tipl::out() << file_name.toStdString() << " exists...skipping";
-            download_progress[url] = 1.0f;
-            show_download_progress(url);
-            continue;
-        }
-        downloads.push_back({repo,url,file_name});
-    }
+        downloads.add(repo,ui->github_release_files->item(index.row(),4)->text(),
+                      ui->download_dir->text() + "/" + ui->github_release_files->item(index.row(),0)->text(),ui->download_overwrite->isChecked());
     ui->github_release_files->clearSelection(); // the selection color would hide the progress bars
-    download_next();
-}
-
-void FiberDataHub::download_next(void)
-{
-    auto next = std::find_if(downloads.begin(),downloads.end(),[](const auto& each){return !each.reply;});
-    if(next == downloads.end() ||
-       std::count_if(downloads.begin(),downloads.end(),[](const auto& each){return bool(each.reply);}) >= 3) // 3 parallel downloads
-    {
-        if(downloads.empty() && !download_error.isEmpty())
-            QMessageBox::critical(this,"ERROR",std::exchange(download_error,QString()));
-        return on_github_release_files_itemSelectionChanged();
-    }
-
-    QString url = next->url;
-    tipl::out() << url.toStdString();
-    next->reply = main_window.get(url);
-    download_to_file(next->reply.get(),next->file_name,[this,url](qint64 received,qint64 total)
-    {
-        auto& progress = download_progress[url];
-        if(total > 0 && int(received*100/total) != int(progress*100))
-            progress = float(received)/float(total),show_download_progress(url);
-    },[this,url](bool ok,QString error)
-    {
-        auto item = std::find_if(downloads.begin(),downloads.end(),[&](const auto& each){return each.url == url;});
-        bool failed = !ok && !error.isEmpty(),retry = failed && ++item->retry < 5;
-        if(retry)
-        {
-            tipl::warning() << error.toStdString() << ", retrying " << url.toStdString();
-            item->reply.reset(); // back to the queue
-        }
-        else
-            downloads.erase(item);
-        if(failed && !retry)
-            download_error = error;
-        // a finished file keeps a full bar (red if failed) until the next download click
-        if(ok || (failed && !retry))
-            download_progress[url] = ok ? 1.0f : -1.0f;
-        else
-            download_progress.erase(url);
-        show_download_progress(url);
-        QTimer::singleShot(retry ? 3000 : 0,this,&FiberDataHub::download_next);
-    });
-    download_next(); // start more until the parallel limit
+    downloads.next();
 }
 
 
@@ -1054,15 +939,15 @@ void FiberDataHub::on_github_open_file_clicked()
     QObject::connect(&progressDialog,&QProgressDialog::canceled,reply.get(),&QNetworkReply::abort);
     QEventLoop loop;
     QString error;
-    bool done = false,finished = false;
+    bool done = false;
     download_to_file(reply.get(),filePath,[&](qint64 received,qint64 total)
     {
         if(total <= 0)
             total = bytesTotal;
         if(total > 0)
             progressDialog.setValue(int(received*100/total));
-    },[&](bool ok,QString e){done = ok,error = e,finished = true;loop.quit();});
-    if(!finished)
+    },[&](bool ok,QString e){done = ok,error = e;loop.quit();});
+    if(!reply->isFinished()) // already finished if the file could not be opened
         loop.exec();
     progressDialog.close();
     if(done)
