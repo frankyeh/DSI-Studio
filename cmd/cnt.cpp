@@ -10,8 +10,39 @@ int cnt(tipl::program_option<tipl::out>& po)
     auto vbc = std::make_shared<group_connectometry_analysis>();
     if(!vbc->load_database(po.get("source").c_str()))
         return tipl::error() << vbc->error_msg,1;
+
+    // tracking parameters and study region, shared by the fMRI and diffusion analyses
+    {
+        tipl::progress prog("connectometry parameters");
+        vbc->no_tractogram = po.get("no_tractogram",1);
+        if(!tipl::show_prog && vbc->no_tractogram == 0)
+        {
+            tipl::warning() << "cannot generate tractogram at command line mode. no_tractogram is disabled" ;
+            vbc->no_tractogram = 1;
+        }
+        vbc->region_pruning = (po.get("region_pruning",1) == 1);
+        vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
+        vbc->tip_iteration = po.get("tip_iteration",16);
+        vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
+        if(po.has("output"))
+            vbc->output_file_name = po.get("output",std::string());
+
+        // setup roi
+        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
+        if(po.get("exclude_cb",0))
+            vbc->exclude_cerebellum();
+
+        if(!load_roi(po,vbc->handle,vbc->roi_mgr))
+            return 1;
+
+        // if no seed assigned, assign whole brain
+        if(vbc->roi_mgr->seeds.empty())
+            vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
+    }
+
     if(vbc->handle->mat_reader.has("bold"))
     {
+        vbc->t_threshold = po.get("t_threshold",2.5f);
         if(!vbc->run_fmri(po))
             return tipl::error() << vbc->error_msg,1;
         vbc->wait();
@@ -52,19 +83,9 @@ int cnt(tipl::program_option<tipl::out>& po)
 
     {
         tipl::progress prog("connectometry parameters");
-        vbc->no_tractogram = po.get("no_tractogram",1);
-        if(!tipl::show_prog && vbc->no_tractogram == 0)
-        {
-            tipl::warning() << "cannot generate tractogram at command line mode. no_tractogram is disabled" ;
-            vbc->no_tractogram = 1;
-        }
-        vbc->region_pruning = (po.get("region_pruning",1) == 1);
         if(db.type == connectometry_db::longitudinal_type::plain)
             vbc->normalize_iso = (po.get("normalize_iso",1) == 1);
         vbc->foi_str = foi_str;
-        vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
-        vbc->tip_iteration = po.get("tip_iteration",16);
-        vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
 
         // select cohort and feature
         vbc->model = std::make_shared<stat_model>();
@@ -88,25 +109,10 @@ int cnt(tipl::program_option<tipl::out>& po)
             auto rho = vbc->rho_threshold = po.get("effect_size",0.3f);
             vbc->t_threshold = rho*std::sqrt(double(n)-2)/std::sqrt(1-rho*rho);
         }
-
-        // setup roi
-        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
-        if(po.get("exclude_cb",0))
-            vbc->exclude_cerebellum();
-
-        if(!load_roi(po,vbc->handle,vbc->roi_mgr))
-            return 1;
-
-        // if no seed assigned, assign whole brain
-        if(vbc->roi_mgr->seeds.empty())
-            vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
-
     }
 
     {
         tipl::progress prog("running connectometry");
-        if(po.has("output"))
-            vbc->output_file_name = po.get("output",std::string());
         vbc->run_permutation(tipl::max_thread_count,po.get("permutation",uint32_t(2000)));
         vbc->wait(0);
         vbc->generate_report();
