@@ -1396,6 +1396,7 @@ Reconstruction</string>
     <addaction name="actionLoad_bvecs"/>
     <addaction name="separator"/>
     <addaction name="actionRegenerate_b_table"/>
+    <addaction name="actionRegenerate_b_table_from_src"/>
     <addaction name="actionCheck_b_table2"/>
     <addaction name="actionCheck_b_table"/>
     <addaction name="separator"/>
@@ -1819,10 +1820,18 @@ Reconstruction</string>
   </action>
   <action name="actionRegenerate_b_table">
    <property name="text">
-    <string>Regenerate B-table...</string>
+    <string>Regenerate B-table (Template-Based)...</string>
    </property>
    <property name="toolTip">
     <string>run regenerate_btable</string>
+   </property>
+  </action>
+  <action name="actionRegenerate_b_table_from_src">
+   <property name="text">
+    <string>Regenerate B-table from SRC...</string>
+   </property>
+   <property name="toolTip">
+    <string>run regenerate_btable=src</string>
    </property>
   </action>
   <action name="actionCheck_b_table2">
