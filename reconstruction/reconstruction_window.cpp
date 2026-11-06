@@ -187,7 +187,7 @@ void reconstruction_window::load_b_table(void)
 
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
-    if(handle->src_bvalues.empty())
+    if(size_t(ui->b_table->currentRow()) >= handle->src_dwi_data.size())
         return;
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
 
