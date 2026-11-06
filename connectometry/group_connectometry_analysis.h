@@ -25,6 +25,8 @@ public:
     bool load_database(const char* database_name);
 public:// database information
     float fiber_threshold;
+    float default_otsu = 0.6f; // tracking threshold randomized between (default_otsu -/+ 0.1) x Otsu
+    void set_default_otsu(float v);
 public:
     std::vector<float> subject_data_buffer;
     std::vector<const float*> subject_data;
