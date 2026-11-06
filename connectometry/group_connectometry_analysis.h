@@ -65,6 +65,7 @@ public:// Multiple regression
     bool normalize_iso = true;
     std::string foi_str;
     std::string get_file_post_fix(void);
+    std::string tracking_report(void) const;
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void set_seed_count(unsigned int permutation_count);
