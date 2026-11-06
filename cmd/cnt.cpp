@@ -29,7 +29,7 @@ int cnt(tipl::program_option<tipl::out>& po)
 
         // setup roi
         vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
-        if(po.get("exclude_cb",0))
+        if(po.get("exclude_cb",vbc->handle->mat_reader.has("bold") ? 1 : 0)) // excluded by default for fMRI
             vbc->exclude_cerebellum();
 
         if(!load_roi(po,vbc->handle,vbc->roi_mgr))
