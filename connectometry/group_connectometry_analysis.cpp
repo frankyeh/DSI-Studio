@@ -153,16 +153,20 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
 void group_connectometry_analysis::save_result(void)
 {
     tipl::progress p("save correlational tractography results");
-    for(auto each : {neg_null_corr_track,pos_null_corr_track,dec_track,inc_track})
-        if(each)
-        {
-            for(size_t index = 0;index < tip_iteration;++index)
-                each->trim();
-            if(region_pruning)
-                each->region_pruning(0.2f);
-        }
-    if(!pos_null_corr_track) // no null (fMRI without resampling): no FDR
-        return save_tracts_and_t();
+    for(size_t index = 0;index < tip_iteration;++index)
+    {
+        neg_null_corr_track->trim();
+        pos_null_corr_track->trim();
+        dec_track->trim();
+        inc_track->trim();
+    }
+    if(region_pruning)
+    {
+        neg_null_corr_track->region_pruning(0.2f);
+        pos_null_corr_track->region_pruning(0.2f);
+        dec_track->region_pruning(0.2f);
+        inc_track->region_pruning(0.2f);
+    }
     // update fdr table
     std::fill(tract_count_dec_null.begin(),tract_count_dec_null.end(),0);
     std::fill(tract_count_inc_null.begin(),tract_count_inc_null.end(),0);
@@ -215,10 +219,7 @@ void group_connectometry_analysis::save_result(void)
         if(!has_result)
             dec_track->clear();
     }
-    save_tracts_and_t();
-}
-void group_connectometry_analysis::save_tracts_and_t(void)
-{
+
     {
         tipl::progress prog("deleting repeated tracts");
         inc_track->delete_repeated(1.0);
@@ -618,8 +619,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
 void group_connectometry_analysis::calculate_FDR(void)
 {
-    if(!pos_null_corr_track) // no null (fMRI without resampling): FDR stays 1
-        return;
     double sum_inc_null = 0.0;
     double sum_dec_null = 0.0;
     double sum_inc = 0.0;
@@ -663,8 +662,6 @@ void group_connectometry_analysis::calculate_FDR(void)
 
 std::string group_connectometry_analysis::generate_report(void)
 {
-    if(!pos_null_corr_track) // no null (fMRI without resampling): method report only
-        return handle->report + report;
     std::ostringstream html_report(output_file_name+".report.html");
     html_report << "<!DOCTYPE html>" << std::endl;
     html_report << "<html><head><title>Report</title></head>" << std::endl;
@@ -1034,34 +1031,29 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     // wild bootstrap with one Rademacher sign per whitened row shared by all voxels, as the subject resampling of run_permutation:
     // nonpermuted: observed data with sign-flipped full-model residuals e1; null: sign-flipped residuals e0 of the
     // nuisance-only model (intercept and DCT), where the observed task effect is never re-added
-    const unsigned int permutation_count = po.get("permutation",0);
-    std::vector<float> e0,e1;
-    if(permutation_count)
+    const unsigned int permutation_count = std::max(1,po.get("permutation",2000));
+    std::vector<double> X0(Tw*(1+D));
+    for(size_t j = 0;j < Tw;++j)
     {
-        std::vector<double> X0(Tw*(1+D));
-        for(size_t j = 0;j < Tw;++j)
-        {
-            X0[j*(1+D)] = Xw[j*P];
-            std::copy_n(Xw.begin()+j*P+1+K,D,X0.begin()+j*(1+D)+1);
-        }
-        tipl::multiple_regression<double> mr0;
-        if(!mr0.set_variables(X0.data(),1+D,Tw))
-            return error_msg = "invalid nuisance design matrix",false;
-        e0.resize(Tw*voxels.size());
-        e1.resize(Tw*voxels.size());
-        tipl::par_for(voxels.size(),[&](size_t i)
-        {
-            std::vector<double> y(Tw),y0(Tw),b(P);
-            for(size_t j = 0;j < Tw;++j)
-                y0[j] = y[j] = whitened(i,j);
-            mr.regress(y.data(),b.data());
-            mr.residual(y.data(),b.data());
-            std::copy(y.begin(),y.end(),e1.begin()+i*Tw);
-            mr0.regress(y0.data(),b.data());
-            mr0.residual(y0.data(),b.data());
-            std::copy(y0.begin(),y0.end(),e0.begin()+i*Tw);
-        });
+        X0[j*(1+D)] = Xw[j*P];
+        std::copy_n(Xw.begin()+j*P+1+K,D,X0.begin()+j*(1+D)+1);
     }
+    tipl::multiple_regression<double> mr0;
+    if(!mr0.set_variables(X0.data(),1+D,Tw))
+        return error_msg = "invalid nuisance design matrix",false;
+    std::vector<float> e0(Tw*voxels.size()),e1(Tw*voxels.size());
+    tipl::par_for(voxels.size(),[&](size_t i)
+    {
+        std::vector<double> y(Tw),y0(Tw),b(P);
+        for(size_t j = 0;j < Tw;++j)
+            y0[j] = y[j] = whitened(i,j);
+        mr.regress(y.data(),b.data());
+        mr.residual(y.data(),b.data());
+        std::copy(y.begin(),y.end(),e1.begin()+i*Tw);
+        mr0.regress(y0.data(),b.data());
+        mr0.residual(y0.data(),b.data());
+        std::copy(y0.begin(),y0.end(),e0.begin()+i*Tw);
+    });
 
     // correlational tractography on the task t-maps, repeated with each null resample as in run_permutation
     t_threshold = po.get("t_threshold",2.5f);
@@ -1093,29 +1085,23 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
     out << " The " << (w ? "GLS" : "uncorrected OLS") << " t statistics of "
         << names[task] << " (df = " << Tw-P << ") were used in correlational tractography with a T threshold of " << t_threshold
         << " and a length threshold of " << length_threshold_voxels << " voxel distance." << roi_mgr->report;
-    if(permutation_count)
-        out << " A total of " << permutation_count << " synchronized residual wild-bootstrap resamples, with one Rademacher sign per volume"
-               " shared by all voxels, were applied to the whitened full-model residuals of the observed data and to the whitened"
-               " residuals of the nuisance-only model to obtain the nonpermuted and null distributions of the track length. This null is a candidate that has not been validated"
-               " for type-I error or false discovery rate control.";
-    else
-        out << " The results are exploratory without false discovery rate or family-wise error control.";
+    out << " A total of " << permutation_count << " synchronized residual wild-bootstrap resamples, with one Rademacher sign per volume"
+           " shared by all voxels, were applied to the whitened full-model residuals of the observed data and to the whitened"
+           " residuals of the nuisance-only model to obtain the nonpermuted and null distributions of the track length.";
     report = out.str();
     tipl::out() << report;
     hypothesis_inc = "positive " + names[task] + " response";
     hypothesis_dec = "negative " + names[task] + " response";
 
-    // histograms and tracks read by the GUI timer as in run_permutation; without the null, FDR stays 1 and null tracks are absent
+    // histograms and tracks read by the GUI timer as in run_permutation
     clear();
     size_t max_dimension = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
     for(auto each : {&tract_count_inc,&tract_count_dec,&tract_count_inc_null,&tract_count_dec_null})
         each->assign(max_dimension,0);
-    fdr_inc.assign(max_dimension,1.0f);
-    fdr_dec.assign(max_dimension,1.0f);
-    inc_track = std::make_shared<TractModel>(handle);
-    dec_track = std::make_shared<TractModel>(handle);
-    pos_null_corr_track = permutation_count ? std::make_shared<TractModel>(handle) : nullptr;
-    neg_null_corr_track = permutation_count ? std::make_shared<TractModel>(handle) : nullptr;
+    fdr_inc.assign(max_dimension,0.0f);
+    fdr_dec.assign(max_dimension,0.0f);
+    for(auto each : {&inc_track,&dec_track,&pos_null_corr_track,&neg_null_corr_track})
+        *each = std::make_shared<TractModel>(handle);
     prog = 0;
     threads.push_back(std::thread([this,calculate_t,whitened,e0 = std::move(e0),e1 = std::move(e1),Tw,permutation_count]()
     {
@@ -1130,29 +1116,24 @@ bool group_connectometry_analysis::run_fmri(tipl::program_option<tipl::out>& po)
             model.add_tracts(tracks,length_threshold_voxels,tipl::rgb(color));
         };
         connectometry_result obs_map,null_map;
-        const unsigned int n = std::max(1u,permutation_count);
-        for(unsigned int i = 0;i < n && !terminated;++i)
+        for(unsigned int i = 0;i < permutation_count && !terminated;++i)
         {
-            if(permutation_count)
-            {
-                std::mt19937 gen(i);
-                std::vector<float> s1(Tw),s0(Tw);
-                for(size_t j = 0;j < Tw;++j)
-                    s1[j] = (gen() & 1) ? 1.0f : -1.0f,s0[j] = (gen() & 1) ? 1.0f : -1.0f;
-                calculate_t(obs_map,[&](size_t v,size_t j){return whitened(v,j)+(s1[j]-1.0f)*e1[v*Tw+j];});
-                calculate_t(null_map,[&](size_t v,size_t j){return s0[j]*e0[v*Tw+j];});
-                track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
-                track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
-            }
-            const auto& t_map = permutation_count ? obs_map : *spm_map;
-            track(t_map.inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
-            track(t_map.dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
-            prog = (i+1)*95/n;
+            // the same signs for the nonpermuted and null resamples, as run_permutation uses the same seed for both
+            std::mt19937 gen(i);
+            std::vector<float> s(Tw);
+            for(auto& each : s)
+                each = (gen() & 1) ? 1.0f : -1.0f;
+            calculate_t(obs_map,[&](size_t v,size_t j){return whitened(v,j)+(s[j]-1.0f)*e1[v*Tw+j];});
+            calculate_t(null_map,[&](size_t v,size_t j){return s[j]*e0[v*Tw+j];});
+            track(obs_map.inc_ptr,i,*inc_track,tract_count_inc,0x00F04040);
+            track(obs_map.dec_ptr,i,*dec_track,tract_count_dec,0x004040F0);
+            track(null_map.inc_ptr,i,*pos_null_corr_track,tract_count_inc_null,0x00F04040);
+            track(null_map.dec_ptr,i,*neg_null_corr_track,tract_count_dec_null,0x004040F0);
+            prog = (i+1)*95/permutation_count;
         }
         if(terminated)
             return;
         save_result();
-        std::ofstream(output_file_name+".report.txt") << handle->report << report << std::endl;
         prog = 100;
     }));
     return true;
