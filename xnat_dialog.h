@@ -16,8 +16,13 @@ public:
     std::shared_ptr<tipl::progress> download_prog;
     std::string auth,result,error_msg;
     download_queue downloads; // scan files, keyed by experiment id
+    static inline const QStringList experiment_header = {"date","project","label","insert_date","ID"};
 public:
     xnat_facade(void);
+    // save_dir, or its sub-folder named after the experiment field experiment_header[sub_dir-1]; empty if it cannot be created
+    static QString output_dir(QString save_dir,int sub_dir,const QString& field);
+    // agent commands using the login and download folder saved by the dialog: xnat_list, xnat_download
+    bool command(const std::vector<std::string>& cmd);
     QNetworkReply* get(const std::string& url);
     void get_html(std::string url,std::string auth);
     // experiments: id and output directory, listed one after another while their files download
@@ -50,7 +55,6 @@ public:
     explicit xnat_dialog(QWidget *parent = nullptr);
     ~xnat_dialog();
 private:
-    QStringList experiment_header = {"date","project","label","insert_date","ID"};
     std::shared_ptr<QTimer> experiment_view_timer;
 private slots:
     void on_connect_clicked();

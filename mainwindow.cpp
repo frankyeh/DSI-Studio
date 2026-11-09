@@ -1463,6 +1463,11 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             return fail(fiber_data_hub->error_msg);
         return true;
     }
+    if(tipl::begins_with(cmd[0],"xnat_"))
+    {
+        xnat_facade xnat;
+        return xnat.command(cmd) || fail(xnat.error_msg);
+    }
 
 
     auto get_files = [&](size_t begin = 1)

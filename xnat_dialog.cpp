@@ -77,6 +77,16 @@ void xnat_facade::get_html(std::string url,std::string auth)
     cur_response = get(url);
 }
 void check_name(std::string& name);
+QString xnat_facade::output_dir(QString save_dir,int sub_dir,const QString& field)
+{
+    if(sub_dir > 0)
+    {
+        auto name = field.toStdString();
+        check_name(name);
+        save_dir = QDir(save_dir).filePath(name.c_str());
+    }
+    return QDir().mkpath(save_dir) ? save_dir : QString();
+}
 void xnat_facade::get_scans_data(std::string site,std::string auth,std::vector<std::pair<std::string,std::string> > experiments,std::string filter)
 {
     if(experiments.empty())
@@ -121,6 +131,75 @@ void xnat_facade::get_info(std::string site,std::string auth,std::string path)
     });
 }
 
+// xnat_list [range] [project regex]: experiments newest first as a table, range "100" (the first 100, default) or "100:200"
+// xnat_download <experiment IDs separated by commas or spaces>: downloads them as the dialog would
+bool xnat_facade::command(const std::vector<std::string>& cmd)
+{
+    if(cmd[0] != "xnat_list" && (cmd[0] != "xnat_download" || cmd.size() != 2))
+        return error_msg = "usage: xnat_list [range, e.g. 100 or 100:200] [project regex] | xnat_download <experiment IDs, e.g. ID1,ID2>",false;
+
+    // the login saved by the dialog, never shown to the agent
+    QSettings settings;
+    auto site = settings.value("xnat_url").toString().toStdString();
+    auto login = (settings.value("xnat_username").toString() + ":" + settings.value("xnat_password").toString()).toStdString();
+    if(login == ":")
+        login.clear();
+    auto wait = [this](void)
+    {
+        while(is_running())
+            QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
+        return !has_error();
+    };
+    if(site.empty())
+        return error_msg = "no saved XNAT login: ask the user to connect once in the XNAT dialog (open_xnat)",false;
+    get_experiments_info(site,login);
+    if(!wait() || result.empty())
+        return error_msg = "XNAT login failed (" + error_msg + "): ask the user to connect in the XNAT dialog (open_xnat)",false;
+
+    std::istringstream in(result);
+    std::string line;
+    std::getline(in,line);
+    auto header = QString::fromStdString(line).split('\t');
+
+    if(cmd[0] == "xnat_list")
+    {
+        auto range = QString::fromStdString(cmd.size() > 1 ? cmd[1] : "100").split(':');
+        bool ok = true,ok_to = true;
+        int from = range.size() == 2 ? range[0].toInt(&ok) : 0,to = range.back().toInt(&ok_to);
+        if(!ok || !ok_to || range.size() > 2 || from < 0 || to < from)
+            return error_msg = "invalid range: " + cmd[1],false;
+        QRegularExpression project(QString::fromStdString(cmd.size() > 2 ? cmd[2] : ""),QRegularExpression::CaseInsensitiveOption);
+        if(!project.isValid())
+            return error_msg = "invalid project pattern: " + cmd[2],false;
+        tipl::out() << line;
+        for(int row = 0;row < to && std::getline(in,line);)
+            if(project.match(QString::fromStdString(line).split('\t').value(header.indexOf("project"))).hasMatch() && row++ >= from)
+                tipl::out() << line;
+        return true;
+    }
+
+    auto ids = QString::fromStdString(cmd[1]).split(QRegularExpression("[,;\\s]+"),Qt::SkipEmptyParts);
+    int sub_dir = settings.value("xnat_sub_dir",3).toInt();
+    std::vector<std::pair<std::string,std::string> > experiments;
+    while(std::getline(in,line))
+    {
+        auto data = QString::fromStdString(line).split('\t');
+        auto id = data.value(header.indexOf("ID"));
+        if(!ids.removeOne(id))
+            continue;
+        auto dir = output_dir(settings.value("xnat_save_dir",QDir::current().path()).toString(),sub_dir,
+                              sub_dir > 0 ? data.value(header.indexOf(experiment_header.value(sub_dir-1))) : QString());
+        if(dir.isEmpty())
+            return error_msg = "cannot create the download directory for " + id.toStdString(),false;
+        tipl::out() << id.toStdString() << " -> " << dir.toStdString();
+        experiments.push_back({id.toStdString(),dir.toStdString()});
+    }
+    if(!ids.isEmpty())
+        return error_msg = "experiment not found: " + ids.join(",").toStdString(),false;
+    get_scans_data(site,login,experiments);
+    return wait();
+}
+
 xnat_dialog::xnat_dialog(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::xnat_dialog)
@@ -136,8 +215,8 @@ xnat_dialog::xnat_dialog(QWidget *parent) :
     ui->save_dir->setText(settings.value("xnat_save_dir",QDir::current().path()).toString());
 
     ui->sub_dir->addItem("/");
-    for(int i = 0;i < experiment_header.size();++i)
-        ui->sub_dir->addItem(QString("/{%1}").arg(experiment_header[i]));
+    for(int i = 0;i < xnat_facade::experiment_header.size();++i)
+        ui->sub_dir->addItem(QString("/{%1}").arg(xnat_facade::experiment_header[i]));
     ui->sub_dir->setCurrentIndex(settings.value("xnat_sub_dir",3).toInt());
 
     xnat_connection.downloads.on_progress = [this](const QString& id){xnat_connection.downloads.paint(ui->experiment_list,4/*ID*/,5/*download*/,id,true);};
@@ -225,15 +304,15 @@ void xnat_dialog::on_project_list_currentRowChanged(int)
     std::getline(in,line);
     QStringList header = QString(line.c_str()).split('\t');
     int project_index = header.indexOf("project");
-    std::vector<int> header_seq(size_t(experiment_header.size()));
+    std::vector<int> header_seq(size_t(xnat_facade::experiment_header.size()));
     for(size_t index = 0;index < header_seq.size();++index)
-        header_seq[index] = std::max<int>(0,header.indexOf(experiment_header[int(index)]));
+        header_seq[index] = std::max<int>(0,header.indexOf(xnat_facade::experiment_header[int(index)]));
 
     if(!ui->experiment_list->columnCount())
     {
-        ui->experiment_list->setColumnCount(experiment_header.size()+1);
-        ui->experiment_list->setHorizontalHeaderLabels(experiment_header + QStringList("download")); // files finished/total
-        for(int index = 0;index < experiment_header.size();++index)
+        ui->experiment_list->setColumnCount(xnat_facade::experiment_header.size()+1);
+        ui->experiment_list->setHorizontalHeaderLabels(xnat_facade::experiment_header + QStringList("download")); // files finished/total
+        for(int index = 0;index < xnat_facade::experiment_header.size();++index)
             ui->experiment_list->setColumnWidth(index,header_width[index]);
     }
     int row_count = 0;
@@ -309,15 +388,10 @@ void xnat_dialog::on_download_clicked()
     std::vector<std::pair<std::string,std::string> > experiments;
     for(const auto& index : ui->experiment_list->selectionModel()->selectedRows())
     {
-        QString output_dir = ui->save_dir->text();
-        if(ui->sub_dir->currentIndex() > 0)
-        {
-            std::string sub_dir = ui->experiment_list->item(index.row(),ui->sub_dir->currentIndex()-1)->text().toStdString();
-            check_name(sub_dir);
-            output_dir = QDir(output_dir).filePath(sub_dir.c_str());
-            if(!QDir().mkpath(output_dir))
-                return QMessageBox::critical(this,"ERROR",QString("Cannot create directory %1").arg(output_dir)),void();
-        }
+        int sub_dir = ui->sub_dir->currentIndex();
+        auto output_dir = xnat_facade::output_dir(ui->save_dir->text(),sub_dir,sub_dir > 0 ? ui->experiment_list->item(index.row(),sub_dir-1)->text() : QString());
+        if(output_dir.isEmpty())
+            return QMessageBox::critical(this,"ERROR","Cannot create the download directory"),void();
         experiments.push_back({ui->experiment_list->item(index.row(),4/*ID*/)->text().toStdString(),output_dir.toStdString()});
     }
 
