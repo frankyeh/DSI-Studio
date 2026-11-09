@@ -153,42 +153,42 @@ bool xnat_facade::command(const std::vector<std::string>& cmd)
     if(site.empty())
         return error_msg = "no saved XNAT login: ask the user to connect once in the XNAT dialog (open_xnat)",false;
     get_experiments_info(site,login);
-    if(!wait() || result.empty())
+    if(!wait())
         return error_msg = "XNAT login failed (" + error_msg + "): ask the user to connect in the XNAT dialog (open_xnat)",false;
 
     std::istringstream in(result);
     std::string line;
     std::getline(in,line);
     auto header = QString::fromStdString(line).split('\t');
+    int project_col = header.indexOf("project"),id_col = header.indexOf("ID");
 
     if(cmd[0] == "xnat_list")
     {
-        auto range = QString::fromStdString(cmd.size() > 1 ? cmd[1] : "100").split(':');
-        bool ok = true,ok_to = true;
-        int from = range.size() == 2 ? range[0].toInt(&ok) : 0,to = range.back().toInt(&ok_to);
-        if(!ok || !ok_to || range.size() > 2 || from < 0 || to < from)
+        auto range = QRegularExpression("^(?:(\\d+):)?(\\d+)$").match(QString::fromStdString(cmd.size() > 1 ? cmd[1] : "100"));
+        int from = range.captured(1).toInt(),to = range.captured(2).toInt(); // no "from:" means 0
+        if(!range.hasMatch() || to < from)
             return error_msg = "invalid range: " + cmd[1],false;
         QRegularExpression project(QString::fromStdString(cmd.size() > 2 ? cmd[2] : ""),QRegularExpression::CaseInsensitiveOption);
         if(!project.isValid())
             return error_msg = "invalid project pattern: " + cmd[2],false;
         tipl::out() << line;
         for(int row = 0;row < to && std::getline(in,line);)
-            if(project.match(QString::fromStdString(line).split('\t').value(header.indexOf("project"))).hasMatch() && row++ >= from)
+            if(project.match(QString::fromStdString(line).split('\t').value(project_col)).hasMatch() && row++ >= from)
                 tipl::out() << line;
         return true;
     }
 
     auto ids = QString::fromStdString(cmd[1]).split(QRegularExpression("[,;\\s]+"),Qt::SkipEmptyParts);
-    int sub_dir = settings.value("xnat_sub_dir",3).toInt();
+    auto save_dir = settings.value("xnat_save_dir",QDir::current().path()).toString();
+    int sub_dir = settings.value("xnat_sub_dir",3).toInt(),sub_col = header.indexOf(experiment_header.value(sub_dir-1));
     std::vector<std::pair<std::string,std::string> > experiments;
     while(std::getline(in,line))
     {
         auto data = QString::fromStdString(line).split('\t');
-        auto id = data.value(header.indexOf("ID"));
+        auto id = data.value(id_col);
         if(!ids.removeOne(id))
             continue;
-        auto dir = output_dir(settings.value("xnat_save_dir",QDir::current().path()).toString(),sub_dir,
-                              sub_dir > 0 ? data.value(header.indexOf(experiment_header.value(sub_dir-1))) : QString());
+        auto dir = output_dir(save_dir,sub_dir,data.value(sub_col));
         if(dir.isEmpty())
             return error_msg = "cannot create the download directory for " + id.toStdString(),false;
         tipl::out() << id.toStdString() << " -> " << dir.toStdString();
