@@ -322,32 +322,45 @@ void MainWindow::login(void)
                 }
             });
         }
-        if(info.size() >= 3)
+        if(info.size() >= 2) // info[1] gives the address and hostname, info[2] is checked only for what info[1] misses
         {
+            // the first non-empty value (numbers included, of the given length if any) under a key, compared in lowercase without '_',
+            // else under a key plus "name", "code" or "address" (region_name, country_code, zip_code), so "ip" never matches "zip" or "ip_version"
+            auto pick = [](const QJsonObject& json,std::initializer_list<const char*> keys,int length = 0)
+            {
+                for(QString suffix : {"","name","code","address"})
+                    for(auto key : keys)
+                        for(auto it = json.begin();it != json.end();++it)
+                            if(auto value = it.value().toVariant().toString();!value.isEmpty() && (!length || value.size() == length) &&
+                               it.key().toLower().remove('_') == key+suffix)
+                                return value;
+                return QString();
+            };
+            // saves what is found; true when both the country code and the AS name are found (city may be empty)
+            auto save = [this,pick](const QJsonObject& json)
+            {
+                auto country = pick(json,{"country"},2); // the 2-letter code: "country" may be a full name, then country_code is used
+                auto hostname = pick(json,{"as","asname","org","isp"}); // as: "AS701 Verizon Business", as_name before org
+                if(!country.isEmpty())
+                    settings.setValue("login_address",pick(json,{"city"}) + "," + pick(json,{"region"}) + "," +
+                                                      country + " " + pick(json,{"zip","postal"}) + " ");
+                if(!hostname.isEmpty())
+                    settings.setValue("login_hostname",hostname);
+                settings.sync();
+                return !country.isEmpty() && !hostname.isEmpty();
+            };
             auto reply = get(info[1]);
             connect(reply.get(), &QNetworkReply::finished, this, [=]()
             {
-                if (reply->error() == QNetworkReply::NoError)
+                auto json = reply->error() == QNetworkReply::NoError ? QJsonDocument::fromJson(reply->readAll()).object() : QJsonObject();
+                if(save(json) || info.size() < 3)
+                    return;
+                auto reply2 = get(info[2].arg(pick(json,{"ip","query"})));
+                connect(reply2.get(), &QNetworkReply::finished, this, [=]()
                 {
-                    auto reply2 = get(info[2].arg(QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString()));
-                    connect(reply2.get(), &QNetworkReply::finished, this, [=]()
-                    {
-                        if (reply2->error() == QNetworkReply::NoError)
-                        {
-                            QJsonObject jsonObject = QJsonDocument::fromJson(QString(reply2->readAll()).toUtf8()).object();
-                            if(!jsonObject.value("city").toString().isEmpty())
-                            {
-                                settings.setValue("login_address",jsonObject.value("city").toString() + "," +
-                                                                  jsonObject.value("region").toString() + "," +
-                                                                  jsonObject.value("countryCode").toString() + " " +
-                                                                  jsonObject.value("zip").toString() + " ");
-                                settings.setValue("login_hostname",jsonObject.value("as").toString());
-                                settings.sync();
-                            }
-
-                        }
-                    });
-                }
+                    if (reply2->error() == QNetworkReply::NoError)
+                        save(QJsonDocument::fromJson(reply2->readAll()).object());
+                });
             });
         }
         if(info.size() >= 5)
