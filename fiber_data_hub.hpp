@@ -57,7 +57,7 @@ struct download_queue
     struct item
     {
         QString group,key,url,file_name;
-        float progress = 0.0f; // downloaded fraction, -1 for a failed file
+        float progress = 0.0f; // downloaded fraction, -1 for a failed file, 0 for a canceled one
         bool done = false;
         int retry = 0;
         QSharedPointer<QNetworkReply> reply; // null while queued
@@ -117,7 +117,7 @@ struct download_queue
                 if(!show_count)
                     continue;
                 auto total = std::count_if(items.begin(),items.end(),[&](const auto& each){return each.key == row_key;});
-                auto done = std::count_if(items.begin(),items.end(),[&](const auto& each){return each.key == row_key && each.done;});
+                auto done = std::count_if(items.begin(),items.end(),[&](const auto& each){return each.key == row_key && each.done && each.progress != 0.0f;});
                 table->item(row,bar_column)->setText(total ? QString("%1/%2").arg(done).arg(total) : QString());
             }
     }
@@ -146,7 +146,9 @@ struct download_queue
         for(auto each : std::vector<item>(items)) // aborting calls back into items
             if(each.group == group && each.reply)
                 each.reply->abort();
-        items.erase(std::remove_if(items.begin(),items.end(),[&](const auto& each){return each.group == group && !each.done;}),items.end());
+        for(auto& each : items) // canceled files stay, so the total count stays and the bar shows what finished
+            if(each.group == group && !each.done)
+                each.done = true,each.progress = 0.0f;
         if(std::all_of(items.begin(),items.end(),[](const auto& each){return each.done;}))
             running = false,error.clear();
         on_progress(QString());
