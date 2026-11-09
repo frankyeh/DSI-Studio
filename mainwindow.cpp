@@ -372,7 +372,11 @@ void MainWindow::login(void)
                         if (data.contains("title"))
                             setWindowTitle(windowTitle().remove("(Offline)") + " " + data["title"].toString());
                         if (data.contains("token"))
+                        {
                             access_token = data["token"].toString();
+                            if(fiber_data_hub) // the hub opened before the token arrived
+                                fiber_data_hub->list_restricted_repos();
+                        }
                         if (data.contains("notice"))
                             QMessageBox::critical(this,"Notice",data["notice"].toString());
                     }
