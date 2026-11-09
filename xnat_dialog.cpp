@@ -72,7 +72,6 @@ void xnat_facade::get_html(std::string url,std::string auth)
 {
     if(cur_response && cur_response->isRunning())
         cur_response->abort();
-    download_prog = std::make_shared<tipl::progress>("downloading ",url.c_str());
     this->auth = auth;
     error_msg.clear();
     cur_response = get(url);
@@ -86,7 +85,6 @@ void xnat_facade::get_scans_data(std::string site,std::string auth,std::vector<s
         site.pop_back();
     get_html(site + "/REST/experiments/" + experiments[0].first + "/scans/" + filter + "/files",auth);
     QObject::connect(cur_response, &QNetworkReply::finished,[=]{
-        download_prog.reset();
         if(!good())
         {
             downloads.error = QString::fromStdString(error_msg);
@@ -109,6 +107,7 @@ void xnat_facade::get_info(std::string site,std::string auth,std::string path)
 {
     if(site.back() == '/')
         site.pop_back();
+    download_prog = std::make_shared<tipl::progress>("downloading ",(site + path).c_str());
     get_html(site + path,auth);
     QObject::connect(cur_response, &QNetworkReply::finished,
     [this]{
@@ -141,7 +140,7 @@ xnat_dialog::xnat_dialog(QWidget *parent) :
         ui->sub_dir->addItem(QString("/{%1}").arg(experiment_header[i]));
     ui->sub_dir->setCurrentIndex(settings.value("xnat_sub_dir",3).toInt());
 
-    xnat_connection.downloads.on_progress = [this](const QString& id){xnat_connection.downloads.paint(ui->experiment_list,4/*ID*/,2/*label*/,id);};
+    xnat_connection.downloads.on_progress = [this](const QString& id){xnat_connection.downloads.paint(ui->experiment_list,4/*ID*/,5/*download*/,id,true);};
     xnat_connection.downloads.on_change = [this](void){on_experiment_list_itemSelectionChanged();};
     xnat_connection.downloads.on_finished = [this](const QString& error)
     {
@@ -232,8 +231,8 @@ void xnat_dialog::on_project_list_currentRowChanged(int)
 
     if(!ui->experiment_list->columnCount())
     {
-        ui->experiment_list->setColumnCount(experiment_header.size());
-        ui->experiment_list->setHorizontalHeaderLabels(experiment_header);
+        ui->experiment_list->setColumnCount(experiment_header.size()+1);
+        ui->experiment_list->setHorizontalHeaderLabels(experiment_header + QStringList("download")); // files finished/total
         for(int index = 0;index < experiment_header.size();++index)
             ui->experiment_list->setColumnWidth(index,header_width[index]);
     }
@@ -249,6 +248,7 @@ void xnat_dialog::on_project_list_currentRowChanged(int)
         ui->experiment_list->setRowCount(row_count);
         for(size_t i = 0;i < header_seq.size();++i)
             ui->experiment_list->setItem(row_count-1,int(i),new QTableWidgetItem(data[header_seq[i]]));
+        ui->experiment_list->setItem(row_count-1,int(header_seq.size()),new QTableWidgetItem);
     }
     xnat_connection.downloads.on_progress(QString());
 
