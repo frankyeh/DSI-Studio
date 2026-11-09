@@ -30,6 +30,8 @@
 #include "connectometry/group_connectometry.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 
+extern QString access_token; // github token received at registration
+
 FiberDataHub::FiberDataHub(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::FiberDataHub)
 {
@@ -162,6 +164,20 @@ bool FiberDataHub::initialize()
 
             ui->github_note->setMarkdown(md);
             on_github_repo_currentIndexChanged(0);
+        }
+
+        // the registration token can also list the repositories under data-restricted
+        if(!access_token.isEmpty())
+        {
+            auto reply = main_window.get(QUrl("https://api.github.com/orgs/data-restricted/repos?type=all&per_page=100"));
+            connect(reply.get(),&QNetworkReply::finished,this,[this,reply]
+            {
+                if(reply->error() != QNetworkReply::NoError)
+                    return void(tipl::warning() << "cannot list data-restricted repositories: " << reply->errorString().toStdString());
+                for(const auto& each : QJsonDocument::fromJson(reply->readAll()).array())
+                    if(auto repo = each.toObject().value("full_name").toString();ui->github_repo->findData(repo) < 0)
+                        ui->github_repo->addItem(repo,repo); // the name contains "restricted", so its files are fetched with the token
+            });
         }
         return true;
     }
