@@ -215,6 +215,7 @@ public:
     ~FiberDataHub();
     std::string error_msg;
     bool command(const std::vector<std::string>& cmd);
+    void list_restricted_repos(void);
 
 private slots:
     void on_load_tags_clicked();
