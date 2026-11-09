@@ -106,12 +106,20 @@ struct download_queue
             gradient.setColorAt(std::min(x+0.001f,1.0f),Qt::transparent);
         return gradient;
     }
-    // paints the bar column of every row whose key column matches key (all rows for an empty key)
-    void paint(QTableWidget* table,int key_column,int bar_column,const QString& key) const
+    // paints the bar column of every row whose key column matches key (all rows for an empty key),
+    // writing "finished/total" files into it if show_count
+    void paint(QTableWidget* table,int key_column,int bar_column,const QString& key,bool show_count = false) const
     {
         for(int row = 0;row < table->rowCount();++row)
             if(auto row_key = table->item(row,key_column)->text();key.isEmpty() || row_key == key)
+            {
                 table->item(row,bar_column)->setBackground(brush(row_key));
+                if(!show_count)
+                    continue;
+                auto total = std::count_if(items.begin(),items.end(),[&](const auto& each){return each.key == row_key;});
+                auto done = std::count_if(items.begin(),items.end(),[&](const auto& each){return each.key == row_key && each.done;});
+                table->item(row,bar_column)->setText(total ? QString("%1/%2").arg(done).arg(total) : QString());
+            }
     }
     void add(const QString& group,const QString& url,const QString& file_name,bool overwrite = false,QString key = QString())
     {
