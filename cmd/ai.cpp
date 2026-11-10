@@ -291,11 +291,14 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
                     status = ai_agent_status::SignInRequired;
                 else
                 {
-                    // a cached sign-in keeps the account's email beside its token; only the email is used
+                    // a signed-in account's email and coding data team sit beside its token in auth.json; only those two are used,
+                    // matched by name wherever they are nested
                     QFile auth(QDir::homePath()+"/.grok/auth.json");
-                    auto email = method == "cached_token" && auth.open(QIODevice::ReadOnly) ?
-                                 QJsonDocument::fromJson(auth.readAll()).object()["email"].toString() : QString();
-                    info = method == "xai.api_key" ? QString("API key") : email.isEmpty() ? QString("Signed in") : email;
+                    auto text = method != "xai.api_key" && auth.open(QIODevice::ReadOnly) ? QString::fromUtf8(auth.readAll()) : QString();
+                    auto field = [&](const QString& name){return QRegularExpression("\""+name+"\"\\s*:\\s*\"([^\"]+)\"").match(text).captured(1);};
+                    auto email = field("email"),team = field("coding_data_team");
+                    info = method == "xai.api_key" ? QString("API key") : email.isEmpty() ? QString("Signed in") :
+                           team.isEmpty() ? email : email+" · "+team.left(1).toUpper()+team.mid(1);
                     status = ai_agent_status::Ready;
                 }
             }
