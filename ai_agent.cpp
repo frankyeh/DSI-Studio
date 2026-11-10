@@ -689,7 +689,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
-        button->setText("⋯");
+        button->setText("⋮");
         button->setToolTip("Project actions");
         button->setFixedSize(28,28);
 
