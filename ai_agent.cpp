@@ -1553,8 +1553,10 @@ void AIAgent::on_ai_quick_settings_clicked()
     // one row per agent: name and colored status on the left, a single action button on the right
     QHash<QString,QPair<QLabel*,QPushButton*> > agent_rows;
     QHash<QString,QPair<QString,QString> > usage; // the usage line and its tooltip, once queried
-    auto refresh_agent_row = [this,&usage](const QString& provider,QLabel* label,QPushButton* button)
+    auto refresh_agent_row = [this,&usage,&agent_rows](const QString& provider)
     {
+        auto [label,button] = agent_rows[provider];
+        auto [line,tip] = usage.value(provider);
         const auto& entry = agent_entries[provider];
         QString color = "#9aa0a6",text = "Not installed",action = "Install";
         switch(entry.status)
@@ -1583,11 +1585,10 @@ void AIAgent::on_ai_quick_settings_clicked()
             action = "Check Status";
             break;
         }
-        auto it = usage.find(provider);
         label->setText("<b>"+provider+"</b><br><span style='color:"+color+";'>&#9679;</span> "
                        "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>"+
-                       (it == usage.end() ? QString() : "<br><span style='color:#5f6368;'>"+it->first.toHtmlEscaped()+"</span>"));
-        label->setToolTip(it == usage.end() ? QString() : it->second);
+                       (line.isEmpty() ? QString() : "<br><span style='color:#5f6368;'>"+line.toHtmlEscaped()+"</span>"));
+        label->setToolTip(tip);
         button->setText(action);
         button->setEnabled(entry.status != ai_agent_status::Checking);
     };
@@ -1614,16 +1615,16 @@ void AIAgent::on_ai_quick_settings_clicked()
         connect(worker,&QThread::finished,&dialog,[&,provider,result]
         {
             usage[provider] = result->first.isEmpty() ? QPair<QString,QString>{"Usage unavailable",{}} : *result;
-            refresh_agent_row(provider,agent_rows[provider].first,agent_rows[provider].second);
+            refresh_agent_row(provider);
         });
         worker->start();
     };
     for(const auto& provider : local_agents)
     {
-        auto [label,button] = agent_rows[provider] = add_row();
+        agent_rows[provider] = add_row();
         query_usage(provider);
-        refresh_agent_row(provider,label,button);
-        connect(button,&QPushButton::clicked,&dialog,[&,provider]
+        refresh_agent_row(provider);
+        connect(agent_rows[provider].second,&QPushButton::clicked,&dialog,[&,provider]
         {
             auto status = agent_entries[provider].status;
             if(status == ai_agent_status::NotInstalled)
@@ -1666,9 +1667,10 @@ void AIAgent::on_ai_quick_settings_clicked()
     connect(this,&AIAgent::agent_status_changed,&dialog,
             [&,refresh_agent_row,query_usage](const QString& provider)
     {
-        query_usage(provider); // e.g. after signing in
-        if(auto it = agent_rows.find(provider);it != agent_rows.end())
-            refresh_agent_row(provider,it->first,it->second);
+        usage.remove(provider); // e.g. signed in again, possibly to another account
+        query_usage(provider);
+        if(agent_rows.contains(provider))
+            refresh_agent_row(provider);
     });
 
     auto* ollama_layout = add_card("Ollama connection");
