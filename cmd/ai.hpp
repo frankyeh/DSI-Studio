@@ -92,6 +92,7 @@ void start_process(QProcess& process,const QString& executable,QStringList args)
 void kill_process_tree(QProcess* process);
 QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {});
 QByteArray muse_initialize();
+QByteArray codex_initialize();
 QByteArray grok_initialize();
 QString muse_uuid_v7(); // a time-ordered UUID, as Muse expects for session and command ids
 QByteArray muse_command(const QString& id,const QString& method,QJsonObject params);
