@@ -525,6 +525,10 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
             reply["error"] = error;
         return QJsonDocument(reply).toJson(QJsonDocument::Compact);
     };
+    // a request arriving in another request's nested event loop (e.g. its approval dialog) runs nothing and writes
+    // no history or status, so it cannot change the outer request's directory or capture; the agent retries
+    if(dispatching_info)
+        return void(reply = status_reply("busy"));
     QJsonParseError parse_error;
     auto doc = QJsonDocument::fromJson(data,&parse_error);
     auto request = doc.object();
