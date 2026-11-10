@@ -82,7 +82,7 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse) // p
         return;
     // pulse advances the animation, otherwise it resets; the caller decides when (ai_info::is_running())
     int phase = dot->property("pulse").toInt();
-    phase = pulse ? (phase+1)%24 : 0;
+    phase = pulse ? (phase+1)%8 : 0; // a 4 s cycle at the 500 ms status timer
     dot->setProperty("pulse",phase);
 
     QColor color;
@@ -94,8 +94,8 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse) // p
     case session_status::Completed:    color = "#9aa0a6"; break;
     case session_status::Failed:       color = "#ea4335"; break;
     }
-    int intensity = phase <= 12 ? phase : 24-phase;
-    color = color.lighter(100+intensity*3);
+    int intensity = phase <= 4 ? phase : 8-phase;
+    color = color.lighter(100+intensity*20); // up to 180%: clearly visible, e.g. Web's green
     dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
     dot->setToolTip(session_status_text(status));
 }
@@ -520,7 +520,7 @@ void AIAgent::set_ai_status(const QString& session,session_status status,QString
 void AIAgent::update_ai_status(const ai_info& info,bool pulse)
 {
     bool running = info.is_running() || web_connected(info); // a polling Web chat pulses green
-    if(info.project_items)
+    if(info.project_items && (pulse || !running)) // a running dot is animated by the status timer; other updates (e.g. streamed output) would reset it
     {
         auto* row = ui->ai_project_list->itemWidget(info.project_items);
         update_status_dot(row ? row->findChild<QLabel*>("ai_project_status_dot") : nullptr,
