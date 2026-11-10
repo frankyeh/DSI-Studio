@@ -360,7 +360,7 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
     }
     return ai_agent_status::Ready;
 }
-QPair<QString,QString> agent_usage(const QString& provider,const QString& executable)
+QPair<int,QString> agent_usage(const QString& provider,const QString& executable)
 {
     QProcess process;
     process.setProcessEnvironment(agent_environment(provider)); // e.g. no inherited ANTHROPIC_API_KEY shadowing Claude's subscription
@@ -368,7 +368,7 @@ QPair<QString,QString> agent_usage(const QString& provider,const QString& execut
                                      provider == "Muse" ? QStringList{"usage","--json"} :
                                      QStringList{"-p","/usage","--output-format","json"}); // Claude and Antigravity run /usage locally
     if(!process.waitForStarted(3000))
-        return kill_process_tree(&process),QPair<QString,QString>();
+        return kill_process_tree(&process),QPair<int,QString>{-1,"Usage unavailable"};
     QJsonObject reply;
     if(provider == "Codex")
     {
@@ -386,17 +386,18 @@ QPair<QString,QString> agent_usage(const QString& provider,const QString& execut
         reply = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object();
     }
     kill_process_tree(&process);
-    if(provider == "Muse") // allowance null: no plan allowance
-        return {reply["allowance"].isNull() ? "Usage: no plan allowance" : "Usage: plan allowance",
-                QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented)).trimmed()};
+    if(provider == "Muse" && reply.contains("allowance")) // allowance null: no plan allowance
+        return {-1,reply["allowance"].isNull() ? QString("No plan allowance") :
+                    QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented)).trimmed()};
 
-    // every agent's quota windows as "label N%", with "label: N% used, detail" lines in the tooltip
-    QStringList text,tip;
+    // every quota window as a "label: N% used, detail" tooltip line; the first one fills the bar
+    int first = -1;
+    QStringList tip;
     auto add = [&](const QString& label,double used,const QString& detail)
     {
-        auto percent = QString::number(qRound(used))+"%";
-        text << label+" "+percent;
-        tip << label+": "+percent+" used"+(detail.isEmpty() ? QString() : ", "+detail);
+        if(first < 0)
+            first = qRound(used);
+        tip << label+": "+QString::number(qRound(used))+"% used"+(detail.isEmpty() ? QString() : ", "+detail);
     };
     auto resets = [](const QDateTime& time){return time.isValid() ? "resets "+QLocale().toString(time.toLocalTime(),QLocale::ShortFormat) : QString();};
     if(provider == "Codex") // primary: the short window (e.g. 5 h), secondary: the weekly one
@@ -417,9 +418,7 @@ QPair<QString,QString> agent_usage(const QString& provider,const QString& execut
         for(const auto& line : reply["result"].toString().split('\n'))
             if(auto match = QRegularExpression("^\\s*(?:Current )?(.+?):\\s*(\\d+)% used\\s*(?:·\\s*(.*))?$").match(line);match.hasMatch())
                 add(match.captured(1),match.captured(2).toDouble(),match.captured(3).trimmed());
-    if(text.isEmpty())
-        return {};
-    return {"Usage: "+text.join(" · "),tip.join("\n")};
+    return {first,tip.isEmpty() ? QString("Usage unavailable") : tip.join("\n")};
 }
 
 QList<ai_info*> load_ai_projects()

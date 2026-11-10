@@ -75,8 +75,10 @@ QToolButton#ai_project_menu_button::menu-indicator {
 }
 QLabel#ai_status,
 QLabel#ai_work_dir_label,
-QPushButton#ai_send_message,
-QPushButton#ai_new_chat {
+QWidget#tab_8 QPushButton#ai_send_message,
+QWidget#tab_8 QPushButton#ai_new_chat,
+QWidget#tab_8 QPushButton#ai_browse_work_dir,
+QWidget#tab_8 QPushButton#ai_model {
     color: #3c4043;
     font-weight: 600;
     background-color: #f1f3f4;
@@ -84,13 +86,24 @@ QPushButton#ai_new_chat {
     border-radius: 14px;
     padding: 4px 12px;
 }
-QPushButton#ai_send_message:hover,
-QPushButton#ai_new_chat:hover {
+QWidget#tab_8 QPushButton#ai_send_message:hover,
+QWidget#tab_8 QPushButton#ai_new_chat:hover,
+QWidget#tab_8 QPushButton#ai_browse_work_dir:hover,
+QWidget#tab_8 QPushButton#ai_model:hover {
     background-color: #e8eaed;
 }
-QPushButton#ai_send_message:pressed,
-QPushButton#ai_new_chat:pressed {
+QWidget#tab_8 QPushButton#ai_send_message:pressed,
+QWidget#tab_8 QPushButton#ai_new_chat:pressed,
+QWidget#tab_8 QPushButton#ai_browse_work_dir:pressed,
+QWidget#tab_8 QPushButton#ai_model:pressed {
     background-color: #dadce0;
+}
+QWidget#tab_8 QPushButton#ai_send_message:disabled,
+QWidget#tab_8 QPushButton#ai_new_chat:disabled,
+QWidget#tab_8 QPushButton#ai_browse_work_dir:disabled,
+QWidget#tab_8 QPushButton#ai_model:disabled {
+    color: #9aa0a6;
+    background-color: #f1f1f2;
 }
 QWidget#tab_8 QPushButton#ai_quick_settings {
     color: #3c4043;

@@ -30,10 +30,13 @@
 #include <QNetworkProxy>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QPainter>
+#include <QPixmap>
 #include <QPointer>
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QRandomGenerator>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QScrollBar>
@@ -120,6 +123,10 @@ static QString ai_dialog_style()
         "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
         "QPushButton:pressed{background-color:#dddddf;}"
         "QPushButton:disabled{color:#9aa0a6;background-color:#f1f1f2;border-color:#e4e4e6;}"
+        "QPushButton#ai_agent_button{color:#3c4043;font-weight:600;background-color:#f1f3f4;border:none;border-radius:14px;padding:6px 14px 6px 10px;text-align:left;}"
+        "QPushButton#ai_agent_button:hover{background-color:#e8eaed;}"
+        "QPushButton#ai_agent_button:pressed{background-color:#dadce0;}"
+        "QPushButton#ai_agent_button:disabled{color:#9aa0a6;background-color:#f1f1f2;}"
         "QPushButton#ai_primary_button{background-color:#1a73e8;color:#ffffff;border:none;font-weight:600;}"
         "QPushButton#ai_primary_button:hover{background-color:#1765cc;}"
         "QPushButton#ai_primary_button:pressed{background-color:#175dc1;}"
@@ -1548,83 +1555,115 @@ void AIAgent::on_ai_quick_settings_clicked()
         return layout;
     };
 
-    auto* agent_layout = add_card("Agents");
+    auto* agent_layout = add_card({});
 
-    // one row per agent: name and colored status on the left, a single action button on the right
-    QHash<QString,QPair<QLabel*,QPushButton*> > agent_rows;
-    QHash<QString,QPair<QString,QString> > usage; // the usage line and its tooltip, once queried
-    auto refresh_agent_row = [this,&usage,&agent_rows](const QString& provider)
+    // one row per agent: a round button "<agent> <status>" behind a colored dot, the usage bar on the right
+    struct agent_row{QPushButton* button;QProgressBar* bar;QLabel* percent;};
+    auto set_agent_button = [](QPushButton* button,const QString& color,const QString& text,const QString& action)
     {
-        auto [label,button] = agent_rows[provider];
-        auto [line,tip] = usage.value(provider);
+        QPixmap dot(16,16);
+        dot.fill(Qt::transparent);
+        QPainter painter(&dot);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(color));
+        painter.drawEllipse(4,4,8,8);
+        painter.end();
+        button->setIcon(QIcon(dot));
+        button->setText(text);
+        button->setToolTip(action);
+    };
+    QHash<QString,agent_row> agent_rows;
+    QHash<QString,QPair<int,QString> > usage; // the first window's used % (-1: none) and the tooltip, once queried
+    auto refresh_agent_row = [this,&usage,&agent_rows,set_agent_button](const QString& provider)
+    {
+        auto [button,bar,percent] = agent_rows[provider];
+        auto [used,tip] = usage.value(provider,{-1,provider == "Grok" ? "Usage not supported yet" : "Usage unavailable"});
         const auto& entry = agent_entries[provider];
-        QString color = "#9aa0a6",text = "Not installed",action = "Install";
+        QString color = "#9aa0a6",text = "· Install",action = "Install "+provider;
         switch(entry.status)
         {
         case ai_agent_status::NotInstalled:
             break;
         case ai_agent_status::Checking:
             color = "#4285f4";
-            text = "Checking...";
-            action = "Sign In";
+            text = "· Checking...";
+            action.clear();
             break;
         case ai_agent_status::SignInRequired:
             color = "#f9ab00";
-            text = "Not signed in";
-            action = "Sign In";
+            text = "· Sign in";
+            action = "Sign in";
             break;
         case ai_agent_status::Ready:
             color = "#34a853";
             text = entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info;
-            action = "Sign In Again"; // switch accounts or recover stale credentials
+            action = "Sign in again, e.g. to switch accounts or recover stale credentials";
             break;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
             color = "#ea4335";
-            text = "Status unavailable";
-            action = "Check Status";
+            text = "· Status unavailable";
+            action = "Check the status again";
             break;
         }
-        label->setText("<b>"+provider+"</b><br><span style='color:"+color+";'>&#9679;</span> "
-                       "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>"+
-                       (line.isEmpty() ? QString() : "<br><span style='color:#5f6368;'>"+line.toHtmlEscaped()+"</span>"));
-        label->setToolTip(tip);
-        button->setText(action);
+        set_agent_button(button,color,provider+" "+text,action);
+        // a slim rounded bar: blue, amber from 70%, red from 90%; grayed and empty without a percentage
+        bar->setEnabled(used >= 0);
+        bar->setValue(std::max(used,0));
+        bar->setStyleSheet(QString("QProgressBar{border:none;border-radius:3px;background:%1;}"
+                                   "QProgressBar::chunk{border-radius:3px;background:%2;}").arg(used >= 0 ? "#e8eaed" : "#f1f3f4",
+                                   used >= 90 ? "#ea4335" : used >= 70 ? "#f9ab00" : "#4285f4"));
+        percent->setText(used >= 0 ? QString::number(used)+"%" : QString());
+        bar->parentWidget()->setToolTip(tip);
         button->setEnabled(entry.status != ai_agent_status::Checking);
     };
-    auto add_row = [agent_layout]
+    auto add_row = [agent_layout](bool usage_bar)
     {
-        auto* label = new QLabel;
-        auto* button = new QPushButton;
-        button->setMinimumWidth(110);
-        auto* row = new QHBoxLayout;
-        row->addWidget(label,1);
-        row->addWidget(button);
-        agent_layout->addLayout(row);
-        return QPair<QLabel*,QPushButton*>{label,button};
+        agent_row row{new QPushButton,nullptr,nullptr};
+        row.button->setObjectName("ai_agent_button");
+        auto* layout = new QHBoxLayout;
+        layout->addWidget(row.button);
+        layout->addStretch();
+        if(usage_bar) // the bar and its percentage share one tooltip
+        {
+            auto* usage_box = new QWidget;
+            auto* usage_layout = new QHBoxLayout(usage_box);
+            usage_layout->setContentsMargins(8,0,0,0);
+            usage_layout->setSpacing(6);
+            usage_layout->addWidget(row.bar = new QProgressBar);
+            usage_layout->addWidget(row.percent = new QLabel);
+            row.bar->setTextVisible(false);
+            row.bar->setFixedSize(96,6);
+            row.percent->setFixedWidth(30);
+            row.percent->setStyleSheet("color:#5f6368;font-size:11px;");
+            layout->addWidget(usage_box);
+        }
+        agent_layout->addLayout(layout);
+        return row;
     };
     // a Ready agent's plan usage, queried once off the GUI thread (Grok cannot report it on this route yet)
     auto query_usage = [&,this](const QString& provider)
     {
         if(provider == "Grok" || agent_entries[provider].status != ai_agent_status::Ready || usage.contains(provider))
             return;
-        usage[provider] = {"Checking usage...",{}};
-        auto result = QSharedPointer<QPair<QString,QString> >::create();
+        usage[provider] = {-1,"Checking usage..."};
+        auto result = QSharedPointer<QPair<int,QString> >::create();
         auto* worker = QThread::create([provider,executable = agent_entries[provider].executable,result]{*result = agent_usage(provider,executable);});
         connect(worker,&QThread::finished,worker,&QObject::deleteLater);
         connect(worker,&QThread::finished,&dialog,[&,provider,result]
         {
-            usage[provider] = result->first.isEmpty() ? QPair<QString,QString>{"Usage unavailable",{}} : *result;
+            usage[provider] = *result;
             refresh_agent_row(provider);
         });
         worker->start();
     };
     for(const auto& provider : local_agents)
     {
-        agent_rows[provider] = add_row();
+        agent_rows[provider] = add_row(true);
         query_usage(provider);
         refresh_agent_row(provider);
-        connect(agent_rows[provider].second,&QPushButton::clicked,&dialog,[&,provider]
+        connect(agent_rows[provider].button,&QPushButton::clicked,&dialog,[&,provider]
         {
             auto status = agent_entries[provider].status;
             if(status == ai_agent_status::NotInstalled)
@@ -1650,16 +1689,15 @@ void AIAgent::on_ai_quick_settings_clicked()
         });
     }
     // Web: the last row, signed in through Google like the local agents' own sign-in
-    auto [web_label,web_button] = add_row();
-    auto refresh_web_row = [this,web_label = web_label,web_button = web_button]
+    auto web_row = add_row(false);
+    auto refresh_web_row = [this,web_button = web_row.button,set_agent_button]
     {
         bool ready = !web.google_refresh_token.isEmpty();
-        web_label->setText(QString("<b>Web</b><br><span style='color:%1;'>&#9679;</span> "
-                                   "<span style='color:#5f6368;'>%2</span>").arg(ready ? "#34a853" : "#f9ab00",ready ? "Ready · Google Drive › DSI Studio AI" : "Not signed in · Google"));
-        web_button->setText(ready ? "Sign In Again" : "Sign In");
+        set_agent_button(web_button,ready ? "#34a853" : "#f9ab00",ready ? "Web Ready · Google Drive › DSI Studio AI" : "Web · Sign in",
+                         ready ? "Sign in to Google again, e.g. to switch accounts" : "Sign in to Google");
     };
     refresh_web_row();
-    connect(web_button,&QPushButton::clicked,&dialog,[this,refresh_web_row]
+    connect(web_row.button,&QPushButton::clicked,&dialog,[this,refresh_web_row]
     {
         sign_in_google();
         refresh_web_row();

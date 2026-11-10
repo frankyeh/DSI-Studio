@@ -86,7 +86,7 @@ enum class ai_agent_status
 extern const QStringList local_agents; // every local CLI agent, in settings order
 QString find_agent_executable(const QString& provider); // PATH first, then the provider's known install location; empty if not found
 ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info); // blocking; info: the credential description when Ready
-QPair<QString,QString> agent_usage(const QString& provider,const QString& executable); // blocking, no model turn; {"Usage: 5h 9% · week 6%", details}; empty if unavailable; not for Grok
+QPair<int,QString> agent_usage(const QString& provider,const QString& executable); // blocking, no model turn; {the first window's used %, or -1, details}; not for Grok
 QProcessEnvironment agent_environment(const QString& provider);
 void start_process(QProcess& process,const QString& executable,QStringList args);
 void kill_process_tree(QProcess* process);
