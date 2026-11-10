@@ -231,6 +231,19 @@ QString find_agent_executable(const QString& provider)
 #endif
     return QFileInfo::exists(fallback) ? fallback : QString();
 }
+// the reply to request id among a running probe's JSON lines, read until the deadline (ms since epoch); empty if none came
+static QJsonObject read_response(QProcess& process,const QString& id,qint64 deadline)
+{
+    while((process.state() != QProcess::NotRunning || process.canReadLine()) && QDateTime::currentMSecsSinceEpoch() < deadline)
+    {
+        if(!process.canReadLine())
+            process.waitForReadyRead(int(deadline-QDateTime::currentMSecsSinceEpoch()));
+        while(process.canReadLine())
+            if(auto msg = QJsonDocument::fromJson(process.readLine()).object();msg["id"].toString() == id)
+                return msg;
+    }
+    return QJsonObject();
+}
 ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
 {
     info.clear();
@@ -262,24 +275,11 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
     if(provider == "Grok" || provider == "Muse")
     {
         auto deadline = QDateTime::currentMSecsSinceEpoch()+(provider == "Grok" ? 10000 : 5000);
-        auto read_response = [&](const QString& id)
-        {
-            while((process.state() != QProcess::NotRunning || process.canReadLine()) &&
-                  QDateTime::currentMSecsSinceEpoch() < deadline)
-            {
-                if(!process.canReadLine())
-                    process.waitForReadyRead(int(deadline-QDateTime::currentMSecsSinceEpoch()));
-                while(process.canReadLine())
-                    if(auto msg = QJsonDocument::fromJson(process.readLine()).object();msg["id"].toString() == id)
-                        return msg;
-            }
-            return QJsonObject();
-        };
         auto status = ai_agent_status::Error;
         if(provider == "Grok") // ACP initialize reports the agent's own credential choice: _meta.defaultAuthMethodId, null when none is usable
         {
             process.write(grok_initialize());
-            if(auto reply = read_response("initialize");reply.contains("result"))
+            if(auto reply = read_response(process,"initialize",deadline);reply.contains("result"))
             {
                 auto method = reply["result"].toObject()["_meta"].toObject()["defaultAuthMethodId"].toString();
                 if(method.isEmpty())
@@ -294,11 +294,11 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
         else
         {
             process.write(muse_initialize());
-            if(read_response("initialize")["result"].toObject()["experimentalApi"].toBool())
+            if(read_response(process,"initialize",deadline)["result"].toObject()["experimentalApi"].toBool())
             {
                 process.write(jsonrpc({},"initialized"));
                 process.write(jsonrpc("account_read","account/read"));
-                if(auto account = read_response("account_read")["result"].toObject();!account.isEmpty())
+                if(auto account = read_response(process,"account_read",deadline)["result"].toObject();!account.isEmpty())
                 {
                     auto state = account["state"].toString();
                     bool credential_required = account["credentialRequired"].toBool();
@@ -359,6 +359,66 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
         info = api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
     }
     return ai_agent_status::Ready;
+}
+QPair<QString,QString> agent_usage(const QString& provider,const QString& executable)
+{
+    QProcess process;
+    process.setProcessEnvironment(agent_environment(provider)); // e.g. no inherited ANTHROPIC_API_KEY shadowing Claude's subscription
+    start_process(process,executable,provider == "Codex" ? QStringList{"app-server"} :
+                                     provider == "Muse" ? QStringList{"usage","--json"} :
+                                     QStringList{"-p","/usage","--output-format","json"}); // Claude and Antigravity run /usage locally
+    if(!process.waitForStarted(3000))
+        return kill_process_tree(&process),QPair<QString,QString>();
+    QJsonObject reply;
+    if(provider == "Codex")
+    {
+        process.write(json_line({{"id","initialize"},{"method","initialize"},
+            {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","DSI Studio"},{"version","1.0"}}}}}}));
+        process.write(json_line({{"method","initialized"}}));
+        process.write(json_line({{"id","rate_limits"},{"method","account/rateLimits/read"}}));
+        reply = read_response(process,"rate_limits",QDateTime::currentMSecsSinceEpoch()+10000)["result"].toObject();
+    }
+    else
+    {
+        process.closeWriteChannel();
+        process.waitForFinished(15000);
+        auto out = process.readAllStandardOutput(); // a status line can precede the JSON
+        reply = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object();
+    }
+    kill_process_tree(&process);
+
+    // every agent's quota windows as "label N%", with "label: N% used, detail" lines in the tooltip
+    QStringList text,tip;
+    auto add = [&](const QString& label,double used,const QString& detail)
+    {
+        text << label+" "+QString::number(qRound(used))+"%";
+        tip << label+": "+QString::number(qRound(used))+"% used"+(detail.isEmpty() ? QString() : ", "+detail);
+    };
+    auto resets = [](const QDateTime& time){return time.isValid() ? "resets "+QLocale().toString(time.toLocalTime(),QLocale::ShortFormat) : QString();};
+    if(provider == "Codex") // primary: the short window (e.g. 5 h), secondary: the weekly one
+        for(auto window : {"primary","secondary"})
+            if(auto limit = reply["rateLimits"].toObject()[window].toObject();!limit.isEmpty())
+            {
+                auto minutes = limit["windowDurationMins"].toInt();
+                add(minutes >= 10080 ? QString("week") : QString::number(minutes/60)+"h",limit["usedPercent"].toDouble(),
+                    resets(QDateTime::fromSecsSinceEpoch(limit["resetsAt"].toInteger())));
+            }
+    if(provider == "Antigravity") // remaining fractions per model group and window
+        for(const auto& group : reply["command"].toObject()["data"].toObject()["groups"].toArray())
+            for(const auto& bucket : group.toObject()["buckets"].toArray())
+                add(group.toObject()["name"].toString()+" "+bucket.toObject()["window"].toString(),
+                    100.0*(1.0-bucket.toObject()["remaining_fraction"].toDouble()),
+                    resets(QDateTime::fromString(bucket.toObject()["reset_time"].toString(),Qt::ISODate)));
+    if(provider == "Claude") // text lines such as "Current session: 87% used · resets Nov 10, 2pm (America/New_York)"
+        for(const auto& line : reply["result"].toString().split('\n'))
+            if(auto match = QRegularExpression("^\\s*(?:Current )?(.+?):\\s*(\\d+)% used\\s*(?:·\\s*(.*))?$").match(line);match.hasMatch())
+                add(match.captured(1),match.captured(2).toDouble(),match.captured(3).trimmed());
+    if(provider == "Muse" && reply.contains("allowance")) // allowance null: no plan allowance
+        return {reply["allowance"].isNull() ? "Usage: no plan allowance" : "Usage: plan allowance",
+                QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented)).trimmed()};
+    if(text.isEmpty())
+        return {};
+    return {"Usage: "+text.join(" · "),tip.join("\n")};
 }
 
 QList<ai_info*> load_ai_projects()
