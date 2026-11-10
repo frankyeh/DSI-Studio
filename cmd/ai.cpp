@@ -585,12 +585,14 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
     {
         hooks.shown(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
     };
-    // the chat's thinking level if its model supports it, so never "default" or one for an Ollama model (its server takes none)
+    // the chat's thinking level if its model supports it, never one for an Ollama model (its server takes none)
     auto effort = [](const ai_info& info)
     {
+        auto levels = agent_efforts(info.provider,info.model_settings["model"].toString().trimmed());
         auto level = info.model_settings.value("effort").toString();
-        return info.model_settings["info"].toObject().contains("provider") ||
-               !agent_efforts(info.provider,info.model_settings["model"].toString().trimmed()).contains(level) ? QString() : level;
+        if(!levels.contains(level)) // none chosen yet, or one this model lacks: medium, as the thinking drop-down shows
+            level = "medium";
+        return levels.contains(level) && !info.model_settings["info"].toObject().contains("provider") ? level : QString();
     };
     auto level = effort(info); // at launch; Codex and Muse send it each turn
     // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)
