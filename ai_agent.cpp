@@ -1416,9 +1416,7 @@ void AIAgent::on_ai_new_chat_clicked()
     layout.addRow("Agent:",&agent);
 
     QWidget local; // declared before its would-be children below, so it is destroyed after them
-    QComboBox model,effort; // not editable -- same as the Agent combo above, which never had the popup-visibility problem an editable combo did
-    model.setMaximumHeight(model.sizeHint().height());
-    effort.setMaximumHeight(model.maximumHeight()); // the thinking level, right of the model at the same height
+    QComboBox model,effort; // not editable, like the Agent combo above; effort: the thinking level, right of the model
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
     auto* model_row = new QHBoxLayout;
