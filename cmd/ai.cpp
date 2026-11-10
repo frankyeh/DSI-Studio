@@ -291,7 +291,7 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
                     status = ai_agent_status::SignInRequired;
                 else
                 {
-                    // a cached sign-in keeps the account's email beside the token (which is not read)
+                    // a cached sign-in keeps the account's email beside its token; only the email is used
                     QFile auth(QDir::homePath()+"/.grok/auth.json");
                     auto email = method == "cached_token" && auth.open(QIODevice::ReadOnly) ?
                                  QJsonDocument::fromJson(auth.readAll()).object()["email"].toString() : QString();
@@ -371,7 +371,7 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
     }
     return ai_agent_status::Ready;
 }
-QPair<int,QString> agent_usage(const QString& provider,const QString& executable)
+QPair<int,QString> agent_usage(const QString& provider,const QString& executable,QString& plan)
 {
     QProcess process;
     process.setProcessEnvironment(agent_environment(provider)); // e.g. no inherited ANTHROPIC_API_KEY shadowing Claude's subscription
@@ -423,11 +423,14 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
                 add(group.toObject()["name"].toString()+" "+bucket.toObject()["window"].toString(),
                     100.0*(1.0-bucket.toObject()["remaining_fraction"].toDouble()),
                     resets(QDateTime::fromString(bucket.toObject()["reset_time"].toString(),Qt::ISODate)));
-    if(provider == "Muse") // allowance: the short window and the weekly one, resets in ms
+    if(provider == "Muse") // allowance: the tier (e.g. "Muse Code Everyday Usage"), the short window and the weekly one, resets in ms
+    {
+        plan = reply["allowance"].toObject()["tier"].toString().remove("Muse Code ");
         for(auto window : {"window","weekly"})
             if(auto limit = reply["allowance"].toObject()[window].toObject();!limit.isEmpty())
                 add(window,limit["usedPercent"].toDouble(),
                     resets(limit.contains("resetsAtMs") ? QDateTime::fromMSecsSinceEpoch(limit["resetsAtMs"].toInteger()) : QDateTime()));
+    }
     if(provider == "Claude") // text lines such as "Current session: 87% used · resets Nov 10, 2pm (America/New_York)"
         for(const auto& line : reply["result"].toString().split('\n'))
             if(auto match = QRegularExpression("^\\s*(?:Current )?(.+?):\\s*(\\d+)% used\\s*(?:·\\s*(.*))?$").match(line);match.hasMatch())
