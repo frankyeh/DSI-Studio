@@ -1295,7 +1295,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     }
                 }
                 else
-                    output = "target window not found, terminated by user? Use set_window to select a window first.";
+                    error = "target window not found, terminated by user? Use set_window to select a window first.";
             }
             else if(command_name == "set_title")
             {
@@ -1339,8 +1339,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     info.current_window = param.isEmpty() ? "main" : param;
                     output = "current window: "+info.current_window;
                 }
-                else
-                    output = "window \""+param+"\" not found, terminated by user? current window remains: "+info.current_window;
+                else // fail closed: the rest of the batch must not run on the previous window
+                    error = "window \""+param+"\" not found, terminated by user? current window remains: "+info.current_window;
             }
             else if(command_name == "list_window")
             {
@@ -1401,12 +1401,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
-                if(!resolve_target(error))
-                {
-                    output = error;
-                    error.clear();
-                }
-                else if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
+                if(resolve_target(error) && // a busy or missing target is an error, so the batch stops
+                   !command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
                     error = QString::fromStdString(error_msg);
             }
             else
