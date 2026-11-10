@@ -192,6 +192,11 @@ QByteArray muse_command(const QString& id,const QString& method,QJsonObject para
     params["commandId"] = id;
     return jsonrpc(id,method,params);
 }
+QByteArray codex_initialize() // the app-server handshake of the status probe, usage and chat; each then sends "initialized"
+{
+    return json_line({{"id","initialize"},{"method","initialize"},
+        {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","DSI Studio"},{"version","1.0"}}}}}});
+}
 QByteArray grok_initialize()
 {
     return jsonrpc("initialize","initialize",{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}});
@@ -257,7 +262,7 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
     start_process(process,executable,provider == "Grok" ?        QStringList{"agent","stdio"} :
                                      provider == "Antigravity" ? QStringList{"--output-format","json","models"} :
                                      provider == "Muse" ?        QStringList{"serve"} :
-                                     provider == "Codex" ?       QStringList{"login","status"} : QStringList{"auth","status"});
+                                     provider == "Codex" ?       QStringList{"app-server"} : QStringList{"auth","status"});
     if(!process.waitForStarted(3000))
         return kill_process_tree(&process),ai_agent_status::Error;
 
@@ -272,9 +277,9 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
         return ai_agent_status::Ready;
     }
 
-    if(provider == "Grok" || provider == "Muse")
+    if(provider == "Grok" || provider == "Muse" || provider == "Codex")
     {
-        auto deadline = QDateTime::currentMSecsSinceEpoch()+(provider == "Grok" ? 10000 : 5000);
+        auto deadline = QDateTime::currentMSecsSinceEpoch()+(provider == "Muse" ? 5000 : 10000);
         auto status = ai_agent_status::Error;
         if(provider == "Grok") // ACP initialize reports the agent's own credential choice: _meta.defaultAuthMethodId, null when none is usable
         {
@@ -289,6 +294,20 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
                     info = method == "xai.api_key" ? "API key" : "Signed in";
                     status = ai_agent_status::Ready;
                 }
+            }
+        }
+        else if(provider == "Codex") // account/read: {"account":{"type":"chatgpt","email":...,"planType":"plus"}}, a null account when signed out
+        {
+            process.write(codex_initialize());
+            process.write(json_line({{"method","initialized"}}));
+            process.write(json_line({{"id","account_read"},{"method","account/read"}}));
+            if(auto reply = read_response(process,"account_read",deadline);reply.contains("result"))
+            {
+                auto account = reply["result"].toObject()["account"].toObject();
+                auto email = account["email"].toString(),plan = account["planType"].toString();
+                info = account["type"].toString() == "apiKey" ? QString("API key") : email.isEmpty() ? QString("Signed in") :
+                       plan.isEmpty() ? email : email+" · "+plan.left(1).toUpper()+plan.mid(1);
+                status = account.isEmpty() ? ai_agent_status::SignInRequired : ai_agent_status::Ready;
             }
         }
         else
@@ -327,19 +346,6 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
         return kill_process_tree(&process),ai_agent_status::Error; // the stack QProcess destructor would kill only the .cmd wrapper
     if(process.exitStatus() != QProcess::NormalExit)
         return ai_agent_status::Error;
-    if(provider == "Codex")
-    {
-        // codex login status has no --json/structured output (email/plan aren't exposed), only this
-        // free-text auth-method line -- see https://github.com/openai/codex/issues/19866 -- on stdout or stderr depending on version
-        auto output = QString::fromUtf8(process.readAllStandardOutput()+process.readAllStandardError());
-        if(process.exitCode() != 0)
-            return output.contains("Not logged in",Qt::CaseInsensitive) ?
-                       ai_agent_status::SignInRequired : ai_agent_status::Error;
-        info = output.contains("API key",Qt::CaseInsensitive) ? "API key" :
-               output.contains("ChatGPT",Qt::CaseInsensitive) ? "ChatGPT" :
-               output.contains("Agent Identity",Qt::CaseInsensitive) ? "Agent Identity" : "Signed in";
-        return ai_agent_status::Ready;
-    }
     if(process.exitCode() != 0)
         return ai_agent_status::Error;
     auto object = QJsonDocument::fromJson(process.readAllStandardOutput()).object(); // unparsable or not an object: empty
@@ -372,8 +378,7 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
     QJsonObject reply;
     if(provider == "Codex")
     {
-        process.write(json_line({{"id","initialize"},{"method","initialize"},
-            {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","DSI Studio"},{"version","1.0"}}}}}}));
+        process.write(codex_initialize());
         process.write(json_line({{"method","initialized"}}));
         process.write(json_line({{"id","rate_limits"},{"method","account/rateLimits/read"}}));
         reply = read_response(process,"rate_limits",QDateTime::currentMSecsSinceEpoch()+10000)["result"].toObject();
@@ -918,8 +923,7 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
             hooks.shown(*info,{});
         }
         if(provider == "Codex")
-            process->write(json_line({{"id","initialize"},{"method","initialize"},
-                {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","DSI Studio"},{"version","1.0"}}}}}}));
+            process->write(codex_initialize());
         else if(provider == "Muse")
             process->write(muse_initialize());
         else if(provider == "Grok")
