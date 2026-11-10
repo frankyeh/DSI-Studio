@@ -1,3 +1,4 @@
+#include <QAbstractItemView>
 #include <QAction>
 #include <QApplication>
 #include <QCheckBox>
@@ -131,13 +132,13 @@ static QString model_combo_key(const QComboBox& model) // strips the " (Ollama@h
     return key == "default" ? QString() : key;
 }
 
-// populates effort with "default"+the thinking levels of the agent's model, selecting selected; shown only if there are levels
+// populates effort with the thinking levels of the agent's model, selecting selected (medium if not a level); shown only if there are levels
 static void set_effort_selector(QComboBox& effort,const QString& provider,const QString& model,const QString& selected)
 {
     auto efforts = agent_efforts(provider,model);
     effort.clear();
-    effort.addItems(QStringList("default")+efforts);
-    effort.setCurrentText(selected);
+    effort.addItems(efforts);
+    effort.setCurrentText(efforts.contains(selected) ? selected : "medium");
     effort.setVisible(!efforts.isEmpty());
 }
 
@@ -177,6 +178,8 @@ static void set_model_selector(QComboBox& model,const QJsonObject& profiles,
         selected_index = model.count()-1;
     }
     model.setCurrentIndex(std::max(0,selected_index));
+    // the popup lists full names instead of eliding them to the combo's width
+    model.view()->setMinimumWidth(model.view()->sizeHintForColumn(0)+model.view()->verticalScrollBar()->sizeHint().width());
 }
 
 void stop_agent_process(QProcess* process)
@@ -313,7 +316,7 @@ AIAgent::AIAgent(MainWindow* parent):
     {
         if(auto* info = selected_info())
         {
-            info->model_settings["effort"] = ui->ai_effort->currentText(); // "default": the agent's own
+            info->model_settings["effort"] = ui->ai_effort->currentText();
             info->save_config();
         }
     });
@@ -1270,7 +1273,7 @@ void AIAgent::update_model_list()
         return;
     set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
                        info->model_settings["info"].toObject());
-    set_effort_selector(*ui->ai_effort,info->provider,info->model_settings["model"].toString(),info->model_settings.value("effort").toString("default"));
+    set_effort_selector(*ui->ai_effort,info->provider,info->model_settings["model"].toString(),info->model_settings["effort"].toString());
 }
 
 ai_info* AIAgent::selected_info() const
@@ -1413,11 +1416,11 @@ void AIAgent::on_ai_new_chat_clicked()
     layout.addRow("Agent:",&agent);
 
     QWidget local; // declared before its would-be children below, so it is destroyed after them
-    QComboBox model; // not editable -- same as the Agent combo above, which never had the popup-visibility problem an editable combo did
+    QComboBox model,effort; // not editable -- same as the Agent combo above, which never had the popup-visibility problem an editable combo did
     model.setMaximumHeight(model.sizeHint().height());
+    effort.setMaximumHeight(model.maximumHeight()); // the thinking level, right of the model at the same height
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
-    QComboBox effort; // the thinking level, right of the model
     auto* model_row = new QHBoxLayout;
     model_row->addWidget(&model,1);
     model_row->addWidget(&effort);
