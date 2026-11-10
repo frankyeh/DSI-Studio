@@ -93,11 +93,9 @@ QWidget#tab_8 QPushButton#ai_model:disabled {
     background-color: #f1f1f2;
 }
 QWidget#tab_8 QPushButton#ai_quick_settings {
-    color: #3c4043;
-    font-size: 16px;
     background-color: #f1f3f4;
     border: none;
-    border-radius: 8px;
+    border-radius: 16px;
     padding: 0px;
 }
 QWidget#tab_8 QPushButton#ai_quick_settings:hover {
@@ -263,8 +261,15 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             <property name="toolTip">
              <string>AI Settings</string>
             </property>
-            <property name="text">
-             <string>⚙</string>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>18</width>
+              <height>18</height>
+             </size>
             </property>
            </widget>
           </item>
