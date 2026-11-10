@@ -806,6 +806,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                entry["text"].toString().trimmed().isEmpty() &&
                (!show_reasoning || entry["reasoning"].toString().trimmed().isEmpty());
     };
+    auto agent_logo = "<img src=\":/icons/icons/agents/"+info.provider.toLower()+".svg\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">"; // in place of the agent's name
     auto append = [&](const QJsonObject& entry,const QStringList& activities = {})
     {
         bool user = entry["type"] == "user";
@@ -830,7 +831,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
-                        .arg(color,(user ? QString("You") : info.agent_name).toHtmlEscaped()+" &middot; ",time,content);
+                        .arg(color,(user ? QString("You") : agent_logo)+" &middot; ",time,content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
