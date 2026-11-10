@@ -39,6 +39,12 @@ QWidget#tab_8 QPushButton:pressed,
 QWidget#tab_8 QToolButton:pressed {
     background-color: #dddddf;
 }
+QWidget#tab_8 QPushButton:disabled,
+QWidget#tab_8 QToolButton:disabled {
+    color: #9aa0a6;
+    background-color: #f1f1f2;
+    border-color: #e4e4e6;
+}
 QListWidget#ai_project_list QPushButton {
     color: #202124;
     background: transparent;
