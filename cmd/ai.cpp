@@ -42,6 +42,11 @@
 std::unordered_map<QString,ai_info> ai_infos;
 extern QString ai_project_dir;
 
+QStringList agent_efforts(const QString& provider)
+{
+    return provider == "Codex" ? QStringList{"low","medium","high","xhigh"} : // turn/start "effort"
+           provider == "Claude" ? QStringList{"low","medium","high","xhigh","max"} : QStringList(); // --effort
+}
 bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
@@ -440,14 +445,21 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
         auto agent = find_agent(QString::fromStdString(cmd[1]));
         if(agent.isEmpty())
             return true;
-        auto model = cmd.size() > 2 && cmd[2] != "default" ? QString::fromStdString(cmd[2]) : QString();
+        // [model] may end with ":<thinking level>", e.g. gpt-5.5:high or default:high
+        auto model = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString(),effort = model.section(':',-1);
+        if(model.contains(':') && agent_efforts(agent).contains(effort))
+            model.chop(effort.size()+1);
+        else
+            effort.clear();
+        if(model == "default")
+            model.clear();
         auto record = agent_records({agent}).first().toObject();
         if(record["status"].toString() != "ready")
             return error = agent+" cannot start on this host ("+record["status"].toString()+"): "+record["reason"].toString(),true;
         if(auto models = record["models"].toArray();!model.isEmpty() && !models.isEmpty() && !models.contains(model)) // an "unknown" list accepts any model
             return error = "unknown model for "+agent+": "+model+"; available: "+QVariant(models.toVariantList()).toStringList().join(", "),true;
         auto* info = ai_info::create(agent == "Muse" ? muse_uuid_v7() : QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
-        info->model_settings = QJsonObject{{"model",model},{"approval",caller.model_settings.value("approval")}}; // the creating chat's auto/manual approval (none: manual)
+        info->model_settings = QJsonObject{{"model",model},{"effort",effort},{"approval",caller.model_settings.value("approval")}}; // the creating chat's auto/manual approval (none: manual)
         if(cmd.size() > 4)
             info->model_settings["cwd"] = work_dir.absoluteFilePath(); // the agent's writable folder from its first launch
         info->status_message = "Ready for a message.";
@@ -455,7 +467,7 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             return ai_infos.erase(QString(info->sessions)),error = "cannot save the title; no chat was created",true;
         info->record_history(QJsonObject{{"type","activity"},{"text","Chat created by new_chat."}}); // saved now, so the chat survives placeholder cleanup and restarts
         info->save_config();
-        output = QJsonDocument(QJsonObject{{"id",info->sessions},{"agent",agent},{"model",model},
+        output = QJsonDocument(QJsonObject{{"id",info->sessions},{"agent",agent},{"model",model},{"effort",effort},
                                            {"title",info->project_titles},{"status",session_status_text(info->status)}}).toJson(QJsonDocument::Compact);
         return true;
     }
@@ -567,7 +579,13 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
         hooks.shown(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
     };
     // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)
-    auto write_input = [work_dir](const ai_info& info,const QString& text)
+    // the chat's thinking level, empty for "default" or an Ollama model (its server takes no effort)
+    auto effort = [](const ai_info& info)
+    {
+        auto level = info.model_settings.value("effort").toString();
+        return level == "default" || info.model_settings["info"].toObject().contains("provider") ? QString() : level;
+    };
+    auto write_input = [work_dir,effort](const ai_info& info,const QString& text)
     {
         auto* process = info.processes;
         auto session = process->objectName(); // the established id, in case establishment renamed it
@@ -589,6 +607,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
         // the chat's current work_dir (set_work_dir moves it), as thread/start|resume accept only a sandbox mode
         auto turn_id = process->property("turn_id").toString();
         QJsonObject params{{"threadId",session},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
+        if(auto level = effort(info);turn_id.isEmpty() && !level.isEmpty()) // a steered turn keeps the effort it started with
+            params["effort"] = level;
         if(!turn_id.isEmpty())
             params["expectedTurnId"] = turn_id;
         else if(!work_dir.isEmpty()) // Codex rejects a non-absolute writable root
@@ -1229,6 +1249,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                 "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
                 resuming ? "--resume" : "--session-id",session,
                 "--model",model.isEmpty() ? "sonnet" : model};
+    if(auto level = effort(info);provider == "Claude" && !level.isEmpty())
+        args << "--effort" << level;
 
     hooks.log("start " + executable +
               " args: " + args.join(" ").remove("\n"));
