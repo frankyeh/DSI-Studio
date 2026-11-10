@@ -131,6 +131,17 @@ static QString model_combo_key(const QComboBox& model) // strips the " (Ollama@h
     return key == "default" ? QString() : key;
 }
 
+// populates effort with "default"+the agent's thinking levels, selecting selected; shown, and true, only if the agent has levels
+static bool set_effort_selector(QComboBox& effort,const QString& provider,const QString& selected)
+{
+    auto efforts = agent_efforts(provider);
+    effort.clear();
+    effort.addItems(QStringList("default")+efforts);
+    effort.setCurrentText(selected);
+    effort.setVisible(!efforts.isEmpty());
+    return !efforts.isEmpty();
+}
+
 // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) --
 // selected_info backs an unrecognized selected value so it still shows up as a real entry
 static void set_model_selector(QComboBox& model,const QJsonObject& profiles,
@@ -1220,12 +1231,7 @@ void AIAgent::update_model_list()
     if(local)
         set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
                            info->model_settings["info"].toObject());
-    auto efforts = local ? agent_efforts(info->provider) : QStringList();
-    ui->ai_effort->setVisible(!efforts.isEmpty());
-    ui->ai_effort->clear();
-    ui->ai_effort->addItems(QStringList("default")+efforts);
-    if(!efforts.isEmpty())
-        ui->ai_effort->setCurrentText(info->model_settings.value("effort").toString("default"));
+    set_effort_selector(*ui->ai_effort,local ? info->provider : QString(),local ? info->model_settings.value("effort").toString("default") : QString());
 }
 
 ai_info* AIAgent::selected_info() const
@@ -1373,6 +1379,8 @@ void AIAgent::on_ai_new_chat_clicked()
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
     local_layout->addRow("Model:",&model);
+    QComboBox effort;
+    local_layout->addRow("Thinking:",&effort);
     layout.addRow(&local);
 
     auto update_field = [&]
@@ -1384,6 +1392,7 @@ void AIAgent::on_ai_new_chat_clicked()
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
                 provider == current_agent ? current_model_name : QString(),{},
                 provider == current_agent ? current_model_info : QJsonObject());
+        local_layout->labelForField(&effort)->setVisible(set_effort_selector(effort,provider,"default"));
         dialog.adjustSize();
     };
     update_field();
@@ -1443,7 +1452,7 @@ void AIAgent::on_ai_new_chat_clicked()
     auto* info = ai_info::create(
         current_agent == "Muse" ? muse_uuid_v7() :
         QUuid::createUuid().toString(QUuid::WithoutBraces),current_agent); // status defaults to New; no "new:"/other marker on the id itself
-    info->model_settings = QJsonObject{{"model",current_model_name},{"info",current_model_info}};
+    info->model_settings = QJsonObject{{"model",current_model_name},{"info",current_model_info},{"effort",effort.currentText()}};
     set_ai_status(info->sessions,session_status::New,"Ready for a message.");
     show_ai_project(*info);
     ui->ai_project_list->setCurrentItem(info->project_items);
