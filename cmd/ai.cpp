@@ -291,7 +291,11 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
                     status = ai_agent_status::SignInRequired;
                 else
                 {
-                    info = method == "xai.api_key" ? "API key" : "Signed in";
+                    // a cached sign-in keeps the account's email beside the token (which is not read)
+                    QFile auth(QDir::homePath()+"/.grok/auth.json");
+                    auto email = method == "cached_token" && auth.open(QIODevice::ReadOnly) ?
+                                 QJsonDocument::fromJson(auth.readAll()).object()["email"].toString() : QString();
+                    info = method == "xai.api_key" ? QString("API key") : email.isEmpty() ? QString("Signed in") : email;
                     status = ai_agent_status::Ready;
                 }
             }
