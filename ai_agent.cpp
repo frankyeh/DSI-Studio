@@ -713,6 +713,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto* title = new QPushButton(row);
         title->setFlat(true);
         title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
+        title->setIcon(QIcon(":/icons/icons/agents/"+info.provider.toLower()+".svg")); // the agent's logo before the title
+        title->setIconSize(QSize(16,16));
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
@@ -747,7 +749,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     // never touched (no content, no title), not merely New, which a reconnecting chat also is
     auto chat_title = info.projects.isEmpty() && info.project_titles.isEmpty() ?
         "New "+info.agent_name+" Chat" : info.title();
-    title->setText((info.provider == "Web" ? QString("🌐 ") : QString())+chat_title);
+    title->setText(chat_title);
     title->setToolTip(title->text());
     title->repaint();
     item->setSizeHint(QSize(0,row->sizeHint().height()));
