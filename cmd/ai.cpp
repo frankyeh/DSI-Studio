@@ -1213,8 +1213,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                 "--output-format","stream-json",
                 "--dangerously-skip-permissions",
                 "--add-dir",work_dir};
-        if(!model.isEmpty())
-            args << "--model" << model;
+        if(auto agy_model = model.isEmpty() ? QSettings().value("ai/antigravity_default_model").toString() : model;!agy_model.isEmpty())
+            args << "--model" << agy_model; // "default": the account's default model saved by the model list
         if(resuming)
             args << "--conversation" << session;
     }
