@@ -339,7 +339,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-latest
+          - runner: macos-15
             name: macos-arm64
             tiny_fsl: macos-15
             jobs: 3
