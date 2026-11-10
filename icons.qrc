@@ -40,6 +40,12 @@
         <file>icons/tracts.xpm</file>
         <file>icons/console.xpm</file>
         <file>icons/mosaic.xpm</file>
+        <file>icons/agents/codex.svg</file>
+        <file>icons/agents/claude.svg</file>
+        <file>icons/agents/muse.svg</file>
+        <file>icons/agents/antigravity.svg</file>
+        <file>icons/agents/grok.svg</file>
+        <file>icons/agents/web.svg</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
