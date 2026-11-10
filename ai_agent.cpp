@@ -131,15 +131,14 @@ static QString model_combo_key(const QComboBox& model) // strips the " (Ollama@h
     return key == "default" ? QString() : key;
 }
 
-// populates effort with "default"+the agent's thinking levels, selecting selected; shown, and true, only if the agent has levels
-static bool set_effort_selector(QComboBox& effort,const QString& provider,const QString& selected)
+// populates effort with "default"+the thinking levels of the agent's model, selecting selected; shown only if there are levels
+static void set_effort_selector(QComboBox& effort,const QString& provider,const QString& model,const QString& selected)
 {
-    auto efforts = agent_efforts(provider);
+    auto efforts = agent_efforts(provider,model);
     effort.clear();
     effort.addItems(QStringList("default")+efforts);
     effort.setCurrentText(selected);
     effort.setVisible(!efforts.isEmpty());
-    return !efforts.isEmpty();
 }
 
 // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) --
@@ -307,6 +306,7 @@ AIAgent::AIAgent(MainWindow* parent):
             info->model_settings["model"] = model_combo_key(*ui->ai_model);
             info->model_settings["info"] = ui->ai_model->currentData().toJsonObject(); // the entry's own profile, incl. its Ollama server
             info->save_config();
+            update_model_list(); // the thinking levels follow the model
         }
     });
     connect(ui->ai_effort,QOverload<int>::of(&QComboBox::activated),this,[this](int)
@@ -957,12 +957,30 @@ void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is 
     auto* process = new QProcess(this);
     process->setProcessEnvironment(agent_environment(provider));
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),process,&QObject::deleteLater);
-    auto set_models = [=](const QJsonArray& list,const QString& key)
+    // per-model thinking levels and the default model, read by agent_efforts()
+    auto save_efforts = [=](const QVariantMap& efforts,const QString& default_model)
+    {
+        QSettings settings;
+        settings.setValue("ai/"+provider.toLower()+"_efforts",efforts);
+        settings.setValue("ai/"+provider.toLower()+"_default_model",default_model);
+    };
+    // levels(model entry) gives its thinking levels; the default model is the "isDefault" entry unless given
+    auto set_models = [=](const QJsonArray& list,const QString& key,
+                          std::function<QJsonArray(const QJsonObject&)> levels = {},QString default_model = {})
     {
         QStringList models;
+        QVariantMap efforts;
         for(const auto& value : list)
             if(auto model = value.toObject()[key].toString();!model.isEmpty())
+            {
                 models << model;
+                if(levels)
+                    efforts[model] = levels(value.toObject()).toVariantList();
+                if(value.toObject()["isDefault"].toBool())
+                    default_model = model;
+            }
+        if(levels)
+            save_efforts(efforts,default_model);
         update_agent_models(provider,models,false);
         ai_log(provider+" models: "+models.join(", "));
     };
@@ -997,10 +1015,26 @@ void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is 
                 return;
             auto out = process->readAllStandardOutput(); // a status line can precede the JSON
             auto list = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object()["command"].toObject()["data"].toObject()["models"].toArray();
-            for(const auto& each : list) // launched as --model when a chat uses "default": agy without --model can pick a retired model
-                if(each.toObject()["isDefault"].toBool())
-                    QSettings().setValue("ai/antigravity_default_model",each.toObject()["id"].toString());
-            set_models(list,"id");
+            // <base>-<level> variants of one model collapse into <base>, launched with --effort <level>
+            QVariantMap efforts;
+            for(const auto& each : list) // agy's --effort takes Claude's levels
+                if(auto id = each.toObject()["id"].toString(),level = id.section('-',-1);agent_efforts("Claude").contains(level))
+                    efforts[id.section('-',0,-2)] = efforts.value(id.section('-',0,-2)).toStringList() << level;
+            QStringList models;
+            QString default_model;
+            for(const auto& each : list)
+            {
+                auto id = each.toObject()["id"].toString();
+                if(efforts.value(id.section('-',0,-2)).toStringList().size() > 1) // a single variant is a fixed-effort model
+                    id = id.section('-',0,-2);
+                if(!models.contains(id))
+                    models << id;
+                if(each.toObject()["isDefault"].toBool()) // launched as --model when a chat uses "default": agy without --model can pick a retired model
+                    default_model = id;
+            }
+            save_efforts(efforts,default_model);
+            update_agent_models(provider,models,false);
+            ai_log(provider+" models: "+models.join(", "));
         });
         connect(process,&QProcess::started,process,&QProcess::closeWriteChannel);
         start_process(*process,path,{"--output-format","json","models"});
@@ -1023,7 +1057,8 @@ void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is 
                 else if(id == "model_list")
                 {
                     if(!msg.contains("error"))
-                        set_models(msg["result"].toObject()["models"].toArray(),"modelId");
+                        set_models(msg["result"].toObject()["models"].toArray(),"modelId",
+                                   [](const QJsonObject& model){return model["variants"].toArray();});
                     process->closeWriteChannel();
                 }
             }
@@ -1041,8 +1076,10 @@ void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is 
                 if(msg["id"].toString() != "initialize")
                     continue;
                 // a failed or unrecognized reply keeps the last valid list
-                if(auto list = msg["result"].toObject()["_meta"].toObject()["modelState"].toObject().value("availableModels");list.isArray())
-                    set_models(list.toArray(),"modelId");
+                auto state = msg["result"].toObject()["_meta"].toObject()["modelState"].toObject();
+                if(auto list = state.value("availableModels");list.isArray())
+                    set_models(list.toArray(),"modelId",[](const QJsonObject& model){return model["_meta"].toObject()["reasoningEfforts"].toArray();},
+                               state["currentModel"].toObject()["modelId"].toString());
                 return kill_process_tree(process); // one reply is all this probe needs
             }
         });
@@ -1228,10 +1265,12 @@ void AIAgent::update_model_list()
     update_send_button(); // the send button depends on the same selected chat
     bool local = info && info->provider != "Web" && info->provider != "AgentServer";
     ui->ai_model->setVisible(local);
-    if(local)
-        set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
-                           info->model_settings["info"].toObject());
-    set_effort_selector(*ui->ai_effort,local ? info->provider : QString(),local ? info->model_settings.value("effort").toString("default") : QString());
+    ui->ai_effort->setVisible(local);
+    if(!local)
+        return;
+    set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
+                       info->model_settings["info"].toObject());
+    set_effort_selector(*ui->ai_effort,info->provider,info->model_settings["model"].toString(),info->model_settings.value("effort").toString("default"));
 }
 
 ai_info* AIAgent::selected_info() const
@@ -1385,6 +1424,7 @@ void AIAgent::on_ai_new_chat_clicked()
     local_layout->addRow("Model:",model_row);
     layout.addRow(&local);
 
+    auto update_effort = [&]{set_effort_selector(effort,agent.currentData().toString(),model_combo_key(model),effort.currentText());};
     auto update_field = [&]
     {
         auto provider = agent.currentData().toString();
@@ -1394,11 +1434,12 @@ void AIAgent::on_ai_new_chat_clicked()
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
                 provider == current_agent ? current_model_name : QString(),{},
                 provider == current_agent ? current_model_info : QJsonObject());
-        set_effort_selector(effort,provider,"default");
+        update_effort();
         dialog.adjustSize();
     };
     update_field();
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
+    connect(&model,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_effort();});
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
     auto* accept = buttons.addButton("Start",QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");

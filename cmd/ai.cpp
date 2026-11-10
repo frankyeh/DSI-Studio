@@ -42,10 +42,17 @@
 std::unordered_map<QString,ai_info> ai_infos;
 extern QString ai_project_dir;
 
-QStringList agent_efforts(const QString& provider)
+QStringList agent_efforts(const QString& provider,const QString& model)
 {
-    return provider == "Codex" ? QStringList{"low","medium","high","xhigh"} : // turn/start "effort"
-           provider == "Claude" ? QStringList{"low","medium","high","xhigh","max"} : QStringList(); // --effort
+    if(provider == "Codex")
+        return {"low","medium","high","xhigh"}; // turn/start "effort"
+    if(provider == "Claude")
+        return {"low","medium","high","xhigh","max"}; // --effort
+    // the others: per model, saved by the model list; none for a fixed-effort model
+    QSettings settings;
+    auto key = "ai/"+provider.toLower();
+    return settings.value(key+"_efforts").toMap().value(model.isEmpty() || model == "default" ?
+           settings.value(key+"_default_model").toString() : model).toStringList();
 }
 bool is_valid_session_id(const QString& id)
 {
@@ -447,7 +454,7 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             return true;
         // [model] may end with ":<thinking level>", e.g. gpt-5.5:high or default:high
         auto model = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString(),effort = model.section(':',-1);
-        if(model.contains(':') && agent_efforts(agent).contains(effort))
+        if(model.contains(':') && agent_efforts(agent,model.section(':',0,-2)).contains(effort))
             model.chop(effort.size()+1);
         else
             effort.clear();
@@ -578,13 +585,15 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
     {
         hooks.shown(info,info.record_history(QJsonObject{{"type",type},{"text",text}}));
     };
-    // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)
-    // the chat's thinking level, empty for "default" or an Ollama model (its server takes no effort)
+    // the chat's thinking level if its model supports it, so never "default" or one for an Ollama model (its server takes none)
     auto effort = [](const ai_info& info)
     {
         auto level = info.model_settings.value("effort").toString();
-        return level == "default" || info.model_settings["info"].toObject().contains("provider") ? QString() : level;
+        return info.model_settings["info"].toObject().contains("provider") ||
+               !agent_efforts(info.provider,info.model_settings["model"].toString().trimmed()).contains(level) ? QString() : level;
     };
+    auto level = effort(info); // at launch; Codex and Muse send it each turn
+    // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)
     auto write_input = [work_dir,effort](const ai_info& info,const QString& text)
     {
         auto* process = info.processes;
@@ -593,8 +602,12 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
             return process->write(json_line({{"type","user"},{"message",QJsonObject{{"role","user"},
                 {"content",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}}}));
         if(info.provider == "Muse")
-            return process->write(muse_command(muse_uuid_v7(),"turn/start",{{"sessionId",session},{"ifBusy","steer"},
-                {"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}}));
+        {
+            QJsonObject params{{"sessionId",session},{"ifBusy","steer"},{"input",QJsonArray{QJsonObject{{"type","text"},{"text",text}}}}};
+            if(auto level = effort(info);!level.isEmpty())
+                params["reasoningEffort"] = level;
+            return process->write(muse_command(muse_uuid_v7(),"turn/start",params));
+        }
         if(info.provider == "Antigravity")
             return process->write(json_line({{"event","user"},{"message",QJsonObject{{"content",text}}}}));
         if(info.provider == "Grok")
@@ -1110,6 +1123,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                         meta = QJsonObject{{"noReplay",true}}; // DSI Studio already holds the transcript
                     else if(!model.isEmpty())
                         meta["modelId"] = model;
+                    if(!resuming && !level.isEmpty())
+                        meta["reasoningEffort"] = level;
                     QJsonObject params{{"cwd",cwd},{"mcpServers",QJsonArray()},{"_meta",meta}};
                     if(resuming)
                         params["sessionId"] = session;
@@ -1119,13 +1134,21 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                 {
                     if(!establish(process,msg["result"].toObject()["sessionId"].toString()))
                         continue;
-                    if(resuming && !model.isEmpty()) // a new session got its model through _meta.modelId
-                        process->write(jsonrpc("set_model","session/set_config_option",
-                               {{"sessionId",process->objectName()},{"configId","model"},{"value",model}}));
-                    else
+                    // a new session got its model and level through _meta; a loaded one restores its own, so set them
+                    // again and prompt after the last reply
+                    auto set_option = [&](const char* request,const char* option,const QString& value)
+                    {
+                        process->write(jsonrpc(request,"session/set_config_option",
+                               {{"sessionId",process->objectName()},{"configId",option},{"value",value}}));
+                    };
+                    if(resuming && !model.isEmpty())
+                        set_option(level.isEmpty() ? "options_set" : "set_model","model",model);
+                    if(resuming && !level.isEmpty())
+                        set_option("options_set","reasoning_effort",level);
+                    if(!resuming || (model.isEmpty() && level.isEmpty()))
                         send_prompt();
                 }
-                else if(id == "set_model")
+                else if(id == "options_set")
                     send_prompt();
                 else if(id == "prompt")
                 {
@@ -1249,7 +1272,7 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                 "--allowedTools","Bash(bash ./dsi.sh:*),PowerShell(./dsi.ps1:*),WebFetch,WebSearch,Read,Glob,Grep",
                 resuming ? "--resume" : "--session-id",session,
                 "--model",model.isEmpty() ? "sonnet" : model};
-    if(auto level = effort(info);provider == "Claude" && !level.isEmpty())
+    if(!level.isEmpty() && (provider == "Claude" || provider == "Antigravity")) // Grok takes it in the session, Codex and Muse per turn
         args << "--effort" << level;
 
     hooks.log("start " + executable +
