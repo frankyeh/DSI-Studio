@@ -1081,8 +1081,13 @@ void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is 
                 // a failed or unrecognized reply keeps the last valid list
                 auto state = msg["result"].toObject()["_meta"].toObject()["modelState"].toObject();
                 if(auto list = state.value("availableModels");list.isArray())
-                    set_models(list.toArray(),"modelId",[](const QJsonObject& model){return model["_meta"].toObject()["reasoningEfforts"].toArray();},
-                               state["currentModel"].toObject()["modelId"].toString());
+                    set_models(list.toArray(),"modelId",[](const QJsonObject& model)
+                    {
+                        QJsonArray levels; // entries are {"value":"medium","label":...}; "value" is what reasoningEffort takes
+                        for(const auto& each : model["_meta"].toObject()["reasoningEfforts"].toArray())
+                            levels << each.toObject()["value"];
+                        return levels;
+                    },state["currentModel"].toObject()["modelId"].toString());
                 return kill_process_tree(process); // one reply is all this probe needs
             }
         });
