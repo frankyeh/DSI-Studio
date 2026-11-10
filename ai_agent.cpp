@@ -298,6 +298,14 @@ AIAgent::AIAgent(MainWindow* parent):
             info->save_config();
         }
     });
+    connect(ui->ai_effort,QOverload<int>::of(&QComboBox::activated),this,[this](int)
+    {
+        if(auto* info = selected_info())
+        {
+            info->model_settings["effort"] = ui->ai_effort->currentText(); // "default": the agent's own
+            info->save_config();
+        }
+    });
     connect(ui->ai_approval,QOverload<int>::of(&QComboBox::activated),this,[this](int index) // a user choice, never a programmatic sync
     {
         if(auto* info = selected_info())
@@ -1212,6 +1220,12 @@ void AIAgent::update_model_list()
     if(local)
         set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
                            info->model_settings["info"].toObject());
+    auto efforts = local ? agent_efforts(info->provider) : QStringList();
+    ui->ai_effort->setVisible(!efforts.isEmpty());
+    ui->ai_effort->clear();
+    ui->ai_effort->addItems(QStringList("default")+efforts);
+    if(!efforts.isEmpty())
+        ui->ai_effort->setCurrentText(info->model_settings.value("effort").toString("default"));
 }
 
 ai_info* AIAgent::selected_info() const
@@ -1249,6 +1263,7 @@ void AIAgent::update_send_button()
     auto action = current_send_action();
     ui->ai_send_message->setEnabled(action != send_action::Disabled);
     ui->ai_model->setEnabled(action != send_action::Stop); // a running agent keeps the model it was launched with
+    ui->ai_effort->setEnabled(action != send_action::Stop);
     ui->ai_send_message->setText(
         action == send_action::Stop ? "Stop" :
         action == send_action::Resume ? "Resume" : "Send");
