@@ -974,9 +974,14 @@ void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is 
     {
         connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),this,[=]
         {
-            if(process->exitStatus() == QProcess::NormalExit && process->exitCode() == 0)
-                set_models(QJsonDocument::fromJson(process->readAllStandardOutput()).
-                           object()["command"].toObject()["data"].toObject()["models"].toArray(),"id");
+            if(process->exitStatus() != QProcess::NormalExit || process->exitCode())
+                return;
+            auto out = process->readAllStandardOutput(); // a status line can precede the JSON
+            auto list = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object()["command"].toObject()["data"].toObject()["models"].toArray();
+            for(const auto& each : list) // launched as --model when a chat uses "default": agy without --model can pick a retired model
+                if(each.toObject()["isDefault"].toBool())
+                    QSettings().setValue("ai/antigravity_default_model",each.toObject()["id"].toString());
+            set_models(list,"id");
         });
         connect(process,&QProcess::started,process,&QProcess::closeWriteChannel);
         start_process(*process,path,{"--output-format","json","models"});
