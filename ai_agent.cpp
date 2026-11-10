@@ -1597,7 +1597,7 @@ void AIAgent::on_ai_quick_settings_clicked()
 {
     QDialog dialog(this);
     dialog.setWindowTitle("AI Settings");
-    dialog.setMinimumWidth(420);
+    dialog.setMinimumWidth(520);
     dialog.setStyleSheet(ai_dialog_style());
 
     auto* root = new QVBoxLayout(&dialog);
@@ -1622,7 +1622,9 @@ void AIAgent::on_ai_quick_settings_clicked()
         return layout;
     };
 
-    auto* agent_layout = add_card({});
+    auto* agent_grid = new QGridLayout; // columns: the button, the usage bar, its percentage -- aligned whatever each button's length
+    agent_grid->setColumnStretch(0,1);
+    add_card({})->addLayout(agent_grid);
 
     // one row per agent (Web last): a round button "<logo> <status>", the logo grayed unless Ready, the usage bar on the right
     struct agent_row{QPushButton* button;QProgressBar* bar;QLabel* percent;};
@@ -1647,30 +1649,23 @@ void AIAgent::on_ai_quick_settings_clicked()
                                    "QProgressBar::chunk{border-radius:3px;background:%2;}").arg(used >= 0 ? "#e8eaed" : "#f1f3f4",
                                    used >= 90 ? "#ea4335" : used >= 70 ? "#f9ab00" : "#4285f4"));
         percent->setText(used >= 0 ? QString::number(used)+"%" : QString());
-        bar->parentWidget()->setToolTip(tip);
+        bar->setToolTip(tip);
+        percent->setToolTip(tip);
     };
-    auto add_row = [agent_layout](bool usage_bar)
+    auto add_row = [agent_grid,&agent_rows](bool usage_bar)
     {
         agent_row row{new QPushButton,nullptr,nullptr};
         row.button->setObjectName("ai_agent_button");
-        auto* layout = new QHBoxLayout;
-        layout->addWidget(row.button);
-        layout->addStretch();
-        if(usage_bar) // the bar and its percentage share one tooltip
+        agent_grid->addWidget(row.button,agent_rows.size(),0,Qt::AlignLeft);
+        if(usage_bar)
         {
-            auto* usage_box = new QWidget;
-            auto* usage_layout = new QHBoxLayout(usage_box);
-            usage_layout->setContentsMargins(8,0,0,0);
-            usage_layout->setSpacing(6);
-            usage_layout->addWidget(row.bar = new QProgressBar);
-            usage_layout->addWidget(row.percent = new QLabel);
+            agent_grid->addWidget(row.bar = new QProgressBar,agent_rows.size(),1);
+            agent_grid->addWidget(row.percent = new QLabel,agent_rows.size(),2);
             row.bar->setTextVisible(false);
             row.bar->setFixedSize(96,6);
             row.percent->setFixedWidth(30);
             row.percent->setStyleSheet("color:#5f6368;font-size:11px;");
-            layout->addWidget(usage_box);
         }
-        agent_layout->addLayout(layout);
         return row;
     };
     // a Ready agent's plan usage, queried once off the GUI thread (Grok cannot report it on this route yet)
