@@ -7,7 +7,7 @@ These SVG assets are bundled in `icons.qrc` under `:/icons/icons/agents/`.
 | `codex.svg` | OpenAI mark for Codex | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/openai-icon.svg) |
 | `claude.svg` | Claude mark | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/claude-icon.svg) |
 | `muse.svg` | Meta mark for Muse | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/meta-icon.svg) |
-| `antigravity.svg` | Google mark for Antigravity | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/google-icon.svg) |
+| `antigravity.svg` | Official Antigravity one-color icon | [Google Antigravity press assets](https://antigravity.google/press) |
 | `grok.svg` | Grok mark | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/grok-icon.svg) |
 | `web.svg` | Generic globe | Created for DSI Studio |
 
