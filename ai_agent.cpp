@@ -123,6 +123,17 @@ static void update_status_dot(QToolButton* dot,session_status status,bool pulse)
     dot->setToolTip(session_status_text(status));
 }
 
+// an agent's logo in place of its name, grayed unless ready; agent_logo_html: the same inline in rich text
+static QIcon agent_logo(const QString& provider,bool ready = true)
+{
+    QIcon logo(":/icons/icons/agents/"+provider.toLower()+".svg");
+    return ready ? logo : QIcon(logo.pixmap(QSize(18,18),qApp->devicePixelRatio(),QIcon::Disabled));
+}
+static QString agent_logo_html(const QString& provider)
+{
+    return "<img src=\":/icons/icons/agents/"+provider.toLower()+".svg\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">";
+}
+
 // shared look for the new-chat/settings dialogs, scoped by objectName so it cannot bleed into other dialogs
 static QString ai_dialog_style()
 {
@@ -563,13 +574,13 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
     if(selected_info() != &info)
         return;
     // one line -- a multi-line stderr dump (Failed) must not grow the composer's height
-    auto text = (info.provider+": "+info.status_message).simplified();
+    auto text = info.status_message.simplified();
     if(running && !text.endsWith('.'))
         text += ".";
     ui->ai_status->show();
-    ui->ai_status->setToolTip(text); // full message on hover -- the label itself may show a truncated "..." version
-    ui->ai_status->setText(QFontMetrics(ui->ai_status->font()).elidedText(
-        text,Qt::ElideRight,ui->ai_status->maximumWidth()-30)); // truncate -- an unbounded message here was pushing the whole window wider
+    ui->ai_status->setToolTip(info.provider+": "+text); // full message on hover -- the label itself may show a truncated "..." version
+    ui->ai_status->setText(agent_logo_html(info.provider)+" "+QFontMetrics(ui->ai_status->font()).elidedText(
+        text,Qt::ElideRight,ui->ai_status->maximumWidth()-50).toHtmlEscaped()); // the logo, then the truncated message -- an unbounded one was pushing the whole window wider
     ui->ai_status->repaint();
     update_send_button(); // Stop/Send now follow the session status
 }
@@ -713,7 +724,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto* title = new QPushButton(row);
         title->setFlat(true);
         title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
-        title->setIcon(QIcon(":/icons/icons/agents/"+info.provider.toLower()+".svg")); // the agent's logo before the title
+        title->setIcon(agent_logo(info.provider));
         title->setIconSize(QSize(16,16));
 
         auto* button = new QToolButton(row);
@@ -806,7 +817,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                entry["text"].toString().trimmed().isEmpty() &&
                (!show_reasoning || entry["reasoning"].toString().trimmed().isEmpty());
     };
-    auto agent_logo = "<img src=\":/icons/icons/agents/"+info.provider.toLower()+".svg\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">"; // in place of the agent's name
+    auto logo = agent_logo_html(info.provider);
     auto append = [&](const QJsonObject& entry,const QStringList& activities = {})
     {
         bool user = entry["type"] == "user";
@@ -831,7 +842,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
-                        .arg(color,(user ? QString("You") : agent_logo)+" &middot; ",time,content);
+                        .arg(color,(user ? QString("You") : logo)+" &middot; ",time,content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
@@ -1431,8 +1442,12 @@ bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& mo
     layout.setContentsMargins(20,18,20,16);
 
     QComboBox agent;
+    agent.setIconSize(QSize(18,18));
     for(auto name : {"Codex","Claude","Muse","Antigravity","Grok","Web"})
-        agent.addItem(name,name);
+    {
+        agent.addItem(agent_logo(name),QString(),name); // the logo in place of the name, which is the tooltip
+        agent.setItemData(agent.count()-1,name,Qt::ToolTipRole);
+    }
     auto update_agent = [&](const QString& provider)
     {
         const auto& entry = agent_entries[provider];
@@ -1440,11 +1455,11 @@ bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& mo
                         std::any_of(entry.profiles.begin(),entry.profiles.end(),[](const QJsonValue& profile){return profile.toObject().contains("provider");}));
         bool checking = entry.status == ai_agent_status::Unknown || entry.status == ai_agent_status::Checking;
         auto* item = static_cast<QStandardItemModel*>(agent.model())->item(agent.findData(provider));
-        item->setText(is_ready ? provider :
-                      provider+(checking ? " (checking...)" : " (setup required)"));
-        item->setToolTip(is_ready ? QString() : checking ?
-                         "Checking local agent status..." :
-                         "Open Settings (⚙) to install or sign in.");
+        item->setIcon(agent_logo(provider,is_ready));
+        item->setText(is_ready ? QString() : checking ? "Checking..." : "Setup required");
+        item->setToolTip(provider+(is_ready ? QString() : checking ?
+                         ": checking local agent status..." :
+                         ": open Settings (⚙) to install or sign in."));
     };
     for(const auto& provider : local_agents)
         update_agent(provider);
@@ -1594,8 +1609,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     struct agent_row{QPushButton* button;QProgressBar* bar;QLabel* percent;};
     auto set_agent_button = [](QPushButton* button,const QString& provider,bool ready,const QString& text,const QString& action)
     {
-        QIcon logo(":/icons/icons/agents/"+provider.toLower()+".svg");
-        button->setIcon(ready ? logo : QIcon(logo.pixmap(QSize(18,18),button->devicePixelRatioF(),QIcon::Disabled))); // still clickable to install or sign in
+        button->setIcon(agent_logo(provider,ready)); // grayed, yet still clickable to install or sign in
         button->setIconSize(QSize(18,18));
         button->setText(text);
         button->setToolTip(provider+(action.isEmpty() ? QString() : ": "+action)); // the name, now that the logo stands for it
