@@ -1587,21 +1587,15 @@ void AIAgent::on_ai_quick_settings_clicked()
 
     auto* agent_layout = add_card({});
 
-    // one row per agent: a round button "<agent> <status>" behind a colored dot, the usage bar on the right
+    // one row per agent: a round button "<logo> <status>", the logo grayed unless Ready, the usage bar on the right
     struct agent_row{QPushButton* button;QProgressBar* bar;QLabel* percent;};
-    auto set_agent_button = [](QPushButton* button,const QString& color,const QString& text,const QString& action)
+    auto set_agent_button = [](QPushButton* button,const QString& provider,bool ready,const QString& text,const QString& action)
     {
-        QPixmap dot(16,16);
-        dot.fill(Qt::transparent);
-        QPainter painter(&dot);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(color));
-        painter.drawEllipse(4,4,8,8);
-        painter.end();
-        button->setIcon(QIcon(dot));
+        QIcon logo(":/icons/icons/agents/"+provider.toLower()+".svg");
+        button->setIcon(ready ? logo : QIcon(logo.pixmap(QSize(18,18),button->devicePixelRatioF(),QIcon::Disabled))); // still clickable to install or sign in
+        button->setIconSize(QSize(18,18));
         button->setText(text);
-        button->setToolTip(action);
+        button->setToolTip(provider+(action.isEmpty() ? QString() : ": "+action)); // the name, now that the logo stands for it
     };
     QHash<QString,agent_row> agent_rows;
     QHash<QString,QPair<int,QString> > usage; // the first window's used % (-1: none) and the tooltip, once queried
@@ -1610,34 +1604,29 @@ void AIAgent::on_ai_quick_settings_clicked()
         auto [button,bar,percent] = agent_rows[provider];
         auto [used,tip] = usage.value(provider,{-1,provider == "Grok" ? "Usage not supported yet" : "Usage unavailable"});
         const auto& entry = agent_entries[provider];
-        QString color = "#9aa0a6",text = "· Install",action = "Install "+provider;
+        QString text = "Install",action = "Install";
         switch(entry.status)
         {
         case ai_agent_status::NotInstalled:
             break;
         case ai_agent_status::Checking:
-            color = "#4285f4";
-            text = "· Checking...";
+            text = "Checking...";
             action.clear();
             break;
         case ai_agent_status::SignInRequired:
-            color = "#f9ab00";
-            text = "· Sign in";
-            action = "Sign in";
+            text = action = "Sign in";
             break;
         case ai_agent_status::Ready:
-            color = "#34a853";
             text = entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info;
             action = "Sign in again, e.g. to switch accounts or recover stale credentials";
             break;
         case ai_agent_status::Unknown:
         case ai_agent_status::Error:
-            color = "#ea4335";
-            text = "· Status unavailable";
+            text = "Status unavailable";
             action = "Check the status again";
             break;
         }
-        set_agent_button(button,color,provider+" "+text,action);
+        set_agent_button(button,provider,entry.status == ai_agent_status::Ready,text,action);
         // a slim rounded bar: blue, amber from 70%, red from 90%; grayed and empty without a percentage
         bar->setEnabled(used >= 0);
         bar->setValue(std::max(used,0));
@@ -1723,7 +1712,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     auto refresh_web_row = [this,web_button = web_row.button,set_agent_button]
     {
         bool ready = !web.google_refresh_token.isEmpty();
-        set_agent_button(web_button,ready ? "#34a853" : "#f9ab00",ready ? "Web Ready · Google Drive › DSI Studio AI" : "Web · Sign in",
+        set_agent_button(web_button,"Web",ready,ready ? "Ready · Google Drive › DSI Studio AI" : "Sign in",
                          ready ? "Sign in to Google again, e.g. to switch accounts" : "Sign in to Google");
     };
     refresh_web_row();
