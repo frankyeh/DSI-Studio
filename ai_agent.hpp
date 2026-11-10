@@ -58,7 +58,9 @@ class AIAgent : public QMainWindow
     QString current_agent = "Codex";
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
-    void update_model_list(); // the selected local chat's model dropdown; hidden for Web, AgentServer, or no chat
+    void update_model_list(); // the selected local chat's model button ("model · level"); hidden for Web, AgentServer, or no chat
+    // the New Chat dialog: agent (locked if agent_fixed), model and thinking level, starting from and returning through the arguments
+    bool choose_model(QString& provider,QString& model_name,QJsonObject& model_info,QString& effort_level,bool agent_fixed);
 
     web_bridge web; // the Web channel: Google tokens and the connected chat's session Doc
     bool sign_in_google(); // system-browser sign-in (PKCE + loopback); true once a token is held
