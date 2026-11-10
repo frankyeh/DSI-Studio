@@ -356,6 +356,7 @@ AIAgent::AIAgent(MainWindow* parent):
                 break;
             }
     update_model_list();
+    update_google_email();
     connect(ui->ai_model,&QPushButton::clicked,this,[this] // the New Chat dialog with the chat's agent locked
     {
         auto* info = selected_info();
@@ -1434,13 +1435,25 @@ bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopb
     if(!error.isEmpty())
         return QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error),false;
     settings.setValue("ai/google_folder_id",web.google_folder_id = QString()); // the account may have changed: resolve its folder again
+    settings.remove("ai/google_email");
+    update_google_email();
     return true;
+}
+void AIAgent::update_google_email() // once per sign-in, cached: the drive.file token can read its own account
+{
+    if(web.google_refresh_token.isEmpty() || settings.contains("ai/google_email"))
+        return;
+    web.google_api("GET","https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)",{},[this](QJsonObject reply)
+    {
+        if(auto email = reply["user"].toObject()["emailAddress"].toString();!email.isEmpty())
+            settings.setValue("ai/google_email",email),emit agent_status_changed("Web");
+    });
 }
 AIAgent::agent_state AIAgent::agent_status(const QString& provider)
 {
     if(provider == "Web")
         return web.google_refresh_token.isEmpty() ? agent_state{false,"Sign in","Sign in to Google"} :
-               agent_state{true,"Ready · Google Drive › DSI Studio AI","Sign in to Google again, e.g. to switch accounts"};
+               agent_state{true,"Ready · "+settings.value("ai/google_email","Google").toString(),"Sign in to Google again, e.g. to switch accounts"};
     const auto& entry = agent_entries[provider];
     switch(entry.status)
     {
@@ -1671,7 +1684,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     // a Ready agent's plan usage, queried once off the GUI thread (Grok cannot report it on this route yet)
     auto query_usage = [&,this](const QString& provider)
     {
-        if(provider == "Grok" || agent_entries[provider].status != ai_agent_status::Ready || usage.contains(provider))
+        if(provider == "Grok" || agent_entries.value(provider).status != ai_agent_status::Ready || usage.contains(provider)) // value(): also "Web"
             return;
         usage[provider] = {-1,"Checking usage..."};
         auto result = QSharedPointer<QPair<int,QString> >::create();
