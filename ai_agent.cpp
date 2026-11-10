@@ -1552,7 +1552,8 @@ void AIAgent::on_ai_quick_settings_clicked()
 
     // one row per agent: name and colored status on the left, a single action button on the right
     QHash<QString,QPair<QLabel*,QPushButton*> > agent_rows;
-    auto refresh_agent_row = [this](const QString& provider,QLabel* label,QPushButton* button)
+    QHash<QString,QPair<QString,QString> > usage; // the usage line and its tooltip, once queried
+    auto refresh_agent_row = [this,&usage](const QString& provider,QLabel* label,QPushButton* button)
     {
         const auto& entry = agent_entries[provider];
         QString color = "#9aa0a6",text = "Not installed",action = "Install";
@@ -1582,8 +1583,11 @@ void AIAgent::on_ai_quick_settings_clicked()
             action = "Check Status";
             break;
         }
+        auto it = usage.find(provider);
         label->setText("<b>"+provider+"</b><br><span style='color:"+color+";'>&#9679;</span> "
-                       "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>");
+                       "<span style='color:#5f6368;'>"+text.toHtmlEscaped()+"</span>"+
+                       (it == usage.end() ? QString() : "<br><span style='color:#5f6368;'>"+it->first.toHtmlEscaped()+"</span>"));
+        label->setToolTip(it == usage.end() ? QString() : it->second);
         button->setText(action);
         button->setEnabled(entry.status != ai_agent_status::Checking);
     };
@@ -1598,9 +1602,26 @@ void AIAgent::on_ai_quick_settings_clicked()
         agent_layout->addLayout(row);
         return QPair<QLabel*,QPushButton*>{label,button};
     };
+    // a Ready agent's plan usage, queried once off the GUI thread (Grok cannot report it on this route yet)
+    auto query_usage = [&,this](const QString& provider)
+    {
+        if(provider == "Grok" || agent_entries[provider].status != ai_agent_status::Ready || usage.contains(provider))
+            return;
+        usage[provider] = {"Checking usage...",{}};
+        auto result = QSharedPointer<QPair<QString,QString> >::create();
+        auto* worker = QThread::create([provider,executable = agent_entries[provider].executable,result]{*result = agent_usage(provider,executable);});
+        connect(worker,&QThread::finished,worker,&QObject::deleteLater);
+        connect(worker,&QThread::finished,&dialog,[&,provider,result]
+        {
+            usage[provider] = result->first.isEmpty() ? QPair<QString,QString>{"Usage unavailable",{}} : *result;
+            refresh_agent_row(provider,agent_rows[provider].first,agent_rows[provider].second);
+        });
+        worker->start();
+    };
     for(const auto& provider : local_agents)
     {
         auto [label,button] = agent_rows[provider] = add_row();
+        query_usage(provider);
         refresh_agent_row(provider,label,button);
         connect(button,&QPushButton::clicked,&dialog,[&,provider]
         {
@@ -1643,8 +1664,9 @@ void AIAgent::on_ai_quick_settings_clicked()
         refresh_web_row();
     });
     connect(this,&AIAgent::agent_status_changed,&dialog,
-            [&,refresh_agent_row](const QString& provider)
+            [&,refresh_agent_row,query_usage](const QString& provider)
     {
+        query_usage(provider); // e.g. after signing in
         if(auto it = agent_rows.find(provider);it != agent_rows.end())
             refresh_agent_row(provider,it->first,it->second);
     });
