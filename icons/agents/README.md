@@ -6,7 +6,7 @@ These SVG assets are bundled in `icons.qrc` under `:/icons/icons/agents/`.
 | --- | --- | --- |
 | `codex.svg` | OpenAI mark for Codex | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/openai-icon.svg) |
 | `claude.svg` | Claude mark | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/claude-icon.svg) |
-| `muse.svg` | Letter M for Muse | Original SVG created for DSI Studio |
+| `muse.svg` | Muse official blue-gradient mark | [Wikimedia Commons: Muse icon](https://commons.wikimedia.org/wiki/File:Muse_icon.svg) (Meta Platforms; public-domain simple logo, trademark may apply) |
 | `antigravity.svg` | Official Antigravity one-color icon | [Google Antigravity press assets](https://antigravity.google/press) |
 | `grok.svg` | Grok mark | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/grok-icon.svg) |
 | `web.svg` | Generic globe | Created for DSI Studio |
