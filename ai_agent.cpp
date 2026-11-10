@@ -568,21 +568,21 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     auto entry = info.record_reply(chat,reasoning); // the agent's message precedes the commands it sends
     QJsonObject result;
     {
-        // dispatch state for update_current_window() and approve(); a nested ai_request() restores the outer request's state
+        // dispatch state for update_current_window() and approve(), reset even if dispatch throws: a stale
+        // dispatching_info would make every later request busy
         struct dispatch_guard
         {
             AIAgent& agent;
-            ai_info* prev_info;
-            QString prev_chat;
-            bool prev_auto_approve;
             ~dispatch_guard()
             {
-                agent.dispatching_info = prev_info;
-                agent.ai_chat_context = prev_chat;
-                agent.ai_auto_approve = prev_auto_approve;
+                agent.dispatching_info = nullptr;
+                agent.ai_chat_context.clear();
+                agent.ai_auto_approve = false;
             }
-        } guard{*this,std::exchange(dispatching_info,&info),std::exchange(ai_chat_context,chat),
-                std::exchange(ai_auto_approve,info.model_settings.value("approval").toString() == "auto")};
+        } guard{*this};
+        dispatching_info = &info;
+        ai_chat_context = chat;
+        ai_auto_approve = info.model_settings.value("approval").toString() == "auto";
         result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     }
     if(&info == selected_info()) // set_work_dir may have moved this chat's directory
