@@ -64,6 +64,7 @@ class AIAgent : public QMainWindow
 
     web_bridge web; // the Web channel: Google tokens and the connected chat's session Doc
     bool sign_in_google(); // system-browser sign-in (PKCE + loopback); true once a token is held
+    void update_google_email(); // fetches the signed-in Google account into ai/google_email, then signals agent_status_changed("Web")
     void start_web(ai_info&); // starts (or resumes) polling this chat's Doc and posts the connection prompt to its history
     ai_info* selected_info() const; // ai_info bound to the sidebar's current chat, or null if none is selected
     bool web_connected(const ai_info&) const; // true iff this chat's Doc is the one being polled
