@@ -58,9 +58,7 @@ class AIAgent : public QMainWindow
     QString current_agent = "Codex";
     QString current_model_name; // empty is the one internal representation of "no explicit choice" (see model_combo_key()); never the literal word "default"
     QJsonObject current_model_info;
-    void update_model_list(); // the selected local chat's model button ("model · level"); hidden for Web, AgentServer, or no chat
-    // the New Chat dialog: agent (locked if agent_fixed), model and thinking level, starting from and returning through the arguments
-    bool choose_model(QString& provider,QString& model_name,QJsonObject& model_info,QString& effort_level,bool agent_fixed);
+    void update_model_list(); // the selected local chat's model dropdown; hidden for Web, AgentServer, or no chat
 
     web_bridge web; // the Web channel: Google tokens and the connected chat's session Doc
     bool sign_in_google(); // system-browser sign-in (PKCE + loopback); true once a token is held
@@ -73,6 +71,8 @@ class AIAgent : public QMainWindow
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     bool run_agent_login(const QString& provider);
+    struct agent_state{bool ready = false;QString text,action;};
+    agent_state agent_status(const QString& provider); // Settings' and New Chat's text for an agent (or "Web"): e.g. "Ready · <account>", and the Settings button's action
     void set_ai_status(const QString&,session_status,QString); // always updates/logs the session; updates the bottom label only when this chat is selected
     void update_ai_status(const ai_info&,bool = false); // presentation only; pulse toggles a running status dot on a real status update
     void show_ai_project(ai_info&,QJsonObject = {}); // sidebar row: create/update it, blink if the update is for a background chat, select it if nothing else was selected -- renders the chat transcript itself only when this chat is the one currently selected

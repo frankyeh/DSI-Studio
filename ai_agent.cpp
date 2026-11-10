@@ -1431,6 +1431,28 @@ bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopb
     settings.setValue("ai/google_folder_id",web.google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
+AIAgent::agent_state AIAgent::agent_status(const QString& provider)
+{
+    if(provider == "Web")
+        return web.google_refresh_token.isEmpty() ? agent_state{false,"Sign in","Sign in to Google"} :
+               agent_state{true,"Ready · Google Drive › DSI Studio AI","Sign in to Google again, e.g. to switch accounts"};
+    const auto& entry = agent_entries[provider];
+    switch(entry.status)
+    {
+    case ai_agent_status::Checking:
+        return {false,"Checking...",{}};
+    case ai_agent_status::SignInRequired:
+        return {false,"Sign in","Sign in"};
+    case ai_agent_status::Ready:
+        return {true,entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info,"Sign in again, e.g. to switch accounts or recover stale credentials"};
+    case ai_agent_status::Unknown:
+    case ai_agent_status::Error:
+        return {false,"Status unavailable","Check the status again"};
+    default:
+        return {false,"Install","Install"};
+    }
+}
+
 bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& model_info,QString& effort_level,bool agent_fixed)
 {
     QDialog dialog(this);
@@ -1443,25 +1465,20 @@ bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& mo
 
     QComboBox agent;
     agent.setIconSize(QSize(18,18));
-    for(auto name : {"Codex","Claude","Muse","Antigravity","Grok","Web"})
+    for(const auto& name : local_agents+QStringList{"Web"})
+        agent.addItem(QString(),name);
+    auto update_agent = [&](const QString& provider) // the logo and text as in Settings
     {
-        agent.addItem(agent_logo(name),QString(),name); // the logo in place of the name, which is the tooltip
-        agent.setItemData(agent.count()-1,name,Qt::ToolTipRole);
-    }
-    auto update_agent = [&](const QString& provider)
-    {
-        const auto& entry = agent_entries[provider];
-        bool is_ready = !entry.executable.isEmpty() && (entry.status == ai_agent_status::Ready ||
-                        std::any_of(entry.profiles.begin(),entry.profiles.end(),[](const QJsonValue& profile){return profile.toObject().contains("provider");}));
-        bool checking = entry.status == ai_agent_status::Unknown || entry.status == ai_agent_status::Checking;
+        auto [ready,text,action] = agent_status(provider);
+        auto entry = agent_entries.value(provider); // value(): no blank entry for "Web"
+        bool usable = ready || (!entry.executable.isEmpty() && // or an Ollama model without signing in
+                      std::any_of(entry.profiles.begin(),entry.profiles.end(),[](const QJsonValue& profile){return profile.toObject().contains("provider");}));
         auto* item = static_cast<QStandardItemModel*>(agent.model())->item(agent.findData(provider));
-        item->setIcon(agent_logo(provider,is_ready));
-        item->setText(is_ready ? QString() : checking ? "Checking..." : "Setup required");
-        item->setToolTip(provider+(is_ready ? QString() : checking ?
-                         ": checking local agent status..." :
-                         ": open Settings (⚙) to install or sign in."));
+        item->setIcon(agent_logo(provider,usable));
+        item->setText(text);
+        item->setToolTip(usable ? provider : provider+": open Settings (⚙) to install or sign in.");
     };
-    for(const auto& provider : local_agents)
+    for(const auto& provider : local_agents+QStringList{"Web"})
         update_agent(provider);
 
     agent.setCurrentIndex(agent.findData(provider));
@@ -1607,8 +1624,9 @@ void AIAgent::on_ai_quick_settings_clicked()
 
     // one row per agent: a round button "<logo> <status>", the logo grayed unless Ready, the usage bar on the right
     struct agent_row{QPushButton* button;QProgressBar* bar;QLabel* percent;};
-    auto set_agent_button = [](QPushButton* button,const QString& provider,bool ready,const QString& text,const QString& action)
+    auto set_agent_button = [this](QPushButton* button,const QString& provider)
     {
+        auto [ready,text,action] = agent_status(provider);
         button->setIcon(agent_logo(provider,ready)); // grayed, yet still clickable to install or sign in
         button->setIconSize(QSize(18,18));
         button->setText(text);
@@ -1620,30 +1638,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     {
         auto [button,bar,percent] = agent_rows[provider];
         auto [used,tip] = usage.value(provider,{-1,provider == "Grok" ? "Usage not supported yet" : "Usage unavailable"});
-        const auto& entry = agent_entries[provider];
-        QString text = "Install",action = "Install";
-        switch(entry.status)
-        {
-        case ai_agent_status::NotInstalled:
-            break;
-        case ai_agent_status::Checking:
-            text = "Checking...";
-            action.clear();
-            break;
-        case ai_agent_status::SignInRequired:
-            text = action = "Sign in";
-            break;
-        case ai_agent_status::Ready:
-            text = entry.status_info.isEmpty() ? "Ready" : "Ready · "+entry.status_info;
-            action = "Sign in again, e.g. to switch accounts or recover stale credentials";
-            break;
-        case ai_agent_status::Unknown:
-        case ai_agent_status::Error:
-            text = "Status unavailable";
-            action = "Check the status again";
-            break;
-        }
-        set_agent_button(button,provider,entry.status == ai_agent_status::Ready,text,action);
+        set_agent_button(button,provider);
         // a slim rounded bar: blue, amber from 70%, red from 90%; grayed and empty without a percentage
         bar->setEnabled(used >= 0);
         bar->setValue(std::max(used,0));
@@ -1652,7 +1647,7 @@ void AIAgent::on_ai_quick_settings_clicked()
                                    used >= 90 ? "#ea4335" : used >= 70 ? "#f9ab00" : "#4285f4"));
         percent->setText(used >= 0 ? QString::number(used)+"%" : QString());
         bar->parentWidget()->setToolTip(tip);
-        button->setEnabled(entry.status != ai_agent_status::Checking);
+        button->setEnabled(agent_entries[provider].status != ai_agent_status::Checking);
     };
     auto add_row = [agent_layout](bool usage_bar)
     {
@@ -1726,12 +1721,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     }
     // Web: the last row, signed in through Google like the local agents' own sign-in
     auto web_row = add_row(false);
-    auto refresh_web_row = [this,web_button = web_row.button,set_agent_button]
-    {
-        bool ready = !web.google_refresh_token.isEmpty();
-        set_agent_button(web_button,"Web",ready,ready ? "Ready · Google Drive › DSI Studio AI" : "Sign in",
-                         ready ? "Sign in to Google again, e.g. to switch accounts" : "Sign in to Google");
-    };
+    auto refresh_web_row = [web_button = web_row.button,set_agent_button]{set_agent_button(web_button,"Web");};
     refresh_web_row();
     connect(web_row.button,&QPushButton::clicked,&dialog,[this,refresh_web_row]
     {
