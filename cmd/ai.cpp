@@ -2254,6 +2254,7 @@ bool web_bridge::sign_in_device() // Google's device flow, authorized on any com
         return warn("Google sign-in failed: "+error),false;
     std::cout << "Google authorization completed." << std::endl;
     settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
+    settings.remove("ai/google_email"); // the GUI fetches the new account's
     return true;
 }
 int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web session served until Ctrl+C; no window is created
