@@ -123,7 +123,7 @@ static QString ai_dialog_style()
         "QPushButton:hover{background-color:#e9e9eb;border-color:#c8c8cc;}"
         "QPushButton:pressed{background-color:#dddddf;}"
         "QPushButton:disabled{color:#9aa0a6;background-color:#f1f1f2;border-color:#e4e4e6;}"
-        "QPushButton#ai_agent_button{color:#3c4043;font-weight:600;background-color:#f1f3f4;border:none;border-radius:14px;padding:6px 14px 6px 10px;text-align:left;}"
+        "QPushButton#ai_agent_button{color:#3c4043;font-weight:600;background-color:#f1f3f4;border:none;border-radius:14px;padding:6px 14px 6px 10px;min-height:16px;text-align:left;}" // height >= 2*radius, or Qt draws square corners
         "QPushButton#ai_agent_button:hover{background-color:#e8eaed;}"
         "QPushButton#ai_agent_button:pressed{background-color:#dadce0;}"
         "QPushButton#ai_agent_button:disabled{color:#9aa0a6;background-color:#f1f1f2;}"
@@ -689,11 +689,9 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
-        button->setText("...");
+        button->setText("⋯");
         button->setToolTip("Project actions");
         button->setFixedSize(28,28);
-        button->setPopupMode(QToolButton::InstantPopup);
-        button->setMenu(ai_project_menu);
 
         auto* layout = new QHBoxLayout(row);
         layout->setContentsMargins(6,2,2,2);
@@ -713,7 +711,11 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
         auto select = [this,item]{ui->ai_project_list->setCurrentItem(item);};
         connect(title,&QPushButton::clicked,this,select);
-        connect(button,&QToolButton::pressed,this,select);
+        connect(button,&QToolButton::clicked,this,[this,select,button]
+        {
+            select(); // first: the menu's actions act on the selected chat (a setMenu popup would open before this)
+            ai_project_menu->exec(button->mapToGlobal(QPoint(0,button->height())));
+        });
     }
 
     auto* row = ui->ai_project_list->itemWidget(item);
