@@ -76,14 +76,14 @@ static void stop_blink(QWidget* row)
     row->setStyleSheet({});
 }
 
-static void update_status_dot(QLabel* dot,session_status status,bool pulse) // presentational: sets a sidebar/status dot's color and pulse animation for the given status
+static void update_status_dot(QToolButton* dot,session_status status,bool pulse) // presentational: colors a chat row's round "⋮" menu button by status; a spinning "◐" replaces "⋮" while running
 {
     if(!dot)
         return;
-    // pulse advances the animation, otherwise it resets; the caller decides when (ai_info::is_running())
-    int phase = dot->property("pulse").toInt();
-    phase = pulse ? (phase+1)%8 : 0; // a 4 s cycle at the 500 ms status timer
+    // pulse advances the spinner, otherwise it resets to "⋮"; the caller decides when (ai_info::is_running())
+    int phase = pulse ? (dot->property("pulse").toInt()+1)%4 : 0; // a 2 s turn at the 500 ms status timer
     dot->setProperty("pulse",phase);
+    dot->setText(pulse ? QString(QString("◐◓◑◒")[phase]) : QString("⋮"));
 
     QColor color;
     switch(status)
@@ -94,9 +94,8 @@ static void update_status_dot(QLabel* dot,session_status status,bool pulse) // p
     case session_status::Completed:    color = "#9aa0a6"; break;
     case session_status::Failed:       color = "#ea4335"; break;
     }
-    int intensity = phase <= 4 ? phase : 8-phase;
-    color = color.lighter(100+intensity*20); // up to 180%: clearly visible, e.g. Web's green
-    dot->setStyleSheet(QString("background-color:%1;border-radius:5px;").arg(color.name()));
+    dot->setStyleSheet(QString("QToolButton{background-color:%1;color:#ffffff;border:0;border-radius:12px;font-size:16px;}"
+                               "QToolButton:hover{background-color:%2;}").arg(color.name(),color.darker(115).name()));
     dot->setToolTip(session_status_text(status));
 }
 
@@ -274,7 +273,7 @@ AIAgent::AIAgent(MainWindow* parent):
             {
                 running = true;
                 if(auto* row = ui->ai_project_list->itemWidget(info.project_items))
-                    update_status_dot(row->findChild<QLabel*>("ai_project_status_dot"),
+                    update_status_dot(row->findChild<QToolButton*>("ai_project_menu_button"),
                                       info.status,true);
             }
         }
@@ -523,7 +522,7 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
     if(info.project_items && (pulse || !running)) // a running dot is animated by the status timer; other updates (e.g. streamed output) would reset it
     {
         auto* row = ui->ai_project_list->itemWidget(info.project_items);
-        update_status_dot(row ? row->findChild<QLabel*>("ai_project_status_dot") : nullptr,
+        update_status_dot(row ? row->findChild<QToolButton*>("ai_project_menu_button") : nullptr,
                           info.status,pulse && running);
     }
 
@@ -679,10 +678,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         info.project_items = item;
 
         auto* row = new QWidget;
-        auto* status_dot = new QLabel(row);
-        status_dot->setObjectName("ai_project_status_dot");
-        status_dot->setFixedSize(10,10);
-
         auto* title = new QPushButton(row);
         title->setFlat(true);
         title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
@@ -690,13 +685,11 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
         button->setText("⋮");
-        button->setToolTip("Project actions");
-        button->setFixedSize(28,28);
+        button->setFixedSize(24,24); // round, colored by status (update_status_dot), whose tooltip is the status
 
         auto* layout = new QHBoxLayout(row);
         layout->setContentsMargins(6,2,2,2);
         layout->setSpacing(6);
-        layout->addWidget(status_dot);
         layout->addWidget(title,1);
         layout->addWidget(button);
         ui->ai_project_list->setItemWidget(item,row);
