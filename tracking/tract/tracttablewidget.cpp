@@ -338,16 +338,24 @@ void TractTableWidget::fetch_tracts(void)
                     show_region("atk roa",thread_data[index]->roi_mgr->atlas_roa);
                 }
 
-                tract_rendering[index]->need_update = true;
-                auto lock = tract_rendering[index]->start_writing();
-                has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
-                has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
-                tract_models[index]->trim(thread_data[index]->param.tip_iteration);
-                item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-                item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-                item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
-                item(int(index),0)->setCheckState(Qt::Checked);
-                thread_data[index].reset();
+                // trim() pumps events, during which rows may be deleted: hold this row's objects,
+                // then update the row only where it still is
+                auto thread = thread_data[index];
+                auto model = tract_models[index];
+                auto render = tract_rendering[index];
+                render->need_update = true;
+                auto lock = render->start_writing();
+                has_tracts |= thread->fetchTracks(model.get()); // clear both front and back buffer
+                has_tracts |= thread->fetchTracks(model.get()); // clear both front and back buffer
+                model->trim(thread->param.tip_iteration);
+                auto row = int(std::find(tract_models.begin(),tract_models.end(),model)-tract_models.begin());
+                if(row == int(tract_models.size())) // deleted
+                    continue;
+                item(row,1)->setText(QString::number(model->get_visible_track_count()));
+                item(row,2)->setText(QString::number(model->get_deleted_track_count()));
+                item(row,3)->setText(QString::number(thread->get_total_seed_count()));
+                item(row,0)->setCheckState(Qt::Checked);
+                thread_data[row].reset();
             }
             else
                 has_thread = true;
