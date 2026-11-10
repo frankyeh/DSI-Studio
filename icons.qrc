@@ -46,6 +46,7 @@
         <file>icons/agents/antigravity.svg</file>
         <file>icons/agents/grok.svg</file>
         <file>icons/agents/web.svg</file>
+        <file>icons/settings.svg</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
