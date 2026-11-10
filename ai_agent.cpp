@@ -1680,11 +1680,14 @@ void AIAgent::on_ai_quick_settings_clicked()
             return;
         usage[provider] = {-1,"Checking usage..."};
         auto result = QSharedPointer<QPair<int,QString> >::create();
-        auto* worker = QThread::create([provider,executable = agent_entries[provider].executable,result]{*result = agent_usage(provider,executable);});
+        auto plan = QSharedPointer<QString>::create();
+        auto* worker = QThread::create([provider,executable = agent_entries[provider].executable,result,plan]{*result = agent_usage(provider,executable,*plan);});
         connect(worker,&QThread::finished,worker,&QObject::deleteLater);
-        connect(worker,&QThread::finished,&dialog,[&,provider,result]
+        connect(worker,&QThread::finished,&dialog,[&,provider,result,plan]
         {
             usage[provider] = *result;
+            if(auto& info = agent_entries[provider].status_info;!plan->isEmpty() && !info.contains(*plan)) // e.g. Muse's tier after its account
+                info = info.isEmpty() ? *plan : info+" · "+*plan;
             refresh_agent_row(provider);
         });
         worker->start();
