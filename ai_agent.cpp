@@ -1378,9 +1378,11 @@ void AIAgent::on_ai_new_chat_clicked()
     model.setMaximumHeight(model.sizeHint().height());
     auto* local_layout = new QFormLayout(&local);
     local_layout->setContentsMargins(0,0,0,0);
-    local_layout->addRow("Model:",&model);
-    QComboBox effort;
-    local_layout->addRow("Thinking:",&effort);
+    QComboBox effort; // the thinking level, right of the model
+    auto* model_row = new QHBoxLayout;
+    model_row->addWidget(&model,1);
+    model_row->addWidget(&effort);
+    local_layout->addRow("Model:",model_row);
     layout.addRow(&local);
 
     auto update_field = [&]
@@ -1392,7 +1394,7 @@ void AIAgent::on_ai_new_chat_clicked()
                 // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
                 provider == current_agent ? current_model_name : QString(),{},
                 provider == current_agent ? current_model_info : QJsonObject());
-        local_layout->labelForField(&effort)->setVisible(set_effort_selector(effort,provider,"default"));
+        set_effort_selector(effort,provider,"default");
         dialog.adjustSize();
     };
     update_field();
