@@ -118,7 +118,7 @@ static void update_status_dot(QToolButton* dot,session_status status,bool pulse)
     case session_status::Completed:    color = "#9aa0a6"; break;
     case session_status::Failed:       color = "#ea4335"; break;
     }
-    dot->setStyleSheet(QString("QToolButton{background-color:%1;color:#ffffff;border:0;border-radius:12px;padding:0;}"
+    dot->setStyleSheet(QString("QToolButton{background-color:%1;border:0;border-radius:12px;padding:0;}"
                                "QToolButton:hover{background-color:%2;}").arg(color.name(),color.darker(115).name()));
     dot->setToolTip(session_status_text(status));
 }
@@ -336,11 +336,11 @@ AIAgent::AIAgent(MainWindow* parent):
     refresh_agent_executables();
     refresh_agent_status();
     // the last New Chat choice, otherwise the first installed agent; Codex when none is
-    if(auto saved = settings.value("ai/new_chat_agent").toString();local_agents.contains(saved))
+    if(auto saved = QJsonObject::fromVariantMap(settings.value("ai/new_chat").toMap());local_agents.contains(saved["agent"].toString()))
     {
-        current_agent = saved;
-        current_model_name = settings.value("ai/new_chat_model").toString();
-        current_model_info = QJsonDocument::fromJson(settings.value("ai/new_chat_model_info").toByteArray()).object();
+        current_agent = saved["agent"].toString();
+        current_model_name = saved["model"].toString();
+        current_model_info = saved["info"].toObject();
     }
     else
         for(const auto& provider : local_agents)
@@ -817,7 +817,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                entry["text"].toString().trimmed().isEmpty() &&
                (!show_reasoning || entry["reasoning"].toString().trimmed().isEmpty());
     };
-    auto logo = agent_logo_html(info.provider);
     auto append = [&](const QJsonObject& entry,const QStringList& activities = {})
     {
         bool user = entry["type"] == "user";
@@ -842,7 +841,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
-                        .arg(color,(user ? QString("You") : logo)+" &middot; ",time,content);
+                        .arg(color,(user ? QString("You") : agent_logo_html(info.provider))+" &middot; ",time,content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
@@ -1544,7 +1543,7 @@ bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& mo
 
 void AIAgent::on_ai_new_chat_clicked()
 {
-    QString provider = current_agent,model = current_model_name,effort = settings.value("ai/new_chat_effort").toString();
+    QString provider = current_agent,model = current_model_name,effort = settings.value("ai/new_chat").toMap().value("effort").toString();
     QJsonObject model_info = current_model_info;
     if(!choose_model(provider,model,model_info,effort,false))
         return;
@@ -1564,10 +1563,7 @@ void AIAgent::on_ai_new_chat_clicked()
     current_agent = provider;
     current_model_name = model;
     current_model_info = model_info;
-    settings.setValue("ai/new_chat_agent",provider); // remembered across restarts
-    settings.setValue("ai/new_chat_model",model);
-    settings.setValue("ai/new_chat_model_info",QJsonDocument(model_info).toJson(QJsonDocument::Compact));
-    settings.setValue("ai/new_chat_effort",effort);
+    settings.setValue("ai/new_chat",QJsonObject{{"agent",provider},{"model",model},{"info",model_info},{"effort",effort}}.toVariantMap()); // remembered across restarts
 
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
@@ -1622,23 +1618,22 @@ void AIAgent::on_ai_quick_settings_clicked()
 
     auto* agent_layout = add_card({});
 
-    // one row per agent: a round button "<logo> <status>", the logo grayed unless Ready, the usage bar on the right
+    // one row per agent (Web last): a round button "<logo> <status>", the logo grayed unless Ready, the usage bar on the right
     struct agent_row{QPushButton* button;QProgressBar* bar;QLabel* percent;};
-    auto set_agent_button = [this](QPushButton* button,const QString& provider)
+    QHash<QString,agent_row> agent_rows;
+    QHash<QString,QPair<int,QString> > usage; // the first window's used % (-1: none) and the tooltip, once queried
+    auto refresh_agent_row = [this,&usage,&agent_rows](const QString& provider)
     {
+        auto [button,bar,percent] = agent_rows[provider];
         auto [ready,text,action] = agent_status(provider);
         button->setIcon(agent_logo(provider,ready)); // grayed, yet still clickable to install or sign in
         button->setIconSize(QSize(18,18));
         button->setText(text);
         button->setToolTip(provider+(action.isEmpty() ? QString() : ": "+action)); // the name, now that the logo stands for it
-    };
-    QHash<QString,agent_row> agent_rows;
-    QHash<QString,QPair<int,QString> > usage; // the first window's used % (-1: none) and the tooltip, once queried
-    auto refresh_agent_row = [this,&usage,&agent_rows,set_agent_button](const QString& provider)
-    {
-        auto [button,bar,percent] = agent_rows[provider];
+        button->setEnabled(agent_entries.value(provider).status != ai_agent_status::Checking); // value(): no blank entry for "Web"
+        if(!bar) // Web: no usage
+            return;
         auto [used,tip] = usage.value(provider,{-1,provider == "Grok" ? "Usage not supported yet" : "Usage unavailable"});
-        set_agent_button(button,provider);
         // a slim rounded bar: blue, amber from 70%, red from 90%; grayed and empty without a percentage
         bar->setEnabled(used >= 0);
         bar->setValue(std::max(used,0));
@@ -1647,7 +1642,6 @@ void AIAgent::on_ai_quick_settings_clicked()
                                    used >= 90 ? "#ea4335" : used >= 70 ? "#f9ab00" : "#4285f4"));
         percent->setText(used >= 0 ? QString::number(used)+"%" : QString());
         bar->parentWidget()->setToolTip(tip);
-        button->setEnabled(agent_entries[provider].status != ai_agent_status::Checking);
     };
     auto add_row = [agent_layout](bool usage_bar)
     {
@@ -1719,14 +1713,13 @@ void AIAgent::on_ai_quick_settings_clicked()
                 refresh_agent_status(provider);
         });
     }
-    // Web: the last row, signed in through Google like the local agents' own sign-in
-    auto web_row = add_row(false);
-    auto refresh_web_row = [web_button = web_row.button,set_agent_button]{set_agent_button(web_button,"Web");};
-    refresh_web_row();
-    connect(web_row.button,&QPushButton::clicked,&dialog,[this,refresh_web_row]
+    // Web: signed in through Google like the local agents' own sign-in
+    agent_rows["Web"] = add_row(false);
+    refresh_agent_row("Web");
+    connect(agent_rows["Web"].button,&QPushButton::clicked,&dialog,[&]
     {
         sign_in_google();
-        refresh_web_row();
+        refresh_agent_row("Web");
     });
     connect(this,&AIAgent::agent_status_changed,&dialog,
             [&,refresh_agent_row,query_usage](const QString& provider)
