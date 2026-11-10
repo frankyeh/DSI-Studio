@@ -17,7 +17,6 @@
 #include <QUuid>
 #include <QProcess>
 #include <QProcessEnvironment>
-#include <QPointer>
 
 #include <QJsonDocument>
 #include <QMap>
@@ -1171,15 +1170,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     QJsonArray results;
 
-    QPointer<QWidget> locked_target;
-    auto unlock_target = [&]
-    {
-        if(!locked_target)
-            return;
-        locked_target->setProperty("busy",false);
-        locked_target = nullptr;
-    };
-
     auto find_window = [&](const QString& id) -> QWidget*
     {
         if(id == "main")
@@ -1190,32 +1180,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return nullptr;
     };
 
-    auto resolve_target = [&](QString& error)
-    {
-        if(locked_target)
-            return true;
-        auto all_widgets = QApplication::allWidgets();
-        if(std::any_of(all_widgets.begin(),all_widgets.end(),
-                        [](auto* each){return each->property("busy").toBool();}))
-        {
-            error = "another CMD is running; check opened windows";
-            return false;
-        }
-        auto* target = find_window(info.current_window);
-        if(!target)
-        {
-            error = "target window not found, terminated by user? Use set_window to select a window first.";
-            return false;
-        }
-        target->setProperty("busy",true);
-        locked_target = target;
-        return true;
-    };
-
     for(const auto& cmd : cmds)
     {
         auto command_name = QString::fromUtf8(cmd[0]);
-        auto window_before = info.current_window;
         QString output,error;
         QJsonObject attachment; // web_upload, web_download_prepare, web_download
         QString* prev_capture;
@@ -1242,8 +1209,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             }
             else
                 QDir::setCurrent(prev_cwd);
-            if(info.current_window != window_before)
-                unlock_target();
 
             QString title;
             if(command_window_type(info.current_window) != "main")
@@ -1273,29 +1238,23 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(command_name == "bring_to_front" || command_name == "close" ||
                command_name == "minimize" || command_name == "maximize")
             {
-                if(auto* target = find_window(info.current_window))
-                {
-                    if(command_name == "close" && target == this)
-                        error = "the main window cannot be closed by AI";
-                    else if(command_name == "bring_to_front")
-                    {
-                        target->showNormal();
-                        target->raise();
-                        target->activateWindow();
-                    }
-                    else if(command_name == "minimize")
-                        target->showMinimized();
-                    else if(command_name == "maximize")
-                        target->showMaximized();
-                    else
-                    {
-                        if(locked_target == target)
-                            locked_target = nullptr;
-                        target->close();
-                    }
-                }
-                else
+                auto* target = find_window(info.current_window);
+                if(!target)
                     error = "target window not found, terminated by user? Use set_window to select a window first.";
+                else if(command_name == "close" && target == this)
+                    error = "the main window cannot be closed by AI";
+                else if(command_name == "bring_to_front")
+                {
+                    target->showNormal();
+                    target->raise();
+                    target->activateWindow();
+                }
+                else if(command_name == "minimize")
+                    target->showMinimized();
+                else if(command_name == "maximize")
+                    target->showMaximized();
+                else
+                    target->close();
             }
             else if(command_name == "set_title")
             {
@@ -1352,7 +1311,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     auto id = command_window_id(each);
                     if(id.isEmpty())
                         continue;
-                    bool busy = each->property("busy").toBool();
+                    bool busy = false;
                     if(auto* tracking = qobject_cast<tracking_window*>(each))
                         busy |= tracking->history.running_commands ||
                                 (tracking->tractWidget &&
@@ -1401,8 +1360,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
-                if(resolve_target(error) && // a busy or missing target is an error, so the batch stops
-                   !command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
+                auto* target = find_window(info.current_window);
+                if(!target) // an error, so the batch stops
+                    error = "target window not found, terminated by user? Use set_window to select a window first.";
+                else if(!command_window(target,cmd,command_source::AI,error) && error.isEmpty())
                     error = QString::fromStdString(error_msg);
             }
             else
@@ -1417,8 +1378,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         if(!finish())
             break;
     }
-    unlock_target();
-
     return QJsonObject{
         {"status",results.last().toObject()["status"]},{"result",results}};
 }
