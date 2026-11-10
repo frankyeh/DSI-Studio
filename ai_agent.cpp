@@ -324,12 +324,20 @@ AIAgent::AIAgent(MainWindow* parent):
 
     refresh_agent_executables();
     refresh_agent_status();
-    for(const auto& provider : local_agents) // the first installed agent; Codex when none is
-        if(!agent_entries[provider].executable.isEmpty())
-        {
-            current_agent = provider;
-            break;
-        }
+    // the last New Chat choice, otherwise the first installed agent; Codex when none is
+    if(auto saved = settings.value("ai/new_chat_agent").toString();local_agents.contains(saved))
+    {
+        current_agent = saved;
+        current_model_name = settings.value("ai/new_chat_model").toString();
+        current_model_info = QJsonDocument::fromJson(settings.value("ai/new_chat_model_info").toByteArray()).object();
+    }
+    else
+        for(const auto& provider : local_agents)
+            if(!agent_entries[provider].executable.isEmpty())
+            {
+                current_agent = provider;
+                break;
+            }
     update_model_list();
     connect(ui->ai_model,&QPushButton::clicked,this,[this] // the New Chat dialog with the chat's agent locked
     {
@@ -1501,7 +1509,7 @@ bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& mo
 
 void AIAgent::on_ai_new_chat_clicked()
 {
-    QString provider = current_agent,model = current_model_name,effort;
+    QString provider = current_agent,model = current_model_name,effort = settings.value("ai/new_chat_effort").toString();
     QJsonObject model_info = current_model_info;
     if(!choose_model(provider,model,model_info,effort,false))
         return;
@@ -1521,6 +1529,10 @@ void AIAgent::on_ai_new_chat_clicked()
     current_agent = provider;
     current_model_name = model;
     current_model_info = model_info;
+    settings.setValue("ai/new_chat_agent",provider); // remembered across restarts
+    settings.setValue("ai/new_chat_model",model);
+    settings.setValue("ai/new_chat_model_info",QJsonDocument(model_info).toJson(QJsonDocument::Compact));
+    settings.setValue("ai/new_chat_effort",effort);
 
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
