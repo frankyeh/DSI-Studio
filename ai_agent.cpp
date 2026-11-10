@@ -83,7 +83,31 @@ static void update_status_dot(QToolButton* dot,session_status status,bool pulse)
     // pulse advances the spinner, otherwise it resets to "⋮"; the caller decides when (ai_info::is_running())
     int phase = pulse ? (dot->property("pulse").toInt()+1)%4 : 0; // a 2 s turn at the 500 ms status timer
     dot->setProperty("pulse",phase);
-    dot->setText(pulse ? QString(QString("◐◓◑◒")[phase]) : QString("⋮"));
+
+    // drawn, not text: a font's line box would clip the glyph and set it low in the small button
+    auto ratio = dot->devicePixelRatioF();
+    QPixmap icon(QSize(16,16)*ratio);
+    icon.setDevicePixelRatio(ratio);
+    icon.fill(Qt::transparent);
+    QPainter painter(&icon);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setBrush(Qt::white);
+    if(pulse) // a half-filled ring turning a quarter per step: ◐ ◓ ◑ ◒
+    {
+        painter.setPen(QPen(Qt::white,1.5));
+        painter.drawPie(QRectF(2.5,2.5,11,11),(90-phase*90)*16,180*16);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(QRectF(2.5,2.5,11,11));
+    }
+    else // ⋮
+    {
+        painter.setPen(Qt::NoPen);
+        for(int y : {3,8,13})
+            painter.drawEllipse(QPointF(8,y),1.6,1.6);
+    }
+    painter.end();
+    dot->setIcon(QIcon(icon));
+    dot->setIconSize(QSize(16,16));
 
     QColor color;
     switch(status)
@@ -94,7 +118,7 @@ static void update_status_dot(QToolButton* dot,session_status status,bool pulse)
     case session_status::Completed:    color = "#9aa0a6"; break;
     case session_status::Failed:       color = "#ea4335"; break;
     }
-    dot->setStyleSheet(QString("QToolButton{background-color:%1;color:#ffffff;border:0;border-radius:12px;font-size:16px;}"
+    dot->setStyleSheet(QString("QToolButton{background-color:%1;color:#ffffff;border:0;border-radius:12px;padding:0;}"
                                "QToolButton:hover{background-color:%2;}").arg(color.name(),color.darker(115).name()));
     dot->setToolTip(session_status_text(status));
 }
@@ -684,7 +708,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
-        button->setText("⋮");
         button->setFixedSize(24,24); // round, colored by status (update_status_dot), whose tooltip is the status
 
         auto* layout = new QHBoxLayout(row);
