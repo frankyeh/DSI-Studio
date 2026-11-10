@@ -54,6 +54,11 @@ QStringList agent_efforts(const QString& provider,const QString& model)
     return settings.value(key+"_efforts").toMap().value(model.isEmpty() || model == "default" ?
            settings.value(key+"_default_model").toString() : model).toStringList();
 }
+QString chat_effort(const QString& provider,const QString& model,const QString& selected)
+{
+    auto efforts = agent_efforts(provider,model);
+    return efforts.contains(selected) ? selected : efforts.contains("medium") ? QString("medium") : efforts.value(0);
+}
 bool is_valid_session_id(const QString& id)
 {
     return !QUuid(id).toString(QUuid::WithoutBraces).compare(id,Qt::CaseInsensitive);
@@ -588,11 +593,8 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
     // the chat's thinking level if its model supports it, never one for an Ollama model (its server takes none)
     auto effort = [](const ai_info& info)
     {
-        auto levels = agent_efforts(info.provider,info.model_settings["model"].toString().trimmed());
-        auto level = info.model_settings.value("effort").toString();
-        if(!levels.contains(level)) // none chosen yet, or one this model lacks: medium, as the thinking drop-down shows
-            level = "medium";
-        return levels.contains(level) && !info.model_settings["info"].toObject().contains("provider") ? level : QString();
+        return info.model_settings["info"].toObject().contains("provider") ? QString() :
+               chat_effort(info.provider,info.model_settings["model"].toString().trimmed(),info.model_settings["effort"].toString());
     };
     auto level = effort(info); // at launch; Codex and Muse send it each turn
     // the one stdin boundary for every local agent's user input; records nothing; returns QProcess::write()'s result (-1: refused)

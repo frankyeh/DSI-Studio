@@ -132,14 +132,13 @@ static QString model_combo_key(const QComboBox& model) // strips the " (Ollama@h
     return key == "default" ? QString() : key;
 }
 
-// populates effort with the thinking levels of the agent's model, selecting selected (medium if not a level); shown only if there are levels
+// populates effort with the thinking levels of the agent's model, selecting chat_effort(); shown only if there are levels
 static void set_effort_selector(QComboBox& effort,const QString& provider,const QString& model,const QString& selected)
 {
-    auto efforts = agent_efforts(provider,model);
     effort.clear();
-    effort.addItems(efforts);
-    effort.setCurrentText(efforts.contains(selected) ? selected : "medium");
-    effort.setVisible(!efforts.isEmpty());
+    effort.addItems(agent_efforts(provider,model));
+    effort.setCurrentText(chat_effort(provider,model,selected));
+    effort.setVisible(effort.count());
 }
 
 // populates model with "default"+profiles' native/Ollama entries, grouped and sorted, selecting selected (or falling back to fallback) --
@@ -302,29 +301,28 @@ AIAgent::AIAgent(MainWindow* parent):
             break;
         }
     update_model_list();
-    connect(ui->ai_model,QOverload<int>::of(&QComboBox::activated),this,[this](int) // a user choice, never a list refill
+    connect(ui->ai_model,&QPushButton::clicked,this,[this] // the New Chat dialog with the chat's agent locked
     {
-        if(auto* info = selected_info())
-        {
-            info->model_settings["model"] = model_combo_key(*ui->ai_model);
-            info->model_settings["info"] = ui->ai_model->currentData().toJsonObject(); // the entry's own profile, incl. its Ollama server
-            info->save_config();
-            update_model_list(); // the thinking levels follow the model
-        }
+        auto* info = selected_info();
+        if(!info)
+            return;
+        auto provider = info->provider;
+        auto model = info->model_settings["model"].toString();
+        auto model_info = info->model_settings["info"].toObject();
+        auto effort = info->model_settings["effort"].toString();
+        if(!choose_model(provider,model,model_info,effort,true))
+            return;
+        info->model_settings["model"] = model;
+        info->model_settings["info"] = model_info; // the entry's own profile, incl. its Ollama server
+        info->model_settings["effort"] = effort;
+        info->save_config();
+        update_model_list();
     });
-    connect(ui->ai_effort,QOverload<int>::of(&QComboBox::activated),this,[this](int)
+    connect(ui->ai_approval,&QCheckBox::clicked,this,[this](bool checked) // a user choice, never a programmatic sync
     {
         if(auto* info = selected_info())
         {
-            info->model_settings["effort"] = ui->ai_effort->currentText();
-            info->save_config();
-        }
-    });
-    connect(ui->ai_approval,QOverload<int>::of(&QComboBox::activated),this,[this](int index) // a user choice, never a programmatic sync
-    {
-        if(auto* info = selected_info())
-        {
-            info->model_settings["approval"] = index == 1 ? "auto" : "manual";
+            info->model_settings["approval"] = checked ? "auto" : "manual";
             info->save_config();
         }
     });
@@ -434,7 +432,7 @@ AIAgent::AIAgent(MainWindow* parent):
         ui->ai_chat_history->setEnabled(true);
         ui->ai_chat_input->setEnabled(true);
         ui->ai_approval->setEnabled(true);
-        ui->ai_approval->setCurrentIndex(info->model_settings.value("approval").toString() == "auto" ? 1 : 0);
+        ui->ai_approval->setChecked(info->model_settings.value("approval").toString() == "auto");
         ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
             info->model_settings["cwd"].toString() : main_window.work_dir());
         update_model_list();
@@ -1273,12 +1271,11 @@ void AIAgent::update_model_list()
     update_send_button(); // the send button depends on the same selected chat
     bool local = info && info->provider != "Web" && info->provider != "AgentServer";
     ui->ai_model->setVisible(local);
-    ui->ai_effort->setVisible(local);
     if(!local)
         return;
-    set_model_selector(*ui->ai_model,agent_entries[info->provider].profiles,info->model_settings["model"].toString(),{},
-                       info->model_settings["info"].toObject());
-    set_effort_selector(*ui->ai_effort,info->provider,info->model_settings["model"].toString(),info->model_settings["effort"].toString());
+    auto model = info->model_settings["model"].toString();
+    auto effort = chat_effort(info->provider,model,info->model_settings["effort"].toString());
+    ui->ai_model->setText((model.isEmpty() ? "default" : model)+(effort.isEmpty() ? QString() : " · "+effort));
 }
 
 ai_info* AIAgent::selected_info() const
@@ -1316,7 +1313,6 @@ void AIAgent::update_send_button()
     auto action = current_send_action();
     ui->ai_send_message->setEnabled(action != send_action::Disabled);
     ui->ai_model->setEnabled(action != send_action::Stop); // a running agent keeps the model it was launched with
-    ui->ai_effort->setEnabled(action != send_action::Stop);
     ui->ai_send_message->setText(
         action == send_action::Stop ? "Stop" :
         action == send_action::Resume ? "Resume" : "Send");
@@ -1388,10 +1384,10 @@ bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopb
     settings.setValue("ai/google_folder_id",web.google_folder_id = QString()); // the account may have changed: resolve its folder again
     return true;
 }
-void AIAgent::on_ai_new_chat_clicked()
+bool AIAgent::choose_model(QString& provider,QString& model_name,QJsonObject& model_info,QString& effort_level,bool agent_fixed)
 {
     QDialog dialog(this);
-    dialog.setWindowTitle("New Chat");
+    dialog.setWindowTitle(agent_fixed ? "Model" : "New Chat");
     dialog.setMinimumWidth(440);
     dialog.setStyleSheet(ai_dialog_style());
     QFormLayout layout(&dialog);
@@ -1417,7 +1413,8 @@ void AIAgent::on_ai_new_chat_clicked()
     for(const auto& provider : local_agents)
         update_agent(provider);
 
-    agent.setCurrentIndex(agent.findData(current_agent));
+    agent.setCurrentIndex(agent.findData(provider));
+    agent.setEnabled(!agent_fixed);
     layout.addRow("Agent:",&agent);
 
     QWidget local; // declared before its would-be children below, so it is destroyed after them
@@ -1430,16 +1427,16 @@ void AIAgent::on_ai_new_chat_clicked()
     local_layout->addRow("Model:",model_row);
     layout.addRow(&local);
 
-    auto update_effort = [&]{set_effort_selector(effort,agent.currentData().toString(),model_combo_key(model),effort.currentText());};
+    auto update_effort = [&]{set_effort_selector(effort,agent.currentData().toString(),model_combo_key(model),effort.count() ? effort.currentText() : effort_level);};
     auto update_field = [&]
     {
-        auto provider = agent.currentData().toString();
-        local.setVisible(provider != "Web"); // Web has no model choice; Google sign-in is asked at Start when needed
-        if(provider != "Web")
-            set_model_selector(model,agent_entries[provider].profiles,
-                // only the agent that's actually active right now keeps its remembered model; switching to a different agent resets to that agent's own "default"
-                provider == current_agent ? current_model_name : QString(),{},
-                provider == current_agent ? current_model_info : QJsonObject());
+        auto current = agent.currentData().toString();
+        local.setVisible(current != "Web"); // Web has no model choice; Google sign-in is asked at Start when needed
+        if(current != "Web")
+            set_model_selector(model,agent_entries[current].profiles,
+                // only the starting agent keeps the given model; switching to a different agent resets to that agent's own "default"
+                current == provider ? model_name : QString(),{},
+                current == provider ? model_info : QJsonObject());
         update_effort();
         dialog.adjustSize();
     };
@@ -1447,7 +1444,7 @@ void AIAgent::on_ai_new_chat_clicked()
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_field();});
     connect(&model,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int){update_effort();});
     QDialogButtonBox buttons(QDialogButtonBox::Cancel);
-    auto* accept = buttons.addButton("Start",QDialogButtonBox::AcceptRole);
+    auto* accept = buttons.addButton(agent_fixed ? "OK" : "Start",QDialogButtonBox::AcceptRole);
     accept->setObjectName("ai_primary_button");
     layout.addRow(&buttons);
     connect(this,&AIAgent::agent_status_changed,&dialog,update_agent);
@@ -1459,9 +1456,9 @@ void AIAgent::on_ai_new_chat_clicked()
     });
     connect(accept,&QPushButton::clicked,&dialog,[&]
     {
-        auto provider = agent.currentData().toString();
-        if(provider == "Web" || (!agent_entries[provider].executable.isEmpty() &&
-           (agent_entries[provider].status == ai_agent_status::Ready || model.currentData().toJsonObject().contains("provider"))))
+        auto current = agent.currentData().toString();
+        if(current == "Web" || (!agent_entries[current].executable.isEmpty() &&
+           (agent_entries[current].status == ai_agent_status::Ready || model.currentData().toJsonObject().contains("provider"))))
             return dialog.accept();
         dialog.reject();
         on_ai_quick_settings_clicked();
@@ -1469,8 +1466,21 @@ void AIAgent::on_ai_new_chat_clicked()
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
 
     if(dialog.exec() != QDialog::Accepted)
+        return false;
+    provider = agent.currentData().toString();
+    model_name = model_combo_key(model);
+    model_info = model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
+    effort_level = effort.currentText();
+    return true;
+}
+
+void AIAgent::on_ai_new_chat_clicked()
+{
+    QString provider = current_agent,model = current_model_name,effort;
+    QJsonObject model_info = current_model_info;
+    if(!choose_model(provider,model,model_info,effort,false))
         return;
-    if(agent.currentData().toString() == "Web")
+    if(provider == "Web")
     {
         if(web.google_refresh_token.isEmpty() && !sign_in_google())
             return;
@@ -1483,9 +1493,9 @@ void AIAgent::on_ai_new_chat_clicked()
             info->save_config(); // after start_web(), so the chat is saved as established
         });
     }
-    current_agent = agent.currentData().toString();
-    current_model_name = model_combo_key(model);
-    current_model_info = model.currentData().toJsonObject(); // the chosen entry's own profile, incl. its Ollama server
+    current_agent = provider;
+    current_model_name = model;
+    current_model_info = model_info;
 
     // drop any never-used placeholder left behind by an abandoned "New Chat" attempt before adding another
     for(auto it = ai_infos.begin();it != ai_infos.end();)
@@ -1499,9 +1509,9 @@ void AIAgent::on_ai_new_chat_clicked()
             ++it;
 
     auto* info = ai_info::create(
-        current_agent == "Muse" ? muse_uuid_v7() :
-        QUuid::createUuid().toString(QUuid::WithoutBraces),current_agent); // status defaults to New; no "new:"/other marker on the id itself
-    info->model_settings = QJsonObject{{"model",current_model_name},{"info",current_model_info},{"effort",effort.currentText()}};
+        provider == "Muse" ? muse_uuid_v7() :
+        QUuid::createUuid().toString(QUuid::WithoutBraces),provider); // status defaults to New; no "new:"/other marker on the id itself
+    info->model_settings = QJsonObject{{"model",model},{"info",model_info},{"effort",effort}};
     set_ai_status(info->sessions,session_status::New,"Ready for a message.");
     show_ai_project(*info);
     ui->ai_project_list->setCurrentItem(info->project_items);

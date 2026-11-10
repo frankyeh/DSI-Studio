@@ -63,6 +63,7 @@ struct ai_info{
 extern std::unordered_map<QString,ai_info> ai_infos;
 extern QString ai_project_dir; // defined and created (mkpath) in main.cpp, before any window exists
 
+QString chat_effort(const QString& provider,const QString& model,const QString& selected); // the level a chat runs at and its button shows: selected, else medium, else the model's first level; empty without levels
 QStringList agent_efforts(const QString& provider,const QString& model = {}); // the thinking levels a local agent (Antigravity: its model) accepts (empty: none); a chat's choice is model_settings["effort"]
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, Web sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
