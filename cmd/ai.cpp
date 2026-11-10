@@ -296,18 +296,19 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
                 }
             }
         }
-        else if(provider == "Codex") // account/read: {"account":{"type":"chatgpt","email":...,"planType":"plus"}}, a null account when signed out
+        else if(provider == "Codex") // account/read: {"account":{"type":"chatgpt","email":...,"planType":"plus"},"requiresOpenaiAuth":...}
         {
             process.write(codex_initialize());
             process.write(json_line({{"method","initialized"}}));
-            process.write(json_line({{"id","account_read"},{"method","account/read"}}));
-            if(auto reply = read_response(process,"account_read",deadline);reply.contains("result"))
+            process.write(json_line({{"id","account_read"},{"method","account/read"},{"params",QJsonObject{{"refreshToken",false}}}})); // params required
+            if(auto result = read_response(process,"account_read",deadline)["result"].toObject();!result.isEmpty())
             {
-                auto account = reply["result"].toObject()["account"].toObject();
+                auto account = result["account"].toObject();
                 auto email = account["email"].toString(),plan = account["planType"].toString();
                 info = account["type"].toString() == "apiKey" ? QString("API key") : email.isEmpty() ? QString("Signed in") :
                        plan.isEmpty() ? email : email+" · "+plan.left(1).toUpper()+plan.mid(1);
-                status = account.isEmpty() ? ai_agent_status::SignInRequired : ai_agent_status::Ready;
+                // a null account needs a sign-in only if the configured provider is OpenAI's (not e.g. Ollama)
+                status = account.isEmpty() && result["requiresOpenaiAuth"].toBool() ? ai_agent_status::SignInRequired : ai_agent_status::Ready;
             }
         }
         else
