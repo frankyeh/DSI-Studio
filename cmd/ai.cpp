@@ -249,6 +249,11 @@ static QJsonObject read_response(QProcess& process,const QString& id,qint64 dead
     }
     return QJsonObject();
 }
+// "email · Plan" for a signed-in account, otherwise fallback
+static QString account_text(const QString& email,const QString& plan,const QString& fallback = "Signed in")
+{
+    return email.isEmpty() ? fallback : plan.isEmpty() ? email : email+" · "+plan.left(1).toUpper()+plan.mid(1);
+}
 ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info)
 {
     info.clear();
@@ -294,11 +299,9 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
                     // a signed-in account's email and coding data team sit beside its token in auth.json; only those two are used,
                     // matched by name wherever they are nested
                     QFile auth(QDir::homePath()+"/.grok/auth.json");
-                    auto text = method != "xai.api_key" && auth.open(QIODevice::ReadOnly) ? QString::fromUtf8(auth.readAll()) : QString();
+                    auto text = auth.open(QIODevice::ReadOnly) ? QString::fromUtf8(auth.readAll()) : QString();
                     auto field = [&](const QString& name){return QRegularExpression("\""+name+"\"\\s*:\\s*\"([^\"]+)\"").match(text).captured(1);};
-                    auto email = field("email"),team = field("coding_data_team");
-                    info = method == "xai.api_key" ? QString("API key") : email.isEmpty() ? QString("Signed in") :
-                           team.isEmpty() ? email : email+" · "+team.left(1).toUpper()+team.mid(1);
+                    info = method == "xai.api_key" ? QString("API key") : account_text(field("email"),field("coding_data_team"));
                     status = ai_agent_status::Ready;
                 }
             }
@@ -311,9 +314,7 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
             if(auto result = read_response(process,"account_read",deadline)["result"].toObject();!result.isEmpty())
             {
                 auto account = result["account"].toObject();
-                auto email = account["email"].toString(),plan = account["planType"].toString();
-                info = account["type"].toString() == "apiKey" ? QString("API key") : email.isEmpty() ? QString("Signed in") :
-                       plan.isEmpty() ? email : email+" · "+plan.left(1).toUpper()+plan.mid(1);
+                info = account["type"].toString() == "apiKey" ? QString("API key") : account_text(account["email"].toString(),account["planType"].toString());
                 // a null account needs a sign-in only if the configured provider is OpenAI's (not e.g. Ollama)
                 status = account.isEmpty() && result["requiresOpenaiAuth"].toBool() ? ai_agent_status::SignInRequired : ai_agent_status::Ready;
             }
@@ -361,17 +362,8 @@ ai_agent_status check_agent_status(const QString& provider,const QString& execut
         return ai_agent_status::Error;
     if(!object["loggedIn"].toBool())
         return ai_agent_status::SignInRequired;
-    auto email = object["email"].toString();
-    if(!email.isEmpty())
-    {
-        auto tier = object["subscriptionType"].toString();
-        info = tier.isEmpty() ? email : email+" · "+tier.left(1).toUpper()+tier.mid(1);
-    }
-    else
-    {
-        auto api_provider = object["apiProvider"].toString();
-        info = api_provider.isEmpty() ? "API key" : "API key · "+api_provider;
-    }
+    auto api_provider = object["apiProvider"].toString();
+    info = account_text(object["email"].toString(),object["subscriptionType"].toString(),api_provider.isEmpty() ? "API key" : "API key · "+api_provider);
     return ai_agent_status::Ready;
 }
 QPair<int,QString> agent_usage(const QString& provider,const QString& executable,QString& plan)
@@ -399,7 +391,7 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
         reply = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object();
     }
     kill_process_tree(&process);
-    if(provider == "Muse" && reply.contains("allowance") && reply["allowance"].isNull())
+    if(provider == "Muse" && reply.value("allowance").isNull()) // value(): undefined, not null, when missing
         return {-1,"No plan allowance"};
 
     // every quota window as a "label: N% used, detail" tooltip line; the first one fills the bar
