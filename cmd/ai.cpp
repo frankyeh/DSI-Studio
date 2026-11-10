@@ -386,9 +386,8 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
         reply = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object();
     }
     kill_process_tree(&process);
-    if(provider == "Muse" && reply.contains("allowance")) // allowance null: no plan allowance
-        return {-1,reply["allowance"].isNull() ? QString("No plan allowance") :
-                    QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented)).trimmed()};
+    if(provider == "Muse" && reply.contains("allowance") && reply["allowance"].isNull())
+        return {-1,"No plan allowance"};
 
     // every quota window as a "label: N% used, detail" tooltip line; the first one fills the bar
     int first = -1;
@@ -414,6 +413,11 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
                 add(group.toObject()["name"].toString()+" "+bucket.toObject()["window"].toString(),
                     100.0*(1.0-bucket.toObject()["remaining_fraction"].toDouble()),
                     resets(QDateTime::fromString(bucket.toObject()["reset_time"].toString(),Qt::ISODate)));
+    if(provider == "Muse") // allowance: the short window and the weekly one, resets in ms
+        for(auto window : {"window","weekly"})
+            if(auto limit = reply["allowance"].toObject()[window].toObject();!limit.isEmpty())
+                add(window,limit["usedPercent"].toDouble(),
+                    resets(limit.contains("resetsAtMs") ? QDateTime::fromMSecsSinceEpoch(limit["resetsAtMs"].toInteger()) : QDateTime()));
     if(provider == "Claude") // text lines such as "Current session: 87% used · resets Nov 10, 2pm (America/New_York)"
         for(const auto& line : reply["result"].toString().split('\n'))
             if(auto match = QRegularExpression("^\\s*(?:Current )?(.+?):\\s*(\\d+)% used\\s*(?:·\\s*(.*))?$").match(line);match.hasMatch())
