@@ -6,6 +6,8 @@
 #include <QApplication>
 #include <QLocalServer>
 #include <QLocalSocket>
+#include <QLockFile>
+#include <QUuid>
 #include <QMessageBox>
 #include <QStyleFactory>
 #include <QStandardPaths>
@@ -480,7 +482,7 @@ int main(int ac, char *av[])
         if(std::string(av[1]) == "--version")
             return std::cout << dsi_studio_citation << std::endl,0;
         QLocalSocket socket;
-        socket.connectToServer("dsi-studio");
+        socket.connectToServer(qEnvironmentVariable("DSI_STUDIO_SOCKET","dsi-studio")); // the launching GUI's own pipe when set
         if (socket.waitForConnected(5000))
         {
             socket.write(av[1]);
@@ -568,15 +570,18 @@ int main(int ac, char *av[])
         if(ac == 2)
             w.openFile(QStringList() << av[1]);
 
-        QLocalServer server;
-        server.setSocketOptions(QLocalServer::WorldAccessOption); // a user-only socket can refuse an agent's sandboxed or differently-run commands
-        w.setProperty("ai_available",server.listen("dsi-studio"));
-        if(w.property("ai_available").toBool())
+        // every GUI serves agents on its own pipe, given as DSI_STUDIO_SOCKET to the agents it launches; only the GUI
+        // holding the lock also serves the legacy "dsi-studio" pipe, so no two GUIs listen on that name
+        QLocalServer server,legacy_server;
+        QLockFile legacy_lock(QDir::tempPath()+"/dsi-studio.lock");
+        auto serve = [&w](QLocalServer& each,const QString& name)
         {
-            qputenv("DSI_STUDIO_SOCKET",server.fullServerName().toUtf8()); // inherited by the agents this instance launches
-            QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
+            each.setSocketOptions(QLocalServer::WorldAccessOption); // a user-only socket can refuse an agent's sandboxed or differently-run commands
+            if(!each.listen(name))
+                return false;
+            QObject::connect(&each, &QLocalServer::newConnection, [&each,&w]()
             {
-                QLocalSocket *clientSocket = server.nextPendingConnection();
+                QLocalSocket *clientSocket = each.nextPendingConnection();
                 if (clientSocket)
                 {
                     clientSocket->waitForReadyRead(500);
@@ -629,9 +634,19 @@ int main(int ac, char *av[])
                     clientSocket->deleteLater();
                 }
             });
-        }
+            return true;
+        };
+        w.setProperty("ai_available",serve(server,"dsi-studio-ai-"+QUuid::createUuid().toString(QUuid::WithoutBraces)));
+        if(w.property("ai_available").toBool())
+            qputenv("DSI_STUDIO_SOCKET",server.fullServerName().toUtf8()); // inherited by the agents this instance launches
         else
             tipl::error() << "cannot start local server: " << server.errorString().toStdString();
+        if(legacy_lock.tryLock(0))
+        {
+            QLocalServer::removeServer("dsi-studio"); // a crashed instance's stale socket file would block listen
+            if(!serve(legacy_server,"dsi-studio"))
+                tipl::warning() << "cannot serve the legacy dsi-studio pipe: " << legacy_server.errorString().toStdString();
+        }
         if(po.has("action"))
         {
             auto result = run_action_with_wildcard(po);
