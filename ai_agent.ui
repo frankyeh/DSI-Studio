@@ -60,19 +60,6 @@ QListWidget#ai_project_list QPushButton:pressed {
     color: #202124;
     background-color: #dddddf;
 }
-QToolButton#ai_project_menu_button {
-    background: transparent;
-    border: 0;
-    padding: 0;
-    font-size: 16px;
-}
-QToolButton#ai_project_menu_button:hover {
-    background: #e2e2e4;
-    border-radius: 4px;
-}
-QToolButton#ai_project_menu_button::menu-indicator {
-    image: none;
-}
 QLabel#ai_status,
 QWidget#tab_8 QPushButton#ai_send_message,
 QWidget#tab_8 QPushButton#ai_new_chat,
