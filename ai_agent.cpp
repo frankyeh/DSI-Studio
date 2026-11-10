@@ -1,6 +1,7 @@
 #include <QAbstractItemView>
 #include <QAction>
 #include <QApplication>
+#include <QBuffer>
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QColor>
@@ -129,12 +130,14 @@ static QIcon agent_logo(const QString& provider,bool ready = true)
     QIcon logo(":/icons/icons/agents/"+provider.toLower()+".svg");
     return ready ? logo : QIcon(logo.pixmap(QSize(18,18),qApp->devicePixelRatio(),QIcon::Disabled));
 }
-static QString agent_logo_html(const QString& provider,QTextDocument* document = nullptr)
+static QString agent_logo_html(const QString& provider)
 {
-    QString src = ":/icons/icons/agents/"+provider.toLower()+".svg";
-    if(document) // antialiased: pre-rendered at its 16 px display size, rather than the SVG's large default rendering scaled down unsmoothed
-        document->addResource(QTextDocument::ImageResource,QUrl(src = "agent:"+provider),agent_logo(provider).pixmap(QSize(16,16),qApp->devicePixelRatio()));
-    return "<img src=\""+src+"\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">";
+    // antialiased: pre-rendered at its 16 px display size in device pixels, so rich text draws it 1:1
+    // rather than scaling the SVG's large default rendering down unsmoothed
+    QByteArray png;
+    QBuffer buffer(&png);
+    agent_logo(provider).pixmap(QSize(16,16),qApp->devicePixelRatio()).save(&buffer,"PNG");
+    return "<img src=\"data:image/png;base64,"+QString::fromLatin1(png.toBase64())+"\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">";
 }
 
 // shared look for the new-chat/settings dialogs, scoped by objectName so it cannot bleed into other dialogs
@@ -844,7 +847,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
-                        .arg(color,(user ? QString("You") : agent_logo_html(info.provider,ui->ai_chat_history->document()))+" &middot; ",time,content);
+                        .arg(color,(user ? QString("You") : agent_logo_html(info.provider))+" &middot; ",time,content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
