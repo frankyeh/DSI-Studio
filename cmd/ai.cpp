@@ -386,13 +386,17 @@ QPair<QString,QString> agent_usage(const QString& provider,const QString& execut
         reply = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object();
     }
     kill_process_tree(&process);
+    if(provider == "Muse") // allowance null: no plan allowance
+        return {reply["allowance"].isNull() ? "Usage: no plan allowance" : "Usage: plan allowance",
+                QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented)).trimmed()};
 
     // every agent's quota windows as "label N%", with "label: N% used, detail" lines in the tooltip
     QStringList text,tip;
     auto add = [&](const QString& label,double used,const QString& detail)
     {
-        text << label+" "+QString::number(qRound(used))+"%";
-        tip << label+": "+QString::number(qRound(used))+"% used"+(detail.isEmpty() ? QString() : ", "+detail);
+        auto percent = QString::number(qRound(used))+"%";
+        text << label+" "+percent;
+        tip << label+": "+percent+" used"+(detail.isEmpty() ? QString() : ", "+detail);
     };
     auto resets = [](const QDateTime& time){return time.isValid() ? "resets "+QLocale().toString(time.toLocalTime(),QLocale::ShortFormat) : QString();};
     if(provider == "Codex") // primary: the short window (e.g. 5 h), secondary: the weekly one
@@ -413,9 +417,6 @@ QPair<QString,QString> agent_usage(const QString& provider,const QString& execut
         for(const auto& line : reply["result"].toString().split('\n'))
             if(auto match = QRegularExpression("^\\s*(?:Current )?(.+?):\\s*(\\d+)% used\\s*(?:·\\s*(.*))?$").match(line);match.hasMatch())
                 add(match.captured(1),match.captured(2).toDouble(),match.captured(3).trimmed());
-    if(provider == "Muse" && reply.contains("allowance")) // allowance null: no plan allowance
-        return {reply["allowance"].isNull() ? "Usage: no plan allowance" : "Usage: plan allowance",
-                QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented)).trimmed()};
     if(text.isEmpty())
         return {};
     return {"Usage: "+text.join(" · "),tip.join("\n")};
