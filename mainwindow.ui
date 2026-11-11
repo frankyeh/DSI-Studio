@@ -3217,7 +3217,9 @@ QWidget#tab_more QComboBox {
     min-height: 28px;
 }
 QFrame#tools_appearance_footer,
-QFrame#settings_tracking_row {
+QFrame#settings_tracking_row,
+QFrame#settings_history_row,
+QFrame#settings_registration_row {
     border: 0px;
     border-top: 1px solid #dddddf;
     padding-top: 8px;
@@ -3364,6 +3366,122 @@ QFrame#settings_tracking_row {
                </property>
                <property name="text">
                 <string>Restore rendering settings</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="restore_tracking_layout">
+               <property name="toolTip">
+                <string>Restore the default window layout of open tracking windows</string>
+               </property>
+               <property name="statusTip">
+                <string>run restore_tracking_layout</string>
+               </property>
+               <property name="text">
+                <string>Restore window layout</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="settings_history_row">
+            <layout class="QHBoxLayout" name="settings_history_row_layout">
+             <property name="spacing">
+              <number>8</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="settings_history_label">
+               <property name="text">
+                <string>History</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="settings_history_row_spacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="clear_all_recent">
+               <property name="toolTip">
+                <string>Clear the recent FIB, SRC, database and image lists</string>
+               </property>
+               <property name="statusTip">
+                <string>run clear_recent_all</string>
+               </property>
+               <property name="text">
+                <string>Clear recent files</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="clear_work_dirs">
+               <property name="toolTip">
+                <string>Keep only the current work directory in its list</string>
+               </property>
+               <property name="statusTip">
+                <string>run clear_work_dir_history</string>
+               </property>
+               <property name="text">
+                <string>Clear work directory history</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="settings_registration_row">
+            <layout class="QHBoxLayout" name="settings_registration_row_layout">
+             <property name="spacing">
+              <number>8</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="settings_registration_label">
+               <property name="text">
+                <string>Registration</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="settings_registration_row_spacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QLabel" name="settings_registration">
+               <property name="textInteractionFlags">
+                <set>Qt::TextSelectableByMouse</set>
                </property>
               </widget>
              </item>
