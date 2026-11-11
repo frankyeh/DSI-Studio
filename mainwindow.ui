@@ -624,6 +624,23 @@ QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
 }
 QTabWidget#recent_tabs::pane {
     border: 0px;
+}
+QLabel#tract_input_badge,
+QLabel#tract_reconstruction_badge,
+QLabel#tract_tracking_badge {
+    color: #ffffff;
+    border-radius: 13px;
+    font-weight: bold;
+    font-size: 10pt;
+}
+QLabel#tract_input_badge {
+    background-color: #0ea5e9;
+}
+QLabel#tract_reconstruction_badge {
+    background-color: #10b981;
+}
+QLabel#tract_tracking_badge {
+    background-color: #f59e0b;
 }</string>
          </property>
          <layout class="QHBoxLayout" name="tractography_layout">
@@ -735,9 +752,31 @@ QTabWidget#recent_tabs::pane {
                       <number>7</number>
                      </property>
                      <item>
+                      <widget class="QLabel" name="tract_input_badge">
+                       <property name="minimumSize">
+                        <size>
+                         <width>26</width>
+                         <height>26</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>26</width>
+                         <height>26</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string>1</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <widget class="QLabel" name="label_45">
                        <property name="text">
-                        <string>① Import</string>
+                        <string>Import</string>
                        </property>
                       </widget>
                      </item>
@@ -1086,9 +1125,31 @@ QTabWidget#recent_tabs::pane {
                       <number>7</number>
                      </property>
                      <item>
+                      <widget class="QLabel" name="tract_reconstruction_badge">
+                       <property name="minimumSize">
+                        <size>
+                         <width>26</width>
+                         <height>26</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>26</width>
+                         <height>26</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string>2</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <widget class="QLabel" name="label_17">
                        <property name="text">
-                        <string>② Reconstruct</string>
+                        <string>Reconstruct</string>
                        </property>
                       </widget>
                      </item>
@@ -1225,9 +1286,31 @@ QTabWidget#recent_tabs::pane {
                       <number>7</number>
                      </property>
                      <item>
+                      <widget class="QLabel" name="tract_tracking_badge">
+                       <property name="minimumSize">
+                        <size>
+                         <width>26</width>
+                         <height>26</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>26</width>
+                         <height>26</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string>3</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <widget class="QLabel" name="label_28">
                        <property name="text">
-                        <string>③ Track</string>
+                        <string>Track</string>
                        </property>
                       </widget>
                      </item>
@@ -1886,6 +1969,23 @@ QLabel#conn_import_stage_hint,
 QLabel#conn_db_stage_hint,
 QLabel#conn_analysis_stage_hint {
     color: #67676c;
+}
+QLabel#conn_import_badge,
+QLabel#conn_db_badge,
+QLabel#conn_analysis_badge {
+    color: #ffffff;
+    border-radius: 13px;
+    font-weight: bold;
+    font-size: 10pt;
+}
+QLabel#conn_import_badge {
+    background-color: #0ea5e9;
+}
+QLabel#conn_db_badge {
+    background-color: #8b5cf6;
+}
+QLabel#conn_analysis_badge {
+    background-color: #ef4444;
 }</string>
          </property>
          <layout class="QVBoxLayout" name="tab_conn_layout" stretch="0,0,0,1">
@@ -1974,9 +2074,31 @@ QLabel#conn_analysis_stage_hint {
                   <number>0</number>
                  </property>
                  <item>
+                  <widget class="QLabel" name="conn_import_badge">
+                   <property name="minimumSize">
+                    <size>
+                     <width>26</width>
+                     <height>26</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>26</width>
+                     <height>26</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>1</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QLabel" name="conn_import_stage_title">
                    <property name="text">
-                    <string>① FIB files</string>
+                    <string>FIB files</string>
                    </property>
                   </widget>
                  </item>
@@ -1988,7 +2110,7 @@ QLabel#conn_analysis_stage_hint {
                   <bool>true</bool>
                  </property>
                  <property name="text">
-                  <string>Connectometry uses FIB files (*.fz) reconstructed with QSDR. Add them as files, a folder, or a list in ② Create database.</string>
+                  <string>Connectometry uses FIB files (*.fz) reconstructed with QSDR. Add them as files, a folder, or a list in Create database (card 2).</string>
                  </property>
                 </widget>
                </item>
@@ -2044,9 +2166,31 @@ QLabel#conn_analysis_stage_hint {
                   <number>0</number>
                  </property>
                  <item>
+                  <widget class="QLabel" name="conn_db_badge">
+                   <property name="minimumSize">
+                    <size>
+                     <width>26</width>
+                     <height>26</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>26</width>
+                     <height>26</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>2</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QLabel" name="conn_db_stage_title">
                    <property name="text">
-                    <string>② Prepare database</string>
+                    <string>Prepare database</string>
                    </property>
                   </widget>
                  </item>
@@ -2148,9 +2292,31 @@ QLabel#conn_analysis_stage_hint {
                   <number>0</number>
                  </property>
                  <item>
+                  <widget class="QLabel" name="conn_analysis_badge">
+                   <property name="minimumSize">
+                    <size>
+                     <width>26</width>
+                     <height>26</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>26</width>
+                     <height>26</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>3</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QLabel" name="conn_analysis_stage_title">
                    <property name="text">
-                    <string>③ Correlational Tractography</string>
+                    <string>Correlational Tractography</string>
                    </property>
                   </widget>
                  </item>
