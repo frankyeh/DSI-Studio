@@ -41,6 +41,7 @@ public:
     ~MainWindow();
     void closeEvent(QCloseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    bool eventFilter(QObject* object,QEvent* event) override; // paints the tab pages' white background with the logo watermark
     Ui::MainWindow *ui;
     void addFib(QString Filename);
     void addSrc(QString Filename);
