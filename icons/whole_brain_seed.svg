@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <ellipse cx="12.0" cy="12.0" rx="7.8" ry="8.6" fill="#DBEAFE" fill-opacity="0.35" stroke="#1E293B" stroke-width="1.85"/>
-  <circle cx="9.0" cy="8.5" r="1.4" fill="#2563EB"/>
-  <circle cx="15.0" cy="8.5" r="1.4" fill="#2563EB"/>
-  <circle cx="12.0" cy="12.0" r="1.4" fill="#2563EB"/>
-  <circle cx="8.8" cy="15.5" r="1.4" fill="#2563EB"/>
-  <circle cx="15.2" cy="15.5" r="1.4" fill="#2563EB"/>
+  <path d="M 12.0 3.5 C 11.2 2.6 8.6 2.8 6.8 4.9 C 4.9 7.1 4.4 10.4 4.6 13.8 C 4.8 17.7 7.3 20.8 10.7 21.1 C 11.4 21.2 11.8 20.6 12.0 20.0 C 12.2 20.6 12.6 21.2 13.3 21.1 C 16.7 20.8 19.2 17.7 19.4 13.8 C 19.6 10.4 19.1 7.1 17.2 4.9 C 15.4 2.8 12.8 2.6 12.0 3.5 Z"
+        fill="#DBEAFE" fill-opacity="0.40" stroke="#1E293B" stroke-width="1.9" stroke-linejoin="round"/>
+  <path d="M 12.0 3.7 V 20.0" fill="none" stroke="#94A3B8" stroke-width="1.35" stroke-linecap="round"/>
+  <circle cx="8.8" cy="8.0" r="1.4" fill="#2563EB"/>
+  <circle cx="15.2" cy="8.0" r="1.4" fill="#2563EB"/>
+  <circle cx="8.0" cy="12.2" r="1.4" fill="#2563EB"/>
+  <circle cx="16.0" cy="12.2" r="1.4" fill="#2563EB"/>
+  <circle cx="9.0" cy="16.4" r="1.4" fill="#2563EB"/>
+  <circle cx="15.0" cy="16.4" r="1.4" fill="#2563EB"/>
 </svg>
