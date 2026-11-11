@@ -1032,6 +1032,10 @@
      <property name="title">
       <string>Cut By Slice</string>
      </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+     </property>
      <addaction name="actionCut_X"/>
      <addaction name="actionCut_X_2"/>
      <addaction name="actionCut_Y"/>
@@ -1060,6 +1064,10 @@
     <widget class="QMenu" name="menuCopy_to_Clipboard">
      <property name="title">
       <string>Copy to Clipboard</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
      </property>
      <addaction name="action3D_Screen"/>
      <addaction name="action3D_Screen_Left_Right_Views"/>
@@ -1173,6 +1181,10 @@
     <widget class="QMenu" name="menu3D_Views">
      <property name="title">
       <string>3D Views</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>:/icons/icons/view_3d_slices.svg</normaloff>:/icons/icons/view_3d_slices.svg</iconset>
      </property>
      <addaction name="actionSingle"/>
      <addaction name="actionDouble"/>
@@ -1319,6 +1331,10 @@
      <property name="title">
       <string>Store Camera Position</string>
      </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>:/icons/icons/camera_store.svg</normaloff>:/icons/icons/camera_store.svg</iconset>
+     </property>
      <addaction name="actionStore_Camera_Position_1"/>
      <addaction name="actionStore_Camera_Position_2"/>
      <addaction name="actionStore_Camera_Position_3"/>
@@ -1327,6 +1343,10 @@
     <widget class="QMenu" name="menuRecall_Camera_Position_2">
      <property name="title">
       <string>Recall Camera Position</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>:/icons/icons/camera_recall.svg</normaloff>:/icons/icons/camera_recall.svg</iconset>
      </property>
      <addaction name="actionRecall_Camera_Position_1"/>
      <addaction name="actionRecall_Camera_Position_2"/>
@@ -2968,6 +2988,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_X">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Shift +X</string>
    </property>
@@ -2979,6 +3003,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_X_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Shift -X</string>
    </property>
@@ -2990,6 +3018,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_Y">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Shift +Y</string>
    </property>
@@ -3001,6 +3033,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_Y_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Shift -Y</string>
    </property>
@@ -3012,6 +3048,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_Z">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Shift +Z</string>
    </property>
@@ -3023,6 +3063,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_Z_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Shift -Z</string>
    </property>
@@ -3034,6 +3078,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFlip_X">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip X</string>
    </property>
@@ -3045,6 +3093,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFlip_Y">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Y</string>
    </property>
@@ -3056,6 +3108,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFlip_Z">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Z</string>
    </property>
@@ -3067,6 +3123,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDilation">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
+   </property>
    <property name="text">
     <string>Dilation</string>
    </property>
@@ -3078,6 +3138,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionErosion">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_erode.svg</normaloff>:/icons/icons/morph_erode.svg</iconset>
+   </property>
    <property name="text">
     <string>Erosion</string>
    </property>
@@ -3089,6 +3153,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSmoothing">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Smoothing</string>
    </property>
@@ -3100,6 +3168,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionNegate">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/invert_negate.svg</normaloff>:/icons/icons/invert_negate.svg</iconset>
+   </property>
    <property name="text">
     <string>Negate</string>
    </property>
@@ -3111,6 +3183,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDefragment">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+   </property>
    <property name="text">
     <string>Defragment</string>
    </property>
@@ -3134,6 +3210,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSelect_Tracts">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/select_cursor.svg</normaloff>:/icons/icons/select_cursor.svg</iconset>
+   </property>
    <property name="text">
     <string>Select</string>
    </property>
@@ -3142,6 +3222,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionUndo">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/undo.svg</normaloff>:/icons/icons/undo.svg</iconset>
+   </property>
    <property name="text">
     <string>Undo</string>
    </property>
@@ -3153,6 +3237,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDelete_Tracts">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+   </property>
    <property name="text">
     <string>Delete</string>
    </property>
@@ -3161,6 +3249,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionTrim">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/crop_trim.svg</normaloff>:/icons/icons/crop_trim.svg</iconset>
+   </property>
    <property name="text">
     <string>Trim</string>
    </property>
@@ -3172,6 +3264,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_Tracts">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut</string>
    </property>
@@ -3279,6 +3375,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionEndpoints_to_Region">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/roi_sphere.svg</normaloff>:/icons/icons/roi_sphere.svg</iconset>
+   </property>
    <property name="text">
     <string>Endpoints To Region</string>
    </property>
@@ -3287,6 +3387,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionTracts_to_Region">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/roi_cube.svg</normaloff>:/icons/icons/roi_cube.svg</iconset>
+   </property>
    <property name="text">
     <string>Tracts To Region</string>
    </property>
@@ -3310,6 +3414,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionPaint_Tracts">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/paint_brush.svg</normaloff>:/icons/icons/paint_brush.svg</iconset>
+   </property>
    <property name="text">
     <string>Paint</string>
    </property>
@@ -3378,6 +3486,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionHierarchical">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cluster_nodes.svg</normaloff>:/icons/icons/cluster_nodes.svg</iconset>
+   </property>
    <property name="text">
     <string>Single-Linkage Clustering</string>
    </property>
@@ -3482,6 +3594,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRedo">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/redo.svg</normaloff>:/icons/icons/redo.svg</iconset>
+   </property>
    <property name="text">
     <string>Redo</string>
    </property>
@@ -3493,6 +3609,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRestore_window_layout">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/mosaic.svg</normaloff>:/icons/icons/mosaic.svg</iconset>
+   </property>
    <property name="text">
     <string>Restore Window Layout </string>
    </property>
@@ -3546,6 +3666,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRegion_Atlas_Intersection_Statistics">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/statistics.svg</normaloff>:/icons/icons/statistics.svg</iconset>
+   </property>
    <property name="text">
     <string>Region-Atlas Intersection Statistics...</string>
    </property>
@@ -3584,6 +3708,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCheck_all_regions">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/check_all.svg</normaloff>:/icons/icons/check_all.svg</iconset>
+   </property>
    <property name="text">
     <string>Check All</string>
    </property>
@@ -3595,6 +3723,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionUnckech_all_regions">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/uncheck_all.svg</normaloff>:/icons/icons/uncheck_all.svg</iconset>
+   </property>
    <property name="text">
     <string>Uncheck All</string>
    </property>
@@ -3606,6 +3738,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCopyTrack">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_duplicate.svg</normaloff>:/icons/icons/copy_duplicate.svg</iconset>
+   </property>
    <property name="text">
     <string>Copy Tracts</string>
    </property>
@@ -3680,6 +3816,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCheck_all_tracts">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/check_all.svg</normaloff>:/icons/icons/check_all.svg</iconset>
+   </property>
    <property name="text">
     <string>Check/Uncheck All</string>
    </property>
@@ -3691,6 +3831,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCopy_Region">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_duplicate.svg</normaloff>:/icons/icons/copy_duplicate.svg</iconset>
+   </property>
    <property name="text">
     <string>Copy</string>
    </property>
@@ -3801,31 +3945,55 @@ Tracking</string>
    </property>
   </action>
   <action name="action3D_Screen">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen</string>
    </property>
   </action>
   <action name="action3D_Screen_3_Views">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen 3 Views</string>
    </property>
   </action>
   <action name="action3D_Screen_3_Views_Horizontal">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen 3 Views Horizontal</string>
    </property>
   </action>
   <action name="action3D_Screen_3_Views_Vertical">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen 3 Views Vertical</string>
    </property>
   </action>
   <action name="actionROI">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>ROI</string>
    </property>
   </action>
   <action name="actionTrack_Report">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/tract_report.svg</normaloff>:/icons/icons/tract_report.svg</iconset>
+   </property>
    <property name="text">
     <string>Track Report</string>
    </property>
@@ -3840,6 +4008,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSeparate">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/split_separate.svg</normaloff>:/icons/icons/split_separate.svg</iconset>
+   </property>
    <property name="text">
     <string>Separate</string>
    </property>
@@ -3851,6 +4023,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFilter_by_ROI">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/filter_funnel.svg</normaloff>:/icons/icons/filter_funnel.svg</iconset>
+   </property>
    <property name="text">
     <string>Filter Tracks by ROI/ROA/End</string>
    </property>
@@ -3859,6 +4035,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_X">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut X+</string>
    </property>
@@ -3867,6 +4047,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_X_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut X-</string>
    </property>
@@ -3875,6 +4059,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_Y">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut Y+</string>
    </property>
@@ -3883,6 +4071,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_Y_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut Y-</string>
    </property>
@@ -3891,6 +4083,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_Z">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut Z+</string>
    </property>
@@ -3899,6 +4095,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_Z_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut Z-</string>
    </property>
@@ -3907,6 +4107,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionUndo_Edit">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/undo.svg</normaloff>:/icons/icons/undo.svg</iconset>
+   </property>
    <property name="text">
     <string>Undo</string>
    </property>
@@ -3915,6 +4119,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRedo_Edit">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/redo.svg</normaloff>:/icons/icons/redo.svg</iconset>
+   </property>
    <property name="text">
     <string>Redo</string>
    </property>
@@ -3944,6 +4152,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSeparate_Deleted">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/split_separate.svg</normaloff>:/icons/icons/split_separate.svg</iconset>
+   </property>
    <property name="text">
     <string>Separate Deleted Tracts</string>
    </property>
@@ -4003,6 +4215,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecognize_Current_Tract">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/auto_track.svg</normaloff>:/icons/icons/auto_track.svg</iconset>
+   </property>
    <property name="text">
     <string>Recognize...</string>
    </property>
@@ -4035,6 +4251,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionK_means_Clustering">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cluster_nodes.svg</normaloff>:/icons/icons/cluster_nodes.svg</iconset>
+   </property>
    <property name="text">
     <string>K-means Clustering</string>
    </property>
@@ -4043,6 +4263,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionEM_Clustering">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cluster_nodes.svg</normaloff>:/icons/icons/cluster_nodes.svg</iconset>
+   </property>
    <property name="text">
     <string>EM Clustering</string>
    </property>
@@ -4051,6 +4275,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSingle">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/view_3d_slices.svg</normaloff>:/icons/icons/view_3d_slices.svg</iconset>
+   </property>
    <property name="checkable">
     <bool>false</bool>
    </property>
@@ -4062,6 +4290,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDouble">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/view_split_dual.svg</normaloff>:/icons/icons/view_split_dual.svg</iconset>
+   </property>
    <property name="checkable">
     <bool>false</bool>
    </property>
@@ -4070,6 +4302,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionStereoscopic">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/view_stereo_3d.svg</normaloff>:/icons/icons/view_stereo_3d.svg</iconset>
+   </property>
    <property name="checkable">
     <bool>false</bool>
    </property>
@@ -4078,6 +4314,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFull">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Full</string>
    </property>
@@ -4086,6 +4326,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRight">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Right</string>
    </property>
@@ -4094,6 +4338,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLeft">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Left</string>
    </property>
@@ -4102,6 +4350,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionUpper">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Upper</string>
    </property>
@@ -4110,6 +4362,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Lower</string>
    </property>
@@ -4118,6 +4374,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionAnterior">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Anterior</string>
    </property>
@@ -4126,6 +4386,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionPosterior">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Posterior</string>
    </property>
@@ -4134,6 +4398,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecognize_Clustering">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/auto_track.svg</normaloff>:/icons/icons/auto_track.svg</iconset>
+   </property>
    <property name="text">
     <string>Recognize and Cluster</string>
    </property>
@@ -4181,6 +4449,10 @@ Tracking</string>
    </property>
   </action>
   <action name="action1st_Ex_All">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/boolean_subtract.svg</normaloff>:/icons/icons/boolean_subtract.svg</iconset>
+   </property>
    <property name="text">
     <string>First Excludes All</string>
    </property>
@@ -4192,6 +4464,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionAll_Ex_1st">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/boolean_subtract.svg</normaloff>:/icons/icons/boolean_subtract.svg</iconset>
+   </property>
    <property name="text">
     <string>All Exclude First</string>
    </property>
@@ -4203,6 +4479,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionAll_Inter_1st">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/boolean_intersect.svg</normaloff>:/icons/icons/boolean_intersect.svg</iconset>
+   </property>
    <property name="text">
     <string>All Intersect First</string>
    </property>
@@ -4286,6 +4566,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionThreshold_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+   </property>
    <property name="text">
     <string>Threshold</string>
    </property>
@@ -4297,6 +4581,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFIB_protocol">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/doc_protocol.svg</normaloff>:/icons/icons/doc_protocol.svg</iconset>
+   </property>
    <property name="text">
     <string>FIB Protocol...</string>
    </property>
@@ -4347,6 +4635,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecognize_and_Rename">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/auto_track.svg</normaloff>:/icons/icons/auto_track.svg</iconset>
+   </property>
    <property name="text">
     <string>Recognize and Rename</string>
    </property>
@@ -4364,6 +4656,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionReconnect_Tracts">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/tract_reconnect.svg</normaloff>:/icons/icons/tract_reconnect.svg</iconset>
+   </property>
    <property name="text">
     <string>Reconnect Tracts</string>
    </property>
@@ -4372,6 +4668,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionModify_All">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/check_all.svg</normaloff>:/icons/icons/check_all.svg</iconset>
+   </property>
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -4380,6 +4680,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionOpening">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_opening.svg</normaloff>:/icons/icons/morph_opening.svg</iconset>
+   </property>
    <property name="text">
     <string>Opening</string>
    </property>
@@ -4391,6 +4695,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionClosing">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_closing.svg</normaloff>:/icons/icons/morph_closing.svg</iconset>
+   </property>
    <property name="text">
     <string>Closing</string>
    </property>
@@ -4414,6 +4722,10 @@ Tracking</string>
    </property>
   </action>
   <action name="action3D_Screen_Each_Tract">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen Each Tract</string>
    </property>
@@ -4443,6 +4755,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLoad_Parameter_ID">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
+   </property>
    <property name="text">
     <string>Load Parameter ID...</string>
    </property>
@@ -4463,6 +4779,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionResample_Step_Size">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Resample Step Size</string>
    </property>
@@ -4549,16 +4869,28 @@ Tracking</string>
    </property>
   </action>
   <action name="actionUncheck_All_Devices">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/uncheck_all.svg</normaloff>:/icons/icons/uncheck_all.svg</iconset>
+   </property>
    <property name="text">
     <string>Uncheck All</string>
    </property>
   </action>
   <action name="actionCheck_All_Devices">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/check_all.svg</normaloff>:/icons/icons/check_all.svg</iconset>
+   </property>
    <property name="text">
     <string>Check All</string>
    </property>
   </action>
   <action name="actionAssign_Colors_For_Devices">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/color_palette.svg</normaloff>:/icons/icons/color_palette.svg</iconset>
+   </property>
    <property name="text">
     <string>Assign Colors</string>
    </property>
@@ -4588,6 +4920,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCopy_Device">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_duplicate.svg</normaloff>:/icons/icons/copy_duplicate.svg</iconset>
+   </property>
    <property name="text">
     <string>&amp;Copy Device</string>
    </property>
@@ -4635,6 +4971,10 @@ Tracking</string>
    </property>
   </action>
   <action name="action3D_Screen_Each_Region">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen Each Region</string>
    </property>
@@ -4664,6 +5004,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDilation_by_voxel">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
+   </property>
    <property name="text">
     <string>Dilation By Voxel...</string>
    </property>
@@ -4687,6 +5031,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRight_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Right Lower</string>
    </property>
@@ -4695,6 +5043,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLeft_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Left Lower</string>
    </property>
@@ -4703,6 +5055,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRight_Anterior_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Right Anterior Lower</string>
    </property>
@@ -4711,6 +5067,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLeft_Anterior_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Left Anterior Lower</string>
    </property>
@@ -4719,11 +5079,19 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRight_Posterior_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Right Posterior Lower</string>
    </property>
   </action>
   <action name="actionLeft_Posterior_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Left Posterior Lower</string>
    </property>
@@ -4732,6 +5100,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionAnterior_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Anterior Lower</string>
    </property>
@@ -4740,6 +5112,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionPosterior_Lower">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
+   </property>
    <property name="text">
     <string>Posterior Lower</string>
    </property>
@@ -4748,6 +5124,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionAll_To_First">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/boolean_intersect.svg</normaloff>:/icons/icons/boolean_intersect.svg</iconset>
+   </property>
    <property name="text">
     <string>All Fit into First</string>
    </property>
@@ -4759,6 +5139,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionManual_Atlas_Alignment">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+   </property>
    <property name="text">
     <string>Manual Atlas Alignment...</string>
    </property>
@@ -4788,6 +5172,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFlip_X_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip X</string>
    </property>
@@ -4796,6 +5184,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFlip_Y_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Y</string>
    </property>
@@ -4804,6 +5196,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFlip_Z_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Z</string>
    </property>
@@ -4848,6 +5244,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_end_portion">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut End Portion</string>
    </property>
@@ -4856,6 +5256,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLeads_to_ROI">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/roi_sphere.svg</normaloff>:/icons/icons/roi_sphere.svg</iconset>
+   </property>
    <property name="text">
     <string>Leads to ROI...</string>
    </property>
@@ -4918,11 +5322,19 @@ Tracking</string>
    </property>
   </action>
   <action name="action3D_Screen_Left_Right_Views">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/copy_clipboard.svg</normaloff>:/icons/icons/copy_clipboard.svg</iconset>
+   </property>
    <property name="text">
     <string>3D Screen Left/Right Views</string>
    </property>
   </action>
   <action name="actionCommand_History">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/console.svg</normaloff>:/icons/icons/console.svg</iconset>
+   </property>
    <property name="text">
     <string>Command History...</string>
    </property>
@@ -4952,6 +5364,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSkullStrip">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/skull_strip.svg</normaloff>:/icons/icons/skull_strip.svg</iconset>
+   </property>
    <property name="text">
     <string>Skull Strip...</string>
    </property>
@@ -4960,6 +5376,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionStore_Camera_Position_1">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_store.svg</normaloff>:/icons/icons/camera_store.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 1</string>
    </property>
@@ -4971,6 +5391,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionStore_Camera_Position_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_store.svg</normaloff>:/icons/icons/camera_store.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 2</string>
    </property>
@@ -4982,6 +5406,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionStore_Camera_Position_3">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_store.svg</normaloff>:/icons/icons/camera_store.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 3 </string>
    </property>
@@ -4993,6 +5421,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionStore_Camera_Position_4">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_store.svg</normaloff>:/icons/icons/camera_store.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 4</string>
    </property>
@@ -5004,6 +5436,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecall_Camera_Position_1">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_recall.svg</normaloff>:/icons/icons/camera_recall.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 1</string>
    </property>
@@ -5015,6 +5451,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecall_Camera_Position_2">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_recall.svg</normaloff>:/icons/icons/camera_recall.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 2</string>
    </property>
@@ -5026,6 +5466,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecall_Camera_Position_3">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_recall.svg</normaloff>:/icons/icons/camera_recall.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 3</string>
    </property>
@@ -5037,6 +5481,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRecall_Camera_Position_4">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/camera_recall.svg</normaloff>:/icons/icons/camera_recall.svg</iconset>
+   </property>
    <property name="text">
     <string>Slot 4</string>
    </property>
@@ -5084,6 +5532,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDeviceStatistics">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/statistics.svg</normaloff>:/icons/icons/statistics.svg</iconset>
+   </property>
    <property name="text">
     <string>Statistics...</string>
    </property>
@@ -5095,6 +5547,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSet_AC_PC_Inter_Points">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/crosshair_target.svg</normaloff>:/icons/icons/crosshair_target.svg</iconset>
+   </property>
    <property name="text">
     <string>Set AC/PC/Inter Points</string>
    </property>
@@ -5103,6 +5559,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionPush_Device">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_down.svg</normaloff>:/icons/icons/move_down.svg</iconset>
+   </property>
    <property name="text">
     <string>Push Device</string>
    </property>
@@ -5114,6 +5574,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionPull_Device">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/move_up.svg</normaloff>:/icons/icons/move_up.svg</iconset>
+   </property>
    <property name="text">
     <string>Pull Device</string>
    </property>
@@ -5125,6 +5589,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_LPS_End">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut L/P/S End Portion</string>
    </property>
@@ -5133,6 +5601,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionCut_RAI_End">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/cut_scissors.svg</normaloff>:/icons/icons/cut_scissors.svg</iconset>
+   </property>
    <property name="text">
     <string>Cut R/A/I End Portion</string>
    </property>
@@ -5141,6 +5613,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRefine_Label">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/roi_edge.svg</normaloff>:/icons/icons/roi_edge.svg</iconset>
+   </property>
    <property name="text">
     <string>Refine All</string>
    </property>
@@ -5152,6 +5628,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionDilation_by_threshold">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
+   </property>
    <property name="text">
     <string>Dilation By Threshold...</string>
    </property>
@@ -5160,6 +5640,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionErosioin_By_Threshold">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/icons/morph_erode.svg</normaloff>:/icons/icons/morph_erode.svg</iconset>
+   </property>
    <property name="text">
     <string>Erosioin By Threshold...</string>
    </property>

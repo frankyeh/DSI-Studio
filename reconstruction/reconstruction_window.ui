@@ -1511,6 +1511,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionScheme_Balance">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
+   </property>
    <property name="text">
     <string>Scheme Balance</string>
    </property>
@@ -1519,6 +1523,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_x">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Flip X</string>
    </property>
@@ -1527,6 +1535,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_y">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Flip Y</string>
    </property>
@@ -1535,6 +1547,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_z">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Flip Z</string>
    </property>
@@ -1543,6 +1559,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_xy">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Swap XY</string>
    </property>
@@ -1551,6 +1571,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_xz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Swap XZ</string>
    </property>
@@ -1559,6 +1583,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_yz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Swap YZ</string>
    </property>
@@ -1567,11 +1595,19 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionRotate">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Resample to T1w/T2w...</string>
    </property>
   </action>
   <action name="actionTrim_image">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/crop_trim.svg</normaloff>:/icons/icons/crop_trim.svg</iconset>
+   </property>
    <property name="text">
     <string>Crop Background Volume</string>
    </property>
@@ -1580,6 +1616,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionManual_Rotation">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
+   </property>
    <property name="text">
     <string>Rotate...</string>
    </property>
@@ -1607,16 +1647,28 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionEnable_TEST_features">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/lab_flask.svg</normaloff>:/icons/icons/lab_flask.svg</iconset>
+   </property>
    <property name="text">
     <string>Enable TEST features</string>
    </property>
   </action>
   <action name="actionImage_upsample_to_T1W_TESTING">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Image Upsample to T1W (TESTING)...</string>
    </property>
   </action>
   <action name="actionAlign_ACPC">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/crosshair_target.svg</normaloff>:/icons/icons/crosshair_target.svg</iconset>
+   </property>
    <property name="text">
     <string>Align AC-PC...</string>
    </property>
@@ -1625,6 +1677,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_bx">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Bx</string>
    </property>
@@ -1633,6 +1689,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_by">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip By</string>
    </property>
@@ -1641,6 +1701,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionFlip_bz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Bz</string>
    </property>
@@ -1649,6 +1713,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionResample">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Resample to Isotropic</string>
    </property>
@@ -1669,6 +1737,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionErase_Background_Signals">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+   </property>
    <property name="text">
     <string>Erase Background Signals</string>
    </property>
@@ -1677,6 +1749,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionEddy_Motion_Correction">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/motion_correct.svg</normaloff>:/icons/icons/motion_correct.svg</iconset>
+   </property>
    <property name="text">
     <string>Motion Correction...</string>
    </property>
@@ -1697,6 +1773,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionOverwrite_Voxel_Size">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/ruler_measure.svg</normaloff>:/icons/icons/ruler_measure.svg</iconset>
+   </property>
    <property name="text">
     <string>Overwrite Voxel Size...</string>
    </property>
@@ -1705,6 +1785,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionRun_FSL_Topup">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+   </property>
    <property name="text">
     <string>TOPUP/EDDY...</string>
    </property>
@@ -1713,6 +1797,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionEDDY">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+   </property>
    <property name="text">
     <string>EDDY...</string>
    </property>
@@ -1721,6 +1809,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionSmooth_Signals">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Smooth Signals</string>
    </property>
@@ -1729,6 +1821,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionswap_bxby">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap BxBy</string>
    </property>
@@ -1737,6 +1833,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionswap_bybz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap ByBz</string>
    </property>
@@ -1745,6 +1845,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionswap_bxbz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap BxBz</string>
    </property>
@@ -1753,6 +1857,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionTOPUP_only">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+   </property>
    <property name="text">
     <string>TOPUP...</string>
    </property>
@@ -1761,6 +1869,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionCheck_b_table">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
+   </property>
    <property name="text">
     <string>Check B-table (Template-Based)...</string>
    </property>
@@ -1769,11 +1881,19 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionManual_Align">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+   </property>
    <property name="text">
     <string>Manual Align...</string>
    </property>
   </action>
   <action name="actionAttach_Images">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
+   </property>
    <property name="text">
     <string>Attach Images...</string>
    </property>
@@ -1782,6 +1902,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionPartial_FOV">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/crop_trim.svg</normaloff>:/icons/icons/crop_trim.svg</iconset>
+   </property>
    <property name="text">
     <string>Partial FOV...</string>
    </property>
@@ -1790,6 +1914,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionT1W_based_QSDR">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
+   </property>
    <property name="text">
     <string>T1W-based QSDR...</string>
    </property>
@@ -1819,6 +1947,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionRegenerate_b_table">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
+   </property>
    <property name="text">
     <string>Regenerate B-table (Template-Based)...</string>
    </property>
@@ -1827,6 +1959,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionRegenerate_b_table_from_src">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
+   </property>
    <property name="text">
     <string>Regenerate B-table from SRC...</string>
    </property>
@@ -1835,6 +1971,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionCheck_b_table2">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
+   </property>
    <property name="text">
     <string>Check B-table...</string>
    </property>
@@ -1843,6 +1983,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionVolume_Orientation_Correction">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
+   </property>
    <property name="text">
     <string>Volume Orientation Correction...</string>
    </property>
@@ -1851,6 +1995,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionProbablistic_Masking">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+   </property>
    <property name="text">
     <string>Probablistic Masking...</string>
    </property>
@@ -1859,6 +2007,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionT1w_Distortion_Correction">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+   </property>
    <property name="text">
     <string>T1w Distortion Correction...</string>
    </property>
@@ -1867,6 +2019,10 @@ Reconstruction</string>
    </property>
   </action>
   <action name="actionCorrect_Bias_Field">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
+   </property>
    <property name="text">
     <string>Bias Field Correction......</string>
    </property>
