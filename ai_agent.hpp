@@ -1,27 +1,14 @@
 #ifndef AI_AGENT_HPP
 #define AI_AGENT_HPP
 
-#include <QByteArray>
-#include <QDateTime>
-#include <QElapsedTimer>
 #include <QHash>
-#include <QJsonObject>
 #include <QMainWindow>
-#include <QNetworkAccessManager>
-#include <QSettings>
-#include <QStringList>
-#include <QTimer>
-#include <functional>
-
+#include "cmd/ai.hpp"
 
 class MainWindow;
 class QMenu;
-class QProcess;
 class QShowEvent;
 class QCloseEvent;
-#include "cmd/ai.hpp"
-struct ai_info; // full definition: cmd/ai.hpp -- every use here is by pointer/reference, so a forward declaration is enough; .cpp files that need member access include cmd/ai.hpp directly
-enum class session_status; // full definition: cmd/ai.hpp
 
 namespace Ui {
 class AIAgent;
@@ -90,7 +77,8 @@ public:
     void web_title(const ai_info& info,const QString& title){if(web_connected(info)) web.set_web_title(title);} // set_title also names this chat's Doc
     explicit AIAgent(MainWindow*);
     ~AIAgent();
-    void ai_request(const QByteArray& request,QByteArray& reply); // entry point for the local-socket AI protocol: resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
+    void ai_request(const QByteArray& request,QByteArray& reply); // the local-socket AI protocol: parses the JSON request, then the overload below
+    QJsonObject ai_request(const QJsonObject& request); // resolves/creates the session, hands everything to MainWindow's CMD command center, then refreshes the sidebar
     void update_current_window(QWidget*); // called where open_fib/open_src/open_image create their window; no-op unless an AI dispatch is in progress
     bool approve(const QString& title,const QString& request); // the local user's confirmation of an AI file write, shell command, or upload
     QJsonObject web_file(const ai_info& info,const std::vector<std::string>& cmd,QString& error); // web_upload, web_download_prepare, web_download for this chat's Web session
