@@ -442,7 +442,11 @@ AIAgent::AIAgent(MainWindow* parent):
             process->deleteLater();
         }
         if(found && found->provider == "Web") // its mailbox Doc is trashed too, so "DSI Studio AI" does not accumulate them
+        {
+            auto* item = ui->ai_project_list->item(row);
             web.remove_web_session(found->model_settings["google_file_id"].toString(),session);
+            row = ui->ai_project_list->row(item); // the wait ran an event loop: rows may have moved
+        }
         else
             ai_info::remove(session);
         take_and_delete_item(ui->ai_project_list,row); // defer delete: its row widget owns the "..." button whose menu action is still running
@@ -581,8 +585,8 @@ static QJsonObject status_reply(const QString& status,const QString& error = {})
 void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
 {
     QJsonParseError parse_error;
-    auto doc = QJsonDocument::fromJson(data,&parse_error);
-    reply = QJsonDocument(doc.isObject() ? ai_request(doc.object()) : status_reply("error","invalid JSON: "+parse_error.errorString())).toJson(QJsonDocument::Compact);
+    auto doc = dispatching_info ? QJsonDocument() : QJsonDocument::fromJson(data,&parse_error); // busy: not even parsed
+    reply = QJsonDocument(dispatching_info || doc.isObject() ? ai_request(doc.object()) : status_reply("error","invalid JSON: "+parse_error.errorString())).toJson(QJsonDocument::Compact);
 }
 QJsonObject AIAgent::ai_request(const QJsonObject& request)
 {
