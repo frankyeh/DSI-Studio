@@ -297,7 +297,12 @@ Tractography</string>
       <item>
        <widget class="QStackedWidget" name="tabWidget">
         <property name="styleSheet">
-         <string notr="true">QWidget { color: black;  background-color : white; }</string>
+         <string notr="true">QWidget { color: black; }
+QScrollArea,
+QScrollArea &gt; QWidget,
+QScrollArea &gt; QWidget &gt; QWidget {
+    background-color: transparent;
+}</string>
         </property>
         <property name="currentIndex">
          <number>0</number>
@@ -306,10 +311,10 @@ Tractography</string>
          <property name="styleSheet">
           <string notr="true">QWidget#tab {
     color: #202124;
-    background-color: #ffffff;
+    background-color: transparent;
 }
 QFrame#tract_recent_panel {
-    background-color: #f7f7f8;
+    background-color: rgba(247,247,248,0.45);
     border: 1px solid #dddddf;
     border-radius: 9px;
 }
@@ -326,7 +331,7 @@ QFrame#tract_input_stage,
 QFrame#tract_reconstruction_stage,
 QFrame#tract_tracking_stage,
 QFrame#tract_connectometry_stage {
-    background-color: #fafafa;
+    background-color: rgba(250,250,250,0.45);
     border: 1px solid #dddddf;
     border-radius: 9px;
 }
@@ -383,8 +388,8 @@ QFrame#tract_connectometry_stage QPushButton:pressed {
 QWidget#tab QTableWidget,
 QListWidget#template_list {
     color: #202124;
-    background-color: #ffffff;
-    alternate-background-color: #fafafa;
+    background-color: transparent;
+    alternate-background-color: rgba(0,0,0,0.025);
     border: 1px solid #d9d9dc;
     border-radius: 7px;
     gridline-color: #eeeeef;
@@ -393,7 +398,7 @@ QListWidget#template_list {
 }
 QWidget#tab QHeaderView::section {
     color: #4f4f54;
-    background-color: #f4f4f5;
+    background-color: rgba(244,244,245,0.6);
     border: 0px;
     border-right: 1px solid #e2e2e5;
     border-bottom: 1px solid #d9d9dc;
@@ -1888,7 +1893,7 @@ QLabel#tract_arrow_2 {
          <property name="styleSheet">
           <string notr="true">QWidget#tab_conn {
     color: #202124;
-    background-color: #ffffff;
+    background-color: transparent;
 }
 QWidget#tab_conn QLabel {
     background-color: transparent;
@@ -1896,7 +1901,7 @@ QWidget#tab_conn QLabel {
 QFrame#conn_import_stage,
 QFrame#conn_db_stage,
 QFrame#conn_analysis_stage {
-    background-color: #fafafa;
+    background-color: rgba(250,250,250,0.45);
     border: 1px solid #dddddf;
     border-radius: 9px;
 }
@@ -1974,6 +1979,53 @@ QWidget#tab_conn QLabel#conn_db_badge {
 }
 QWidget#tab_conn QLabel#conn_analysis_badge {
     background-color: #ef4444;
+}
+QFrame#conn_recent_card {
+    background-color: rgba(247,247,248,0.45);
+    border: 1px solid #dddddf;
+    border-radius: 9px;
+}
+QFrame#conn_recent_card QPushButton {
+    color: #202124;
+    background-color: #f4f4f5;
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    padding: 5px 9px;
+    min-height: 0px;
+    text-align: center;
+}
+QFrame#conn_recent_card QPushButton:hover {
+    background-color: #e9e9eb;
+    border-color: #c8c8cc;
+}
+QFrame#conn_recent_card QPushButton:pressed {
+    background-color: #dddddf;
+}
+QFrame#conn_recent_card QPushButton[segment="true"] {
+    color: #1e3a8a;
+    background-color: #e0e7ff;
+    border: 1px solid #a5b4fc;
+    border-radius: 11px;
+    padding: 2px 10px;
+    min-height: 20px;
+}
+QTableWidget#recentDb {
+    color: #202124;
+    background-color: transparent;
+    alternate-background-color: rgba(0,0,0,0.025);
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    selection-background-color: #e5e5e7;
+    selection-color: #202124;
+}
+QTableWidget#recentDb QHeaderView::section {
+    color: #4f4f54;
+    background-color: rgba(244,244,245,0.6);
+    border: 0px;
+    border-right: 1px solid #e2e2e5;
+    border-bottom: 1px solid #d9d9dc;
+    padding: 2px 5px;
+    font-weight: bold;
 }
 QLabel#conn_arrow_1,
 QLabel#conn_arrow_2 {
@@ -2423,17 +2475,134 @@ QLabel#conn_arrow_2 {
            </layout>
           </item>
           <item>
-           <spacer name="tab_conn_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
+           <widget class="QFrame" name="conn_recent_card">
+            <layout class="QVBoxLayout" name="conn_recent_layout">
+             <property name="spacing">
+              <number>7</number>
+             </property>
+             <property name="leftMargin">
+              <number>8</number>
+             </property>
+             <property name="topMargin">
+              <number>8</number>
+             </property>
+             <property name="rightMargin">
+              <number>8</number>
+             </property>
+             <property name="bottomMargin">
+              <number>8</number>
+             </property>
+             <item>
+              <layout class="QHBoxLayout" name="conn_recent_header">
+               <item>
+                <widget class="QPushButton" name="conn_recent_toggle">
+                 <property name="text">
+                  <string>Recent Database</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                 <property name="segment" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="conn_recent_header_spacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="view_selected_db">
+                 <property name="toolTip">
+                  <string>View / edit the selected database</string>
+                 </property>
+                 <property name="text">
+                  <string>View</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="icons.qrc">
+                   <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="analyze_selected_db">
+                 <property name="toolTip">
+                  <string>Run correlational tractography on the selected database</string>
+                 </property>
+                 <property name="text">
+                  <string>Analysis</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="icons.qrc">
+                   <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="clear_db_history">
+                 <property name="statusTip">
+                  <string>run clear_recent_db</string>
+                 </property>
+                 <property name="text">
+                  <string>Clear</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QTableWidget" name="recentDb">
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="showGrid">
+               <bool>false</bool>
+              </property>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderVisible">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="verticalHeaderMinimumSectionSize">
+               <number>18</number>
+              </attribute>
+              <attribute name="verticalHeaderDefaultSectionSize">
+               <number>20</number>
+              </attribute>
+              <column>
+               <property name="text">
+                <string>File Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Directory</string>
+               </property>
+              </column>
+             </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -2441,11 +2610,11 @@ QLabel#conn_arrow_2 {
          <property name="styleSheet">
           <string notr="true">QWidget#tab_4 {
     color: #202124;
-    background-color: #ffffff;
+    background-color: transparent;
 }
 QFrame#tools_view_image_card,
 QWidget#tab_4 QGroupBox {
-    background-color: #f7f7f8;
+    background-color: rgba(247,247,248,0.45);
     border: 1px solid #dddddf;
     border-radius: 8px;
 }
