@@ -3,9 +3,9 @@
 #include <QUrl>
 #include <QMessageBox>
 #include <QDragEnterEvent>
-#include <QResizeEvent>
 #include <QMimeData>
 #include <QAction>
+#include <QTextStream>
 #include <QHeaderView>
 #include <QStyleFactory>
 #include <QNetworkInterface>
@@ -13,13 +13,14 @@
 #include <QSysInfo>
 #include <QStandardPaths>
 #include <QDialog>
-#include <QFormLayout>
 #include <QLineEdit>
 #include <QUuid>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QPointer>
 
 #include <QJsonDocument>
+#include <QMap>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QRegularExpression>
@@ -157,10 +158,6 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->template_list->addItem(each.stem().string().c_str());
     ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(0);
-    for(auto* each : std::initializer_list<QWidget*>{ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,
-                                                     ui->tract_dicom_tab,ui->tract_others_tab,ui->recent_src_card,ui->recent_src_actions,
-                                                     ui->recent_template_card,ui->recent_template_actions,ui->NII_qc})
-        each->hide(); // until its toggle or segment is checked
 
     {
         news = settings.value("login_news").toString();
@@ -174,81 +171,103 @@ MainWindow::MainWindow(QWidget *parent) :
             settings.setValue("login_id",username);
 
         {
-            QString license_text;
+            QString licenseText;
             {
-                QFile file(QApplication::applicationDirPath()+"/LICENSE");
-                if(!file.open(QIODevice::ReadOnly))
+                QFile licenseFile(QApplication::applicationDirPath() + "/LICENSE");
+                if(!licenseFile.open(QIODevice::ReadOnly))
                     throw std::runtime_error("cannot locate license file");
-                license_text = file.readAll();
+                licenseText = licenseFile.readAll();
             }
-            auto* dialog = new QDialog(this);
+
+            QDialog *dialog = new QDialog(this);
             dialog->setWindowTitle("DSI Studio");
-            dialog->setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::CustomizeWindowHint);
+            dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
             dialog->setModal(true);
-            dialog->setStyleSheet(
-                "QDialog{background-color:#ffffff;}"
-                "QLabel#login_title{font-size:15pt;font-weight:600;color:#202124;}"
-                "QLabel#login_heading{font-weight:600;color:#202124;}"
-                "QLabel#login_note{color:#5f6368;}"
-                "QFrame#login_card{background-color:#f7f7f8;border:1px solid #dddddf;border-radius:10px;}"
-                "QFrame#login_card QTextBrowser{background:transparent;border:none;}"
-                "QLineEdit{border:1px solid #d9d9dc;border-radius:7px;padding:5px 8px;background-color:#f7f7f8;color:#3c4043;}"
-                "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:7px 18px;}"
-                "QPushButton:hover{background-color:#e9e9eb;}"
-                "QPushButton#login_accept{color:#ffffff;background-color:#1a73e8;border:none;font-weight:600;}"
-                "QPushButton#login_accept:hover{background-color:#1765cc;}");
-            auto label = [](const QString& text,const char* name)
+
+            QHBoxLayout *main_layout = new QHBoxLayout;
+            dialog->setLayout(main_layout);
+            QVBoxLayout *left_layout = new QVBoxLayout;
+            QVBoxLayout *right_layout = new QVBoxLayout;
+
             {
-                auto* label = new QLabel(text);
-                label->setObjectName(name);
-                label->setWordWrap(true);
-                return label;
-            };
-            auto* layout = new QVBoxLayout(dialog);
-            layout->setContentsMargins(20,18,20,16);
-            layout->setSpacing(12);
-            layout->addWidget(label("Welcome to DSI Studio","login_title"));
-            // news and license as two cards side by side
-            auto* cards = new QHBoxLayout;
-            cards->setSpacing(12);
-            for(const auto& [heading,text] : std::initializer_list<std::pair<QString,QString> >{{"News and updates",news},{"License",license_text}})
-            {
-                auto* card = new QFrame;
-                card->setObjectName("login_card");
-                auto* card_layout = new QVBoxLayout(card);
-                card_layout->setContentsMargins(14,12,14,12);
-                card_layout->addWidget(label(heading,"login_heading"));
-                auto* browser = new QTextBrowser;
-                browser->setMarkdown(text);
-                browser->setOpenExternalLinks(true);
-                card_layout->addWidget(browser);
-                cards->addWidget(card,1);
+                auto title = new QLabel("License Information:");
+                title->setStyleSheet("font-weight: bold;");
+                right_layout->addWidget(title);
             }
-            checkForVersionSpecificBugs(news);
-            layout->addLayout(cards,1);
-            // the registration, then the decision
-            auto* entity = new QLineEdit(username);
-            entity->setReadOnly(true);
-            auto* form = new QFormLayout;
-            form->addRow("Registering entity:",entity);
-            form->addRow("Registering information:",label(host_name+", "+address,"login_note"));
-            layout->addLayout(form);
-            layout->addWidget(label("By clicking Accept & Sign in, you agree to the licensing terms and sign in with the registration above.","login_note"));
-            auto* accept = new QPushButton("Accept && Sign in");
-            accept->setObjectName("login_accept");
-            accept->setDefault(true);
-            auto* decline = new QPushButton("Decline && Exit");
-            connect(accept,&QPushButton::clicked,dialog,&QDialog::close);
-            connect(accept,&QPushButton::clicked,this,&MainWindow::login);
-            connect(decline,&QPushButton::clicked,dialog,&QDialog::close);
-            connect(decline,&QPushButton::clicked,this,&MainWindow::close);
-            auto* buttons = new QHBoxLayout;
-            buttons->addStretch();
-            buttons->addWidget(decline);
-            buttons->addWidget(accept);
-            layout->addLayout(buttons);
-            dialog->resize(860,560);
+
+            {
+                QTextBrowser *licenseBrowser = new QTextBrowser;
+                licenseBrowser->setMarkdown(licenseText);
+                licenseBrowser->setReadOnly(true);
+                licenseBrowser->setOpenExternalLinks(true);
+                right_layout->addWidget(licenseBrowser);
+            }
+
+
+            {
+                QHBoxLayout *h_layout = new QHBoxLayout;
+                h_layout->addWidget(new QLabel("Registering Entity:"));
+                auto line_edit = new QLineEdit(username);
+                line_edit->setReadOnly(true);
+                h_layout->addWidget(line_edit);
+                right_layout->addLayout(h_layout);
+
+            }
+
+            {
+                auto registry_info = new QLabel("Registering Information: " + host_name + "," + address);
+                registry_info->setWordWrap(true);
+                right_layout->addWidget(registry_info);
+            }
+
+            {
+                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the registration registry and information.");
+                note->setWordWrap(true);
+                note->setStyleSheet("font-weight: bold;");
+                right_layout->addWidget(note);
+            }
+
+            {
+                QPushButton *closeButton = new QPushButton("Accept && Sign in");
+                closeButton->setStyleSheet("font-size: 14pt; font-weight: bold;");
+                auto h = closeButton->sizeHint().height() * 1.5f;
+                closeButton->setFixedHeight(h);
+                connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
+                connect(closeButton, &QPushButton::clicked, this, &MainWindow::login);
+                QPushButton *exitButton = new QPushButton("Decline && Exit");
+                exitButton->setFixedHeight(h);
+                exitButton->setMaximumWidth(100);
+                connect(exitButton, &QPushButton::clicked, dialog, &QDialog::close);
+                connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
+                QHBoxLayout *h_layout = new QHBoxLayout;
+                h_layout->setSpacing(0);
+                h_layout->addWidget(closeButton);
+                h_layout->addWidget(exitButton);
+                right_layout->addLayout(h_layout);
+            }
+
+
+            {
+                auto title = new QLabel("News and Updates:");
+                title->setStyleSheet("font-weight: bold;");
+                left_layout->addWidget(title);
+            }
+
+            {
+                QTextBrowser *NewsBrowser = new QTextBrowser;
+                NewsBrowser->setMarkdown(news);
+                NewsBrowser->setReadOnly(true);
+                NewsBrowser->setOpenExternalLinks(true);
+                left_layout->addWidget(NewsBrowser);
+                checkForVersionSpecificBugs(news);
+            }
+
+            main_layout->addLayout(left_layout, 1);
+            main_layout->addLayout(right_layout, 1);
+
+            dialog->resize(1024,800);
             dialog->show();
+
         }
     }
 
@@ -305,30 +324,26 @@ void MainWindow::login(void)
         }
         if(info.size() >= 2) // info[1] gives the address and hostname, info[2] is checked only for what info[1] misses
         {
-            // the first non-empty value (numbers included, of the given length if any) under a key, compared in lowercase without '_',
-            // else under a key plus "name", "code" or "address" (region_name, country_code, zip_code), so "ip" never matches "zip" or "ip_version"
-            auto pick = [](const QJsonObject& json,std::initializer_list<const char*> keys,int length = 0)
+            // saves the address and hostname under any of the known field names; true when both are found
+            auto save = [this](const QJsonObject& json)
             {
-                for(QString suffix : {"","name","code","address"})
+                auto pick = [&](std::initializer_list<const char*> keys)
+                {
                     for(auto key : keys)
-                        for(auto it = json.begin();it != json.end();++it)
-                            if(auto value = it.value().toVariant().toString();!value.isEmpty() && (!length || value.size() == length) &&
-                               it.key().toLower().remove('_') == key+suffix)
-                                return value;
-                return QString();
-            };
-            // saves what is found; true when both the country code and the AS name are found (city may be empty)
-            auto save = [this,pick](const QJsonObject& json)
-            {
-                auto country = pick(json,{"country"},2); // the 2-letter code: "country" may be a full name, then country_code is used
-                auto hostname = pick(json,{"as","asname","org","isp"}); // as: "AS701 Verizon Business", as_name before org
-                if(!country.isEmpty())
-                    settings.setValue("login_address",pick(json,{"city"}) + "," + pick(json,{"region"}) + "," +
-                                                      country + " " + pick(json,{"zip","postal"}) + " ");
+                        if(auto value = json.value(key).toString();!value.isEmpty())
+                            return value;
+                    return QString();
+                };
+                auto city = pick({"city"}),hostname = pick({"as","org"});
+                if(city.isEmpty())
+                    return false;
+                settings.setValue("login_address",city + "," + pick({"region","region_name","regionName"}) + "," +
+                                                  pick({"countryCode","country_code","country"}) + " " +
+                                                  pick({"zip","zip_code","postal"}) + " ");
                 if(!hostname.isEmpty())
                     settings.setValue("login_hostname",hostname);
                 settings.sync();
-                return !country.isEmpty() && !hostname.isEmpty();
+                return !hostname.isEmpty();
             };
             auto reply = get(info[1]);
             connect(reply.get(), &QNetworkReply::finished, this, [=]()
@@ -336,7 +351,7 @@ void MainWindow::login(void)
                 auto json = reply->error() == QNetworkReply::NoError ? QJsonDocument::fromJson(reply->readAll()).object() : QJsonObject();
                 if(save(json) || info.size() < 3)
                     return;
-                auto reply2 = get(info[2].arg(pick(json,{"ip","query"})));
+                auto reply2 = get(info[2].arg(json.value("ip").toString()));
                 connect(reply2.get(), &QNetworkReply::finished, this, [=]()
                 {
                     if (reply2->error() == QNetworkReply::NoError)
@@ -516,16 +531,6 @@ void MainWindow::open_src_at(int row,int)
         loadSrc({item->data(Qt::UserRole).toString()});
 }
 
-void MainWindow::resizeEvent(QResizeEvent* event)
-{
-    // each page's three stage cards stack, with the arrows between them pointing down, when the window is too narrow
-    bool stack = event->size().width() < 1100;
-    for(auto* row : {ui->tract_stage_row,ui->conn_stage_row})
-        row->setDirection(stack ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
-    for(auto* arrow : {ui->tract_arrow_1,ui->tract_arrow_2,ui->conn_arrow_1,ui->conn_arrow_2})
-        arrow->setText(QString(QChar(stack ? 0x2193 : 0x2192))); // down or right arrow
-    QMainWindow::resizeEvent(event);
-}
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
@@ -1162,6 +1167,15 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
     QJsonArray results;
 
+    QPointer<QWidget> locked_target;
+    auto unlock_target = [&]
+    {
+        if(!locked_target)
+            return;
+        locked_target->setProperty("busy",false);
+        locked_target = nullptr;
+    };
+
     auto find_window = [&](const QString& id) -> QWidget*
     {
         if(id == "main")
@@ -1172,9 +1186,32 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         return nullptr;
     };
 
+    auto resolve_target = [&](QString& error)
+    {
+        if(locked_target)
+            return true;
+        auto all_widgets = QApplication::allWidgets();
+        if(std::any_of(all_widgets.begin(),all_widgets.end(),
+                        [](auto* each){return each->property("busy").toBool();}))
+        {
+            error = "another CMD is running; check opened windows";
+            return false;
+        }
+        auto* target = find_window(info.current_window);
+        if(!target)
+        {
+            error = "target window not found, terminated by user? Use set_window to select a window first.";
+            return false;
+        }
+        target->setProperty("busy",true);
+        locked_target = target;
+        return true;
+    };
+
     for(const auto& cmd : cmds)
     {
         auto command_name = QString::fromUtf8(cmd[0]);
+        auto window_before = info.current_window;
         QString output,error;
         QJsonObject attachment; // web_upload, web_download_prepare, web_download
         QString* prev_capture;
@@ -1201,6 +1238,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             }
             else
                 QDir::setCurrent(prev_cwd);
+            if(info.current_window != window_before)
+                unlock_target();
 
             QString title;
             if(command_window_type(info.current_window) != "main")
@@ -1230,23 +1269,29 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             if(command_name == "bring_to_front" || command_name == "close" ||
                command_name == "minimize" || command_name == "maximize")
             {
-                auto* target = find_window(info.current_window);
-                if(!target)
-                    error = "target window not found, terminated by user? Use set_window to select a window first.";
-                else if(command_name == "close" && target == this)
-                    error = "the main window cannot be closed by AI";
-                else if(command_name == "bring_to_front")
+                if(auto* target = find_window(info.current_window))
                 {
-                    target->showNormal();
-                    target->raise();
-                    target->activateWindow();
+                    if(command_name == "close" && target == this)
+                        error = "the main window cannot be closed by AI";
+                    else if(command_name == "bring_to_front")
+                    {
+                        target->showNormal();
+                        target->raise();
+                        target->activateWindow();
+                    }
+                    else if(command_name == "minimize")
+                        target->showMinimized();
+                    else if(command_name == "maximize")
+                        target->showMaximized();
+                    else
+                    {
+                        if(locked_target == target)
+                            locked_target = nullptr;
+                        target->close();
+                    }
                 }
-                else if(command_name == "minimize")
-                    target->showMinimized();
-                else if(command_name == "maximize")
-                    target->showMaximized();
                 else
-                    target->close();
+                    output = "target window not found, terminated by user? Use set_window to select a window first.";
             }
             else if(command_name == "set_title")
             {
@@ -1290,8 +1335,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     info.current_window = param.isEmpty() ? "main" : param;
                     output = "current window: "+info.current_window;
                 }
-                else // fail closed: the rest of the batch must not run on the previous window
-                    error = "window \""+param+"\" not found, terminated by user? current window remains: "+info.current_window;
+                else
+                    output = "window \""+param+"\" not found, terminated by user? current window remains: "+info.current_window;
             }
             else if(command_name == "list_window")
             {
@@ -1303,7 +1348,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     auto id = command_window_id(each);
                     if(id.isEmpty())
                         continue;
-                    bool busy = false;
+                    bool busy = each->property("busy").toBool();
                     if(auto* tracking = qobject_cast<tracking_window*>(each))
                         busy |= tracking->history.running_commands ||
                                 (tracking->tractWidget &&
@@ -1352,10 +1397,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             else if(command(cmd,command_source::AI)) {}
             else if(error_msg == "unknown command: "+cmd[0])
             {
-                auto* target = find_window(info.current_window);
-                if(!target) // an error, so the batch stops
-                    error = "target window not found, terminated by user? Use set_window to select a window first.";
-                else if(!command_window(target,cmd,command_source::AI,error) && error.isEmpty())
+                if(!resolve_target(error))
+                {
+                    output = error;
+                    error.clear();
+                }
+                else if(!command_window(locked_target,cmd,command_source::AI,error) && error.isEmpty())
                     error = QString::fromStdString(error_msg);
             }
             else
@@ -1370,6 +1417,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         if(!finish())
             break;
     }
+    unlock_target();
+
     return QJsonObject{
         {"status",results.last().toObject()["status"]},{"result",results}};
 }
@@ -1409,11 +1458,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         if(!fiber_data_hub->command(cmd))
             return fail(fiber_data_hub->error_msg);
         return true;
-    }
-    if(tipl::begins_with(cmd[0],"xnat_"))
-    {
-        xnat_facade xnat;
-        return xnat.command(cmd) || fail(xnat.error_msg);
     }
 
 
@@ -1544,17 +1588,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return true;
     }
 
-    if(cmd[0] == "import_nifti_folder")
-    {
-        // one folder: a BIDS dataset (sub-* folders) goes to its derivatives folder, any other folder gets an SRC next to each NIfTI
-        auto dir = select_dir("Open NIfTI or BIDS Folder");
-        if(dir.isEmpty())
-            return true;
-        if(tipl::search_dirs(tipl::qt::to_path(dir),"sub-*").empty())
-            return command({"nifti_dir_to_src",dir.toStdString()},source);
-        return command({"bids_to_src",dir.toStdString(),(QDir(dir).path()+"/derivatives").toStdString()},source);
-    }
-
     if(cmd[0] == "bids_to_src")
     {
         auto dir = select_dir("Open BIDS Folder");
@@ -1631,6 +1664,88 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return finish(src_error);
     }
 
+    if(cmd[0] == "collect_network_measures")
+    {
+        QStringList files;
+        if(cmd.size() >= 2)
+            files = get_files();
+        else
+        {
+            files = QFileDialog::getOpenFileNames(
+                         this,"Open Network Measures",work_dir(),
+                         "Text files (*.txt);;All files (*)");
+            if(files.isEmpty())
+                return true;
+        }
+
+        QStringList fields;
+        QMap<QString,QStringList> values;
+        auto add = [&](const QString& field,const QString& value,int column)
+        {
+            if(!values.contains(field))
+            {
+                QStringList row;
+                row.fill({},files.size());
+                values[field] = row;
+                fields << field;
+            }
+            values[field][column] = value;
+        };
+
+        for(int column = 0;column < files.size();++column)
+        {
+            std::ifstream in(tipl::qt::to_path(files[column]));
+            std::vector<std::string> nodes;
+            std::string name,value;
+            while(in >> name)
+            {
+                if(name == "network_measures")
+                {
+                    std::string line;
+                    std::getline(in,line);
+                    std::istringstream stream(line);
+                    nodes.assign(std::istream_iterator<std::string>(stream),{});
+                    break;
+                }
+                if(!(in >> value))
+                    break;
+                add(QString::fromStdString(name),
+                    QString::fromStdString(value),column);
+            }
+
+            std::string line;
+            while(std::getline(in,line))
+            {
+                std::istringstream stream(line);
+                if(!(stream >> name) || name.empty() || name[0] == '#')
+                    continue;
+                for(const auto& node : nodes)
+                {
+                    value.clear();
+                    stream >> value;
+                    add(QString::fromStdString(name+"_"+node),
+                        QString::fromStdString(value),column);
+                }
+            }
+        }
+
+        auto output = files[0]+".collected.txt";
+        QFile file(output);
+        if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
+            return fail("cannot write "+output.toStdString());
+
+        QTextStream out(&file);
+        out << "Field";
+        for(const auto& input : files)
+            out << '\t' << QFileInfo(input).baseName();
+        out << '\n';
+        for(const auto& field : fields)
+            out << field << '\t' << values[field].join('\t') << '\n';
+        if(cmd.size() == 1)
+            QMessageBox::information(this,QApplication::applicationName(),"File saved to "+output);
+        return true;
+    }
+
     if(cmd[0] == "open_src")
     {
         auto files = select_images(
@@ -1703,32 +1818,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             template_name = item->text();
         }
         return open_template(template_name);
-    }
-
-    if(cmd[0] == "create_db_files" || cmd[0] == "create_db_dir")
-    {
-        // FIB files picked here (or given as arguments) open Create database with its subject list filled
-        QStringList files;
-        if(cmd[0] == "create_db_files")
-            files = cmd.size() >= 2 ? get_files() :
-                    tipl::qt::open_image_files(this,work_dir(),"Fib files (*.fz *fib.gz);;All files (*)");
-        else
-        {
-            auto dir = select_dir("Open FIB Folder");
-            if(dir.isEmpty())
-                return true;
-            files = search_files(dir,"*.fz");
-            if(files.isEmpty())
-                return fail("no FIB files (*.fz) in "+dir.toStdString());
-        }
-        if(files.isEmpty())
-            return true;
-        add_work_dir(QFileInfo(files[0]).absolutePath());
-        auto* window = new CreateDBDialog(this,true);
-        window->setAttribute(Qt::WA_DeleteOnClose);
-        window->show();
-        window->add_files(files);
-        return true;
     }
 
     if(cmd[0] == "create_db" || cmd[0] == "create_average")
