@@ -160,7 +160,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->template_list->setCurrentRow(0);
     for(auto* each : std::initializer_list<QWidget*>{ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,
                                                      ui->tract_dicom_tab,ui->tract_others_tab,ui->recent_src_card,ui->recent_src_actions,
-                                                     ui->recent_template_card,ui->recent_template_actions})
+                                                     ui->recent_template_card,ui->recent_template_actions,ui->NII_qc})
         each->hide(); // until its toggle or segment is checked
 
     {

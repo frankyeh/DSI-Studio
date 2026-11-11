@@ -492,6 +492,7 @@ QFrame#tract_tracking_stage QPushButton#FiberTracking {
     text-align: center;
 }
 QFrame#tract_input_stage QPushButton#tract_input_batch_toggle,
+QFrame#tract_input_stage QPushButton#tract_nifti_qc_toggle,
 QFrame#tract_reconstruction_stage QPushButton#tract_reconstruction_batch_toggle,
 QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
     color: #2563eb;
@@ -516,8 +517,7 @@ QWidget#tab QPushButton[segment="true"]:hover {
 QWidget#tab QPushButton[segment="true"]:checked {
     color: #1e3a8a;
     background-color: #e0e7ff;
-    border-color: #c7d2fe;
-    font-weight: bold;
+    border-color: #a5b4fc;
 }
 QLabel#tract_input_badge,
 QLabel#tract_reconstruction_badge,
@@ -811,6 +811,19 @@ QLabel#tract_arrow_2 {
                        </widget>
                       </item>
                       <item row="1" column="0" colspan="2">
+                       <widget class="QPushButton" name="tract_nifti_qc_toggle">
+                        <property name="text">
+                         <string>▸ More…</string>
+                        </property>
+                        <property name="checkable">
+                         <bool>true</bool>
+                        </property>
+                        <property name="flat">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="0" colspan="2">
                        <widget class="QPushButton" name="NII_qc">
                         <property name="statusTip">
                          <string>run show_qc_nii</string>
@@ -827,7 +840,7 @@ QLabel#tract_arrow_2 {
                         </property>
                        </widget>
                       </item>
-                      <item row="2" column="0" colspan="2">
+                      <item row="3" column="0" colspan="2">
                        <spacer name="nifti_tab_spacer">
                         <property name="orientation">
                          <enum>Qt::Vertical</enum>
@@ -1142,7 +1155,7 @@ QLabel#tract_arrow_2 {
                    <item>
                     <widget class="QPushButton" name="tract_reconstruction_batch_toggle">
                      <property name="text">
-                      <string>▸ Batch</string>
+                      <string>▸ More…</string>
                      </property>
                      <property name="checkable">
                       <bool>true</bool>
@@ -1326,7 +1339,7 @@ QLabel#tract_arrow_2 {
                    <item>
                     <widget class="QPushButton" name="tract_tracking_batch_toggle">
                      <property name="text">
-                      <string>▸ More tracking options</string>
+                      <string>▸ More…</string>
                      </property>
                      <property name="checkable">
                       <bool>true</bool>
@@ -3024,6 +3037,12 @@ QPushButton#browseDir:disabled {
    <sender>recent_template_toggle</sender>
    <signal>toggled(bool)</signal>
    <receiver>recent_template_actions</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>tract_nifti_qc_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>NII_qc</receiver>
    <slot>setVisible(bool)</slot>
   </connection>
  </connections>
