@@ -267,7 +267,7 @@ MainWindow::MainWindow(QWidget *parent) :
             main_layout->addLayout(left_layout, 1);
             main_layout->addLayout(right_layout, 1);
 
-            dialog->resize(1024,800);
+            dialog->resize(700,500);
             dialog->show();
 
         }
