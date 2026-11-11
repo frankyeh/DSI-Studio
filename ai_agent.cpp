@@ -133,11 +133,17 @@ static QIcon agent_logo(const QString& provider,bool ready = true)
 static QString agent_logo_html(const QString& provider)
 {
     // antialiased: pre-rendered at its 16 px display size in device pixels, so rich text draws it 1:1
-    // rather than scaling the SVG's large default rendering down unsmoothed
-    QByteArray png;
-    QBuffer buffer(&png);
-    agent_logo(provider).pixmap(QSize(16,16),qApp->devicePixelRatio()).save(&buffer,"PNG");
-    return "<img src=\"data:image/png;base64,"+QString::fromLatin1(png.toBase64())+"\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">";
+    // rather than scaling the SVG's large default rendering down unsmoothed; cached, as a chat rebuild needs one per message
+    static QHash<QString,QString> cache;
+    auto& html = cache[provider+"@"+QString::number(qApp->devicePixelRatio())];
+    if(html.isEmpty())
+    {
+        QByteArray png;
+        QBuffer buffer(&png);
+        agent_logo(provider).pixmap(QSize(16,16),qApp->devicePixelRatio()).save(&buffer,"PNG");
+        html = "<img src=\"data:image/png;base64,"+QString::fromLatin1(png.toBase64())+"\" width=\"16\" height=\"16\" style=\"vertical-align:middle\">";
+    }
+    return html;
 }
 
 // shared look for the new-chat/settings dialogs, scoped by objectName so it cannot bleed into other dialogs
@@ -330,12 +336,7 @@ AIAgent::AIAgent(MainWindow* parent):
     });
     ui->ai_status->hide();
 
-    web.dispatch = [this](const QJsonObject& request)
-    {
-        QByteArray reply;
-        ai_request(QJsonDocument(request).toJson(QJsonDocument::Compact),reply);
-        return QJsonDocument::fromJson(reply).object();
-    };
+    web.dispatch = [this](const QJsonObject& request){return ai_request(request);};
     web.status = [this](session_status status,const QString& message){set_ai_status(web.web_session_id,status,message);};
     web.warn = [this](const QString& text){QMessageBox::warning(this,"AI Agent",text);};
 
@@ -457,8 +458,13 @@ AIAgent::AIAgent(MainWindow* parent):
             ui->ai_project_list->setCurrentRow(std::min(row,ui->ai_project_list->count()-1));
     });
 
+    auto enable_chat = [this](bool enabled) // the right pane: disabled without a chat
+    {
+        for(QWidget* widget : std::initializer_list<QWidget*>{ui->ai_chat_history,ui->ai_chat_input,ui->ai_approval})
+            widget->setEnabled(enabled);
+    };
     connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
-            [this](QListWidgetItem* item,QListWidgetItem* previous)
+            [this,enable_chat](QListWidgetItem* item,QListWidgetItem* previous)
     {
         for(auto* i : {previous,item})
         {
@@ -474,9 +480,7 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!item)
         {
             ui->ai_chat_history->clear();
-            ui->ai_chat_history->setEnabled(false);
-            ui->ai_chat_input->setEnabled(false);
-            ui->ai_approval->setEnabled(false);
+            enable_chat(false);
             update_send_button();
             return ui->ai_status->hide();
         }
@@ -485,9 +489,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto* info = selected_info();
         if(!info) // item is a real row, but guard anyway rather than trust that indirectly
             return;
-        ui->ai_chat_history->setEnabled(true);
-        ui->ai_chat_input->setEnabled(true);
-        ui->ai_approval->setEnabled(true);
+        enable_chat(true);
         ui->ai_approval->setChecked(info->model_settings.value("approval").toString() == "auto");
         ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
             info->model_settings["cwd"].toString() : main_window.work_dir());
@@ -503,12 +505,7 @@ AIAgent::AIAgent(MainWindow* parent):
     if(ui->ai_project_list->count())
         ui->ai_project_list->setCurrentRow(0);
     else // no chat at all: leave the right pane disabled until New Chat creates one
-    {
-        ui->ai_chat_history->setEnabled(false);
-        ui->ai_chat_input->setEnabled(false);
-        ui->ai_approval->setEnabled(false);
-        update_send_button();
-    }
+        enable_chat(false),update_send_button();
     // Web chats are never auto-reconnected at startup; use Resume to reconnect a chat explicitly
 }
 
@@ -592,29 +589,27 @@ void AIAgent::update_ai_status(const ai_info& info,bool pulse)
     update_send_button(); // Stop/Send now follow the session status
 }
 
+static QJsonObject status_reply(const QString& status,const QString& error = {})
+{
+    return error.isEmpty() ? QJsonObject{{"status",status}} : QJsonObject{{"status",status},{"error",error}};
+}
 void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
 {
-    auto status_reply = [](QString status,QString error = {})
-    {
-        QJsonObject reply{{"status",status}};
-        if(!error.isEmpty())
-            reply["error"] = error;
-        return QJsonDocument(reply).toJson(QJsonDocument::Compact);
-    };
+    QJsonParseError parse_error;
+    auto doc = QJsonDocument::fromJson(data,&parse_error);
+    reply = QJsonDocument(doc.isObject() ? ai_request(doc.object()) : status_reply("error","invalid JSON: "+parse_error.errorString())).toJson(QJsonDocument::Compact);
+}
+QJsonObject AIAgent::ai_request(const QJsonObject& request)
+{
     // a request arriving in another request's nested event loop (e.g. its approval dialog) runs nothing and writes
     // no history or status, so it cannot change the outer request's directory or capture; the agent retries
     if(dispatching_info)
-        return void(reply = status_reply("busy"));
-    QJsonParseError parse_error;
-    auto doc = QJsonDocument::fromJson(data,&parse_error);
-    auto request = doc.object();
+        return status_reply("busy");
     auto session = request["session"].toString().trimmed();
-    if(!doc.isObject())
-        return void(reply = status_reply("error","invalid JSON: "+parse_error.errorString()));
     if(session.isEmpty())
-        return void(reply = status_reply("error","missing session: provide resumable provider thread ID"));
+        return status_reply("error","missing session: provide resumable provider thread ID");
     if(!is_valid_session_id(session))
-        return void(reply = status_reply("error","invalid session: provide resumable provider thread ID"));
+        return status_reply("error","invalid session: provide resumable provider thread ID");
 
     auto* found = ai_info::find(session);
     // a lone `dsi.sh new_chat` (no param, batch or chat text) is the one way an unknown UUID joins: an external agent registers its own session
@@ -623,22 +618,22 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     {
         auto agent = request["agent"].toString().trimmed();
         if(found)
-            return void(reply = status_reply("error","session already exists"));
+            return status_reply("error","session already exists");
         if(!local_agents.contains(agent))
-            return void(reply = status_reply("error","invalid agent"));
+            return status_reply("error","invalid agent");
         found = ai_info::create(session,"AgentServer",agent); // AgentServer: not a DSI-launched process, so no Send/Stop/model control
         set_ai_status(session,session_status::WaitingUser,"External agent session connected.");
         add_ai_history(*found,"activity","External agent session connected."); // a recorded entry is what lets save_config() persist it
         found->save_config();
         ai_log("external agent session connected: "+agent+"@"+session);
-        return void(reply = status_reply("success"));
+        return status_reply("success");
     }
     if(!found) // any other request must match an existing chat; a removed chat's orphan fails here instead of recreating it
-        return void(reply = status_reply("error","session not found"));
+        return status_reply("error","session not found");
     ai_info& info = *found;
     set_ai_status(session,session_status::Thinking,"Processing agent request");
 
-    ai_log("received: "+QString::fromUtf8(data));
+    ai_log("received: "+QString::fromUtf8(QJsonDocument(request).toJson(QJsonDocument::Compact)));
     auto chat = request["chat"].toString().trimmed();
     auto reasoning = request["reasoning"].toString().trimmed();
     auto entry = info.record_reply(chat,reasoning); // the agent's message precedes the commands it sends
@@ -670,14 +665,14 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
     else
         set_ai_status(session,session_status::WaitingUser,"Request completed; waiting for next request.");
 
-    reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
     ai_log(QString("reply for %1@%2: %3 ...")
                .arg(info.agent_name,session,
-                    QString::fromUtf8(reply).left(32)));
+                    QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact)).left(32)));
     show_ai_project(info,entry);
     for(auto& each : ai_infos) // e.g. a chat this request created with new_chat
         if(!each.second.project_items)
             show_ai_project(each.second);
+    return result;
 }
 
 QJsonArray AIAgent::agent_settings(const QStringList& providers) const
@@ -1691,8 +1686,10 @@ void AIAgent::on_ai_quick_settings_clicked()
         auto plan = QSharedPointer<QString>::create();
         auto* worker = QThread::create([provider,executable = agent_entries[provider].executable,result,plan]{*result = agent_usage(provider,executable,*plan);});
         connect(worker,&QThread::finished,worker,&QObject::deleteLater);
-        connect(worker,&QThread::finished,&dialog,[&,provider,result,plan]
+        connect(worker,&QThread::finished,&dialog,[&,provider,result,plan,check_id = agent_entries[provider].status_check_id]
         {
+            if(agent_entries[provider].status_check_id != check_id) // the status was rechecked meanwhile, e.g. signed in to another account
+                return;
             usage[provider] = *result;
             if(auto& info = agent_entries[provider].status_info;!plan->isEmpty() && !info.contains(*plan)) // e.g. Muse's tier after its account
                 info = info.isEmpty() ? *plan : info+" · "+*plan;
