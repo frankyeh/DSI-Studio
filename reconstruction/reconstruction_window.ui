@@ -120,7 +120,7 @@
                   </property>
                   <property name="icon">
                    <iconset resource="../icons.qrc">
-                    <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                    <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
                   </property>
                  </widget>
                 </item>
@@ -131,7 +131,7 @@
                   </property>
                   <property name="icon">
                    <iconset resource="../icons.qrc">
-                    <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                    <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
                   </property>
                  </widget>
                 </item>
@@ -283,7 +283,7 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
+                  <normaloff>:/icons/icons/zoom_in.svg</normaloff>:/icons/icons/zoom_in.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -300,7 +300,7 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+                  <normaloff>:/icons/icons/zoom_out.svg</normaloff>:/icons/icons/zoom_out.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -311,7 +311,7 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+                  <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -322,7 +322,7 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+                  <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -333,7 +333,7 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+                  <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -454,7 +454,7 @@
                     </property>
                     <property name="icon">
                      <iconset resource="../icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                     </property>
                    </widget>
                   </item>
@@ -465,7 +465,7 @@
                     </property>
                     <property name="icon">
                      <iconset resource="../icons.qrc">
-                      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+                      <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
                     </property>
                    </widget>
                   </item>
@@ -1271,7 +1271,7 @@
                  </property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                   <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                  </property>
                 </widget>
                </item>
@@ -1350,7 +1350,7 @@ Reconstruction</string>
               </property>
               <property name="icon">
                <iconset resource="../icons.qrc">
-                <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
               </property>
               <property name="flat">
                <bool>false</bool>
@@ -1465,7 +1465,7 @@ Reconstruction</string>
   <action name="actionSave_4D_nifti">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save 4D NIFTI...</string>
@@ -1477,7 +1477,7 @@ Reconstruction</string>
   <action name="actionSave_b_table">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save B-table...</string>
@@ -1489,7 +1489,7 @@ Reconstruction</string>
   <action name="actionSave_bvals">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Bvals...</string>
@@ -1501,7 +1501,7 @@ Reconstruction</string>
   <action name="actionSave_bvecs">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Bvecs...</string>
@@ -1597,7 +1597,7 @@ Reconstruction</string>
   <action name="actionSave_b0">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save B0...</string>
@@ -1659,7 +1659,7 @@ Reconstruction</string>
   <action name="actionSave_SRC_file_as">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save SRC File as...</string>
@@ -1687,7 +1687,7 @@ Reconstruction</string>
   <action name="actionSave_DWI_sum">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save DWI Sum...</string>
@@ -1797,7 +1797,7 @@ Reconstruction</string>
   <action name="actionLoad_bvals">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Bvals...</string>
@@ -1809,7 +1809,7 @@ Reconstruction</string>
   <action name="actionLoad_bvecs">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Bvecs...</string>

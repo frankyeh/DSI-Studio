@@ -1,52 +1,81 @@
 <RCC>
     <qresource prefix="/icons">
-        <file>icons/open.xpm</file>
-        <file>icons/add.xpm</file>
-        <file>icons/axial.xpm</file>
-        <file>icons/ball.xpm</file>
-        <file>icons/coronal.xpm</file>
-        <file>icons/cubic.xpm</file>
-        <file>icons/delete.xpm</file>
-        <file>icons/new.xpm</file>
-        <file>icons/poly.xpm</file>
-        <file>icons/rec.xpm</file>
-        <file>icons/run.xpm</file>
-        <file>icons/sag.xpm</file>
-        <file>icons/save.xpm</file>
-        <file>icons/curves.xpm</file>
-        <file>icons/move.xpm</file>
-        <file>icons/save_all.xpm</file>
-        <file>icons/down.xpm</file>
-        <file>icons/up.xpm</file>
-        <file>icons/ruler.xpm</file>
-        <file>icons/rotate.xpm</file>
         <file>dsi_studio.ico</file>
-        <file>icons/zoom-in.xpm</file>
-        <file>icons/zoom-out.xpm</file>
-        <file>icons/rgb.xpm</file>
-        <file>icons/guides.xpm</file>
-        <file>icons/stat.xpm</file>
-        <file>icons/fullscreen.xpm</file>
-        <file>icons/preferences.xpm</file>
-        <file>icons/report.xpm</file>
-        <file>icons/conn.xpm</file>
-        <file>icons/stop.xpm</file>
-        <file>icons/add_surface.xpm</file>
-        <file>icons/atlas.xpm</file>
-        <file>icons/slice.xpm</file>
         <file>icons/ajax-loader.gif</file>
-        <file>icons/3view.xpm</file>
-        <file>icons/red_cross.xpm</file>
-        <file>icons/tracts.xpm</file>
-        <file>icons/console.xpm</file>
-        <file>icons/mosaic.xpm</file>
         <file>icons/agents/codex.svg</file>
         <file>icons/agents/claude.svg</file>
         <file>icons/agents/muse.svg</file>
         <file>icons/agents/antigravity.svg</file>
         <file>icons/agents/grok.svg</file>
         <file>icons/agents/web.svg</file>
+        <file>icons/add_merge.svg</file>
+        <file>icons/ai_agents.svg</file>
+        <file>icons/atlas.svg</file>
+        <file>icons/auto_track.svg</file>
+        <file>icons/average_fib.svg</file>
+        <file>icons/axial.svg</file>
+        <file>icons/color_palette.svg</file>
+        <file>icons/connectome_matrix.svg</file>
+        <file>icons/connectometry.svg</file>
+        <file>icons/console.svg</file>
+        <file>icons/coronal.svg</file>
+        <file>icons/crosshair_target.svg</file>
+        <file>icons/database.svg</file>
+        <file>icons/delete_clear.svg</file>
+        <file>icons/device_electrode.svg</file>
+        <file>icons/download.svg</file>
+        <file>icons/fiber_data_hub.svg</file>
+        <file>icons/folder_sort.svg</file>
+        <file>icons/image_editor.svg</file>
+        <file>icons/image_editor_light.svg</file>
+        <file>icons/img_math_add.svg</file>
+        <file>icons/img_math_max.svg</file>
+        <file>icons/img_math_min.svg</file>
+        <file>icons/img_math_mul.svg</file>
+        <file>icons/img_math_sub.svg</file>
+        <file>icons/linear_reg.svg</file>
+        <file>icons/local_fibers.svg</file>
+        <file>icons/mosaic.svg</file>
+        <file>icons/move_down.svg</file>
+        <file>icons/move_translate.svg</file>
+        <file>icons/move_up.svg</file>
+        <file>icons/new_create.svg</file>
+        <file>icons/nonlinear_reg.svg</file>
+        <file>icons/open_file.svg</file>
+        <file>icons/open_folder.svg</file>
+        <file>icons/quality_check.svg</file>
+        <file>icons/roi_cube.svg</file>
+        <file>icons/roi_edge.svg</file>
+        <file>icons/roi_freehand.svg</file>
+        <file>icons/roi_polygon.svg</file>
+        <file>icons/roi_rect.svg</file>
+        <file>icons/roi_sphere.svg</file>
+        <file>icons/rotate_sync.svg</file>
+        <file>icons/ruler_measure.svg</file>
+        <file>icons/run_play.svg</file>
+        <file>icons/sagittal.svg</file>
+        <file>icons/save.svg</file>
+        <file>icons/save_all.svg</file>
+        <file>icons/screenshot_camera.svg</file>
+        <file>icons/segmentation.svg</file>
         <file>icons/settings.svg</file>
+        <file>icons/slice_overlay.svg</file>
+        <file>icons/sort_alpha.svg</file>
+        <file>icons/sort_metric.svg</file>
+        <file>icons/stack_4d.svg</file>
+        <file>icons/statistics.svg</file>
+        <file>icons/stop.svg</file>
+        <file>icons/surface_mesh.svg</file>
+        <file>icons/template_fib.svg</file>
+        <file>icons/tract_report.svg</file>
+        <file>icons/tractography.svg</file>
+        <file>icons/transform_apply.svg</file>
+        <file>icons/video_record.svg</file>
+        <file>icons/view_3d_slices.svg</file>
+        <file>icons/whole_brain_seed.svg</file>
+        <file>icons/xnat_download.svg</file>
+        <file>icons/zoom_in.svg</file>
+        <file>icons/zoom_out.svg</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>

@@ -177,10 +177,6 @@
             <property name="text">
              <string>...</string>
             </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
-            </property>
            </widget>
           </item>
           <item>
@@ -203,10 +199,6 @@
             </property>
             <property name="text">
              <string>...</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
             </property>
            </widget>
           </item>
@@ -267,7 +259,7 @@
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+              <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
             </property>
            </widget>
           </item>
@@ -293,7 +285,7 @@
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+              <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
             </property>
            </widget>
           </item>
@@ -319,7 +311,7 @@
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+              <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
             </property>
            </widget>
           </item>
@@ -575,7 +567,7 @@
   <action name="action_Save_as">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save &amp;As...</string>
@@ -595,7 +587,7 @@
   <action name="actionMultiplyImage">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/img_math_mul.svg</normaloff>:/icons/icons/img_math_mul.svg</iconset>
    </property>
    <property name="text">
     <string>Multiply Image...</string>
@@ -732,7 +724,7 @@
   <action name="actionSave">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Save</string>
@@ -744,7 +736,7 @@
   <action name="actionAddImage">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/img_math_add.svg</normaloff>:/icons/icons/img_math_add.svg</iconset>
    </property>
    <property name="text">
     <string>Add Image...</string>
@@ -831,7 +823,7 @@
   <action name="actionMinusImage">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/img_math_sub.svg</normaloff>:/icons/icons/img_math_sub.svg</iconset>
    </property>
    <property name="text">
     <string>Minus Image...</string>
@@ -924,7 +916,7 @@
   <action name="actionLoad_Image_to_4D">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/stack_4d.svg</normaloff>:/icons/icons/stack_4d.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Load Image to 4D...</string>
@@ -987,7 +979,7 @@
   <action name="actionConcatenate_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/stack_4d.svg</normaloff>:/icons/icons/stack_4d.svg</iconset>
    </property>
    <property name="text">
     <string>Concatenate Image...</string>
@@ -1010,7 +1002,7 @@
   <action name="actionMax_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/img_math_max.svg</normaloff>:/icons/icons/img_math_max.svg</iconset>
    </property>
    <property name="text">
     <string>Max Image...</string>
@@ -1025,7 +1017,7 @@
   <action name="actionMin_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/img_math_min.svg</normaloff>:/icons/icons/img_math_min.svg</iconset>
    </property>
    <property name="text">
     <string>Min Image...</string>
@@ -1116,7 +1108,7 @@
   <action name="actionRotate_To_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
    </property>
    <property name="text">
     <string>Rotate To Image...</string>
@@ -1131,7 +1123,7 @@
   <action name="actionWarp_To_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/nonlinear_reg.svg</normaloff>:/icons/icons/nonlinear_reg.svg</iconset>
    </property>
    <property name="text">
     <string>Warp To Image...</string>
@@ -1146,7 +1138,7 @@
   <action name="actionApply_To_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/transform_apply.svg</normaloff>:/icons/icons/transform_apply.svg</iconset>
    </property>
    <property name="text">
     <string>Apply To Image...</string>
@@ -1158,7 +1150,7 @@
   <action name="actionRefine">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/roi_edge.svg</normaloff>:/icons/icons/roi_edge.svg</iconset>
    </property>
    <property name="text">
     <string>Refine Label...</string>

@@ -114,7 +114,7 @@
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
               </property>
              </widget>
             </item>
@@ -125,7 +125,7 @@
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
               </property>
              </widget>
             </item>
@@ -215,7 +215,7 @@
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
               </property>
              </widget>
             </item>
@@ -226,7 +226,7 @@
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
               </property>
              </widget>
             </item>
@@ -298,7 +298,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+          <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
         </property>
        </widget>
       </item>
@@ -309,7 +309,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+          <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
         </property>
        </widget>
       </item>
@@ -320,7 +320,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+          <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
         </property>
        </widget>
       </item>
@@ -367,7 +367,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/red_cross.xpm</normaloff>:/icons/icons/red_cross.xpm</iconset>
+          <normaloff>:/icons/icons/crosshair_target.svg</normaloff>:/icons/icons/crosshair_target.svg</iconset>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -684,7 +684,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/stop.xpm</normaloff>:/icons/icons/stop.xpm</iconset>
+          <normaloff>:/icons/icons/stop.svg</normaloff>:/icons/icons/stop.svg</iconset>
         </property>
        </widget>
       </item>
@@ -707,7 +707,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+          <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
         </property>
        </widget>
       </item>
@@ -754,7 +754,7 @@
   <action name="actionApply_Subject_To_Template_Warping">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/nonlinear_reg.svg</normaloff>:/icons/icons/nonlinear_reg.svg</iconset>
    </property>
    <property name="text">
     <string>Apply Subject To Template Warping...</string>
@@ -763,7 +763,7 @@
   <action name="actionSave_Warping">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Mapping...</string>
@@ -782,7 +782,7 @@
   <action name="actionApply_Template_To_Subject_Warping">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/nonlinear_reg.svg</normaloff>:/icons/icons/nonlinear_reg.svg</iconset>
    </property>
    <property name="text">
     <string>Apply Template To Subject Warping...</string>
@@ -791,7 +791,7 @@
   <action name="actionOpen_Mapping">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Mapping...</string>
@@ -805,7 +805,7 @@
   <action name="actionSave_Subject_Images">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save Subject Images...</string>
@@ -814,7 +814,7 @@
   <action name="actionSave_Template_Images">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save Template Images...</string>
