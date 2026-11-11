@@ -1536,7 +1536,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             auto current = ui->workDir->currentText();
             ui->workDir->clear();
             ui->workDir->addItem(current);
-            tipl::qt::working_dirs = QStringList{current};
         }
         return true;
     }
