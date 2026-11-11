@@ -403,7 +403,11 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
     }
     kill_process_tree(&process);
     if(provider == "Muse" && reply.value("allowance").isNull()) // value(): undefined, not null, when missing
-        return {-1,"No plan allowance"};
+    {
+        QStringList why{reply["reason"].toString(),reply["hint"].toString()}; // why there is none, e.g. it could not be fetched
+        why.removeAll(QString());
+        return {-1,why.isEmpty() ? QString("No plan allowance") : why.join("\n")};
+    }
 
     // every quota window as a "label: N% used, detail" tooltip line; the first one fills the bar
     int first = -1;
@@ -469,8 +473,11 @@ bool agent_models(const QString& provider,const QString& executable,QStringList&
                 return false;
             for(const auto& value : doc.isArray() ? doc.array() : doc.object()["models"].toArray())
             {
-                auto object = value.toObject(); // the name in "slug", else "model", else "id"
-                if(auto model = object.value("slug").toString(object.value("model").toString(object.value("id").toString()));!model.isEmpty())
+                QString model; // the first nonempty "slug", "model" or "id"
+                for(auto key : {"slug","model","id"})
+                    if(model.isEmpty())
+                        model = value.toObject()[key].toString();
+                if(!model.isEmpty())
                     models << model;
             }
             return true;
@@ -1812,30 +1819,30 @@ web_bridge::web_bridge(void)
 }
 void web_bridge::google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString)> done)
 {
-    if(form[0].second != "refresh_token") // a sign-in: the client of its flow issues, and later refreshes, this token
-        google_device_auth = form[0].second.endsWith("device_code");
-    form.emplaceBack("client_id",google_device_auth ? GOOGLE_DEVICE_CLIENT_ID : GOOGLE_CLIENT_ID);
-    form.emplaceBack("client_secret",google_device_auth ? GOOGLE_DEVICE_CLIENT_SECRET : GOOGLE_CLIENT_SECRET); // bundled in a desktop binary, so not confidential: PKCE + state (or the user code) protect the flow
+    bool refreshing = form[0].second == "refresh_token";
+    bool device_auth = refreshing ? google_device_auth : form[0].second.endsWith("device_code"); // a sign-in's client issues, and later refreshes, its token
+    form.emplaceBack("client_id",device_auth ? GOOGLE_DEVICE_CLIENT_ID : GOOGLE_CLIENT_ID);
+    form.emplaceBack("client_secret",device_auth ? GOOGLE_DEVICE_CLIENT_SECRET : GOOGLE_CLIENT_SECRET); // bundled in a desktop binary, so not confidential: PKCE + state (or the user code) protect the flow
     QByteArray body;
     for(const auto& [key,value] : form)
         body += key.toUtf8()+"="+QUrl::toPercentEncoding(value)+"&";
     QNetworkRequest request(QUrl("https://oauth2.googleapis.com/token"));
     request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
     auto* reply = web_manager.post(request,body);
-    connect(reply,&QNetworkReply::finished,this,[this,reply,done]
+    connect(reply,&QNetworkReply::finished,this,[this,reply,done,refreshing,device_auth]
     {
         reply->deleteLater();
         auto json = QJsonDocument::fromJson(reply->readAll()).object();
         if(!json.contains("access_token"))
         {
-            if(json["error"].toString() == "invalid_grant") // revoked: sign out; a network or server error keeps the saved token
+            if(refreshing && json["error"].toString() == "invalid_grant") // revoked: sign out; a failed sign-in, network or server error keeps the saved token
                 set_refresh_token({});
             return done(json["error"].toString(reply->errorString()));
         }
         google_access_token = json["access_token"].toString();
         google_token_expiry = QDateTime::currentDateTimeUtc().addSecs(json["expires_in"].toInt());
-        if(json.contains("refresh_token")) // returned with consent; a refresh keeps the saved one
-            set_refresh_token(json["refresh_token"].toString());
+        if(json.contains("refresh_token")) // a sign-in, with consent; a refresh keeps the saved one
+            google_device_auth = device_auth,set_refresh_token(json["refresh_token"].toString());
         done({});
     });
 }
@@ -1929,8 +1936,10 @@ QJsonArray web_bridge::list_web_sessions(void)
 }
 bool web_bridge::remove_web_session(const QString& file_id,const QString& session)
 {
+    // trashed first: the wait runs an event loop, during which the chat must still exist
+    bool trashed = file_id.isEmpty() || !google_api_wait("PATCH","https://www.googleapis.com/drive/v3/files/"+file_id,{{"trashed",true}}).isEmpty();
     ai_info::remove(session);
-    return file_id.isEmpty() || !google_api_wait("PATCH","https://www.googleapis.com/drive/v3/files/"+file_id,{{"trashed",true}}).isEmpty();
+    return trashed;
 }
 void web_bridge::set_web_title(const QString& title)
 {
