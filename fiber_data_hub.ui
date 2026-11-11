@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="icons.qrc">
-    <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
+    <normaloff>:/icons/icons/fiber_data_hub.svg</normaloff>:/icons/icons/fiber_data_hub.svg</iconset>
   </property>
        <property name="styleSheet">
         <string notr="true">QMainWindow#FiberDataHub {
@@ -227,7 +227,7 @@ QMainWindow#FiberDataHub QScrollBar::sub-page {
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+                  <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -449,7 +449,7 @@ p, li { white-space: pre-wrap; }
                     </property>
                     <property name="icon">
                      <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                      <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
                     </property>
                    </widget>
                   </item>
@@ -530,7 +530,7 @@ p, li { white-space: pre-wrap; }
                     </property>
                     <property name="icon">
                      <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                     </property>
                    </widget>
                   </item>
@@ -554,7 +554,7 @@ p, li { white-space: pre-wrap; }
                     </property>
                     <property name="icon">
                      <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+                      <normaloff>:/icons/icons/download.svg</normaloff>:/icons/icons/download.svg</iconset>
                     </property>
                    </widget>
                   </item>

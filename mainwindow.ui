@@ -186,7 +186,7 @@ QListWidget#nav_rail::item:selected {
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+              <normaloff>:/icons/icons/tractography.svg</normaloff>:/icons/icons/tractography.svg</iconset>
             </property>
            </item>
            <item>
@@ -196,7 +196,7 @@ Tractography</string>
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+              <normaloff>:/icons/icons/connectometry.svg</normaloff>:/icons/icons/connectometry.svg</iconset>
             </property>
            </item>
            <item>
@@ -205,7 +205,7 @@ Tractography</string>
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
+              <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
             </property>
            </item>
           </widget>
@@ -238,7 +238,7 @@ Tractography</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
+                <normaloff>:/icons/icons/ai_agents.svg</normaloff>:/icons/icons/ai_agents.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -258,7 +258,7 @@ Tractography</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
+                <normaloff>:/icons/icons/fiber_data_hub.svg</normaloff>:/icons/icons/fiber_data_hub.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -278,7 +278,7 @@ Tractography</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/console.xpm</normaloff>:/icons/icons/console.xpm</iconset>
+                <normaloff>:/icons/icons/console.svg</normaloff>:/icons/icons/console.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -780,7 +780,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                         </property>
                         <property name="autoDefault">
                          <bool>false</bool>
@@ -806,7 +806,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                         </property>
                        </widget>
                       </item>
@@ -833,7 +833,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+                          <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                         </property>
                         <property name="toolTip">
                          <string>Check NIfTI DWI files (*.nii, *.nii.gz) before conversion</string>
@@ -884,7 +884,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                         </property>
                         <property name="autoDefault">
                          <bool>false</bool>
@@ -904,7 +904,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                         </property>
                         <property name="text">
                          <string>DICOM folder...</string>
@@ -952,7 +952,7 @@ QLabel#tract_arrow_2 {
                            </property>
                            <property name="icon">
                             <iconset resource="icons.qrc">
-                             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                             <normaloff>:/icons/icons/folder_sort.svg</normaloff>:/icons/icons/folder_sort.svg</iconset>
                            </property>
                            <property name="text">
                             <string>Sort DICOM files...</string>
@@ -969,7 +969,7 @@ QLabel#tract_arrow_2 {
                            </property>
                            <property name="icon">
                             <iconset resource="icons.qrc">
-                             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                             <normaloff>:/icons/icons/folder_sort.svg</normaloff>:/icons/icons/folder_sort.svg</iconset>
                            </property>
                            <property name="text">
                             <string>Sort DICOM folder...</string>
@@ -1023,7 +1023,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                         </property>
                         <property name="text">
                          <string>2dseq / FDF file(s)...</string>
@@ -1145,7 +1145,7 @@ QLabel#tract_arrow_2 {
                      </property>
                      <property name="icon">
                       <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                       <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                      </property>
                      <property name="text">
                       <string>Open SRC → reconstruct</string>
@@ -1193,7 +1193,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                         </property>
                         <property name="text">
                          <string>Batch SRC → FIB</string>
@@ -1213,7 +1213,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+                          <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                         </property>
                        </widget>
                       </item>
@@ -1329,7 +1329,7 @@ QLabel#tract_arrow_2 {
                      </property>
                      <property name="icon">
                       <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                       <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                      </property>
                      <property name="text">
                       <string>FIB file...</string>
@@ -1374,7 +1374,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                         </property>
                         <property name="text">
                          <string>T1W/T2W image...</string>
@@ -1394,7 +1394,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                          <normaloff>:/icons/icons/auto_track.svg</normaloff>:/icons/icons/auto_track.svg</iconset>
                         </property>
                         <property name="text">
                          <string>Automatic tracking</string>
@@ -1414,7 +1414,7 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="icon">
                          <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+                          <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                         </property>
                        </widget>
                       </item>
@@ -1607,7 +1607,7 @@ QLabel#tract_arrow_2 {
                           </property>
                           <property name="icon">
                            <iconset resource="icons.qrc">
-                            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                            <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
                           </property>
                          </widget>
                         </item>
@@ -1652,7 +1652,7 @@ QLabel#tract_arrow_2 {
                           </property>
                           <property name="icon">
                            <iconset resource="icons.qrc">
-                            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                            <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
                           </property>
                          </widget>
                         </item>
@@ -1700,7 +1700,7 @@ QLabel#tract_arrow_2 {
                           </property>
                           <property name="icon">
                            <iconset resource="icons.qrc">
-                            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                            <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
                           </property>
                          </widget>
                         </item>
@@ -2131,7 +2131,7 @@ QLabel#conn_arrow_2 {
                    </property>
                    <property name="icon">
                     <iconset resource="icons.qrc">
-                     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -2148,7 +2148,7 @@ QLabel#conn_arrow_2 {
                    </property>
                    <property name="icon">
                     <iconset resource="icons.qrc">
-                     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                     <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -2272,7 +2272,7 @@ QLabel#conn_arrow_2 {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                   <normaloff>:/icons/icons/database.svg</normaloff>:/icons/icons/database.svg</iconset>
                  </property>
                  <property name="text">
                   <string>View / edit database...</string>
@@ -2397,7 +2397,7 @@ QLabel#conn_arrow_2 {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                   <normaloff>:/icons/icons/connectometry.svg</normaloff>:/icons/icons/connectometry.svg</iconset>
                  </property>
                  <property name="text">
                   <string>Run correlational tractography...</string>
@@ -2568,10 +2568,10 @@ QFrame#tools_appearance_footer {
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/3view.xpm</normaloff>:/icons/icons/3view.xpm</iconset>
+                 <normaloff>:/icons/icons/image_editor.svg</normaloff>:/icons/icons/image_editor.svg</iconset>
                </property>
                <property name="text">
-                <string>View image</string>
+                <string>Image Editor</string>
                </property>
               </widget>
              </item>
@@ -2624,7 +2624,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+                   <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
                  </property>
                  <property name="text">
                   <string>Linear registration...</string>
@@ -2641,7 +2641,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+                   <normaloff>:/icons/icons/nonlinear_reg.svg</normaloff>:/icons/icons/nonlinear_reg.svg</iconset>
                  </property>
                  <property name="text">
                   <string>Nonlinear registration...</string>
@@ -2682,7 +2682,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                   <normaloff>:/icons/icons/xnat_download.svg</normaloff>:/icons/icons/xnat_download.svg</iconset>
                  </property>
                  <property name="text">
                   <string>XNAT download...</string>
@@ -2702,24 +2702,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="parse_network_measures">
-                 <property name="toolTip">
-                  <string>Parse network-measure text files into one data sheet</string>
-                 </property>
-                 <property name="statusTip">
-                  <string>run collect_network_measures</string>
-                 </property>
-                 <property name="text">
-                  <string>Parse network measures...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+                   <normaloff>:/icons/icons/average_fib.svg</normaloff>:/icons/icons/average_fib.svg</iconset>
                  </property>
                 </widget>
                </item>
@@ -2937,7 +2920,7 @@ QPushButton#browseDir:disabled {
          </property>
          <property name="icon">
           <iconset resource="icons.qrc">
-           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
          </property>
          <property name="text">
           <string>Browse...</string>

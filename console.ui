@@ -83,7 +83,7 @@
         </property>
         <property name="icon">
          <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+          <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
         </property>
        </widget>
       </item>

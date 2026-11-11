@@ -708,7 +708,7 @@
                   </property>
                   <property name="icon">
                    <iconset resource="icons.qrc">
-                    <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                    <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
                   </property>
                  </widget>
                 </item>
@@ -719,7 +719,7 @@
                   </property>
                   <property name="icon">
                    <iconset resource="icons.qrc">
-                    <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                    <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
                   </property>
                  </widget>
                 </item>
@@ -900,7 +900,7 @@
   <action name="actionSave_Warped_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Transformed Image...</string>
@@ -909,7 +909,7 @@
   <action name="actionSave_Transformation">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Registration...</string>
@@ -918,7 +918,7 @@
   <action name="actionLoad_Transformation">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Registration...</string>
@@ -927,7 +927,7 @@
   <action name="actionApply_Transformation">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/transform_apply.svg</normaloff>:/icons/icons/transform_apply.svg</iconset>
    </property>
    <property name="text">
     <string>Apply Registration to Other Image...</string>

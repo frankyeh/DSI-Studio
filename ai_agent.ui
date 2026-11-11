@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="icons.qrc">
-    <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
+    <normaloff>:/icons/icons/ai_agents.svg</normaloff>:/icons/icons/ai_agents.svg</iconset>
   </property>
   <widget class="QWidget" name="tab_8">
    <property name="styleSheet">

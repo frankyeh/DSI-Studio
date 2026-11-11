@@ -65,7 +65,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+              <normaloff>:/icons/icons/add_merge.svg</normaloff>:/icons/icons/add_merge.svg</iconset>
             </property>
            </widget>
           </item>
@@ -82,7 +82,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+              <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
             </property>
            </widget>
           </item>
@@ -99,7 +99,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
+              <normaloff>:/icons/icons/move_up.svg</normaloff>:/icons/icons/move_up.svg</iconset>
             </property>
            </widget>
           </item>
@@ -116,7 +116,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+              <normaloff>:/icons/icons/move_down.svg</normaloff>:/icons/icons/move_down.svg</iconset>
             </property>
            </widget>
           </item>
@@ -139,7 +139,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+              <normaloff>:/icons/icons/sort_alpha.svg</normaloff>:/icons/icons/sort_alpha.svg</iconset>
             </property>
            </widget>
           </item>
@@ -156,7 +156,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+              <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
             </property>
            </widget>
           </item>
@@ -173,7 +173,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+              <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
             </property>
            </widget>
           </item>
@@ -190,7 +190,7 @@
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+              <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
             </property>
            </widget>
           </item>
@@ -260,7 +260,7 @@
        </property>
        <property name="icon">
         <iconset resource="../icons.qrc">
-         <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+         <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
        </property>
       </widget>
      </item>

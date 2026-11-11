@@ -124,7 +124,7 @@
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+             <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
            </property>
           </widget>
          </item>
@@ -150,7 +150,7 @@
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+             <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
            </property>
           </widget>
          </item>
@@ -191,10 +191,6 @@
            </property>
            <property name="text">
             <string>...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
            </property>
           </widget>
          </item>
@@ -255,10 +251,6 @@
            </property>
            <property name="text">
             <string>...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
            </property>
           </widget>
          </item>
@@ -623,7 +615,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+           <normaloff>:/icons/icons/new_create.svg</normaloff>:/icons/icons/new_create.svg</iconset>
          </property>
         </widget>
        </item>
@@ -649,7 +641,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
          </property>
         </widget>
        </item>
@@ -675,7 +667,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+           <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
          </property>
         </widget>
        </item>
@@ -701,7 +693,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+           <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
          </property>
         </widget>
        </item>
@@ -727,7 +719,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
+           <normaloff>:/icons/icons/move_up.svg</normaloff>:/icons/icons/move_up.svg</iconset>
          </property>
         </widget>
        </item>
@@ -753,7 +745,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+           <normaloff>:/icons/icons/move_down.svg</normaloff>:/icons/icons/move_down.svg</iconset>
          </property>
         </widget>
        </item>
@@ -785,7 +777,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
+           <normaloff>:/icons/icons/atlas.svg</normaloff>:/icons/icons/atlas.svg</iconset>
          </property>
         </widget>
        </item>
@@ -802,7 +794,7 @@
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+           <normaloff>:/icons/icons/segmentation.svg</normaloff>:/icons/icons/segmentation.svg</iconset>
          </property>
         </widget>
        </item>
@@ -978,7 +970,7 @@
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+       <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
      </property>
     </widget>
     <widget class="QMenu" name="menuSave_Tracts">
@@ -987,7 +979,7 @@
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+       <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
      </property>
      <addaction name="separator"/>
      <addaction name="separator"/>
@@ -1108,7 +1100,7 @@
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+       <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
      </property>
      <addaction name="actionFull"/>
      <addaction name="separator"/>
@@ -1137,7 +1129,7 @@
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+       <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
      </property>
      <addaction name="actionInsert_Sagittal_Picture"/>
      <addaction name="actionInsert_Coronal_Pictures"/>
@@ -1254,7 +1246,7 @@
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+       <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
      </property>
      <addaction name="actionFlip_X_2"/>
      <addaction name="actionFlip_Y_2"/>
@@ -1513,7 +1505,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                 <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1536,7 +1528,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+                 <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1559,7 +1551,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+                 <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1582,7 +1574,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                 <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1605,7 +1597,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
+                 <normaloff>:/icons/icons/move_up.svg</normaloff>:/icons/icons/move_up.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1628,7 +1620,7 @@
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+                 <normaloff>:/icons/icons/move_down.svg</normaloff>:/icons/icons/move_down.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1733,7 +1725,7 @@ Tracking</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+             <normaloff>:/icons/icons/tractography.svg</normaloff>:/icons/icons/tractography.svg</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -1768,7 +1760,7 @@ Tracking</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/icons/stop.xpm</normaloff>:/icons/icons/stop.xpm</iconset>
+             <normaloff>:/icons/icons/stop.svg</normaloff>:/icons/icons/stop.svg</iconset>
            </property>
            <property name="flat">
             <bool>false</bool>
@@ -1919,7 +1911,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
+           <normaloff>:/icons/icons/roi_rect.svg</normaloff>:/icons/icons/roi_rect.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -1960,7 +1952,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/curves.xpm</normaloff>:/icons/icons/curves.xpm</iconset>
+           <normaloff>:/icons/icons/roi_freehand.svg</normaloff>:/icons/icons/roi_freehand.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -2001,7 +1993,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/poly.xpm</normaloff>:/icons/icons/poly.xpm</iconset>
+           <normaloff>:/icons/icons/roi_polygon.svg</normaloff>:/icons/icons/roi_polygon.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2033,7 +2025,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/ball.xpm</normaloff>:/icons/icons/ball.xpm</iconset>
+           <normaloff>:/icons/icons/roi_sphere.svg</normaloff>:/icons/icons/roi_sphere.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -2071,7 +2063,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
+           <normaloff>:/icons/icons/roi_cube.svg</normaloff>:/icons/icons/roi_cube.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -2139,7 +2131,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+           <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2171,7 +2163,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/ruler.xpm</normaloff>:/icons/icons/ruler.xpm</iconset>
+           <normaloff>:/icons/icons/ruler_measure.svg</normaloff>:/icons/icons/ruler_measure.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2249,7 +2241,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/rgb.xpm</normaloff>:/icons/icons/rgb.xpm</iconset>
+           <normaloff>:/icons/icons/local_fibers.svg</normaloff>:/icons/icons/local_fibers.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2284,7 +2276,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+           <normaloff>:/icons/icons/tractography.svg</normaloff>:/icons/icons/tractography.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2313,7 +2305,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/ruler.xpm</normaloff>:/icons/icons/ruler.xpm</iconset>
+           <normaloff>:/icons/icons/ruler_measure.svg</normaloff>:/icons/icons/ruler_measure.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2345,7 +2337,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/red_cross.xpm</normaloff>:/icons/icons/red_cross.xpm</iconset>
+           <normaloff>:/icons/icons/crosshair_target.svg</normaloff>:/icons/icons/crosshair_target.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2405,7 +2397,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
+           <normaloff>:/icons/icons/roi_edge.svg</normaloff>:/icons/icons/roi_edge.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2448,7 +2440,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+           <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2480,7 +2472,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+           <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2518,7 +2510,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+           <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2559,7 +2551,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/3view.xpm</normaloff>:/icons/icons/3view.xpm</iconset>
+           <normaloff>:/icons/icons/view_3d_slices.svg</normaloff>:/icons/icons/view_3d_slices.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2579,7 +2571,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/mosaic.xpm</normaloff>:/icons/icons/mosaic.xpm</iconset>
+           <normaloff>:/icons/icons/mosaic.svg</normaloff>:/icons/icons/mosaic.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2670,7 +2662,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+           <normaloff>:/icons/icons/device_electrode.svg</normaloff>:/icons/icons/device_electrode.svg</iconset>
          </property>
         </widget>
        </item>
@@ -2715,7 +2707,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
          </property>
         </widget>
        </item>
@@ -2741,7 +2733,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+           <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
          </property>
         </widget>
        </item>
@@ -2764,7 +2756,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+           <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
          </property>
         </widget>
        </item>
@@ -2790,7 +2782,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+           <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
          </property>
         </widget>
        </item>
@@ -2849,7 +2841,7 @@ Tracking</string>
   <action name="actionNewRegion">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+     <normaloff>:/icons/icons/new_create.svg</normaloff>:/icons/icons/new_create.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;New Region</string>
@@ -2864,7 +2856,7 @@ Tracking</string>
   <action name="actionOpenRegion">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Open Region...</string>
@@ -2879,7 +2871,7 @@ Tracking</string>
   <action name="actionSaveRegionAs">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Current Region &amp;As...</string>
@@ -2894,7 +2886,7 @@ Tracking</string>
   <action name="actionDeleteRegion">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Delete</string>
@@ -2912,7 +2904,7 @@ Tracking</string>
   <action name="actionOpenTract">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Open Tracts...</string>
@@ -2924,7 +2916,7 @@ Tracking</string>
   <action name="actionSaveTractAs">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Current Tract As...</string>
@@ -2936,7 +2928,7 @@ Tracking</string>
   <action name="actionDeleteRegionAll">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete All</string>
@@ -2951,7 +2943,7 @@ Tracking</string>
   <action name="actionDeleteTract">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Delete</string>
@@ -2966,7 +2958,7 @@ Tracking</string>
   <action name="actionDeleteTractAll">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete All</string>
@@ -3132,7 +3124,7 @@ Tracking</string>
   <action name="actionWhole_brain_seeding">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+     <normaloff>:/icons/icons/whole_brain_seed.svg</normaloff>:/icons/icons/whole_brain_seed.svg</iconset>
    </property>
    <property name="text">
     <string>Whole Brain Seeding</string>
@@ -3190,7 +3182,7 @@ Tracking</string>
   <action name="actionSagittal_view">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+     <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Sagittal View</string>
@@ -3202,7 +3194,7 @@ Tracking</string>
   <action name="actionCoronal_View">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+     <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Coronal View</string>
@@ -3214,7 +3206,7 @@ Tracking</string>
   <action name="actionAxial_View">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+     <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Axial View</string>
@@ -3226,7 +3218,7 @@ Tracking</string>
   <action name="actionMerge_All">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+     <normaloff>:/icons/icons/add_merge.svg</normaloff>:/icons/icons/add_merge.svg</iconset>
    </property>
    <property name="text">
     <string>Merge All</string>
@@ -3241,7 +3233,7 @@ Tracking</string>
   <action name="actionSave_Screen">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Screen...</string>
@@ -3253,7 +3245,7 @@ Tracking</string>
   <action name="actionSave_ROI_Screen">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save ROI Screen...</string>
@@ -3265,7 +3257,7 @@ Tracking</string>
   <action name="actionLoad_Camera">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Camera Position...</string>
@@ -3277,7 +3269,7 @@ Tracking</string>
   <action name="actionSave_Camera">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Camera Position...</string>
@@ -3305,7 +3297,7 @@ Tracking</string>
   <action name="actionSave_Rotation_Video">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/video_record.svg</normaloff>:/icons/icons/video_record.svg</iconset>
    </property>
    <property name="text">
     <string>Save Rotation Video...</string>
@@ -3328,7 +3320,7 @@ Tracking</string>
   <action name="actionInsert_T1_T2">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
    </property>
    <property name="text">
     <string>Insert Other Images...</string>
@@ -3340,7 +3332,7 @@ Tracking</string>
   <action name="actionSave_mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Slice Registration...</string>
@@ -3352,7 +3344,7 @@ Tracking</string>
   <action name="actionLoad_mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Slice Registration...</string>
@@ -3364,7 +3356,7 @@ Tracking</string>
   <action name="actionStatistics">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+     <normaloff>:/icons/icons/statistics.svg</normaloff>:/icons/icons/statistics.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Statistics...</string>
@@ -3376,7 +3368,7 @@ Tracking</string>
   <action name="actionTract_Atlas_Intersection_Statistics">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+     <normaloff>:/icons/icons/statistics.svg</normaloff>:/icons/icons/statistics.svg</iconset>
    </property>
    <property name="text">
     <string>Tract-Atlas Intersection Statistics...</string>
@@ -3396,7 +3388,7 @@ Tracking</string>
   <action name="actionSet_Cluster_Color">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/rgb.xpm</normaloff>:/icons/icons/rgb.xpm</iconset>
+     <normaloff>:/icons/icons/color_palette.svg</normaloff>:/icons/icons/color_palette.svg</iconset>
    </property>
    <property name="text">
     <string>Select Color to Current Cluster...</string>
@@ -3408,7 +3400,7 @@ Tracking</string>
   <action name="actionSave_Tracts_Colors_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Tracts Colors As...</string>
@@ -3420,7 +3412,7 @@ Tracking</string>
   <action name="actionLoad_Tract_Color">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Tract Colors...</string>
@@ -3432,7 +3424,7 @@ Tracking</string>
   <action name="actionSave_Voxel_Data_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Voxel Data As...</string>
@@ -3444,7 +3436,7 @@ Tracking</string>
   <action name="actionTDI_Diffusion_Space">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Tract Density Images...</string>
@@ -3456,7 +3448,7 @@ Tracking</string>
   <action name="actionTDI_Subvoxel_Diffusion_Space">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Tract Density Images(X2)...</string>
@@ -3468,7 +3460,7 @@ Tracking</string>
   <action name="actionSave_Tracts_in_Current_Mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Current Tract In Current Slice Space...</string>
@@ -3480,7 +3472,7 @@ Tracking</string>
   <action name="actionThreshold">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+     <normaloff>:/icons/icons/new_create.svg</normaloff>:/icons/icons/new_create.svg</iconset>
    </property>
    <property name="text">
     <string>New Region From Thresholding...</string>
@@ -3508,7 +3500,7 @@ Tracking</string>
   <action name="actionSave_Endpoints_in_Current_Mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Endpoints In Current Slice Space...</string>
@@ -3520,7 +3512,7 @@ Tracking</string>
   <action name="actionOpen_Cluster_Labels">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Cluster Labels...</string>
@@ -3532,7 +3524,7 @@ Tracking</string>
   <action name="actionSave_All_Tracts_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save All Tracts As ...</string>
@@ -3544,7 +3536,7 @@ Tracking</string>
   <action name="actionRegion_statistics">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+     <normaloff>:/icons/icons/statistics.svg</normaloff>:/icons/icons/statistics.svg</iconset>
    </property>
    <property name="text">
     <string>Statistics...</string>
@@ -3564,7 +3556,7 @@ Tracking</string>
   <action name="actionTract_Analysis_Report">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+     <normaloff>:/icons/icons/tract_report.svg</normaloff>:/icons/icons/tract_report.svg</iconset>
    </property>
    <property name="text">
     <string>Tract Profile...</string>
@@ -3573,7 +3565,7 @@ Tracking</string>
   <action name="actionSave_End_Points_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Endpoints As...</string>
@@ -3585,7 +3577,7 @@ Tracking</string>
   <action name="actionConnectivity_matrix">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
+     <normaloff>:/icons/icons/connectome_matrix.svg</normaloff>:/icons/icons/connectome_matrix.svg</iconset>
    </property>
    <property name="text">
     <string>Connectivity matrix...</string>
@@ -3627,7 +3619,7 @@ Tracking</string>
   <action name="actionSave_3D_screen_in_high_resolution">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Screen in High Resolution..</string>
@@ -3639,7 +3631,7 @@ Tracking</string>
   <action name="actionSave_3D_Screen_Left_Right_Views">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Screen Left/Right Views...</string>
@@ -3651,7 +3643,7 @@ Tracking</string>
   <action name="actionSave_All_Regions_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save Checked Regions to one 3D NIFTI...</string>
@@ -3666,7 +3658,7 @@ Tracking</string>
   <action name="actionSave_Tracking_Settings">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Tracking Settings...</string>
@@ -3678,7 +3670,7 @@ Tracking</string>
   <action name="actionLoad_Tracking_Settings">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Tracking Settings...</string>
@@ -3712,7 +3704,7 @@ Tracking</string>
   <action name="actionSave_Rendering_Settings">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Rendering Settings</string>
@@ -3724,7 +3716,7 @@ Tracking</string>
   <action name="actionLoad_Rendering_Settings">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Rendering Settings...</string>
@@ -3736,7 +3728,7 @@ Tracking</string>
   <action name="actionSave_All_Regions_As_Multiple_Files">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save Checked Regions to multiple 3D NIFTIs...</string>
@@ -3751,7 +3743,7 @@ Tracking</string>
   <action name="actionRestore_Settings">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
    </property>
    <property name="text">
     <string>Restore Rendering Settings</string>
@@ -3760,7 +3752,7 @@ Tracking</string>
   <action name="actionMerge_All_2">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+     <normaloff>:/icons/icons/add_merge.svg</normaloff>:/icons/icons/add_merge.svg</iconset>
    </property>
    <property name="text">
     <string>Merge Checked Regions</string>
@@ -3775,7 +3767,7 @@ Tracking</string>
   <action name="actionSave_All_Tracts_As_Multiple_Files">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save All Tracts As Multiple Files...</string>
@@ -3787,7 +3779,7 @@ Tracking</string>
   <action name="actionSave_3D_screen_in_3_views">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Screen in 3 Views..</string>
@@ -3802,7 +3794,7 @@ Tracking</string>
    </property>
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
    </property>
    <property name="text">
     <string>Auto Rotate</string>
@@ -3841,7 +3833,7 @@ Tracking</string>
   <action name="actionAdjust_Mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
+     <normaloff>:/icons/icons/transform_apply.svg</normaloff>:/icons/icons/transform_apply.svg</iconset>
    </property>
    <property name="text">
     <string>Adjust Slice Registration...</string>
@@ -3933,7 +3925,7 @@ Tracking</string>
   <action name="actionLoad_Color_Map">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Color Map...</string>
@@ -3945,7 +3937,7 @@ Tracking</string>
   <action name="actionRestore_Tracking_Settings">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
    </property>
    <property name="text">
     <string>Restore Tracking Settings</string>
@@ -3965,7 +3957,7 @@ Tracking</string>
   <action name="actionOpen_Tracts_Name">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Tracts Name...</string>
@@ -3977,7 +3969,7 @@ Tracking</string>
   <action name="actionSort_Tracts_By_Names">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     <normaloff>:/icons/icons/sort_alpha.svg</normaloff>:/icons/icons/sort_alpha.svg</iconset>
    </property>
    <property name="text">
     <string>Sort Tracts by Name</string>
@@ -3989,7 +3981,7 @@ Tracking</string>
   <action name="actionRemove_Repeated_Tracks">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete Repeated Tracks</string>
@@ -4001,7 +3993,7 @@ Tracking</string>
   <action name="actionMerge_Tracts_by_Name">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+     <normaloff>:/icons/icons/add_merge.svg</normaloff>:/icons/icons/add_merge.svg</iconset>
    </property>
    <property name="text">
     <string>Merge Tracts by Name</string>
@@ -4021,7 +4013,7 @@ Tracking</string>
   <action name="actionDelete_By_Length">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete Short Tracts</string>
@@ -4033,7 +4025,7 @@ Tracking</string>
   <action name="actionOpen_Tract_Values">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Tract Values...</string>
@@ -4152,7 +4144,7 @@ Tracking</string>
   <action name="actionInsert_MNI_images">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
    </property>
    <property name="text">
     <string>Insert MNI Images...</string>
@@ -4164,7 +4156,7 @@ Tracking</string>
   <action name="actionOpen_Connectivity_Matrix">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+     <normaloff>:/icons/icons/connectome_matrix.svg</normaloff>:/icons/icons/connectome_matrix.svg</iconset>
    </property>
    <property name="text">
     <string>Visualize Graph...</string>
@@ -4176,7 +4168,7 @@ Tracking</string>
   <action name="actionOpen_MNI_Region">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open MNI Region...</string>
@@ -4224,7 +4216,7 @@ Tracking</string>
   <action name="actionBy_Size">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     <normaloff>:/icons/icons/sort_metric.svg</normaloff>:/icons/icons/sort_metric.svg</iconset>
    </property>
    <property name="text">
     <string>Sort By Size</string>
@@ -4236,7 +4228,7 @@ Tracking</string>
   <action name="actionBy_X">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     <normaloff>:/icons/icons/sort_metric.svg</normaloff>:/icons/icons/sort_metric.svg</iconset>
    </property>
    <property name="text">
     <string>Sort By X</string>
@@ -4248,7 +4240,7 @@ Tracking</string>
   <action name="actionBy_Y">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     <normaloff>:/icons/icons/sort_metric.svg</normaloff>:/icons/icons/sort_metric.svg</iconset>
    </property>
    <property name="text">
     <string>Sort By Y</string>
@@ -4260,7 +4252,7 @@ Tracking</string>
   <action name="actionBy_Z">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     <normaloff>:/icons/icons/sort_metric.svg</normaloff>:/icons/icons/sort_metric.svg</iconset>
    </property>
    <property name="text">
     <string>Sort By Z</string>
@@ -4272,7 +4264,7 @@ Tracking</string>
   <action name="actionBy_Name">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     <normaloff>:/icons/icons/sort_alpha.svg</normaloff>:/icons/icons/sort_alpha.svg</iconset>
    </property>
    <property name="text">
     <string>Sort By Name</string>
@@ -4284,7 +4276,7 @@ Tracking</string>
   <action name="actionMove_Slices_To_Current_Region">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
    </property>
    <property name="text">
     <string>Move Slices To Current Region</string>
@@ -4315,7 +4307,7 @@ Tracking</string>
   <action name="actionMark_Region_on_T1W_T2W">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
+     <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
    </property>
    <property name="text">
     <string>Mark Region on Slices</string>
@@ -4324,7 +4316,7 @@ Tracking</string>
   <action name="actionMark_Tracts_on_T1W_T2W">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
+     <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
    </property>
    <property name="text">
     <string>Mark Tracts on Slices</string>
@@ -4333,7 +4325,7 @@ Tracking</string>
   <action name="actionSave_T1W_T2W_images">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Slices as...</string>
@@ -4345,7 +4337,7 @@ Tracking</string>
   <action name="actionRecord_Video">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/fullscreen.xpm</normaloff>:/icons/icons/fullscreen.xpm</iconset>
+     <normaloff>:/icons/icons/video_record.svg</normaloff>:/icons/icons/video_record.svg</iconset>
    </property>
    <property name="text">
     <string>Record Video...</string>
@@ -4365,7 +4357,7 @@ Tracking</string>
   <action name="actionSave_Slices_to_DICOM">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Slices to DICOM...</string>
@@ -4412,7 +4404,7 @@ Tracking</string>
   <action name="actionDelete_Branches">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete Branches</string>
@@ -4429,7 +4421,7 @@ Tracking</string>
   <action name="actionLoad_Region_Color">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Region Color...</string>
@@ -4441,7 +4433,7 @@ Tracking</string>
   <action name="actionSave_Region_Color">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Region Color...</string>
@@ -4461,7 +4453,7 @@ Tracking</string>
   <action name="actionMove_Objects">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
    </property>
    <property name="text">
     <string>Move Region at 3D</string>
@@ -4481,7 +4473,7 @@ Tracking</string>
   <action name="actionDeleteAllDevices">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete All</string>
@@ -4493,7 +4485,7 @@ Tracking</string>
   <action name="actionDeleteDevice">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Delete</string>
@@ -4505,7 +4497,7 @@ Tracking</string>
   <action name="actionSaveDevice">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Device As...</string>
@@ -4514,7 +4506,7 @@ Tracking</string>
   <action name="actionOpenDevice">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Open Device...</string>
@@ -4523,7 +4515,7 @@ Tracking</string>
   <action name="actionSave_All_Device">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>&amp;Save All Devices As...</string>
@@ -4535,7 +4527,7 @@ Tracking</string>
   <action name="actionNewDevice">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+     <normaloff>:/icons/icons/device_electrode.svg</normaloff>:/icons/icons/device_electrode.svg</iconset>
    </property>
    <property name="text">
     <string>New Device</string>
@@ -4547,7 +4539,7 @@ Tracking</string>
   <action name="actionAssign_Colors_For_Each">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/rgb.xpm</normaloff>:/icons/icons/rgb.xpm</iconset>
+     <normaloff>:/icons/icons/color_palette.svg</normaloff>:/icons/icons/color_palette.svg</iconset>
    </property>
    <property name="text">
     <string>Color All Clusters</string>
@@ -4574,7 +4566,7 @@ Tracking</string>
   <action name="actionLoad_WorkSpace">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load Workspace...</string>
@@ -4586,7 +4578,7 @@ Tracking</string>
   <action name="actionSave_WorkSpace">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Workspace...</string>
@@ -4606,7 +4598,7 @@ Tracking</string>
   <action name="actionSave_Tracts_in_Template_Space">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Current Tract in Template Space...</string>
@@ -4618,7 +4610,7 @@ Tracking</string>
   <action name="actionInsert_Coronal_Pictures">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
    </property>
    <property name="text">
     <string>Insert Coronal Picture...</string>
@@ -4627,7 +4619,7 @@ Tracking</string>
   <action name="actionInsert_Axial_Pictures">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
    </property>
    <property name="text">
     <string>Insert Axial Picture...</string>
@@ -4636,7 +4628,7 @@ Tracking</string>
   <action name="actionInsert_Sagittal_Picture">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
    </property>
    <property name="text">
     <string>Insert Sagittal Picture...</string>
@@ -4650,7 +4642,7 @@ Tracking</string>
   <action name="actionSave_Tract_in_MNI_Coordinates">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Current Tract in MNI Coordinates...</string>
@@ -4662,7 +4654,7 @@ Tracking</string>
   <action name="actionSave_Endpoints_in_MNI_Coordinates">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Endpoints in MNI Coordinates...</string>
@@ -4682,7 +4674,7 @@ Tracking</string>
   <action name="actionSave_All_Regions_as_4D_NIFTI">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+     <normaloff>:/icons/icons/save_all.svg</normaloff>:/icons/icons/save_all.svg</iconset>
    </property>
    <property name="text">
     <string>Save Checked Regions to one 4D NIFTI...</string>
@@ -4774,7 +4766,7 @@ Tracking</string>
   <action name="actionOpen_Cluster_Colors">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Cluster Colors...</string>
@@ -4786,7 +4778,7 @@ Tracking</string>
   <action name="actionSave_Cluster_Colors">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save Cluster Colors...</string>
@@ -4822,7 +4814,7 @@ Tracking</string>
   <action name="actionOpen_MNI_space_Tracts">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Template-Space Tracts...</string>
@@ -4834,7 +4826,7 @@ Tracking</string>
   <action name="actionLoad_Built_In_Atlas">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+     <normaloff>:/icons/icons/atlas.svg</normaloff>:/icons/icons/atlas.svg</iconset>
    </property>
    <property name="text">
     <string>Load Built-In Atlas...</string>
@@ -4846,7 +4838,7 @@ Tracking</string>
   <action name="actionNew_Region_From_MNI_Coordinate">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+     <normaloff>:/icons/icons/new_create.svg</normaloff>:/icons/icons/new_create.svg</iconset>
    </property>
    <property name="text">
     <string>New Region From MNI Coordinate...</string>
@@ -4871,7 +4863,7 @@ Tracking</string>
   <action name="actionLoad_MNI_mapping">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Load MNI mapping...</string>
@@ -4883,7 +4875,7 @@ Tracking</string>
   <action name="actionSave_3D_Model">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/surface_mesh.svg</normaloff>:/icons/icons/surface_mesh.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Model...</string>
@@ -4895,7 +4887,7 @@ Tracking</string>
   <action name="actionEdit_Slices">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+     <normaloff>:/icons/icons/image_editor_light.svg</normaloff>:/icons/icons/image_editor_light.svg</iconset>
    </property>
    <property name="text">
     <string>Edit Slice Image...</string>
@@ -4904,7 +4896,7 @@ Tracking</string>
   <action name="actionSave_FIB_As">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save FIB As...</string>
@@ -4916,7 +4908,7 @@ Tracking</string>
   <action name="actionTract_To_Region_Connectome">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
+     <normaloff>:/icons/icons/connectome_matrix.svg</normaloff>:/icons/icons/connectome_matrix.svg</iconset>
    </property>
    <property name="text">
     <string>Tract-To-Region Connectome...</string>
@@ -4938,7 +4930,7 @@ Tracking</string>
   <action name="actionOpen_Cluster_Values">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
    </property>
    <property name="text">
     <string>Open Cluster Values...</string>
@@ -4950,7 +4942,7 @@ Tracking</string>
   <action name="actionDelete_Current_Slice">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
    </property>
    <property name="text">
     <string>Delete Current Slice</string>
@@ -5058,7 +5050,7 @@ Tracking</string>
   <action name="actionSave_3D_Screen_in_3_Views_Horizontal">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Screen in 3 Views (Horizontal)...</string>
@@ -5070,7 +5062,7 @@ Tracking</string>
   <action name="actionSave_3D_Screen_in_3_Views_Vertical">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     <normaloff>:/icons/icons/screenshot_camera.svg</normaloff>:/icons/icons/screenshot_camera.svg</iconset>
    </property>
    <property name="text">
     <string>Save 3D Screen in 3 Views (Vertical)...</string>
@@ -5082,7 +5074,7 @@ Tracking</string>
   <action name="actionOpen_FIB_Directory">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
    </property>
    <property name="text">
     <string>Open FIB Directory...</string>
