@@ -170,26 +170,5 @@ private:
     void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
     void publish_web_result(void);
 };
-    std::function<void(const QString&)> warn;
-    web_bridge(void);
-    bool sign_in_device(void); // headless sign-in; true once a token is held
-    void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
-    void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
-    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
-    void write_google_doc(const QJsonObject& doc,QJsonObject message,std::function<void(bool)> done = {}); // replaces the body with one JSON message; doc (from documents.get) guards the revision
-    void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
-    void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc after its last message
-    QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <codename>", or "<title> <middle dot> DSI Studio <codename>" after set_title), modifiedTime, appProperties (dsi_session, dsi_code)
-    bool remove_web_session(const QString& file_id,const QString& session); // trashes the session Doc (if any) and removes its local history, config, and title; false if the Doc was not trashed
-    void set_web_title(const QString& title); // renames the connected Doc to "<title> <middle dot> DSI Studio <codename>"
-    void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
-    QString prompt(void) const; // the connection prompt an agent is given
-    QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
-    void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
-    void publish_web_result(void);
-    void report_step(const QString& step,const QString& approval = {},qint64 pid = 0); // the running Web request's "processing" message gains step (waiting_approval/running) and the shell PID; waits for the write
-    QJsonObject google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body = {}); // google_api() that waits for its reply
-    QJsonObject web_file(const std::vector<std::string>& cmd,const ai_approval& approve,QString& error); // web_upload, web_download_prepare, web_download: the attachment, or empty on error
-};
 
 #endif
