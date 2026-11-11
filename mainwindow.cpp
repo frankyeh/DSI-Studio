@@ -158,8 +158,9 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->template_list->addItem(each.stem().string().c_str());
     ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(0);
-    for(auto* batch : {ui->tract_import_batch,ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch})
-        batch->hide(); // until its stage's "Batch" toggle is checked
+    for(auto* each : std::initializer_list<QWidget*>{ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,
+                                                     ui->tract_dicom_tab,ui->tract_others_tab,ui->recent_src_card,ui->recent_src_actions})
+        each->hide(); // until its toggle or segment is checked
 
     {
         news = settings.value("login_news").toString();

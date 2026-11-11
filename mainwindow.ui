@@ -400,8 +400,13 @@ QFrame#tract_recent_panel {
 QLabel#recent_files_title {
     background-color: transparent;
 }
-QFrame#recent_src_card,
 QFrame#recent_fib_card,
+QFrame#recent_src_card,
+QFrame#recent_fib_actions,
+QFrame#recent_src_actions {
+    background-color: transparent;
+    border: 0px;
+}
 QFrame#tract_input_stage,
 QFrame#tract_reconstruction_stage,
 QFrame#tract_tracking_stage,
@@ -504,35 +509,13 @@ QLabel#tract_connectometry_title {
     font-weight: bold;
 }
 QLabel#tract_workflow_hint,
-QLabel#nifti_folder_hint,
 QLabel#tract_connectometry_hint {
     color: #67676c;
 }
-QTabWidget#tract_input_tabs::pane {
-    background-color: #ffffff;
-    border: 1px solid #dddddf;
-    border-radius: 7px;
-    top: -1px;
-}
-QTabWidget#tract_input_tabs QWidget#tract_nifti_tab,
-QTabWidget#tract_input_tabs QWidget#tract_dicom_tab,
-QTabWidget#tract_input_tabs QWidget#tract_others_tab {
+QWidget#tract_nifti_tab,
+QWidget#tract_dicom_tab,
+QWidget#tract_others_tab {
     background-color: transparent;
-}
-QTabWidget#tract_input_tabs QTabBar::tab {
-    color: #4f4f54;
-    background-color: #f1f1f3;
-    border: 1px solid #dddddf;
-    border-bottom: 0px;
-    border-top-left-radius: 7px;
-    border-top-right-radius: 7px;
-    padding: 4px 14px;
-    margin-right: 2px;
-}
-QTabWidget#tract_input_tabs QTabBar::tab:selected {
-    color: #202124;
-    background-color: #ffffff;
-    font-weight: bold;
 }
 QWidget#tab QScrollBar:vertical {
     background-color: transparent;
@@ -598,7 +581,6 @@ QFrame#tract_tracking_stage QPushButton#FiberTracking {
     text-align: center;
 }
 QFrame#tract_input_stage QPushButton#tract_input_batch_toggle,
-QFrame#tract_input_stage QPushButton#tract_import_batch_toggle,
 QFrame#tract_reconstruction_stage QPushButton#tract_reconstruction_batch_toggle,
 QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
     color: #2563eb;
@@ -608,26 +590,23 @@ QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
     padding: 2px 0px;
     font-weight: bold;
 }
-QTabWidget#recent_tabs::pane {
-    border: 0px;
-}
-QTabWidget#recent_tabs QTabBar::tab {
+QWidget#tab QPushButton[segment="true"] {
     color: #4f4f54;
     background-color: #f1f3f6;
     border: 1px solid #dfe3e8;
-    border-radius: 12px;
-    padding: 4px 18px;
-    margin: 0px 6px 6px 0px;
-    min-width: 72px;
+    border-radius: 11px;
+    padding: 2px 10px;
+    min-height: 20px;
+    text-align: center;
 }
-QTabWidget#recent_tabs QTabBar::tab:selected {
-    color: #ffffff;
-    background-color: #2563eb;
-    border-color: #2563eb;
-    font-weight: bold;
-}
-QTabWidget#recent_tabs QTabBar::tab:hover:!selected {
+QWidget#tab QPushButton[segment="true"]:hover {
     background-color: #e6e9ef;
+}
+QWidget#tab QPushButton[segment="true"]:checked {
+    color: #1e3a8a;
+    background-color: #e0e7ff;
+    border-color: #c7d2fe;
+    font-weight: bold;
 }
 QLabel#tract_input_badge,
 QLabel#tract_reconstruction_badge,
@@ -806,324 +785,121 @@ QLabel#tract_arrow_2 {
                        </property>
                       </spacer>
                      </item>
+                     <item>
+                      <widget class="QPushButton" name="tract_fmt_nifti">
+                       <property name="text">
+                        <string>NIfTI</string>
+                       </property>
+                       <property name="checkable">
+                        <bool>true</bool>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                       <property name="autoExclusive">
+                        <bool>true</bool>
+                       </property>
+                       <property name="segment" stdset="0">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="tract_fmt_dicom">
+                       <property name="text">
+                        <string>DICOM</string>
+                       </property>
+                       <property name="checkable">
+                        <bool>true</bool>
+                       </property>
+                       <property name="checked">
+                        <bool>false</bool>
+                       </property>
+                       <property name="autoExclusive">
+                        <bool>true</bool>
+                       </property>
+                       <property name="segment" stdset="0">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="tract_fmt_other">
+                       <property name="text">
+                        <string>2dseq/FDF</string>
+                       </property>
+                       <property name="checkable">
+                        <bool>true</bool>
+                       </property>
+                       <property name="checked">
+                        <bool>false</bool>
+                       </property>
+                       <property name="autoExclusive">
+                        <bool>true</bool>
+                       </property>
+                       <property name="segment" stdset="0">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </item>
                    <item>
-                    <widget class="QTabWidget" name="tract_input_tabs">
-                     <property name="currentIndex">
-                      <number>0</number>
-                     </property>
-                     <widget class="QWidget" name="tract_nifti_tab">
-                      <attribute name="title">
-                       <string>NIfTI</string>
-                      </attribute>
-                      <layout class="QGridLayout" name="tract_nifti_tab_layout">
-                       <property name="spacing">
-                        <number>6</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>8</number>
-                       </property>
-                       <item row="0" column="0">
-                        <widget class="QPushButton" name="OpenDWI_NIFTI">
-                         <property name="statusTip">
-                          <string>run open_dwi_nifti</string>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="icons.qrc">
-                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                         </property>
-                         <property name="autoDefault">
-                          <bool>false</bool>
-                         </property>
-                         <property name="toolTip">
-                          <string>Open DWI NIfTI file(s) with .bval/.bvec and create an SRC file</string>
-                         </property>
-                         <property name="text">
-                          <string>NIfTI file(s)...</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
-                        <widget class="QPushButton" name="import_nifti_folder">
-                         <property name="statusTip">
-                          <string>run import_nifti_folder</string>
-                         </property>
-                         <property name="toolTip">
-                          <string>A BIDS dataset (sub-* folders) is converted to SRC files in its derivatives folder; any other folder gets an SRC file next to each DWI NIfTI</string>
-                         </property>
-                         <property name="text">
-                          <string>NIfTI folder...</string>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="icons.qrc">
-                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0" colspan="2">
-                        <widget class="QLabel" name="nifti_folder_hint">
-                         <property name="text">
-                          <string>Folder: BIDS → derivatives/, otherwise an SRC next to each NIfTI</string>
-                         </property>
-                         <property name="wordWrap">
-                          <bool>true</bool>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="0" colspan="2">
-                        <spacer name="nifti_tab_spacer">
-                         <property name="orientation">
-                          <enum>Qt::Vertical</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>20</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                        </spacer>
-                       </item>
-                      </layout>
-                     </widget>
-                     <widget class="QWidget" name="tract_dicom_tab">
-                      <attribute name="title">
-                       <string>DICOM</string>
-                      </attribute>
-                      <layout class="QGridLayout" name="tract_dicom_tab_layout">
-                       <property name="spacing">
-                        <number>6</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>8</number>
-                       </property>
-                       <item row="0" column="0">
-                        <widget class="QPushButton" name="OpenDWI_DICOM">
-                         <property name="statusTip">
-                          <string>run open_dwi_dicom</string>
-                         </property>
-                         <property name="autoFillBackground">
-                          <bool>false</bool>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="icons.qrc">
-                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                         </property>
-                         <property name="autoDefault">
-                          <bool>false</bool>
-                         </property>
-                         <property name="text">
-                          <string>DICOM file(s)...</string>
-                         </property>
-                         <property name="toolTip">
-                          <string>Open DWI DICOM files and create an SRC file</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
-                        <widget class="QPushButton" name="dicom2nii">
-                         <property name="statusTip">
-                          <string>run convert_dicom_dir</string>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="icons.qrc">
-                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                         </property>
-                         <property name="text">
-                          <string>DICOM folder...</string>
-                         </property>
-                         <property name="toolTip">
-                          <string>Convert every DICOM series under a folder: DWI to SRC, others to NIfTI. Expects one series per folder; sort mixed files first</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0" colspan="2">
-                        <widget class="QPushButton" name="tract_input_batch_toggle">
-                         <property name="checkable">
-                          <bool>true</bool>
-                         </property>
-                         <property name="flat">
-                          <bool>true</bool>
-                         </property>
-                         <property name="text">
-                          <string>▸ Sort DICOM files first (renames files)</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="0" colspan="2">
-                        <widget class="QFrame" name="tract_input_batch">
-                         <layout class="QGridLayout" name="tract_input_batch_layout">
-                          <property name="spacing">
-                           <number>6</number>
-                          </property>
-                          <property name="leftMargin">
-                           <number>0</number>
-                          </property>
-                          <property name="topMargin">
-                           <number>0</number>
-                          </property>
-                          <property name="rightMargin">
-                           <number>0</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>0</number>
-                          </property>
-                          <item row="0" column="0">
-                           <widget class="QPushButton" name="RenameDICOM">
-                            <property name="statusTip">
-                             <string>run rename_dicom</string>
-                            </property>
-                            <property name="icon">
-                             <iconset resource="icons.qrc">
-                              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                            </property>
-                            <property name="text">
-                             <string>Sort DICOM files...</string>
-                            </property>
-                            <property name="toolTip">
-                             <string>Move the selected DICOM files into patient/sequence folders (renames the files)</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="0" column="1">
-                           <widget class="QPushButton" name="RenameDICOMDir">
-                            <property name="statusTip">
-                             <string>run rename_dicom_dir</string>
-                            </property>
-                            <property name="icon">
-                             <iconset resource="icons.qrc">
-                              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                            </property>
-                            <property name="text">
-                             <string>Sort DICOM folder...</string>
-                            </property>
-                            <property name="toolTip">
-                             <string>Move every DICOM file under a folder into patient/sequence folders (renames the files)</string>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
-                       <item row="3" column="0" colspan="2">
-                        <spacer name="tract_dicom_tab_spacer">
-                         <property name="orientation">
-                          <enum>Qt::Vertical</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>20</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                        </spacer>
-                       </item>
-                      </layout>
-                     </widget>
-                     <widget class="QWidget" name="tract_others_tab">
-                      <attribute name="title">
-                       <string>Other (2dseq, FDF)</string>
-                      </attribute>
-                      <layout class="QGridLayout" name="tract_others_tab_layout">
-                       <property name="spacing">
-                        <number>6</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>8</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>8</number>
-                       </property>
-                       <item row="0" column="0" colspan="2">
-                        <widget class="QPushButton" name="OpenDWI_2dseq">
-                         <property name="statusTip">
-                          <string>run open_dwi_2dseq</string>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="icons.qrc">
-                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                         </property>
-                         <property name="text">
-                          <string>2dseq / FDF file(s)...</string>
-                         </property>
-                         <property name="toolTip">
-                          <string>Open Bruker 2dseq or Varian FDF images and create an SRC file</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0" colspan="2">
-                        <spacer name="tract_others_tab_spacer">
-                         <property name="orientation">
-                          <enum>Qt::Vertical</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>20</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                        </spacer>
-                       </item>
-                      </layout>
-                     </widget>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="tract_import_batch_toggle">
-                     <property name="text">
-                      <string>▸ Batch</string>
-                     </property>
-                     <property name="checkable">
-                      <bool>true</bool>
-                     </property>
-                     <property name="flat">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QFrame" name="tract_import_batch">
-                     <layout class="QGridLayout" name="tract_import_batch_layout">
+                    <widget class="QWidget" name="tract_nifti_tab">
+                     <layout class="QGridLayout" name="tract_nifti_tab_layout">
                       <property name="spacing">
                        <number>6</number>
                       </property>
                       <property name="leftMargin">
-                       <number>0</number>
+                       <number>8</number>
                       </property>
                       <property name="topMargin">
-                       <number>0</number>
+                       <number>8</number>
                       </property>
                       <property name="rightMargin">
-                       <number>0</number>
+                       <number>8</number>
                       </property>
                       <property name="bottomMargin">
-                       <number>0</number>
+                       <number>8</number>
                       </property>
                       <item row="0" column="0">
+                       <widget class="QPushButton" name="OpenDWI_NIFTI">
+                        <property name="statusTip">
+                         <string>run open_dwi_nifti</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                        </property>
+                        <property name="autoDefault">
+                         <bool>false</bool>
+                        </property>
+                        <property name="toolTip">
+                         <string>Open DWI NIfTI file(s) with .bval/.bvec and create an SRC file</string>
+                        </property>
+                        <property name="text">
+                         <string>NIfTI file(s)...</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="1">
+                       <widget class="QPushButton" name="import_nifti_folder">
+                        <property name="statusTip">
+                         <string>run import_nifti_folder</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>A BIDS dataset (sub-* folders) is converted to SRC files in its derivatives folder; any other folder gets an SRC file next to each DWI NIfTI</string>
+                        </property>
+                        <property name="text">
+                         <string>NIfTI folder...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0" colspan="2">
                        <widget class="QPushButton" name="NII_qc">
                         <property name="statusTip">
                          <string>run show_qc_nii</string>
@@ -1139,6 +915,212 @@ QLabel#tract_arrow_2 {
                          <string>Check NIfTI DWI files (*.nii, *.nii.gz) before conversion</string>
                         </property>
                        </widget>
+                      </item>
+                      <item row="2" column="0" colspan="2">
+                       <spacer name="nifti_tab_spacer">
+                        <property name="orientation">
+                         <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>20</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QWidget" name="tract_dicom_tab">
+                     <layout class="QGridLayout" name="tract_dicom_tab_layout">
+                      <property name="spacing">
+                       <number>6</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>8</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>8</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>8</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>8</number>
+                      </property>
+                      <item row="0" column="0">
+                       <widget class="QPushButton" name="OpenDWI_DICOM">
+                        <property name="statusTip">
+                         <string>run open_dwi_dicom</string>
+                        </property>
+                        <property name="autoFillBackground">
+                         <bool>false</bool>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                        </property>
+                        <property name="autoDefault">
+                         <bool>false</bool>
+                        </property>
+                        <property name="text">
+                         <string>DICOM file(s)...</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>Open DWI DICOM files and create an SRC file</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="1">
+                       <widget class="QPushButton" name="dicom2nii">
+                        <property name="statusTip">
+                         <string>run convert_dicom_dir</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                        </property>
+                        <property name="text">
+                         <string>DICOM folder...</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>Convert every DICOM series under a folder: DWI to SRC, others to NIfTI. Expects one series per folder; sort mixed files first</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0" colspan="2">
+                       <widget class="QPushButton" name="tract_input_batch_toggle">
+                        <property name="checkable">
+                         <bool>true</bool>
+                        </property>
+                        <property name="flat">
+                         <bool>true</bool>
+                        </property>
+                        <property name="text">
+                         <string>▸ Sort DICOM files first (renames files)</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="0" colspan="2">
+                       <widget class="QFrame" name="tract_input_batch">
+                        <layout class="QGridLayout" name="tract_input_batch_layout">
+                         <property name="spacing">
+                          <number>6</number>
+                         </property>
+                         <property name="leftMargin">
+                          <number>0</number>
+                         </property>
+                         <property name="topMargin">
+                          <number>0</number>
+                         </property>
+                         <property name="rightMargin">
+                          <number>0</number>
+                         </property>
+                         <property name="bottomMargin">
+                          <number>0</number>
+                         </property>
+                         <item row="0" column="0">
+                          <widget class="QPushButton" name="RenameDICOM">
+                           <property name="statusTip">
+                            <string>run rename_dicom</string>
+                           </property>
+                           <property name="icon">
+                            <iconset resource="icons.qrc">
+                             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                           </property>
+                           <property name="text">
+                            <string>Sort DICOM files...</string>
+                           </property>
+                           <property name="toolTip">
+                            <string>Move the selected DICOM files into patient/sequence folders (renames the files)</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="0" column="1">
+                          <widget class="QPushButton" name="RenameDICOMDir">
+                           <property name="statusTip">
+                            <string>run rename_dicom_dir</string>
+                           </property>
+                           <property name="icon">
+                            <iconset resource="icons.qrc">
+                             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                           </property>
+                           <property name="text">
+                            <string>Sort DICOM folder...</string>
+                           </property>
+                           <property name="toolTip">
+                            <string>Move every DICOM file under a folder into patient/sequence folders (renames the files)</string>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </widget>
+                      </item>
+                      <item row="3" column="0" colspan="2">
+                       <spacer name="tract_dicom_tab_spacer">
+                        <property name="orientation">
+                         <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>20</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QWidget" name="tract_others_tab">
+                     <layout class="QGridLayout" name="tract_others_tab_layout">
+                      <property name="spacing">
+                       <number>6</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>8</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>8</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>8</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>8</number>
+                      </property>
+                      <item row="0" column="0" colspan="2">
+                       <widget class="QPushButton" name="OpenDWI_2dseq">
+                        <property name="statusTip">
+                         <string>run open_dwi_2dseq</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                        </property>
+                        <property name="text">
+                         <string>2dseq / FDF file(s)...</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>Open Bruker 2dseq or Varian FDF images and create an SRC file</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0" colspan="2">
+                       <spacer name="tract_others_tab_spacer">
+                        <property name="orientation">
+                         <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>20</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                       </spacer>
                       </item>
                      </layout>
                     </widget>
@@ -1570,7 +1552,7 @@ QLabel#tract_arrow_2 {
                     <height>200</height>
                    </size>
                   </property>
-                  <layout class="QVBoxLayout" name="tract_recent_layout" stretch="0,1">
+                  <layout class="QVBoxLayout" name="tract_recent_layout" stretch="0,1,1">
                    <property name="spacing">
                     <number>7</number>
                    </property>
@@ -1587,276 +1569,300 @@ QLabel#tract_arrow_2 {
                     <number>8</number>
                    </property>
                    <item>
-                    <widget class="QLabel" name="recent_files_title">
-                     <property name="font">
-                      <font>
-                       <pointsize>10</pointsize>
-                       <bold>true</bold>
-                      </font>
+                    <layout class="QHBoxLayout" name="recent_header">
+                     <property name="spacing">
+                      <number>6</number>
                      </property>
-                     <property name="text">
-                      <string>Continue</string>
+                     <property name="leftMargin">
+                      <number>0</number>
                      </property>
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="recent_files_title">
+                       <property name="font">
+                        <font>
+                         <pointsize>10</pointsize>
+                         <bold>true</bold>
+                        </font>
+                       </property>
+                       <property name="text">
+                        <string>Continue</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="recent_fib_toggle">
+                       <property name="text">
+                        <string>FIB files</string>
+                       </property>
+                       <property name="checkable">
+                        <bool>true</bool>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                       <property name="autoExclusive">
+                        <bool>true</bool>
+                       </property>
+                       <property name="segment" stdset="0">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="recent_src_toggle">
+                       <property name="text">
+                        <string>SRC files</string>
+                       </property>
+                       <property name="checkable">
+                        <bool>true</bool>
+                       </property>
+                       <property name="checked">
+                        <bool>false</bool>
+                       </property>
+                       <property name="autoExclusive">
+                        <bool>true</bool>
+                       </property>
+                       <property name="segment" stdset="0">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="recent_header_spacer">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>20</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QFrame" name="recent_fib_actions">
+                       <layout class="QHBoxLayout" name="recent_fib_actions_layout">
+                        <property name="spacing">
+                         <number>6</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QPushButton" name="open_selected_fib">
+                          <property name="enabled">
+                           <bool>false</bool>
+                          </property>
+                          <property name="text">
+                           <string>Open</string>
+                          </property>
+                          <property name="icon">
+                           <iconset resource="icons.qrc">
+                            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="clear_fib_history">
+                          <property name="statusTip">
+                           <string>run clear_recent_fib</string>
+                          </property>
+                          <property name="text">
+                           <string>Clear</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QFrame" name="recent_src_actions">
+                       <layout class="QHBoxLayout" name="recent_src_actions_layout">
+                        <property name="spacing">
+                         <number>6</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QPushButton" name="open_selected_src">
+                          <property name="enabled">
+                           <bool>false</bool>
+                          </property>
+                          <property name="text">
+                           <string>Open</string>
+                          </property>
+                          <property name="icon">
+                           <iconset resource="icons.qrc">
+                            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="clear_src_history">
+                          <property name="statusTip">
+                           <string>run clear_recent_src</string>
+                          </property>
+                          <property name="text">
+                           <string>Clear</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QFrame" name="recent_fib_card">
+                     <layout class="QVBoxLayout" name="recent_fib_layout">
+                      <property name="spacing">
+                       <number>5</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>6</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>6</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>6</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>6</number>
+                      </property>
+                      <item>
+                       <widget class="QTableWidget" name="recentFib">
+                        <property name="horizontalScrollBarPolicy">
+                         <enum>Qt::ScrollBarAlwaysOff</enum>
+                        </property>
+                        <property name="editTriggers">
+                         <set>QAbstractItemView::NoEditTriggers</set>
+                        </property>
+                        <property name="selectionMode">
+                         <enum>QAbstractItemView::SingleSelection</enum>
+                        </property>
+                        <property name="selectionBehavior">
+                         <enum>QAbstractItemView::SelectRows</enum>
+                        </property>
+                        <property name="showGrid">
+                         <bool>false</bool>
+                        </property>
+                        <attribute name="horizontalHeaderStretchLastSection">
+                         <bool>true</bool>
+                        </attribute>
+                        <attribute name="verticalHeaderVisible">
+                         <bool>false</bool>
+                        </attribute>
+                        <attribute name="verticalHeaderMinimumSectionSize">
+                         <number>18</number>
+                        </attribute>
+                        <attribute name="verticalHeaderDefaultSectionSize">
+                         <number>20</number>
+                        </attribute>
+                        <column>
+                         <property name="text">
+                          <string>File Name</string>
+                         </property>
+                        </column>
+                        <column>
+                         <property name="text">
+                          <string>Directory</string>
+                         </property>
+                        </column>
+                       </widget>
+                      </item>
+                     </layout>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QTabWidget" name="recent_tabs">
-                     <property name="currentIndex">
-                      <number>0</number>
-                     </property>
-                     <property name="documentMode">
-                      <bool>true</bool>
-                     </property>
-                     <widget class="QWidget" name="recent_fib_page">
-                      <attribute name="title">
-                       <string>FIB files (*.fz)</string>
-                      </attribute>
-                      <layout class="QVBoxLayout" name="recent_fib_page_layout">
-                       <property name="spacing">
-                        <number>0</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>0</number>
-                       </property>
-                       <item>
-                        <widget class="QFrame" name="recent_fib_card">
-                         <layout class="QVBoxLayout" name="recent_fib_layout" stretch="0,1">
-                          <property name="spacing">
-                           <number>5</number>
-                          </property>
-                          <property name="leftMargin">
-                           <number>6</number>
-                          </property>
-                          <property name="topMargin">
-                           <number>6</number>
-                          </property>
-                          <property name="rightMargin">
-                           <number>6</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>6</number>
-                          </property>
-                          <item>
-                           <layout class="QHBoxLayout" name="recent_fib_header">
-                            <item>
-                             <spacer name="recent_fib_header_spacer">
-                              <property name="orientation">
-                               <enum>Qt::Horizontal</enum>
-                              </property>
-                              <property name="sizeHint" stdset="0">
-                               <size>
-                                <width>20</width>
-                                <height>20</height>
-                               </size>
-                              </property>
-                             </spacer>
-                            </item>
-                            <item>
-                             <widget class="QPushButton" name="open_selected_fib">
-                              <property name="enabled">
-                               <bool>false</bool>
-                              </property>
-                              <property name="text">
-                               <string>Open</string>
-                              </property>
-                              <property name="icon">
-                               <iconset resource="icons.qrc">
-                                <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-                              </property>
-                             </widget>
-                            </item>
-                            <item>
-                             <widget class="QPushButton" name="clear_fib_history">
-                              <property name="statusTip">
-                               <string>run clear_recent_fib</string>
-                              </property>
-                              <property name="text">
-                               <string>Clear</string>
-                              </property>
-                             </widget>
-                            </item>
-                           </layout>
-                          </item>
-                          <item>
-                           <widget class="QTableWidget" name="recentFib">
-                            <property name="horizontalScrollBarPolicy">
-                             <enum>Qt::ScrollBarAlwaysOff</enum>
-                            </property>
-                            <property name="editTriggers">
-                             <set>QAbstractItemView::NoEditTriggers</set>
-                            </property>
-                            <property name="selectionMode">
-                             <enum>QAbstractItemView::SingleSelection</enum>
-                            </property>
-                            <property name="selectionBehavior">
-                             <enum>QAbstractItemView::SelectRows</enum>
-                            </property>
-                            <property name="showGrid">
-                             <bool>false</bool>
-                            </property>
-                            <attribute name="horizontalHeaderStretchLastSection">
-                             <bool>true</bool>
-                            </attribute>
-                            <attribute name="verticalHeaderVisible">
-                             <bool>false</bool>
-                            </attribute>
-                            <attribute name="verticalHeaderMinimumSectionSize">
-                             <number>18</number>
-                            </attribute>
-                            <attribute name="verticalHeaderDefaultSectionSize">
-                             <number>20</number>
-                            </attribute>
-                            <column>
-                             <property name="text">
-                              <string>File Name</string>
-                             </property>
-                            </column>
-                            <column>
-                             <property name="text">
-                              <string>Directory</string>
-                             </property>
-                            </column>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                     <widget class="QWidget" name="recent_src_page">
-                      <attribute name="title">
-                       <string>SRC files (*.sz)</string>
-                      </attribute>
-                      <layout class="QVBoxLayout" name="recent_src_page_layout">
-                       <property name="spacing">
-                        <number>0</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>0</number>
-                       </property>
-                       <item>
-                        <widget class="QFrame" name="recent_src_card">
-                         <layout class="QVBoxLayout" name="recent_src_layout" stretch="0,1">
-                          <property name="spacing">
-                           <number>5</number>
-                          </property>
-                          <property name="leftMargin">
-                           <number>6</number>
-                          </property>
-                          <property name="topMargin">
-                           <number>6</number>
-                          </property>
-                          <property name="rightMargin">
-                           <number>6</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>6</number>
-                          </property>
-                          <item>
-                           <layout class="QHBoxLayout" name="recent_src_header">
-                            <item>
-                             <spacer name="recent_src_header_spacer">
-                              <property name="orientation">
-                               <enum>Qt::Horizontal</enum>
-                              </property>
-                              <property name="sizeHint" stdset="0">
-                               <size>
-                                <width>20</width>
-                                <height>20</height>
-                               </size>
-                              </property>
-                             </spacer>
-                            </item>
-                            <item>
-                             <widget class="QPushButton" name="open_selected_src">
-                              <property name="enabled">
-                               <bool>false</bool>
-                              </property>
-                              <property name="text">
-                               <string>Open</string>
-                              </property>
-                              <property name="icon">
-                               <iconset resource="icons.qrc">
-                                <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-                              </property>
-                             </widget>
-                            </item>
-                            <item>
-                             <widget class="QPushButton" name="clear_src_history">
-                              <property name="statusTip">
-                               <string>run clear_recent_src</string>
-                              </property>
-                              <property name="text">
-                               <string>Clear</string>
-                              </property>
-                             </widget>
-                            </item>
-                           </layout>
-                          </item>
-                          <item>
-                           <widget class="QTableWidget" name="recentSrc">
-                            <property name="horizontalScrollBarPolicy">
-                             <enum>Qt::ScrollBarAlwaysOff</enum>
-                            </property>
-                            <property name="editTriggers">
-                             <set>QAbstractItemView::NoEditTriggers</set>
-                            </property>
-                            <property name="selectionMode">
-                             <enum>QAbstractItemView::SingleSelection</enum>
-                            </property>
-                            <property name="selectionBehavior">
-                             <enum>QAbstractItemView::SelectRows</enum>
-                            </property>
-                            <property name="showGrid">
-                             <bool>false</bool>
-                            </property>
-                            <attribute name="horizontalHeaderStretchLastSection">
-                             <bool>true</bool>
-                            </attribute>
-                            <attribute name="verticalHeaderVisible">
-                             <bool>false</bool>
-                            </attribute>
-                            <attribute name="verticalHeaderMinimumSectionSize">
-                             <number>18</number>
-                            </attribute>
-                            <attribute name="verticalHeaderDefaultSectionSize">
-                             <number>20</number>
-                            </attribute>
-                            <column>
-                             <property name="text">
-                              <string>File Name</string>
-                             </property>
-                            </column>
-                            <column>
-                             <property name="text">
-                              <string>Directory</string>
-                             </property>
-                            </column>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
+                    <widget class="QFrame" name="recent_src_card">
+                     <layout class="QVBoxLayout" name="recent_src_layout">
+                      <property name="spacing">
+                       <number>5</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>6</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>6</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>6</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>6</number>
+                      </property>
+                      <item>
+                       <widget class="QTableWidget" name="recentSrc">
+                        <property name="horizontalScrollBarPolicy">
+                         <enum>Qt::ScrollBarAlwaysOff</enum>
+                        </property>
+                        <property name="editTriggers">
+                         <set>QAbstractItemView::NoEditTriggers</set>
+                        </property>
+                        <property name="selectionMode">
+                         <enum>QAbstractItemView::SingleSelection</enum>
+                        </property>
+                        <property name="selectionBehavior">
+                         <enum>QAbstractItemView::SelectRows</enum>
+                        </property>
+                        <property name="showGrid">
+                         <bool>false</bool>
+                        </property>
+                        <attribute name="horizontalHeaderStretchLastSection">
+                         <bool>true</bool>
+                        </attribute>
+                        <attribute name="verticalHeaderVisible">
+                         <bool>false</bool>
+                        </attribute>
+                        <attribute name="verticalHeaderMinimumSectionSize">
+                         <number>18</number>
+                        </attribute>
+                        <attribute name="verticalHeaderDefaultSectionSize">
+                         <number>20</number>
+                        </attribute>
+                        <column>
+                         <property name="text">
+                          <string>File Name</string>
+                         </property>
+                        </column>
+                        <column>
+                         <property name="text">
+                          <string>Directory</string>
+                         </property>
+                        </column>
+                       </widget>
+                      </item>
+                     </layout>
                     </widget>
                    </item>
                   </layout>
@@ -2907,9 +2913,45 @@ QFrame#tools_appearance_footer {
    <slot>setVisible(bool)</slot>
   </connection>
   <connection>
-   <sender>tract_import_batch_toggle</sender>
+   <sender>recent_fib_toggle</sender>
    <signal>toggled(bool)</signal>
-   <receiver>tract_import_batch</receiver>
+   <receiver>recent_fib_card</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>recent_fib_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>recent_fib_actions</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>recent_src_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>recent_src_card</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>recent_src_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>recent_src_actions</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>tract_fmt_nifti</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tract_nifti_tab</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>tract_fmt_dicom</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tract_dicom_tab</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>tract_fmt_other</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tract_others_tab</receiver>
    <slot>setVisible(bool)</slot>
   </connection>
  </connections>
