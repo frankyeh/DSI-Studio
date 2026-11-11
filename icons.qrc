@@ -47,6 +47,14 @@
         <file>icons/agents/grok.svg</file>
         <file>icons/agents/web.svg</file>
         <file>icons/settings.svg</file>
+        <file>icons/main_ai.svg</file>
+        <file>icons/main_hub.svg</file>
+        <file>icons/main_console.svg</file>
+        <file>icons/main_view.svg</file>
+        <file>icons/main_linear.svg</file>
+        <file>icons/main_nonlinear.svg</file>
+        <file>icons/main_xnat.svg</file>
+        <file>icons/main_average.svg</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>

@@ -238,7 +238,7 @@ Tractography</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
+                <normaloff>:/icons/icons/main_ai.svg</normaloff>:/icons/icons/main_ai.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -258,7 +258,7 @@ Tractography</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
+                <normaloff>:/icons/icons/main_hub.svg</normaloff>:/icons/icons/main_hub.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -278,7 +278,7 @@ Tractography</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/console.xpm</normaloff>:/icons/icons/console.xpm</iconset>
+                <normaloff>:/icons/icons/main_console.svg</normaloff>:/icons/icons/main_console.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -2568,7 +2568,7 @@ QFrame#tools_appearance_footer {
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/3view.xpm</normaloff>:/icons/icons/3view.xpm</iconset>
+                 <normaloff>:/icons/icons/main_view.svg</normaloff>:/icons/icons/main_view.svg</iconset>
                </property>
                <property name="text">
                 <string>View image</string>
@@ -2624,7 +2624,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+                   <normaloff>:/icons/icons/main_linear.svg</normaloff>:/icons/icons/main_linear.svg</iconset>
                  </property>
                  <property name="text">
                   <string>Linear registration...</string>
@@ -2641,7 +2641,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+                   <normaloff>:/icons/icons/main_nonlinear.svg</normaloff>:/icons/icons/main_nonlinear.svg</iconset>
                  </property>
                  <property name="text">
                   <string>Nonlinear registration...</string>
@@ -2682,7 +2682,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                   <normaloff>:/icons/icons/main_xnat.svg</normaloff>:/icons/icons/main_xnat.svg</iconset>
                  </property>
                  <property name="text">
                   <string>XNAT download...</string>
@@ -2702,24 +2702,7 @@ QFrame#tools_appearance_footer {
                  </property>
                  <property name="icon">
                   <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="parse_network_measures">
-                 <property name="toolTip">
-                  <string>Parse network-measure text files into one data sheet</string>
-                 </property>
-                 <property name="statusTip">
-                  <string>run collect_network_measures</string>
-                 </property>
-                 <property name="text">
-                  <string>Parse network measures...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+                   <normaloff>:/icons/icons/main_average.svg</normaloff>:/icons/icons/main_average.svg</iconset>
                  </property>
                 </widget>
                </item>
