@@ -1858,17 +1858,6 @@ QWidget#tab_conn QPushButton:hover {
     background-color: #f1f1f3;
     border-color: #bfc0c4;
 }
-QWidget#tab_conn QPushButton#conn_OpenDWI_NIFTI,
-QWidget#tab_conn QPushButton#conn_import_nifti_folder,
-QWidget#tab_conn QPushButton#conn_OpenDWI_DICOM,
-QWidget#tab_conn QPushButton#conn_dicom2nii,
-QWidget#tab_conn QPushButton#conn_OpenDWI_2dseq {
-    color: #ffffff;
-    background-color: #0ea5e9;
-    border-color: #0ea5e9;
-    font-weight: bold;
-    text-align: center;
-}
 QWidget#tab_conn QPushButton#vbc {
     color: #ffffff;
     background-color: #8b5cf6;
@@ -1882,14 +1871,6 @@ QWidget#tab_conn QPushButton#group_connectometry {
     font-weight: bold;
     text-align: center;
 }
-QWidget#tab_conn QPushButton#conn_dicom_batch_toggle {
-    color: #2563eb;
-    background-color: transparent;
-    border: 0px;
-    min-height: 0px;
-    padding: 2px 0px;
-    font-weight: bold;
-}
 QLabel#tract_connectometry_title {
     font-size: 11pt;
     font-weight: bold;
@@ -1902,36 +1883,9 @@ QLabel#conn_analysis_stage_title {
 }
 QLabel#tract_connectometry_hint,
 QLabel#conn_import_stage_hint,
-QLabel#conn_nifti_folder_hint,
 QLabel#conn_db_stage_hint,
 QLabel#conn_analysis_stage_hint {
     color: #67676c;
-}
-QTabWidget#conn_input_tabs::pane {
-    background-color: #ffffff;
-    border: 1px solid #dddddf;
-    border-radius: 7px;
-    top: -1px;
-}
-QTabWidget#conn_input_tabs QWidget#conn_nifti_tab,
-QTabWidget#conn_input_tabs QWidget#conn_dicom_tab,
-QTabWidget#conn_input_tabs QWidget#conn_others_tab {
-    background-color: transparent;
-}
-QTabWidget#conn_input_tabs QTabBar::tab {
-    color: #4f4f54;
-    background-color: #f1f1f3;
-    border: 1px solid #dddddf;
-    border-bottom: 0px;
-    border-top-left-radius: 7px;
-    border-top-right-radius: 7px;
-    padding: 4px 14px;
-    margin-right: 2px;
-}
-QTabWidget#conn_input_tabs QTabBar::tab:selected {
-    color: #202124;
-    background-color: #ffffff;
-    font-weight: bold;
 }</string>
          </property>
          <layout class="QVBoxLayout" name="tab_conn_layout" stretch="0,0,0,1">
@@ -1963,7 +1917,7 @@ QTabWidget#conn_input_tabs QTabBar::tab:selected {
              <bool>true</bool>
             </property>
             <property name="text">
-             <string>Import diffusion images, build a connectometry database from FIB files, and relate tracts to study variables.</string>
+             <string>Build a connectometry database from FIB files and relate tracts to study variables.</string>
             </property>
            </widget>
           </item>
@@ -2022,7 +1976,7 @@ QTabWidget#conn_input_tabs QTabBar::tab:selected {
                  <item>
                   <widget class="QLabel" name="conn_import_stage_title">
                    <property name="text">
-                    <string>① Import</string>
+                    <string>① FIB files</string>
                    </property>
                   </widget>
                  </item>
@@ -2030,297 +1984,26 @@ QTabWidget#conn_input_tabs QTabBar::tab:selected {
                </item>
                <item>
                 <widget class="QLabel" name="conn_import_stage_hint">
-                 <property name="text">
-                  <string>NIfTI, DICOM, 2dseq or FDF → SRC files (*.sz)</string>
-                 </property>
                  <property name="wordWrap">
                   <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>Connectometry uses FIB files (*.fz) reconstructed with QSDR. Add them as files, a folder, or a list in ② Create database.</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QTabWidget" name="conn_input_tabs">
-                 <property name="currentIndex">
-                  <number>0</number>
+                <spacer name="conn_import_stage_spacer">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
                  </property>
-                 <widget class="QWidget" name="conn_nifti_tab">
-                  <attribute name="title">
-                   <string>NIfTI</string>
-                  </attribute>
-                  <layout class="QGridLayout" name="conn_nifti_tab_layout">
-                   <property name="spacing">
-                    <number>6</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>8</number>
-                   </property>
-                   <item row="0" column="0">
-                    <widget class="QPushButton" name="conn_OpenDWI_NIFTI">
-                     <property name="statusTip">
-                      <string>run open_dwi_nifti</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                     </property>
-                     <property name="autoDefault">
-                      <bool>false</bool>
-                     </property>
-                     <property name="toolTip">
-                      <string>Open DWI NIfTI file(s) with .bval/.bvec and create an SRC file</string>
-                     </property>
-                     <property name="text">
-                      <string>NIfTI file(s)...</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QPushButton" name="conn_import_nifti_folder">
-                     <property name="statusTip">
-                      <string>run import_nifti_folder</string>
-                     </property>
-                     <property name="toolTip">
-                      <string>A BIDS dataset (sub-* folders) is converted to SRC files in its derivatives folder; any other folder gets an SRC file next to each DWI NIfTI</string>
-                     </property>
-                     <property name="text">
-                      <string>NIfTI folder...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0" colspan="2">
-                    <widget class="QLabel" name="conn_nifti_folder_hint">
-                     <property name="text">
-                      <string>Folder: BIDS → derivatives/, otherwise an SRC next to each NIfTI</string>
-                     </property>
-                     <property name="wordWrap">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0" colspan="2">
-                    <spacer name="conn_nifti_tab_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </widget>
-                 <widget class="QWidget" name="conn_dicom_tab">
-                  <attribute name="title">
-                   <string>DICOM</string>
-                  </attribute>
-                  <layout class="QGridLayout" name="conn_dicom_tab_layout">
-                   <property name="spacing">
-                    <number>6</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>8</number>
-                   </property>
-                   <item row="0" column="0">
-                    <widget class="QPushButton" name="conn_OpenDWI_DICOM">
-                     <property name="statusTip">
-                      <string>run open_dwi_dicom</string>
-                     </property>
-                     <property name="autoFillBackground">
-                      <bool>false</bool>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                     </property>
-                     <property name="autoDefault">
-                      <bool>false</bool>
-                     </property>
-                     <property name="text">
-                      <string>DICOM file(s)...</string>
-                     </property>
-                     <property name="toolTip">
-                      <string>Open DWI DICOM files and create an SRC file</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QPushButton" name="conn_dicom2nii">
-                     <property name="statusTip">
-                      <string>run convert_dicom_dir</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                     </property>
-                     <property name="text">
-                      <string>DICOM folder...</string>
-                     </property>
-                     <property name="toolTip">
-                      <string>Convert every DICOM series under a folder: DWI to SRC, others to NIfTI. Expects one series per folder; sort mixed files first</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0" colspan="2">
-                    <widget class="QPushButton" name="conn_dicom_batch_toggle">
-                     <property name="text">
-                      <string>▸ Sort DICOM files first (renames files)</string>
-                     </property>
-                     <property name="checkable">
-                      <bool>true</bool>
-                     </property>
-                     <property name="flat">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0" colspan="2">
-                    <widget class="QFrame" name="conn_dicom_batch">
-                     <layout class="QGridLayout" name="conn_dicom_batch_layout">
-                      <property name="spacing">
-                       <number>6</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>0</number>
-                      </property>
-                      <item row="0" column="0">
-                       <widget class="QPushButton" name="conn_RenameDICOM">
-                        <property name="statusTip">
-                         <string>run rename_dicom</string>
-                        </property>
-                        <property name="icon">
-                         <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                        </property>
-                        <property name="text">
-                         <string>Sort DICOM files...</string>
-                        </property>
-                        <property name="toolTip">
-                         <string>Move the selected DICOM files into patient/sequence folders (renames the files)</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QPushButton" name="conn_RenameDICOMDir">
-                        <property name="statusTip">
-                         <string>run rename_dicom_dir</string>
-                        </property>
-                        <property name="icon">
-                         <iconset resource="icons.qrc">
-                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                        </property>
-                        <property name="text">
-                         <string>Sort DICOM folder...</string>
-                        </property>
-                        <property name="toolTip">
-                         <string>Move every DICOM file under a folder into patient/sequence folders (renames the files)</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item row="3" column="0" colspan="2">
-                    <spacer name="conn_dicom_tab_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </widget>
-                 <widget class="QWidget" name="conn_others_tab">
-                  <attribute name="title">
-                   <string>Other (2dseq, FDF)</string>
-                  </attribute>
-                  <layout class="QGridLayout" name="conn_others_tab_layout">
-                   <property name="spacing">
-                    <number>6</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>8</number>
-                   </property>
-                   <item row="0" column="0" colspan="2">
-                    <widget class="QPushButton" name="conn_OpenDWI_2dseq">
-                     <property name="statusTip">
-                      <string>run open_dwi_2dseq</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                     </property>
-                     <property name="text">
-                      <string>2dseq / FDF file(s)...</string>
-                     </property>
-                     <property name="toolTip">
-                      <string>Open Bruker 2dseq or Varian FDF images and create an SRC file</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0" colspan="2">
-                    <spacer name="conn_others_tab_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </widget>
-                </widget>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </widget>
@@ -2371,11 +2054,11 @@ QTabWidget#conn_input_tabs QTabBar::tab:selected {
                </item>
                <item>
                 <widget class="QLabel" name="conn_db_stage_hint">
-                 <property name="text">
-                  <string>FIB files (*.fz) → database (*.dz). Reconstruct SRC files to FIB first (② on the Tractography page).</string>
-                 </property>
                  <property name="wordWrap">
                   <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>FIB files (*.fz) → database (*.dz); or open an existing database to view or edit it.</string>
                  </property>
                 </widget>
                </item>
@@ -3066,12 +2749,6 @@ QWidget#tab_setup QComboBox {
    <sender>tract_tracking_batch_toggle</sender>
    <signal>toggled(bool)</signal>
    <receiver>tract_tracking_batch</receiver>
-   <slot>setVisible(bool)</slot>
-  </connection>
-  <connection>
-   <sender>conn_dicom_batch_toggle</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>conn_dicom_batch</receiver>
    <slot>setVisible(bool)</slot>
   </connection>
  </connections>
