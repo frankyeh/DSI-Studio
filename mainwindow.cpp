@@ -123,11 +123,12 @@ MainWindow::MainWindow(QWidget *parent) :
     setAcceptDrops(true);
     ui->setupUi(this);
     ui->tabWidget->installEventFilter(this);
+    ui->workDir->lineEdit()->installEventFilter(this); // the work directory: typed or pasted, and its list drops on a click
 
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 
-    for(auto* table : {ui->recentSrc,ui->recentFib,ui->recentDb})
+    for(auto* table : {ui->recentSrc,ui->recentFib,ui->recentDb,ui->recentImage})
     {
         table->setColumnCount(2);
         table->horizontalHeader()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
@@ -144,6 +145,12 @@ MainWindow::MainWindow(QWidget *parent) :
                 QMessageBox::critical(this,"ERROR",QString::fromStdString(error_msg));
         });
     connect(ui->recentDb,&QTableWidget::cellDoubleClicked,ui->view_selected_db,&QPushButton::click);
+    connect(ui->open_selected_image,&QPushButton::clicked,this,[this]
+    {
+        if(auto* item = ui->recentImage->item(ui->recentImage->currentRow(),0);item && !command({"open_image",item->data(Qt::UserRole).toString().toStdString()}) && !error_msg.empty())
+            QMessageBox::critical(this,"ERROR",QString::fromStdString(error_msg));
+    });
+    connect(ui->recentImage,&QTableWidget::cellDoubleClicked,ui->open_selected_image,&QPushButton::click);
     updateRecentList();
 
     auto workdir_list = settings.value("WORK_PATH").toStringList();
@@ -169,7 +176,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->template_list->setCurrentRow(0);
     for(auto* each : std::initializer_list<QWidget*>{ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,
                                                      ui->tract_dicom_tab,ui->tract_others_tab,ui->recent_src_card,ui->recent_src_actions,
-                                                     ui->recent_template_card,ui->recent_template_actions,ui->NII_qc})
+                                                     ui->recent_template_card,ui->recent_template_actions,ui->NII_qc,ui->conn_import_more})
         each->hide(); // until its toggle or segment is checked
 
     {
@@ -550,6 +557,9 @@ bool MainWindow::eventFilter(QObject* object,QEvent* event)
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
         painter.drawPixmap(area,logo);
     }
+    // the work directory has no drop-down button: a click into it, when not already editing, drops the list
+    if(object == ui->workDir->lineEdit() && event->type() == QEvent::MouseButtonPress && !ui->workDir->lineEdit()->hasFocus())
+        ui->workDir->showPopup();
     return QMainWindow::eventFilter(object,event);
 }
 void MainWindow::closeEvent(QCloseEvent* event)
@@ -611,6 +621,7 @@ void MainWindow::updateRecentList()
     update(ui->recentFib,"recentFibFileList");
     update(ui->recentSrc,"recentSrcFileList");
     update(ui->recentDb,"recentDbFileList");
+    update(ui->recentImage,"recentImageFileList");
 }
 
 
@@ -728,6 +739,7 @@ void MainWindow::loadNii(QStringList file_names)
         delete dialog;
         return;
     }
+    addRecent(file_names[0],"recentImageFileList");
     report_and_target_window(dialog);
     dialog->show();
 }
@@ -1835,12 +1847,12 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return true;
     }
 
-    if(cmd[0] == "clear_recent_src" || cmd[0] == "clear_recent_fib" || cmd[0] == "clear_recent_db")
+    if(tipl::begins_with(cmd[0],"clear_recent_")) // clear_recent_src, _fib, _db, _image
     {
         if(cmd.size() != 1)
             return fail(cmd[0]+" takes no arguments");
-        settings.setValue(cmd[0] == "clear_recent_src" ? "recentSrcFileList" :
-                          cmd[0] == "clear_recent_fib" ? "recentFibFileList" : "recentDbFileList",QStringList());
+        auto type = QString::fromStdString(cmd[0].substr(13));
+        settings.setValue("recent"+type.left(1).toUpper()+type.mid(1)+"FileList",QStringList());
         updateRecentList();
         for(auto* button : {ui->open_selected_src,ui->open_selected_fib}) // updateRecentList() drops every selection
             button->setEnabled(false);
@@ -1907,6 +1919,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             delete window;
             return fail(message);
         }
+        addRecent(files[0],"recentImageFileList");
         report_and_target_window(window);
         window->show();
         return true;
