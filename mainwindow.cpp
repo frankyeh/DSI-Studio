@@ -189,6 +189,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 QLocale::countryToString(QLocale::system().country())).toString();
         if(!settings.contains("login_id"))
             settings.setValue("login_id",username);
+        ui->settings_registration->setText("Registering entity: "+username+"\nRegistering information: "+host_name+", "+address);
 
         {
             QString license_text;
@@ -1523,6 +1524,22 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             window->command({tracking ? "restore_tracking" : "restore_rendering"});
         return true;
     }
+    if(cmd[0] == "clear_work_dir_history" || cmd[0] == "restore_tracking_layout")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        if(cmd[0] == "restore_tracking_layout") // as each tracking window's own Restore window layout
+            for(auto* window : tracking_windows)
+                window->restoreGeometry(default_geo),window->restoreState(default_state);
+        else // only the current work directory stays listed; the list is saved on exit
+        {
+            auto current = ui->workDir->currentText();
+            ui->workDir->clear();
+            ui->workDir->addItem(current);
+            tipl::qt::working_dirs = QStringList{current};
+        }
+        return true;
+    }
     if(cmd[0] == "reset_settings")
     {
         if(cmd.size() != 1)
@@ -1874,7 +1891,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         if(cmd.size() != 1)
             return fail(cmd[0]+" takes no arguments");
         auto type = QString::fromStdString(cmd[0].substr(13));
-        settings.setValue("recent"+type.left(1).toUpper()+type.mid(1)+"FileList",QStringList());
+        for(const auto& each : type == "all" ? QStringList{"src","fib","db","image"} : QStringList{type}) // clear_recent_all: every list
+            settings.setValue("recent"+each.left(1).toUpper()+each.mid(1)+"FileList",QStringList());
         updateRecentList();
         for(auto* button : {ui->open_selected_src,ui->open_selected_fib}) // updateRecentList() drops every selection
             button->setEnabled(false);
