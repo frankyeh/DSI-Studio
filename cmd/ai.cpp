@@ -76,7 +76,14 @@ QString session_status_text(session_status status)
     return {};
 }
 
-ai_info* assign_ai_session(const QString& from,const QString& to)
+// a session's history (".jsonl") or agent/model/Web-channel config (".json", rewritten cheaply apart from the transcript)
+static QString session_file(const QString& session,const char* extension)
+{
+    return ai_project_dir+"/"+QString::fromLatin1(QUrl::toPercentEncoding(session))+extension;
+}
+// renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if
+// from == to; nullptr (nothing changed) if to already exists or from is missing
+static ai_info* assign_ai_session(const QString& from,const QString& to)
 {
     if(from == to)
         return ai_info::find(to);
@@ -94,8 +101,8 @@ ai_info* assign_ai_session(const QString& from,const QString& to)
             tipl::warning() << "cannot move " << source.toStdString()
                             << " to " << target.toStdString();
     };
-    move_file(ai_info::history_file(from),ai_info::history_file(to));
-    move_file(ai_info::config_file(from),ai_info::config_file(to));
+    move_file(session_file(from,".jsonl"),session_file(to,".jsonl"));
+    move_file(session_file(from,".json"),session_file(to,".json"));
     QSettings settings;
     if(!inserted.position->second.project_titles.isEmpty())
         settings.setValue("ai/title/"+to,inserted.position->second.project_titles);
@@ -161,7 +168,12 @@ void kill_process_tree(QProcess* process) // kill(): a windowless console child 
             process->waitForFinished(1000);
     }
 }
-QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params)
+// one compact JSON message per line, the framing every agent protocol and the history file use
+static QByteArray json_line(const QJsonObject& message)
+{
+    return QJsonDocument(message).toJson(QJsonDocument::Compact)+'\n';
+}
+static QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {})
 {
     QJsonObject msg{{"jsonrpc","2.0"},{"method",method}};
     if(!id.isEmpty())
@@ -170,13 +182,13 @@ QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& pa
         msg["params"] = params;
     return json_line(msg);
 }
-QByteArray muse_initialize() // one handshake for the status probe, model list and chat; the probe checks experimentalApi in the reply
+static QByteArray muse_initialize() // one handshake for the status probe, model list and chat; the probe checks experimentalApi in the reply
 {
     return jsonrpc("initialize","initialize",
         {{"clientInfo",QJsonObject{{"name","dsi_studio"},{"title","DSI Studio"},{"version","1.0"}}},
          {"capabilities",QJsonObject{{"experimentalApi",true},{"userInputDialogs",false}}}});
 }
-QString muse_uuid_v7()
+static QString muse_uuid_v7()
 {
     auto bytes = QUuid::createUuid().toRfc4122();
     auto ms = quint64(QDateTime::currentMSecsSinceEpoch());
@@ -186,17 +198,17 @@ QString muse_uuid_v7()
     bytes[8] = char((quint8(bytes[8])&0x3f)|0x80);
     return QUuid::fromRfc4122(bytes).toString(QUuid::WithoutBraces);
 }
-QByteArray muse_command(const QString& id,const QString& method,QJsonObject params)
+static QByteArray muse_command(const QString& id,const QString& method,QJsonObject params)
 {
     params["commandId"] = id;
     return jsonrpc(id,method,params);
 }
-QByteArray codex_initialize() // the app-server handshake of the status probe, usage and chat; each then sends "initialized"
+static QByteArray codex_initialize() // the app-server handshake of the status probe, usage and chat; each then sends "initialized"
 {
     return json_line({{"id","initialize"},{"method","initialize"},
         {"params",QJsonObject{{"clientInfo",QJsonObject{{"name","DSI Studio"},{"version","1.0"}}}}}});
 }
-QByteArray grok_initialize()
+static QByteArray grok_initialize()
 {
     return jsonrpc("initialize","initialize",{{"protocolVersion",1},{"clientCapabilities",QJsonObject()}});
 }
@@ -431,6 +443,118 @@ QPair<int,QString> agent_usage(const QString& provider,const QString& executable
                 add(match.captured(1),match.captured(2).toDouble(),match.captured(3).trimmed());
     return {first,tip.isEmpty() ? QString("Usage unavailable") : tip.join("\n")};
 }
+bool agent_models(const QString& provider,const QString& executable,QStringList& models,QVariantMap& efforts,QString& default_model)
+{
+    QProcess process;
+    process.setProcessEnvironment(agent_environment(provider));
+    start_process(process,executable,provider == "Codex" ?       QStringList{"debug","models"} :
+                                     provider == "Antigravity" ? QStringList{"--output-format","json","models"} :
+                                     provider == "Muse" ?        QStringList{"serve"} : QStringList{"agent","stdio"});
+    if(!process.waitForStarted(3000))
+        return kill_process_tree(&process),false;
+    auto deadline = QDateTime::currentMSecsSinceEpoch()+(provider == "Codex" ? 5000 : provider == "Antigravity" ? 10000 : 15000);
+    if(provider == "Codex" || provider == "Antigravity")
+    {
+        process.closeWriteChannel();
+        bool finished = process.waitForFinished(int(deadline-QDateTime::currentMSecsSinceEpoch())) &&
+                        process.exitStatus() == QProcess::NormalExit && !process.exitCode();
+        auto out = process.readAllStandardOutput();
+        kill_process_tree(&process);
+        if(!finished) // a failed or timed-out query says nothing about the account
+            return false;
+        if(provider == "Codex")
+        {
+            auto doc = QJsonDocument::fromJson(out);
+            if(!(doc.isArray() || doc.object().value("models").isArray()))
+                return false;
+            for(const auto& value : doc.isArray() ? doc.array() : doc.object()["models"].toArray())
+            {
+                auto object = value.toObject(); // the name in "slug", else "model", else "id"
+                if(auto model = object.value("slug").toString(object.value("model").toString(object.value("id").toString()));!model.isEmpty())
+                    models << model;
+            }
+            return true;
+        }
+        // agy: a status line can precede the JSON; <base>-<level> variants of one model collapse into <base>, launched with --effort <level>
+        auto list = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object()["command"].toObject()["data"].toObject()["models"].toArray();
+        for(const auto& each : list) // agy's --effort takes Claude's levels
+            if(auto id = each.toObject()["id"].toString(),level = id.section('-',-1);agent_efforts("Claude").contains(level))
+                efforts[id.section('-',0,-2)] = efforts.value(id.section('-',0,-2)).toStringList() << level;
+        for(const auto& each : list)
+        {
+            auto id = each.toObject()["id"].toString();
+            if(efforts.value(id.section('-',0,-2)).toStringList().size() > 1) // a single variant is a fixed-effort model
+                id = id.section('-',0,-2);
+            if(!models.contains(id))
+                models << id;
+            if(each.toObject()["isDefault"].toBool()) // launched as --model when a chat uses "default": agy without --model can pick a retired model
+                default_model = id;
+        }
+        return true;
+    }
+    // Muse's model/list or Grok's ACP initialize: "modelId" and "isDefault" entries, with levels(entry) as their thinking levels
+    auto add_models = [&](const QJsonArray& list,const std::function<QJsonArray(const QJsonObject&)>& levels)
+    {
+        for(const auto& value : list)
+            if(auto model = value.toObject()["modelId"].toString();!model.isEmpty())
+            {
+                models << model;
+                efforts[model] = levels(value.toObject()).toVariantList();
+                if(value.toObject()["isDefault"].toBool())
+                    default_model = model;
+            }
+        return true;
+    };
+    bool found = false;
+    if(provider == "Muse")
+    {
+        process.write(muse_initialize());
+        if(read_response(process,"initialize",deadline).contains("result"))
+        {
+            process.write(jsonrpc({},"initialized"));
+            process.write(json_line({{"jsonrpc","2.0"},{"id","model_list"},{"method","model/list"},{"params",QJsonObject()}})); // Muse requires "params"
+            if(auto reply = read_response(process,"model_list",deadline);reply.contains("result"))
+                found = add_models(reply["result"].toObject()["models"].toArray(),[](const QJsonObject& model){return model["variants"].toArray();});
+        }
+    }
+    else // Grok: ACP initialize returns _meta.modelState.availableModels without a session or sign-in
+    {
+        process.write(grok_initialize());
+        auto state = read_response(process,"initialize",deadline)["result"].toObject()["_meta"].toObject()["modelState"].toObject();
+        default_model = state["currentModel"].toObject()["modelId"].toString();
+        if(state.value("availableModels").isArray())
+            found = add_models(state["availableModels"].toArray(),[](const QJsonObject& model)
+            {
+                QJsonArray levels; // entries are {"value":"medium","label":...}; "value" is what reasoningEffort takes
+                for(const auto& each : model["_meta"].toObject()["reasoningEfforts"].toArray())
+                    levels << each.toObject()["value"];
+                return levels;
+            });
+    }
+    process.closeWriteChannel();
+    kill_process_tree(&process);
+    return found;
+}
+void stop_agent(const ai_info& info,bool closing)
+{
+    auto* process = info.processes;
+    if(!process)
+        return;
+    auto session = process->objectName();
+    auto turn_id = process->property("turn_id").toString();
+    if(!closing && info.provider == "Muse" && !turn_id.isEmpty())
+        return void(process->write(muse_command(muse_uuid_v7(),"turn/cancel",{{"sessionId",session},{"turnId",turn_id}})));
+    if(!closing && info.provider == "Codex" && !turn_id.isEmpty())
+        return void(process->write(json_line({{"id","turn_interrupt"},{"method","turn/interrupt"},
+                                              {"params",QJsonObject{{"threadId",session},{"turnId",turn_id}}}})));
+    if(!closing && info.provider == "Grok" && process->property("turn_active").toBool()) // the prompt reply then reports "cancelled"
+        return void(process->write(jsonrpc({},"session/cancel",{{"sessionId",session}})));
+    process->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
+    if(!closing) // nothing to cancel in-protocol (Claude, Antigravity, idle)
+        return kill_process_tree(process);
+    process->closeWriteChannel(); // closing: each agent ends on its own, else it is killed after 5 s
+    QTimer::singleShot(5000,process,[process]{kill_process_tree(process);});
+}
 
 QList<ai_info*> load_ai_projects()
 {
@@ -453,7 +577,7 @@ QList<ai_info*> load_ai_projects()
         if(history.isEmpty())
             continue;
         QJsonObject config;
-        if(QFile config_file(ai_info::config_file(session));config_file.open(QIODevice::ReadOnly))
+        if(QFile config_file(session_file(session,".json"));config_file.open(QIODevice::ReadOnly))
             config = QJsonDocument::fromJson(config_file.readAll()).object();
         auto* ai = ai_info::create(
             session,config["provider"].toString(),config["agent"].toString());
@@ -541,7 +665,7 @@ bool ai_system_command(const std::vector<std::string>& cmd,const ai_info& caller
             return error = agent+" cannot start on this host ("+record["status"].toString()+"): "+record["reason"].toString(),true;
         if(auto models = record["models"].toArray();!model.isEmpty() && !models.isEmpty() && !models.contains(model)) // an "unknown" list accepts any model
             return error = "unknown model for "+agent+": "+model+"; available: "+QVariant(models.toVariantList()).toStringList().join(", "),true;
-        auto* info = ai_info::create(agent == "Muse" ? muse_uuid_v7() : QUuid::createUuid().toString(QUuid::WithoutBraces),agent);
+        auto* info = ai_info::create({},agent);
         info->model_settings = QJsonObject{{"model",model},{"effort",effort},{"approval",caller.model_settings.value("approval")}}; // the creating chat's auto/manual approval (none: manual)
         if(cmd.size() > 4)
             info->model_settings["cwd"] = work_dir.absoluteFilePath(); // the agent's writable folder from its first launch
@@ -985,9 +1109,7 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
                                        session_status::Thinking,message);
                             if(id == "initialize" || id == "thread_start" || id == "thread_resume")
                             {
-                                // The finish handler records the failure and releases the process for a fresh attempt.
-                                process->setProperty("stderr",process->property("stderr").toByteArray()+'\n'+message.toUtf8());
-                                kill_process_tree(process);
+                                fail_process(process,message); // the finish handler records it and releases the process for a fresh attempt
                                 continue;
                             }
                             add_history(*info,"error",message);
@@ -1358,10 +1480,6 @@ bool start_agent(ai_info& info,const QString& text,const QString& executable,con
     return true;
 }
 
-QByteArray json_line(const QJsonObject& message)
-{
-    return QJsonDocument(message).toJson(QJsonDocument::Compact)+'\n';
-}
 
 QPair<QUrl,bool> ai_ollama_url(QString host,int port)
 {
@@ -1374,23 +1492,13 @@ QPair<QUrl,bool> ai_ollama_url(QString host,int port)
     return {url,configured};
 }
 
-QString ai_info::history_file(const QString& session)
-{
-    return ai_project_dir+"/"+QString::fromLatin1(
-               QUrl::toPercentEncoding(session))+".jsonl";
-}
-QString ai_info::config_file(const QString& session)
-{
-    return ai_project_dir+"/"+QString::fromLatin1(
-               QUrl::toPercentEncoding(session))+".json";
-}
 void ai_info::save_config() const
 {
     // gated on content, not status: a reconnecting chat is New again but must still save; files under a placeholder
     // id are migrated by assign_ai_session()
     if(projects.isEmpty() || !QSettings().value("ai/keep_history",true).toBool())
         return;
-    QFile file(config_file(sessions));
+    QFile file(session_file(sessions,".json"));
     if(file.open(QIODevice::WriteOnly|QIODevice::Truncate))
         file.write(QJsonDocument(QJsonObject{
             {"agent",agent_name},
@@ -1445,8 +1553,10 @@ ai_info* ai_info::find(const QString& session)
 }
 ai_info* ai_info::create(QString session,QString provider,QString agent) // the one constructor for the whole registry
 {
-    if(session.isEmpty() || provider.isEmpty())
+    if(provider.isEmpty())
         return nullptr;
+    if(session.isEmpty()) // a new chat: Muse expects time-ordered ids
+        session = provider == "Muse" ? muse_uuid_v7() : QUuid::createUuid().toString(QUuid::WithoutBraces);
     if(auto* info = find(session))
         return info;
     if(agent.isEmpty())
@@ -1458,6 +1568,13 @@ ai_info* ai_info::create(QString session,QString provider,QString agent) // the 
     return &info;
 }
 
+void ai_info::remove(const QString& session)
+{
+    QFile::remove(session_file(session,".jsonl"));
+    QFile::remove(session_file(session,".json"));
+    QSettings().remove("ai/title/"+session);
+    ai_infos.erase(session);
+}
 QJsonObject ai_info::record_history(QJsonObject entry)
 {
     // written immediately regardless of status: a placeholder id's file is migrated by assign_ai_session()
@@ -1465,7 +1582,7 @@ QJsonObject ai_info::record_history(QJsonObject entry)
     projects.append(entry);
     if(QSettings().value("ai/keep_history",true).toBool())
     {
-        QFile file(history_file(sessions));
+        QFile file(session_file(sessions,".jsonl"));
         if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
            file.write(json_line(entry)) < 0)
             tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
@@ -1695,6 +1812,8 @@ web_bridge::web_bridge(void)
 }
 void web_bridge::google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString)> done)
 {
+    if(form[0].second != "refresh_token") // a sign-in: the client of its flow issues, and later refreshes, this token
+        google_device_auth = form[0].second.endsWith("device_code");
     form.emplaceBack("client_id",google_device_auth ? GOOGLE_DEVICE_CLIENT_ID : GOOGLE_CLIENT_ID);
     form.emplaceBack("client_secret",google_device_auth ? GOOGLE_DEVICE_CLIENT_SECRET : GOOGLE_CLIENT_SECRET); // bundled in a desktop binary, so not confidential: PKCE + state (or the user code) protect the flow
     QByteArray body;
@@ -1710,18 +1829,22 @@ void web_bridge::google_token_post(QList<QPair<QString,QString>> form,std::funct
         if(!json.contains("access_token"))
         {
             if(json["error"].toString() == "invalid_grant") // revoked: sign out; a network or server error keeps the saved token
-                settings.setValue("ai/google_refresh_token",google_refresh_token = QString());
+                set_refresh_token({});
             return done(json["error"].toString(reply->errorString()));
         }
         google_access_token = json["access_token"].toString();
         google_token_expiry = QDateTime::currentDateTimeUtc().addSecs(json["expires_in"].toInt());
         if(json.contains("refresh_token")) // returned with consent; a refresh keeps the saved one
-        {
-            settings.setValue("ai/google_refresh_token",google_refresh_token = json["refresh_token"].toString());
-            settings.setValue("ai/google_device_auth",google_device_auth); // the client that refreshes this token
-        }
+            set_refresh_token(json["refresh_token"].toString());
         done({});
     });
+}
+void web_bridge::set_refresh_token(const QString& token)
+{
+    settings.setValue("ai/google_refresh_token",google_refresh_token = token);
+    settings.setValue("ai/google_device_auth",google_device_auth); // the client that refreshes this token
+    settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder
+    settings.remove("ai/google_email"); // and its email again
 }
 void web_bridge::with_google_token(std::function<void(QString)> call)
 {
@@ -1806,9 +1929,7 @@ QJsonArray web_bridge::list_web_sessions(void)
 }
 bool web_bridge::remove_web_session(const QString& file_id,const QString& session)
 {
-    QFile::remove(ai_info::history_file(session));
-    QFile::remove(ai_info::config_file(session));
-    settings.remove("ai/title/"+session);
+    ai_info::remove(session);
     return file_id.isEmpty() || !google_api_wait("PATCH","https://www.googleapis.com/drive/v3/files/"+file_id,{{"trashed",true}}).isEmpty();
 }
 void web_bridge::set_web_title(const QString& title)
@@ -2214,7 +2335,6 @@ QJsonObject web_bridge::web_file(const std::vector<std::string>& cmd,const ai_ap
 bool web_bridge::sign_in_device() // Google's device flow, authorized on any computer or phone; no callback port
 {
     QString error;
-    google_device_auth = true; // the device client issues, and later refreshes, this token
     QNetworkRequest request(QUrl("https://oauth2.googleapis.com/device/code"));
     request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
     auto* reply = web_manager.post(request,"client_id="+QUrl::toPercentEncoding(GOOGLE_DEVICE_CLIENT_ID)+
@@ -2244,8 +2364,6 @@ bool web_bridge::sign_in_device() // Google's device flow, authorized on any com
     if(!error.isEmpty())
         return warn("Google sign-in failed: "+error),false;
     std::cout << "Google authorization completed." << std::endl;
-    settings.setValue("ai/google_folder_id",google_folder_id = QString()); // the account may have changed: resolve its folder again
-    settings.remove("ai/google_email"); // the GUI fetches the new account's
     return true;
 }
 int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web session served until Ctrl+C; no window is created
@@ -2426,7 +2544,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         socket->deleteLater();
     });
     load_ai_projects(); // a resumed chat keeps its saved history, title and settings
-    if(web.google_refresh_token.isEmpty() && !web.sign_in_device())
+    if(!web.signed_in() && !web.sign_in_device())
         return 1;
     auto start = [&](QString file,QString session)
     {
@@ -2461,7 +2579,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
         sessions << file;
         auto title = name.section(web_title_separator,0,0);
         if(title == name) // never titled through set_title on any machine: the local title, if any
-            title = web.settings.value("ai/title/"+props["dsi_session"].toString(),"(untitled)").toString();
+            title = QSettings().value("ai/title/"+props["dsi_session"].toString(),"(untitled)").toString();
         items << QString("%1  %2  %3").arg(props["dsi_code"].toString(),-16).arg(title.left(30),-30)
                  .arg(QDateTime::fromString(file["modifiedTime"].toString(),Qt::ISODate).toLocalTime().toString("yyyy-MM-dd hh:mm"));
     }

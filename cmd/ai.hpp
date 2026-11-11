@@ -14,6 +14,7 @@
 #include <QStringList>
 #include <QTimer>
 #include <QUrl>
+#include <QVariant>
 
 #include <functional>
 #include <string>
@@ -43,9 +44,8 @@ struct ai_info{
     session_status status = session_status::New; // see session_status -- this field is the only source of truth for whether this session has a real, established backend identity, and (via the sidebar dot's color) for whether the last run had trouble
     QString status_message;
     static ai_info* find(const QString&);
-    static ai_info* create(QString,QString,QString = {}); // session, provider, optional display agent name
-    static QString history_file(const QString&);
-    static QString config_file(const QString&); // agent/model/Web-channel metadata: separate from history_file so it can be rewritten cheaply without touching the chat transcript
+    static ai_info* create(QString,QString,QString = {}); // session (empty: a new id), provider, optional display agent name
+    static void remove(const QString&); // deletes a session's history, config and title, and its registry entry
     void save_config() const;
     bool save_title(QString);
     QJsonObject record_history(QJsonObject); // returns the recorded entry (with "time" filled in), not the caller's pre-call copy -- written unconditionally, regardless of status
@@ -67,9 +67,7 @@ QStringList agent_efforts(const QString& provider,const QString& model = {}); //
 bool is_valid_session_id(const QString&); // true iff the string is exactly a UUID (no braces) -- every id accepted as "the" resumable session identity (pipe requests, Web sessions, Codex's self-reported thread_id) must satisfy this or be rejected outright, not silently tolerated
 QString session_status_text(session_status); // human-readable label shared by the sidebar dot, details, and bottom status line
 QList<ai_info*> load_ai_projects(); // restores saved chats from ai_project_dir into ai_infos, oldest first; sessions already in ai_infos are skipped, never reloaded over
-ai_info* assign_ai_session(const QString& from,const QString& to); // renames an existing session's key/files/title in place (e.g. Codex's placeholder id -> its real thread_id); a no-op lookup if from == to; nullptr (nothing changed) if to already exists or from is missing
 QUrl agent_install_url(const QString& provider); // shared by the sidebar's Install button and a launch that finds the CLI missing, so the two can't drift apart
-QByteArray json_line(const QJsonObject&); // one compact JSON message per line, the framing every agent protocol and the history file use
 QPair<QUrl,bool> ai_ollama_url(QString host = QSettings().value("ai/ollama_host","localhost").toString(),int port = QSettings().value("ai/ollama_port",11434).toInt()); // ("ai/ollama_host"+"ai/ollama_port" as a URL, whether a host is actually configured) -- the bool distinguishes "empty/default" from "genuinely set to something that parses to the same URL"
 
 // local CLI agents: discovery and noninteractive readiness probes (no login, no model turn, no widgets)
@@ -86,15 +84,10 @@ extern const QStringList local_agents; // every local CLI agent, in settings ord
 QString find_agent_executable(const QString& provider); // PATH first, then the provider's known install location; empty if not found
 ai_agent_status check_agent_status(const QString& provider,const QString& executable,QString& info); // blocking; info: the credential description when Ready
 QPair<int,QString> agent_usage(const QString& provider,const QString& executable,QString& plan); // blocking, no model turn; {the first window's used %, or -1, details}; plan: a tier the status lacks (Muse); not for Grok
+bool agent_models(const QString& provider,const QString& executable,QStringList& models,QVariantMap& efforts,QString& default_model); // blocking, no model turn: the models, per-model thinking levels and default model; false (keep the last list) when the probe failed; not for Claude
 QProcessEnvironment agent_environment(const QString& provider);
 void start_process(QProcess& process,const QString& executable,QStringList args);
 void kill_process_tree(QProcess* process);
-QByteArray jsonrpc(const QString& id,const QString& method,const QJsonObject& params = {});
-QByteArray muse_initialize();
-QByteArray codex_initialize();
-QByteArray grok_initialize();
-QString muse_uuid_v7(); // a time-ordered UUID, as Muse expects for session and command ids
-QByteArray muse_command(const QString& id,const QString& method,QJsonObject params);
 // how a caller presents a local agent's turn; sign_in and signed_out are optional
 struct agent_hooks
 {
@@ -107,6 +100,9 @@ struct agent_hooks
 // sends text to info's local agent, launching or resuming its process when needed (shared by the GUI and headless);
 // false, with the failure recorded, when the launch cannot start
 bool start_agent(ai_info& info,const QString& text,const QString& executable,const QString& work_dir,QObject* owner,const agent_hooks& hooks);
+// stops info's agent: its active turn is cancelled in-protocol, else (Claude, Antigravity, idle) the process is killed; closing: stdin
+// is closed and the process killed after 5 s. finished() reports a user stop
+void stop_agent(const ai_info& info,bool closing = false);
 QJsonObject ai_agent_record(const QString& provider,const QString& scope,const QString& executable,ai_agent_status status,
                             const QString& info,const QStringList& models,const QDateTime& checked); // one get_agent_settings entry; scope: "gui" or "headless"
 // system commands shared by MainWindow's command center and headless --action=ai: get_agent_settings [agent|ready],
@@ -130,22 +126,50 @@ bool ai_run_shell(const std::vector<std::string>& cmd,const ai_approval& approve
 class web_bridge : public QObject
 {
 public:
+    QString google_file_id,web_session_id; // the connected Doc (empty when stopped) and its session
+    std::function<QJsonObject(const QJsonObject& request)> dispatch; // runs one agent request and returns its response
+    std::function<void(session_status,const QString&)> status = [](session_status,const QString&){};
+    std::function<void(const QString&)> warn;
+    web_bridge(void);
+    bool signed_in(void) const {return !google_refresh_token.isEmpty();}
+    bool connected(const QString& session) const {return session == web_session_id && !google_file_id.isEmpty();} // this session's Doc is being polled
+    bool sign_in_device(void); // headless sign-in; true once a token is held
+    void google_token_post(QList<QPair<QString,QString>> form,std::function<void(QString error)> done); // token endpoint (code exchange or refresh); stores the tokens; only invalid_grant (revoked) clears the saved refresh token
+    void google_api(const QByteArray& verb,const QString& url,const QJsonObject& body,std::function<void(QJsonObject)> done); // one Drive/Docs call; an empty object means failure
+    void create_web_session(std::function<void(QString file,QString session)> done); // resolves the folder when needed, then creates a session Doc
+    void start_web(const QString& file,const QString& session); // starts (or resumes) polling this Doc after its last message
+    QJsonArray list_web_sessions(void); // the recent session Docs in the DSI Studio AI folder: id, name ("DSI Studio <codename>", or "<title> <middle dot> DSI Studio <codename>" after set_title), modifiedTime, appProperties (dsi_session, dsi_code)
+    bool remove_web_session(const QString& file_id,const QString& session); // trashes the session Doc (if any) and ai_info::remove()s the session; false if the Doc was not trashed
+    void set_web_title(const QString& title); // renames the connected Doc to "<title> <middle dot> DSI Studio <codename>"
+    void stop_web(const QString& message = "Web stopped."); // stops polling; the Doc and session stay
+    QString prompt(void) const; // the connection prompt an agent is given
+    void report_step(const QString& step,const QString& approval = {},qint64 pid = 0); // the running Web request's "processing" message gains step (waiting_approval/running) and the shell PID; waits for the write
+    QJsonObject web_file(const std::vector<std::string>& cmd,const ai_approval& approve,QString& error); // web_upload, web_download_prepare, web_download: the attachment, or empty on error
+private:
+    // Google OAuth (drive.file)
     QSettings settings;
     QNetworkAccessManager web_manager; // Google OAuth and API calls
     QString google_access_token,google_refresh_token = settings.value("ai/google_refresh_token").toString(); // saved, so a restart stays signed in
     QDateTime google_token_expiry;
     bool google_device_auth = settings.value("ai/google_device_auth").toBool(); // the saved token came from the device client (headless sign-in)
-    QTimer web_timer;
     QString google_folder_id = settings.value("ai/google_folder_id").toString();
     QString google_error; // the last Google failure, shown in the Web status; never holds a token
-    QString google_file_id,web_session_id,web_code; // the connected Doc (empty when stopped), session, and codename (e.g. neon-raven)
+    void set_refresh_token(const QString& token); // saved with its client; a new or revoked token resets the cached folder and email
+    void with_google_token(std::function<void(QString token)> call); // the access token, refreshed first when near expiry; empty when signed out
+    QJsonObject google_api_wait(const QByteArray& verb,const QString& url,const QJsonObject& body = {}); // google_api() that waits for its reply
+    // the session Doc as a mailbox
+    QTimer web_timer;
+    QString web_code; // the codename (e.g. neon-raven)
     qint64 web_last_id = 0;
     QElapsedTimer web_idle; // since the last request or result: selects Docs or Drive polling
     QString web_modified_time; // Drive modifiedTime of the last body read that needed no action
     QJsonObject web_pending_result; // staged until its reply is confirmed; retried, never re-executed
     bool web_dispatching = false; // a Web request is running: report_step() may rewrite its "processing" message
-    std::function<QJsonObject(const QJsonObject& request)> dispatch; // runs one agent request and returns its response
-    std::function<void(session_status,const QString&)> status = [](session_status,const QString&){};
+    void write_google_doc(const QJsonObject& doc,QJsonObject message,std::function<void(bool)> done = {}); // replaces the body with one JSON message; doc (from documents.get) guards the revision
+    QString google_doc_url(void) const; // documents.get for the connected Doc, trimmed to the mailbox fields
+    void poll_web(const QString& modified_time = QString()); // modified_time: the Drive change that triggered this read
+    void publish_web_result(void);
+};
     std::function<void(const QString&)> warn;
     web_bridge(void);
     bool sign_in_device(void); // headless sign-in; true once a token is held

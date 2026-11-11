@@ -273,12 +273,6 @@ void AIAgent::ai_log(QString text)
     tipl::out() << (prefix+text.remove('\r').
                     replace('\n',"\n"+prefix)).toStdString();
 }
-QJsonObject AIAgent::next_json_line(QProcess* process)
-{
-    auto line = process->readLine();
-    ai_log("stdout:"+QString::fromUtf8(line).trimmed());
-    return QJsonDocument::fromJson(line).object();
-}
 AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
@@ -448,9 +442,10 @@ AIAgent::AIAgent(MainWindow* parent):
             stop_agent_process(process);
             process->deleteLater();
         }
-        // a Web chat's mailbox Doc is trashed so "DSI Studio AI" does not accumulate them
-        web.remove_web_session(found && found->provider == "Web" ? found->model_settings["google_file_id"].toString() : QString(),session);
-        ai_infos.erase(session);
+        if(found && found->provider == "Web") // its mailbox Doc is trashed too, so "DSI Studio AI" does not accumulate them
+            web.remove_web_session(found->model_settings["google_file_id"].toString(),session);
+        else
+            ai_info::remove(session);
         take_and_delete_item(ui->ai_project_list,row); // defer delete: its row widget owns the "..." button whose menu action is still running
 
         // keep a chat selected whenever one exists
@@ -534,17 +529,8 @@ void AIAgent::showEvent(QShowEvent* event)
 
 void AIAgent::closeEvent(QCloseEvent* event)
 {
-    // each process's finished handler classifies New/Completed/Failed itself
-    for(auto& entry : ai_infos)
-        if(auto* process = entry.second.processes)
-        {
-            process->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
-            process->closeWriteChannel();
-            QTimer::singleShot(5000,process,[process]
-            {
-                kill_process_tree(process);
-            });
-        }
+    for(auto& entry : ai_infos) // each process's finished handler classifies New/Completed/Failed itself
+        stop_agent(entry.second,true);
     web.stop_web();
     QMainWindow::closeEvent(event);
 }
@@ -997,150 +983,25 @@ void AIAgent::refresh_agent_executables() // re-discover CLIs, so one installed 
 }
 void AIAgent::refresh_agent_models(const QString& provider) // Claude's list is fixed (refresh_agent_executables()); Ollama models are refreshed separately, for every agent that can use them
 {
-    if(provider == "Claude")
+    if(provider == "Claude" || agent_entries[provider].executable.isEmpty())
         return;
-    auto path = agent_entries[provider].executable;
-    if(path.isEmpty())
-        return;
-
-    auto* process = new QProcess(this);
-    process->setProcessEnvironment(agent_environment(provider));
-    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),process,&QObject::deleteLater);
-    // per-model thinking levels and the default model, read by agent_efforts()
-    auto save_efforts = [=](const QVariantMap& efforts,const QString& default_model)
+    struct model_result{bool found = false;QStringList models;QVariantMap efforts;QString default_model;};
+    auto result = QSharedPointer<model_result>::create();
+    auto* worker = QThread::create([provider,executable = agent_entries[provider].executable,result]
     {
-        QSettings settings;
-        settings.setValue("ai/"+provider.toLower()+"_efforts",efforts);
-        settings.setValue("ai/"+provider.toLower()+"_default_model",default_model);
-    };
-    // levels(model entry) gives its thinking levels; the default model is the "isDefault" entry unless given
-    auto set_models = [=](const QJsonArray& list,const QString& key,
-                          std::function<QJsonArray(const QJsonObject&)> levels = {},QString default_model = {})
+        result->found = agent_models(provider,executable,result->models,result->efforts,result->default_model);
+    });
+    connect(worker,&QThread::finished,worker,&QObject::deleteLater);
+    connect(worker,&QThread::finished,this,[this,provider,result]
     {
-        QStringList models;
-        QVariantMap efforts;
-        for(const auto& value : list)
-            if(auto model = value.toObject()[key].toString();!model.isEmpty())
-            {
-                models << model;
-                if(levels)
-                    efforts[model] = levels(value.toObject()).toVariantList();
-                if(value.toObject()["isDefault"].toBool())
-                    default_model = model;
-            }
-        if(levels)
-            save_efforts(efforts,default_model);
-        update_agent_models(provider,models,false);
-        ai_log(provider+" models: "+models.join(", "));
-    };
-
-    if(provider == "Codex")
-    {
-        connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-                this,[=](int exit_code,QProcess::ExitStatus exit_status)
-        {
-            auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
-            // a failed/timed-out/unrecognized query says nothing about the account: keep the last valid list
-            if(exit_code || exit_status != QProcess::NormalExit || !(doc.isArray() || doc.object().value("models").isArray()))
-                return;
-            QStringList models;
-            for(const auto& value : doc.isArray() ? doc.array() : doc.object()["models"].toArray())
-            {
-                auto object = value.toObject();
-                auto model = object["slug"].toString();
-                if(model.isEmpty()) model = object["model"].toString();
-                if(model.isEmpty()) model = object["id"].toString();
-                if(!model.isEmpty()) models << model;
-            }
-            update_agent_models("Codex",models,false);
-        });
-        start_process(*process,path,{"debug","models"});
-    }
-    else if(provider == "Antigravity")
-    {
-        connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),this,[=]
-        {
-            if(process->exitStatus() != QProcess::NormalExit || process->exitCode())
-                return;
-            auto out = process->readAllStandardOutput(); // a status line can precede the JSON
-            auto list = QJsonDocument::fromJson(out.mid(out.indexOf('{'))).object()["command"].toObject()["data"].toObject()["models"].toArray();
-            // <base>-<level> variants of one model collapse into <base>, launched with --effort <level>
-            QVariantMap efforts;
-            for(const auto& each : list) // agy's --effort takes Claude's levels
-                if(auto id = each.toObject()["id"].toString(),level = id.section('-',-1);agent_efforts("Claude").contains(level))
-                    efforts[id.section('-',0,-2)] = efforts.value(id.section('-',0,-2)).toStringList() << level;
-            QStringList models;
-            QString default_model;
-            for(const auto& each : list)
-            {
-                auto id = each.toObject()["id"].toString();
-                if(efforts.value(id.section('-',0,-2)).toStringList().size() > 1) // a single variant is a fixed-effort model
-                    id = id.section('-',0,-2);
-                if(!models.contains(id))
-                    models << id;
-                if(each.toObject()["isDefault"].toBool()) // launched as --model when a chat uses "default": agy without --model can pick a retired model
-                    default_model = id;
-            }
-            save_efforts(efforts,default_model);
-            update_agent_models(provider,models,false);
-            ai_log(provider+" models: "+models.join(", "));
-        });
-        connect(process,&QProcess::started,process,&QProcess::closeWriteChannel);
-        start_process(*process,path,{"--output-format","json","models"});
-    }
-    else if(provider == "Muse")
-    {
-        connect(process,&QProcess::readyReadStandardOutput,this,[=]
-        {
-            while(process->canReadLine())
-            {
-                auto msg = next_json_line(process);
-                auto id = msg["id"].toString();
-                if(id == "initialize")
-                {
-                    if(msg.contains("error"))
-                        return kill_process_tree(process);
-                    process->write(jsonrpc({},"initialized"));
-                    process->write(json_line({{"jsonrpc","2.0"},{"id","model_list"},{"method","model/list"},{"params",QJsonObject()}}));
-                }
-                else if(id == "model_list")
-                {
-                    if(!msg.contains("error"))
-                        set_models(msg["result"].toObject()["models"].toArray(),"modelId",
-                                   [](const QJsonObject& model){return model["variants"].toArray();});
-                    process->closeWriteChannel();
-                }
-            }
-        });
-        connect(process,&QProcess::started,process,[=]{process->write(muse_initialize());});
-        start_process(*process,path,{"serve"});
-    }
-    else // Grok: ACP initialize returns _meta.modelState.availableModels without a session or sign-in
-    {
-        connect(process,&QProcess::readyReadStandardOutput,this,[=]
-        {
-            while(process->canReadLine())
-            {
-                auto msg = next_json_line(process);
-                if(msg["id"].toString() != "initialize")
-                    continue;
-                // a failed or unrecognized reply keeps the last valid list
-                auto state = msg["result"].toObject()["_meta"].toObject()["modelState"].toObject();
-                if(auto list = state.value("availableModels");list.isArray())
-                    set_models(list.toArray(),"modelId",[](const QJsonObject& model)
-                    {
-                        QJsonArray levels; // entries are {"value":"medium","label":...}; "value" is what reasoningEffort takes
-                        for(const auto& each : model["_meta"].toObject()["reasoningEfforts"].toArray())
-                            levels << each.toObject()["value"];
-                        return levels;
-                    },state["currentModel"].toObject()["modelId"].toString());
-                return kill_process_tree(process); // one reply is all this probe needs
-            }
-        });
-        connect(process,&QProcess::started,process,[=]{process->write(grok_initialize());});
-        start_process(*process,path,{"agent","stdio"});
-    }
-    QTimer::singleShot(provider == "Codex" ? 5000 : provider == "Antigravity" ? 10000 : 15000,process,[process]{kill_process_tree(process);});
+        if(!result->found) // a failed probe says nothing about the account: keep the last list
+            return;
+        settings.setValue("ai/"+provider.toLower()+"_efforts",result->efforts); // read by agent_efforts()
+        settings.setValue("ai/"+provider.toLower()+"_default_model",result->default_model);
+        update_agent_models(provider,result->models,false);
+        ai_log(provider+" models: "+result->models.join(", "));
+    });
+    worker->start();
 }
 void AIAgent::refresh_ollama_models()
 {
@@ -1335,7 +1196,7 @@ ai_info* AIAgent::selected_info() const
 
 bool AIAgent::web_connected(const ai_info& info) const
 {
-    return info.sessions == web.web_session_id && !web.google_file_id.isEmpty();
+    return web.connected(info.sessions);
 }
 
 AIAgent::send_action AIAgent::current_send_action() const
@@ -1403,7 +1264,6 @@ bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopb
     QUrl url("https://accounts.google.com/o/oauth2/v2/auth");
     url.setQuery(query);
 
-    web.google_device_auth = false;
     QMessageBox dialog(QMessageBox::NoIcon,"Google Sign In","Complete Google sign-in in your browser.",QMessageBox::Cancel,this);
     connect(&server,&QTcpServer::newConnection,&dialog,[&]
     {
@@ -1429,14 +1289,12 @@ bool AIAgent::sign_in_google() // the GUI's system-browser sign-in (PKCE + loopb
         return false;
     if(!error.isEmpty())
         return QMessageBox::warning(this,"AI Agent","Google sign-in failed: "+error),false;
-    settings.setValue("ai/google_folder_id",web.google_folder_id = QString()); // the account may have changed: resolve its folder again
-    settings.remove("ai/google_email");
-    update_google_email();
+    update_google_email(); // the new token reset the cached folder and email
     return true;
 }
 void AIAgent::update_google_email() // once per sign-in, cached: the drive.file token can read its own account
 {
-    if(web.google_refresh_token.isEmpty() || settings.contains("ai/google_email"))
+    if(!web.signed_in() || settings.contains("ai/google_email"))
         return;
     web.google_api("GET","https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)",{},[this](QJsonObject reply)
     {
@@ -1447,7 +1305,7 @@ void AIAgent::update_google_email() // once per sign-in, cached: the drive.file 
 AIAgent::agent_state AIAgent::agent_status(const QString& provider)
 {
     if(provider == "Web")
-        return web.google_refresh_token.isEmpty() ? agent_state{false,"Sign in","Sign in to Google"} :
+        return !web.signed_in() ? agent_state{false,"Sign in","Sign in to Google"} :
                agent_state{true,"Ready · "+settings.value("ai/google_email","Google").toString(),"Sign in to Google again, e.g. to switch accounts"};
     const auto& entry = agent_entries[provider];
     switch(entry.status)
@@ -1563,7 +1421,7 @@ void AIAgent::on_ai_new_chat_clicked()
         return;
     if(provider == "Web")
     {
-        if(web.google_refresh_token.isEmpty() && !sign_in_google())
+        if(!web.signed_in() && !sign_in_google())
             return;
         return web.create_web_session([this](QString file,QString session)
         {
@@ -1590,9 +1448,7 @@ void AIAgent::on_ai_new_chat_clicked()
         else
             ++it;
 
-    auto* info = ai_info::create(
-        provider == "Muse" ? muse_uuid_v7() :
-        QUuid::createUuid().toString(QUuid::WithoutBraces),provider); // status defaults to New; no "new:"/other marker on the id itself
+    auto* info = ai_info::create({},provider); // a new id; status defaults to New
     info->model_settings = QJsonObject{{"model",model},{"info",model_info},{"effort",effort}};
     set_ai_status(info->sessions,session_status::New,"Ready for a message.");
     show_ai_project(*info);
@@ -1826,22 +1682,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-bool cancel_agent_turn(const ai_info& info) // in-protocol cancel of the active turn; false when there is none to cancel (Claude, Antigravity, idle)
-{
-    auto* process = info.processes;
-    auto session = process->objectName();
-    auto turn_id = process->property("turn_id").toString();
-    if(info.provider == "Muse" && !turn_id.isEmpty())
-        process->write(muse_command(muse_uuid_v7(),"turn/cancel",{{"sessionId",session},{"turnId",turn_id}}));
-    else if(info.provider == "Codex" && !turn_id.isEmpty())
-        process->write(json_line({{"id","turn_interrupt"},{"method","turn/interrupt"},
-            {"params",QJsonObject{{"threadId",session},{"turnId",turn_id}}}}));
-    else if(info.provider == "Grok" && process->property("turn_active").toBool()) // the prompt reply then reports "cancelled"
-        process->write(jsonrpc({},"session/cancel",{{"sessionId",session}}));
-    else
-        return false;
-    return true;
-}
 bool AIAgent::start_ai(ai_info& info,const QString& text,const QString& work_dir,bool interactive) // callers pass local-agent chats only
 {
     auto& agent = agent_entries[info.provider];
@@ -1894,17 +1734,14 @@ void AIAgent::on_ai_send_message_clicked()
     case send_action::Disabled:
         return;
     case send_action::Resume: // only reachable for a Web chat, see current_send_action()
-        if(!web.google_refresh_token.isEmpty() || sign_in_google())
+        if(web.signed_in() || sign_in_google())
             start_web(*info);
         return;
     case send_action::Stop: // only reachable when info exists, see current_send_action()
         if(info->provider == "Web")
             web.stop_web();
-        else if(!cancel_agent_turn(*info))
-        {
-            info->processes->setProperty("user_stopped",true); // finished() reports a user stop, not a failure
-            kill_process_tree(info->processes);
-        }
+        else
+            stop_agent(*info);
         return;
     case send_action::Send: // only reachable when info exists and isn't AgentServer, see current_send_action()
         if(!info->processes && ui->ai_work_dir->text().trimmed().isEmpty())

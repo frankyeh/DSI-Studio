@@ -38,7 +38,6 @@ class AIAgent : public QMainWindow
     QTimer* ai_status_timer = nullptr;
     int ai_debug_level = 0; // "ai/debug": 0 = disabled, 1 = truncated, 2 = complete
     void ai_log(QString text);
-    QJsonObject next_json_line(QProcess*); // reads, logs and parses one available stdout line; callers loop while(process->canReadLine())
 
     // app-wide default agent/model for the next New Chat; an existing chat uses its own model_settings
     QHash<QString,ai_agent_entry> agent_entries;
