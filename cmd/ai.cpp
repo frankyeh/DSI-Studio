@@ -2383,7 +2383,8 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     struct : std::streambuf {int_type overflow(int_type c) override {return traits_type::not_eof(c);}} quiet;
     web_bridge web;
     web.status = [](session_status,const QString& message){tipl::out() << message.toStdString();};
-    web.warn = [&](const QString& text){chat << "\nerror: " << text.toStdString() << std::endl;QCoreApplication::exit(1);}; // std::cerr is silenced after start
+    // std::cerr is silenced after start; the exit is queued, as exit() before exec() would be lost and leave it hanging
+    web.warn = [&](const QString& text){chat << "\nerror: " << text.toStdString() << std::endl;QTimer::singleShot(0,[]{QCoreApplication::exit(1);});};
     std::string approval = po.has("approval") ? po.get("approval") : std::string("manual");
     if(approval != "manual" && approval != "read_only" && approval != "auto")
         return tipl::error() << "--approval must be manual, read_only, or auto",1;
