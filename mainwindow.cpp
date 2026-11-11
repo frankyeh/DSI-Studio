@@ -13,6 +13,7 @@
 #include <QSysInfo>
 #include <QStandardPaths>
 #include <QDialog>
+#include <QFormLayout>
 #include <QLineEdit>
 #include <QUuid>
 #include <QProcess>
@@ -173,103 +174,81 @@ MainWindow::MainWindow(QWidget *parent) :
             settings.setValue("login_id",username);
 
         {
-            QString licenseText;
+            QString license_text;
             {
-                QFile licenseFile(QApplication::applicationDirPath() + "/LICENSE");
-                if(!licenseFile.open(QIODevice::ReadOnly))
+                QFile file(QApplication::applicationDirPath()+"/LICENSE");
+                if(!file.open(QIODevice::ReadOnly))
                     throw std::runtime_error("cannot locate license file");
-                licenseText = licenseFile.readAll();
+                license_text = file.readAll();
             }
-
-            QDialog *dialog = new QDialog(this);
+            auto* dialog = new QDialog(this);
             dialog->setWindowTitle("DSI Studio");
-            dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
+            dialog->setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::CustomizeWindowHint);
             dialog->setModal(true);
-
-            QHBoxLayout *main_layout = new QHBoxLayout;
-            dialog->setLayout(main_layout);
-            QVBoxLayout *left_layout = new QVBoxLayout;
-            QVBoxLayout *right_layout = new QVBoxLayout;
-
+            dialog->setStyleSheet(
+                "QDialog{background-color:#ffffff;}"
+                "QLabel#login_title{font-size:15pt;font-weight:600;color:#202124;}"
+                "QLabel#login_heading{font-weight:600;color:#202124;}"
+                "QLabel#login_note{color:#5f6368;}"
+                "QFrame#login_card{background-color:#f7f7f8;border:1px solid #dddddf;border-radius:10px;}"
+                "QFrame#login_card QTextBrowser{background:transparent;border:none;}"
+                "QLineEdit{border:1px solid #d9d9dc;border-radius:7px;padding:5px 8px;background-color:#f7f7f8;color:#3c4043;}"
+                "QPushButton{color:#202124;background-color:#f4f4f5;border:1px solid #d9d9dc;border-radius:7px;padding:7px 18px;}"
+                "QPushButton:hover{background-color:#e9e9eb;}"
+                "QPushButton#login_accept{color:#ffffff;background-color:#1a73e8;border:none;font-weight:600;}"
+                "QPushButton#login_accept:hover{background-color:#1765cc;}");
+            auto label = [](const QString& text,const char* name)
             {
-                auto title = new QLabel("License Information:");
-                title->setStyleSheet("font-weight: bold;");
-                right_layout->addWidget(title);
-            }
-
+                auto* label = new QLabel(text);
+                label->setObjectName(name);
+                label->setWordWrap(true);
+                return label;
+            };
+            auto* layout = new QVBoxLayout(dialog);
+            layout->setContentsMargins(20,18,20,16);
+            layout->setSpacing(12);
+            layout->addWidget(label("Welcome to DSI Studio","login_title"));
+            // news and license as two cards side by side
+            auto* cards = new QHBoxLayout;
+            cards->setSpacing(12);
+            for(const auto& [heading,text] : std::initializer_list<std::pair<QString,QString> >{{"News and updates",news},{"License",license_text}})
             {
-                QTextBrowser *licenseBrowser = new QTextBrowser;
-                licenseBrowser->setMarkdown(licenseText);
-                licenseBrowser->setReadOnly(true);
-                licenseBrowser->setOpenExternalLinks(true);
-                right_layout->addWidget(licenseBrowser);
+                auto* card = new QFrame;
+                card->setObjectName("login_card");
+                auto* card_layout = new QVBoxLayout(card);
+                card_layout->setContentsMargins(14,12,14,12);
+                card_layout->addWidget(label(heading,"login_heading"));
+                auto* browser = new QTextBrowser;
+                browser->setMarkdown(text);
+                browser->setOpenExternalLinks(true);
+                card_layout->addWidget(browser);
+                cards->addWidget(card,1);
             }
-
-
-            {
-                QHBoxLayout *h_layout = new QHBoxLayout;
-                h_layout->addWidget(new QLabel("Registering Entity:"));
-                auto line_edit = new QLineEdit(username);
-                line_edit->setReadOnly(true);
-                h_layout->addWidget(line_edit);
-                right_layout->addLayout(h_layout);
-
-            }
-
-            {
-                auto registry_info = new QLabel("Registering Information: " + host_name + "," + address);
-                registry_info->setWordWrap(true);
-                right_layout->addWidget(registry_info);
-            }
-
-            {
-                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the registration registry and information.");
-                note->setWordWrap(true);
-                note->setStyleSheet("font-weight: bold;");
-                right_layout->addWidget(note);
-            }
-
-            {
-                QPushButton *closeButton = new QPushButton("Accept && Sign in");
-                closeButton->setStyleSheet("font-size: 14pt; font-weight: bold;");
-                auto h = closeButton->sizeHint().height() * 1.5f;
-                closeButton->setFixedHeight(h);
-                connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
-                connect(closeButton, &QPushButton::clicked, this, &MainWindow::login);
-                QPushButton *exitButton = new QPushButton("Decline && Exit");
-                exitButton->setFixedHeight(h);
-                exitButton->setMaximumWidth(100);
-                connect(exitButton, &QPushButton::clicked, dialog, &QDialog::close);
-                connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
-                QHBoxLayout *h_layout = new QHBoxLayout;
-                h_layout->setSpacing(0);
-                h_layout->addWidget(closeButton);
-                h_layout->addWidget(exitButton);
-                right_layout->addLayout(h_layout);
-            }
-
-
-            {
-                auto title = new QLabel("News and Updates:");
-                title->setStyleSheet("font-weight: bold;");
-                left_layout->addWidget(title);
-            }
-
-            {
-                QTextBrowser *NewsBrowser = new QTextBrowser;
-                NewsBrowser->setMarkdown(news);
-                NewsBrowser->setReadOnly(true);
-                NewsBrowser->setOpenExternalLinks(true);
-                left_layout->addWidget(NewsBrowser);
-                checkForVersionSpecificBugs(news);
-            }
-
-            main_layout->addLayout(left_layout, 1);
-            main_layout->addLayout(right_layout, 1);
-
-            dialog->resize(700,500);
+            checkForVersionSpecificBugs(news);
+            layout->addLayout(cards,1);
+            // the registration, then the decision
+            auto* entity = new QLineEdit(username);
+            entity->setReadOnly(true);
+            auto* form = new QFormLayout;
+            form->addRow("Registering entity:",entity);
+            form->addRow("Registering information:",label(host_name+", "+address,"login_note"));
+            layout->addLayout(form);
+            layout->addWidget(label("By clicking Accept & Sign in, you agree to the licensing terms and sign in with the registration above.","login_note"));
+            auto* accept = new QPushButton("Accept && Sign in");
+            accept->setObjectName("login_accept");
+            accept->setDefault(true);
+            auto* decline = new QPushButton("Decline && Exit");
+            connect(accept,&QPushButton::clicked,dialog,&QDialog::close);
+            connect(accept,&QPushButton::clicked,this,&MainWindow::login);
+            connect(decline,&QPushButton::clicked,dialog,&QDialog::close);
+            connect(decline,&QPushButton::clicked,this,&MainWindow::close);
+            auto* buttons = new QHBoxLayout;
+            buttons->addStretch();
+            buttons->addWidget(decline);
+            buttons->addWidget(accept);
+            layout->addLayout(buttons);
+            dialog->resize(860,560);
             dialog->show();
-
         }
     }
 
