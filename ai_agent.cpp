@@ -53,7 +53,6 @@
 #include <QThread>
 #include <QTimer>
 #include <QToolButton>
-#include <QUuid>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QVBoxLayout>
