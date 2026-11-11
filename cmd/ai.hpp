@@ -23,7 +23,6 @@
 class QListWidgetItem;
 class QProcess;
 class QProcessEnvironment;
-class QSettings;
 
 enum class session_status {New,Thinking,WaitingUser,Completed,Failed}; // declaration order is not meaningful -- ai_info::is_running() classifies by name, not ordinal comparison
 // New: no confirmed backend id yet (never launched, or a launch/reconnect awaiting the agent's own confirmation);
