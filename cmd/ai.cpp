@@ -40,7 +40,6 @@
 #include "TIPL/tipl.hpp"
 
 std::unordered_map<QString,ai_info> ai_infos;
-extern QString ai_project_dir;
 
 QStringList agent_efforts(const QString& provider,const QString& model)
 {
