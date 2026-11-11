@@ -182,10 +182,11 @@ MainWindow::MainWindow(QWidget *parent) :
                 license_text = file.readAll();
             }
             auto* dialog = new QDialog(this);
-            dialog->setWindowFlags(Qt::Dialog|Qt::FramelessWindowHint);
+            dialog->setWindowTitle(" "); // a frame to move and resize, without a caption (an empty title would show the application name)
+            dialog->setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::CustomizeWindowHint);
             dialog->setModal(true);
             dialog->setStyleSheet(
-                "QFrame#login_frame{background-color:#ffffff;border:1px solid #d0d0d4;}" // frameless: this is the window's edge
+                "QDialog{background-color:#ffffff;}"
                 "QLabel#login_heading{font-weight:600;color:#202124;}"
                 "QLabel#login_note{color:#5f6368;}"
                 "QFrame#login_card{background-color:#f7f7f8;border:1px solid #dddddf;border-radius:10px;}"
@@ -202,11 +203,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 label->setWordWrap(true);
                 return label;
             };
-            auto* frame = new QFrame;
-            frame->setObjectName("login_frame");
-            (new QVBoxLayout(dialog))->addWidget(frame);
-            dialog->layout()->setContentsMargins(0,0,0,0);
-            auto* layout = new QVBoxLayout(frame);
+            auto* layout = new QVBoxLayout(dialog);
             layout->setContentsMargins(20,18,20,16);
             layout->setSpacing(12);
             // news and license as two cards side by side
