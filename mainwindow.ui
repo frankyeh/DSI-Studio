@@ -591,8 +591,7 @@ QFrame#tract_reconstruction_stage QPushButton#Reconstruction {
     border-color: #10b981;
     text-align: center;
 }
-QFrame#tract_tracking_stage QPushButton#FiberTracking,
-QFrame#tract_tracking_stage QPushButton#T1WFiberTracking {
+QFrame#tract_tracking_stage QPushButton#FiberTracking {
     color: #ffffff;
     background-color: #f59e0b;
     border-color: #f59e0b;
@@ -1415,62 +1414,26 @@ QLabel#tract_arrow_2 {
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="tract_tracking_primary">
-                     <property name="spacing">
-                      <number>6</number>
+                    <widget class="QPushButton" name="FiberTracking">
+                     <property name="statusTip">
+                      <string>run open_fib</string>
                      </property>
-                     <property name="leftMargin">
-                      <number>0</number>
+                     <property name="toolTip">
+                      <string>Open a FIB file for tractography</string>
                      </property>
-                     <property name="topMargin">
-                      <number>0</number>
+                     <property name="icon">
+                      <iconset resource="icons.qrc">
+                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                      </property>
-                     <property name="rightMargin">
-                      <number>0</number>
+                     <property name="text">
+                      <string>FIB file...</string>
                      </property>
-                     <property name="bottomMargin">
-                      <number>0</number>
-                     </property>
-                     <item>
-                      <widget class="QPushButton" name="FiberTracking">
-                       <property name="statusTip">
-                        <string>run open_fib</string>
-                       </property>
-                       <property name="toolTip">
-                        <string>Open a FIB file for tractography</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="icons.qrc">
-                         <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                       </property>
-                       <property name="text">
-                        <string>FIB file...</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="T1WFiberTracking">
-                       <property name="statusTip">
-                        <string>run open_structural_tracking</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="icons.qrc">
-                         <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                       </property>
-                       <property name="text">
-                        <string>T1W/T2W image...</string>
-                       </property>
-                       <property name="toolTip">
-                        <string>Open a structural T1W/T2W image and track it with the aligned tractography atlas</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    </widget>
                    </item>
                    <item>
                     <widget class="QPushButton" name="tract_tracking_batch_toggle">
                      <property name="text">
-                      <string>▸ Batch</string>
+                      <string>▸ More tracking options</string>
                      </property>
                      <property name="checkable">
                       <bool>true</bool>
@@ -1499,6 +1462,23 @@ QLabel#tract_arrow_2 {
                        <number>0</number>
                       </property>
                       <item row="0" column="0">
+                       <widget class="QPushButton" name="T1WFiberTracking">
+                        <property name="statusTip">
+                         <string>run open_structural_tracking</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                        </property>
+                        <property name="text">
+                         <string>T1W/T2W image...</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>Open a structural T1W/T2W image and track it with the aligned tractography atlas</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
                        <widget class="QPushButton" name="auto_track">
                         <property name="statusTip">
                          <string>run open_auto_track</string>
@@ -1515,7 +1495,7 @@ QLabel#tract_arrow_2 {
                         </property>
                        </widget>
                       </item>
-                      <item row="1" column="0">
+                      <item row="2" column="0">
                        <widget class="QPushButton" name="FIB_qc">
                         <property name="statusTip">
                          <string>run show_qc_fib</string>
@@ -2020,7 +2000,7 @@ QWidget#tab_conn QPushButton#conn_fib_folder {
     font-weight: bold;
     text-align: center;
 }
-QWidget#tab_conn QPushButton#vbc {
+QWidget#tab_conn QPushButton#open_db {
     color: #ffffff;
     background-color: #8b5cf6;
     border-color: #8b5cf6;
@@ -2043,27 +2023,26 @@ QLabel#conn_analysis_stage_title {
     font-size: 10pt;
     font-weight: bold;
 }
-QLabel#tract_connectometry_hint,
 QLabel#conn_import_stage_hint,
 QLabel#conn_db_stage_hint,
 QLabel#conn_analysis_stage_hint {
     color: #67676c;
 }
-QLabel#conn_import_badge,
-QLabel#conn_db_badge,
-QLabel#conn_analysis_badge {
+QWidget#tab_conn QLabel#conn_import_badge,
+QWidget#tab_conn QLabel#conn_db_badge,
+QWidget#tab_conn QLabel#conn_analysis_badge {
     color: #ffffff;
     border-radius: 13px;
     font-weight: bold;
     font-size: 10pt;
 }
-QLabel#conn_import_badge {
+QWidget#tab_conn QLabel#conn_import_badge {
     background-color: #0ea5e9;
 }
-QLabel#conn_db_badge {
+QWidget#tab_conn QLabel#conn_db_badge {
     background-color: #8b5cf6;
 }
-QLabel#conn_analysis_badge {
+QWidget#tab_conn QLabel#conn_analysis_badge {
     background-color: #ef4444;
 }
 QLabel#conn_arrow_1,
@@ -2076,7 +2055,7 @@ QLabel#conn_arrow_2 {
     min-height: 22px;
 }</string>
          </property>
-         <layout class="QVBoxLayout" name="tab_conn_layout" stretch="0,0,0,1">
+         <layout class="QVBoxLayout" name="tab_conn_layout" stretch="0,0,1">
           <property name="spacing">
            <number>9</number>
           </property>
@@ -2096,16 +2075,6 @@ QLabel#conn_arrow_2 {
            <widget class="QLabel" name="tract_connectometry_title">
             <property name="text">
              <string>Correlational Tractography</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="tract_connectometry_hint">
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>Build a connectometry database from FIB files and relate tracts to study variables.</string>
             </property>
            </widget>
           </item>
@@ -2198,7 +2167,7 @@ QLabel#conn_arrow_2 {
                   <bool>true</bool>
                  </property>
                  <property name="text">
-                  <string>QSDR FIB files (*.fz): pick files or a folder, and Create database opens with them listed.</string>
+                  <string>QSDR FIB files (*.fz)</string>
                  </property>
                 </widget>
                </item>
@@ -2359,24 +2328,7 @@ QLabel#conn_arrow_2 {
                   <bool>true</bool>
                  </property>
                  <property name="text">
-                  <string>FIB files (*.fz) → database (*.dz); or open an existing database to view or edit it.</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="vbc">
-                 <property name="statusTip">
-                  <string>run create_db</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Aggregate FIB files into a database</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                 </property>
-                 <property name="text">
-                  <string>Create database...</string>
+                  <string>database (*.dz)</string>
                  </property>
                 </widget>
                </item>
@@ -2498,7 +2450,7 @@ QLabel#conn_arrow_2 {
                <item>
                 <widget class="QLabel" name="conn_analysis_stage_hint">
                  <property name="text">
-                  <string>database (*.dz) → tracts correlated with a study variable</string>
+                  <string>database (*.dz)</string>
                  </property>
                  <property name="wordWrap">
                   <bool>true</bool>
