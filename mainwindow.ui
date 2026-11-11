@@ -923,7 +923,7 @@ QLabel#tract_arrow_2 {
                          <bool>true</bool>
                         </property>
                         <property name="text">
-                         <string>▸ Sort DICOM files first (renames files)</string>
+                         <string>▸ Rename DICOM</string>
                         </property>
                        </widget>
                       </item>
@@ -955,7 +955,7 @@ QLabel#tract_arrow_2 {
                              <normaloff>:/icons/icons/folder_sort.svg</normaloff>:/icons/icons/folder_sort.svg</iconset>
                            </property>
                            <property name="text">
-                            <string>Sort DICOM files...</string>
+                            <string>Rename DICOM files...</string>
                            </property>
                            <property name="toolTip">
                             <string>Move the selected DICOM files into patient/sequence folders (renames the files)</string>
@@ -972,7 +972,7 @@ QLabel#tract_arrow_2 {
                              <normaloff>:/icons/icons/folder_sort.svg</normaloff>:/icons/icons/folder_sort.svg</iconset>
                            </property>
                            <property name="text">
-                            <string>Sort DICOM folder...</string>
+                            <string>Rename DICOM folder...</string>
                            </property>
                            <property name="toolTip">
                             <string>Move every DICOM file under a folder into patient/sequence folders (renames the files)</string>
@@ -1148,7 +1148,7 @@ QLabel#tract_arrow_2 {
                        <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                      </property>
                      <property name="text">
-                      <string>Open SRC → reconstruct</string>
+                      <string>SRC File(s) (*.sz)</string>
                      </property>
                     </widget>
                    </item>
@@ -1332,7 +1332,7 @@ QLabel#tract_arrow_2 {
                        <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                      </property>
                      <property name="text">
-                      <string>FIB file...</string>
+                      <string>FIB File (*.fz)</string>
                      </property>
                     </widget>
                    </item>
@@ -2127,7 +2127,7 @@ QLabel#conn_arrow_2 {
                     <string>Pick QSDR FIB files (*.fz); Create database opens with them listed</string>
                    </property>
                    <property name="text">
-                    <string>FIB files...</string>
+                    <string>FIB File(s) (*.fz)...</string>
                    </property>
                    <property name="icon">
                     <iconset resource="icons.qrc">
@@ -2144,7 +2144,7 @@ QLabel#conn_arrow_2 {
                     <string>Pick a folder; Create database opens with every FIB file (*.fz) in it listed</string>
                    </property>
                    <property name="text">
-                    <string>FIB folder...</string>
+                    <string>FIB Folder (*.fz)...</string>
                    </property>
                    <property name="icon">
                     <iconset resource="icons.qrc">
@@ -2275,7 +2275,7 @@ QLabel#conn_arrow_2 {
                    <normaloff>:/icons/icons/database.svg</normaloff>:/icons/icons/database.svg</iconset>
                  </property>
                  <property name="text">
-                  <string>View / edit database...</string>
+                  <string>Database (*.dz)...</string>
                  </property>
                 </widget>
                </item>
@@ -2400,7 +2400,7 @@ QLabel#conn_arrow_2 {
                    <normaloff>:/icons/icons/connectometry.svg</normaloff>:/icons/icons/connectometry.svg</iconset>
                  </property>
                  <property name="text">
-                  <string>Run correlational tractography...</string>
+                  <string>Correlational Tractography (*.dz)...</string>
                  </property>
                 </widget>
                </item>
