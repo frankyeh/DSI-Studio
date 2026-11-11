@@ -189,7 +189,16 @@ MainWindow::MainWindow(QWidget *parent) :
                 QLocale::countryToString(QLocale::system().country())).toString();
         if(!settings.contains("login_id"))
             settings.setValue("login_id",username);
-        ui->settings_registration->setText("Registering entity: "+username+"\nRegistering information: "+host_name+", "+address);
+        {
+            // the registration as label/value rows; login_id is "<user>,<id>,<country>"
+            auto row = [](const QString& name,const QString& value)
+            {
+                return "<tr><td style='color:#67676c;padding:2px 14px 2px 0px;'>"+name+"</td><td style='padding:2px 0px;'>"+value.toHtmlEscaped()+"</td></tr>";
+            };
+            auto entity = username.split(',');
+            ui->settings_registration->setText("<table>"+row("User",entity.value(0))+row("ID",entity.value(1))+
+                                               row("Host",host_name)+row("Location",address.split(',',Qt::SkipEmptyParts).join(", ").simplified())+"</table>");
+        }
 
         {
             QString license_text;
