@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/icons">
         <file>dsi_studio.ico</file>
+        <file>icons/dsi_studio.svg</file>
         <file>icons/ajax-loader.gif</file>
         <file>icons/agents/codex.svg</file>
         <file>icons/agents/claude.svg</file>
