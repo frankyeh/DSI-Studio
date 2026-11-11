@@ -538,13 +538,13 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
 bool MainWindow::eventFilter(QObject* object,QEvent* event)
 {
-    // under the tab pages: white, with the DSI Studio logo fit to the page as a faint centered watermark
+    // under the tab pages: white, with the DSI Studio logo as a faint centered watermark, as large as the page allows at its aspect ratio
     if(object == ui->tabWidget && event->type() == QEvent::Paint)
     {
         static const QPixmap logo(":/icons/icons/dsi_studio.svg");
         QPainter painter(ui->tabWidget);
         painter.fillRect(ui->tabWidget->rect(),Qt::white);
-        QRect area(QPoint(),logo.size().scaled(ui->tabWidget->size()*0.8,Qt::KeepAspectRatio));
+        QRect area(QPoint(),logo.size().scaled(ui->tabWidget->size(),Qt::KeepAspectRatio));
         area.moveCenter(ui->tabWidget->rect().center());
         painter.setOpacity(0.06);
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
