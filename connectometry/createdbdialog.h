@@ -21,6 +21,7 @@ public:
     unsigned int template_id = 0;
     explicit CreateDBDialog(QWidget *parent,bool create_db_);
     ~CreateDBDialog();
+    void add_files(const QStringList& files);
 private:
     Ui::CreateDBDialog *ui;
     void update_list(void);

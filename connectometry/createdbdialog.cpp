@@ -97,7 +97,11 @@ void CreateDBDialog::on_group1open_clicked()
                                      "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)");
     if (filenames.isEmpty())
         return;
-    group << filenames;
+    add_files(filenames);
+}
+void CreateDBDialog::add_files(const QStringList& files)
+{
+    group << files;
     update_list();
     update_output_file_name();
 }

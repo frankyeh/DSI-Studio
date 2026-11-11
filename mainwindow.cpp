@@ -1808,6 +1808,32 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return open_template(template_name);
     }
 
+    if(cmd[0] == "create_db_files" || cmd[0] == "create_db_dir")
+    {
+        // FIB files picked here (or given as arguments) open Create database with its subject list filled
+        QStringList files;
+        if(cmd[0] == "create_db_files")
+            files = cmd.size() >= 2 ? get_files() :
+                    tipl::qt::open_image_files(this,work_dir(),"Fib files (*.fz *fib.gz);;All files (*)");
+        else
+        {
+            auto dir = select_dir("Open FIB Folder");
+            if(dir.isEmpty())
+                return true;
+            files = search_files(dir,"*.fz");
+            if(files.isEmpty())
+                return fail("no FIB files (*.fz) in "+dir.toStdString());
+        }
+        if(files.isEmpty())
+            return true;
+        add_work_dir(QFileInfo(files[0]).absolutePath());
+        auto* window = new CreateDBDialog(this,true);
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->show();
+        window->add_files(files);
+        return true;
+    }
+
     if(cmd[0] == "create_db" || cmd[0] == "create_average")
     {
         if(cmd.size() != 1)
