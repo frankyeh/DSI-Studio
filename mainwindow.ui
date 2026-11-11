@@ -591,7 +591,6 @@ QFrame#tract_tracking_stage {
     border-top: 4px solid #f59e0b;
 }
 QFrame#tract_input_stage QPushButton#OpenDWI_NIFTI,
-QFrame#tract_input_stage QPushButton#nii2src_sf,
 QFrame#tract_input_stage QPushButton#nii2src_bids,
 QFrame#tract_input_stage QPushButton#OpenDWI_DICOM,
 QFrame#tract_input_stage QPushButton#dicom2nii,
@@ -615,6 +614,7 @@ QFrame#tract_tracking_stage QPushButton#FiberTracking {
     text-align: center;
 }
 QFrame#tract_input_stage QPushButton#tract_input_batch_toggle,
+QFrame#tract_input_stage QPushButton#tract_nifti_batch_toggle,
 QFrame#tract_reconstruction_stage QPushButton#tract_reconstruction_batch_toggle,
 QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
     color: #2563eb;
@@ -814,32 +814,15 @@ QTabWidget#recent_tabs::pane {
                          <property name="autoDefault">
                           <bool>false</bool>
                          </property>
-                         <property name="text">
-                          <string>NIfTI file(s)...</string>
-                         </property>
                          <property name="toolTip">
                           <string>Open DWI NIfTI file(s) with .bval/.bvec and create an SRC file</string>
+                         </property>
+                         <property name="text">
+                          <string>NIfTI file(s)...</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="1">
-                        <widget class="QPushButton" name="nii2src_sf">
-                         <property name="statusTip">
-                          <string>run nifti_dir_to_src</string>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="icons.qrc">
-                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                         </property>
-                         <property name="text">
-                          <string>NIfTI folder...</string>
-                         </property>
-                         <property name="toolTip">
-                          <string>Find the DWI NIfTI files in a folder and write an SRC file next to each</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0" colspan="2">
                         <widget class="QPushButton" name="nii2src_bids">
                          <property name="statusTip">
                           <string>run bids_to_src</string>
@@ -849,14 +832,65 @@ QTabWidget#recent_tabs::pane {
                            <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                          </property>
                          <property name="text">
-                          <string>BIDS dataset...</string>
+                          <string>BIDS folder...</string>
                          </property>
                          <property name="toolTip">
-                          <string>Convert every DWI NIfTI in a BIDS dataset to SRC files under derivatives</string>
+                          <string>Convert every sub-*/[ses-*/]dwi NIfTI in a BIDS dataset to SRC files under derivatives</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="0" colspan="2">
+                        <widget class="QPushButton" name="tract_nifti_batch_toggle">
+                         <property name="text">
+                          <string>▸ More NIfTI options</string>
+                         </property>
+                         <property name="checkable">
+                          <bool>true</bool>
+                         </property>
+                         <property name="flat">
+                          <bool>true</bool>
                          </property>
                         </widget>
                        </item>
                        <item row="2" column="0" colspan="2">
+                        <widget class="QFrame" name="tract_nifti_batch">
+                         <layout class="QGridLayout" name="tract_nifti_batch_layout">
+                          <property name="spacing">
+                           <number>6</number>
+                          </property>
+                          <property name="leftMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="topMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="rightMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="bottomMargin">
+                           <number>0</number>
+                          </property>
+                          <item row="0" column="0">
+                           <widget class="QPushButton" name="nii2src_sf">
+                            <property name="statusTip">
+                             <string>run nifti_dir_to_src</string>
+                            </property>
+                            <property name="icon">
+                             <iconset resource="icons.qrc">
+                              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                            </property>
+                            <property name="text">
+                             <string>Plain NIfTI folder (not BIDS)...</string>
+                            </property>
+                            <property name="toolTip">
+                             <string>Convert the DWI NIfTI files (with .bval/.bvec) in one folder, writing an SRC file next to each</string>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
+                       <item row="3" column="0" colspan="2">
                         <spacer name="tract_nifti_tab_spacer">
                          <property name="orientation">
                           <enum>Qt::Vertical</enum>
@@ -2535,6 +2569,12 @@ QWidget#tab_setup QComboBox {
    <sender>tract_tracking_batch_toggle</sender>
    <signal>toggled(bool)</signal>
    <receiver>tract_tracking_batch</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>tract_nifti_batch_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tract_nifti_batch</receiver>
    <slot>setVisible(bool)</slot>
   </connection>
  </connections>

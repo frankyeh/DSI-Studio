@@ -158,7 +158,7 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->template_list->addItem(each.stem().string().c_str());
     ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(0);
-    for(auto* batch : {ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch})
+    for(auto* batch : {ui->tract_nifti_batch,ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch})
         batch->hide(); // until its stage's "Batch" toggle is checked
 
     {
