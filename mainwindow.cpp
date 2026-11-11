@@ -13,6 +13,7 @@
 #include <QSysInfo>
 #include <QStandardPaths>
 #include <QDialog>
+#include <QPainter>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QUuid>
@@ -121,11 +122,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+    ui->tabWidget->installEventFilter(this);
 
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 
-    for(auto* table : {ui->recentSrc,ui->recentFib})
+    for(auto* table : {ui->recentSrc,ui->recentFib,ui->recentDb})
     {
         table->setColumnCount(2);
         table->horizontalHeader()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
@@ -134,6 +136,14 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     QObject::connect(ui->recentFib,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_fib_at(int,int)));
     QObject::connect(ui->recentSrc,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_src_at(int,int)));
+    // a recent database opens to View (double click too) or Analysis
+    for(auto [button,command_name] : std::initializer_list<std::pair<QPushButton*,const char*> >{{ui->view_selected_db,"open_db"},{ui->analyze_selected_db,"open_connectometry"}})
+        connect(button,&QPushButton::clicked,this,[this,name = command_name]
+        {
+            if(auto* item = ui->recentDb->item(ui->recentDb->currentRow(),0);item && !command({name,item->data(Qt::UserRole).toString().toStdString()}) && !error_msg.empty())
+                QMessageBox::critical(this,"ERROR",QString::fromStdString(error_msg));
+        });
+    connect(ui->recentDb,&QTableWidget::cellDoubleClicked,ui->view_selected_db,&QPushButton::click);
     updateRecentList();
 
     auto workdir_list = settings.value("WORK_PATH").toStringList();
@@ -526,6 +536,22 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     QMainWindow::resizeEvent(event);
 }
 
+bool MainWindow::eventFilter(QObject* object,QEvent* event)
+{
+    // under the tab pages: white, with the DSI Studio logo fit to the page as a faint centered watermark
+    if(object == ui->tabWidget && event->type() == QEvent::Paint)
+    {
+        static const QPixmap logo(":/icons/icons/dsi_studio.svg");
+        QPainter painter(ui->tabWidget);
+        painter.fillRect(ui->tabWidget->rect(),Qt::white);
+        QRect area(QPoint(),logo.size().scaled(ui->tabWidget->size()*0.8,Qt::KeepAspectRatio));
+        area.moveCenter(ui->tabWidget->rect().center());
+        painter.setOpacity(0.06);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawPixmap(area,logo);
+    }
+    return QMainWindow::eventFilter(object,event);
+}
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     auto windows = tracking_windows;
@@ -584,6 +610,7 @@ void MainWindow::updateRecentList()
 
     update(ui->recentFib,"recentFibFileList");
     update(ui->recentSrc,"recentSrcFileList");
+    update(ui->recentDb,"recentDbFileList");
 }
 
 
@@ -1759,6 +1786,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             if(!database->load_database(file.toStdString().c_str()))
                 return fail(database->error_msg);
         }
+        if(file.endsWith(".dz"))
+            addRecent(file,"recentDbFileList");
 
         if(cmd[0] == "open_db")
         {
@@ -1806,15 +1835,15 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return true;
     }
 
-    if(cmd[0] == "clear_recent_src" || cmd[0] == "clear_recent_fib")
+    if(cmd[0] == "clear_recent_src" || cmd[0] == "clear_recent_fib" || cmd[0] == "clear_recent_db")
     {
         if(cmd.size() != 1)
             return fail(cmd[0]+" takes no arguments");
-        bool src = cmd[0] == "clear_recent_src";
-        (src ? ui->recentSrc : ui->recentFib)->setRowCount(0);
-        (src ? ui->open_selected_src : ui->open_selected_fib)->setEnabled(false);
-        settings.setValue(src ? "recentSrcFileList" : "recentFibFileList",
-                          QStringList());
+        settings.setValue(cmd[0] == "clear_recent_src" ? "recentSrcFileList" :
+                          cmd[0] == "clear_recent_fib" ? "recentFibFileList" : "recentDbFileList",QStringList());
+        updateRecentList();
+        for(auto* button : {ui->open_selected_src,ui->open_selected_fib}) // updateRecentList() drops every selection
+            button->setEnabled(false);
         return true;
     }
 
