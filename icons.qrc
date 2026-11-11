@@ -14,6 +14,7 @@
         <file>icons/auto_track.svg</file>
         <file>icons/average_fib.svg</file>
         <file>icons/axial.svg</file>
+        <file>icons/bad_slice_alert.svg</file>
         <file>icons/color_palette.svg</file>
         <file>icons/connectome_matrix.svg</file>
         <file>icons/connectometry.svg</file>
@@ -25,6 +26,7 @@
         <file>icons/device_electrode.svg</file>
         <file>icons/download.svg</file>
         <file>icons/fiber_data_hub.svg</file>
+        <file>icons/filter_smooth.svg</file>
         <file>icons/folder_sort.svg</file>
         <file>icons/image_editor.svg</file>
         <file>icons/image_editor_light.svg</file>
@@ -33,8 +35,14 @@
         <file>icons/img_math_min.svg</file>
         <file>icons/img_math_mul.svg</file>
         <file>icons/img_math_sub.svg</file>
+        <file>icons/invert_negate.svg</file>
         <file>icons/linear_reg.svg</file>
         <file>icons/local_fibers.svg</file>
+        <file>icons/mask_edit.svg</file>
+        <file>icons/more_expand.svg</file>
+        <file>icons/morph_dilate.svg</file>
+        <file>icons/morph_erode.svg</file>
+        <file>icons/morph_fill_holes.svg</file>
         <file>icons/mosaic.svg</file>
         <file>icons/move_down.svg</file>
         <file>icons/move_translate.svg</file>
@@ -44,6 +52,7 @@
         <file>icons/open_file.svg</file>
         <file>icons/open_folder.svg</file>
         <file>icons/quality_check.svg</file>
+        <file>icons/right_side_label.svg</file>
         <file>icons/roi_cube.svg</file>
         <file>icons/roi_edge.svg</file>
         <file>icons/roi_freehand.svg</file>
@@ -59,6 +68,7 @@
         <file>icons/screenshot_camera.svg</file>
         <file>icons/segmentation.svg</file>
         <file>icons/settings.svg</file>
+        <file>icons/slice_defrag.svg</file>
         <file>icons/slice_overlay.svg</file>
         <file>icons/sort_alpha.svg</file>
         <file>icons/sort_metric.svg</file>
@@ -67,9 +77,11 @@
         <file>icons/stop.svg</file>
         <file>icons/surface_mesh.svg</file>
         <file>icons/template_fib.svg</file>
+        <file>icons/threshold_binary.svg</file>
         <file>icons/tract_report.svg</file>
         <file>icons/tractography.svg</file>
         <file>icons/transform_apply.svg</file>
+        <file>icons/unet_brain.svg</file>
         <file>icons/video_record.svg</file>
         <file>icons/view_3d_slices.svg</file>
         <file>icons/whole_brain_seed.svg</file>

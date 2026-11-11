@@ -140,6 +140,16 @@
                   <property name="text">
                    <string>Show bad slice</string>
                   </property>
+                  <property name="icon">
+                   <iconset resource="../icons.qrc">
+                    <normaloff>:/icons/icons/bad_slice_alert.svg</normaloff>:/icons/icons/bad_slice_alert.svg</iconset>
+                  </property>
+                  <property name="iconSize">
+                   <size>
+                    <width>16</width>
+                    <height>16</height>
+                   </size>
+                  </property>
                  </widget>
                 </item>
                 <item>
@@ -166,6 +176,16 @@
                  <widget class="QPushButton" name="align_slices">
                   <property name="text">
                    <string>Align Slice...</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="../icons.qrc">
+                    <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+                  </property>
+                  <property name="iconSize">
+                   <size>
+                    <width>16</width>
+                    <height>16</height>
+                   </size>
                   </property>
                  </widget>
                 </item>
@@ -477,6 +497,16 @@
                     <property name="text">
                      <string>Thresholding</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -486,6 +516,16 @@
                     </property>
                     <property name="text">
                      <string>Dilation</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
                     </property>
                    </widget>
                   </item>
@@ -497,6 +537,16 @@
                     <property name="text">
                      <string>Erosion</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/morph_erode.svg</normaloff>:/icons/icons/morph_erode.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -506,6 +556,16 @@
                     </property>
                     <property name="text">
                      <string>Smoothing</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
                     </property>
                    </widget>
                   </item>
@@ -517,6 +577,16 @@
                     <property name="text">
                      <string>Fit</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/roi_edge.svg</normaloff>:/icons/icons/roi_edge.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -526,6 +596,16 @@
                     </property>
                     <property name="text">
                      <string>Defragment</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
                     </property>
                    </widget>
                   </item>
@@ -537,6 +617,16 @@
                     <property name="text">
                      <string>Slice Defrag</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/slice_defrag.svg</normaloff>:/icons/icons/slice_defrag.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -547,6 +637,16 @@
                     <property name="text">
                      <string>Negate</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/invert_negate.svg</normaloff>:/icons/icons/invert_negate.svg</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>16</width>
+                      <height>16</height>
+                     </size>
+                    </property>
                    </widget>
                   </item>
                  </layout>
@@ -556,6 +656,16 @@
                 <widget class="QPushButton" name="edit_mask">
                  <property name="text">
                   <string>Edit&gt;&gt;</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/mask_edit.svg</normaloff>:/icons/icons/mask_edit.svg</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>16</width>
+                   <height>16</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -580,6 +690,16 @@
                  <property name="text">
                   <string>Template</string>
                  </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>16</width>
+                   <height>16</height>
+                  </size>
+                 </property>
                 </widget>
                </item>
                <item row="0" column="12">
@@ -589,6 +709,16 @@
                  </property>
                  <property name="text">
                   <string>U-Net</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/unet_brain.svg</normaloff>:/icons/icons/unet_brain.svg</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>16</width>
+                   <height>16</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1138,6 +1268,16 @@
                   <widget class="QPushButton" name="more_outputs">
                    <property name="text">
                     <string>More...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/more_expand.svg</normaloff>:/icons/icons/more_expand.svg</iconset>
+                   </property>
+                   <property name="iconSize">
+                    <size>
+                     <width>16</width>
+                     <height>16</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
