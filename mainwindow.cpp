@@ -1501,6 +1501,28 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         return true;
     }
 
+    if(cmd[0] == "reset_tracking_settings" || cmd[0] == "reset_rendering_settings")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        // as the tracking window's restore_tracking/restore_rendering: the saved values of these option groups go,
+        // so the next window starts from options.txt, and each open window restores its own
+        bool tracking = cmd[0] == "reset_tracking_settings";
+        QStringList groups = tracking ? QStringList{"Tracking","Tracking_dT","Tracking_adv"} :
+                             QStringList{"ROI","Rendering","show_slice","show_tract","show_region","show_device",
+                                         "show_surface","show_label","show_odf","Tract_color","Region_color","Region_graph"};
+        QFile options(":/data/options.txt");
+        if(!options.open(QIODevice::ReadOnly|QIODevice::Text))
+            return fail("cannot read the default options");
+        settings.beginGroup("Rendering Options");
+        for(const auto& line : QString(options.readAll()).split('\n'))
+            if(auto list = line.split('/');list.size() >= 5 && groups.contains(list[0])) // group/title/id/type/default
+                settings.remove(list[2]);
+        settings.endGroup();
+        for(auto* window : tracking_windows)
+            window->command({tracking ? "restore_tracking" : "restore_rendering"});
+        return true;
+    }
     if(cmd[0] == "reset_settings")
     {
         if(cmd.size() != 1)
