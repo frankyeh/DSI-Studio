@@ -788,9 +788,6 @@ QTabWidget#recent_tabs::pane {
                    </item>
                    <item>
                     <widget class="QFrame" name="tract_input_batch">
-                     <property name="visible">
-                      <bool>false</bool>
-                     </property>
                      <layout class="QGridLayout" name="tract_input_batch_layout">
                       <property name="spacing">
                        <number>6</number>
@@ -998,9 +995,6 @@ QTabWidget#recent_tabs::pane {
                    </item>
                    <item>
                     <widget class="QFrame" name="tract_reconstruction_batch">
-                     <property name="visible">
-                      <bool>false</bool>
-                     </property>
                      <layout class="QGridLayout" name="tract_reconstruction_batch_layout">
                       <property name="spacing">
                        <number>6</number>
@@ -1140,9 +1134,6 @@ QTabWidget#recent_tabs::pane {
                    </item>
                    <item>
                     <widget class="QFrame" name="tract_tracking_batch">
-                     <property name="visible">
-                      <bool>false</bool>
-                     </property>
                      <layout class="QGridLayout" name="tract_tracking_batch_layout">
                       <property name="spacing">
                        <number>6</number>
