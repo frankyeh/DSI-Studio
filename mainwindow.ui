@@ -3194,19 +3194,17 @@ QTableWidget#recentImage QHeaderView::section {
 }
 QWidget#tab_more QPushButton {
     color: #202124;
-    background-color: #ffffff;
+    background-color: #f4f4f5;
     border: 1px solid #d9d9dc;
-    border-radius: 6px;
-    padding: 6px 9px;
-    min-height: 28px;
-    text-align: left;
+    border-radius: 7px;
+    padding: 5px 9px;
 }
 QWidget#tab_more QPushButton:hover {
-    background-color: #eeeeef;
-    border-color: #c5c5c9;
+    background-color: #e9e9eb;
+    border-color: #c8c8cc;
 }
 QWidget#tab_more QPushButton:pressed {
-    background-color: #e2e2e4;
+    background-color: #dddddf;
 }
 QWidget#tab_more QComboBox {
     color: #202124;
@@ -3220,9 +3218,15 @@ QFrame#tools_appearance_footer,
 QFrame#settings_tracking_row,
 QFrame#settings_history_row,
 QFrame#settings_registration_row {
-    border: 0px;
-    border-top: 1px solid #dddddf;
-    padding-top: 8px;
+    background-color: rgba(247,247,248,0.45);
+    border: 1px solid #dddddf;
+    border-radius: 9px;
+}
+QLabel#tools_style_label,
+QLabel#settings_tracking_label,
+QLabel#settings_history_label,
+QLabel#settings_registration_label {
+    font-weight: bold;
 }</string>
          </property>
          <layout class="QVBoxLayout" name="more_page_layout">
@@ -3261,16 +3265,16 @@ QFrame#settings_registration_row {
               <number>8</number>
              </property>
              <property name="leftMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="topMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <property name="rightMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="bottomMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <item>
               <widget class="QLabel" name="tools_style_label">
@@ -3318,16 +3322,16 @@ QFrame#settings_registration_row {
               <number>8</number>
              </property>
              <property name="leftMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="topMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <property name="rightMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="bottomMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <item>
               <widget class="QLabel" name="settings_tracking_label">
@@ -3392,16 +3396,16 @@ QFrame#settings_registration_row {
               <number>8</number>
              </property>
              <property name="leftMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="topMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <property name="rightMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="bottomMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <item>
               <widget class="QLabel" name="settings_history_label">
@@ -3453,16 +3457,16 @@ QFrame#settings_registration_row {
               <number>8</number>
              </property>
              <property name="leftMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="topMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <property name="rightMargin">
-              <number>0</number>
+              <number>12</number>
              </property>
              <property name="bottomMargin">
-              <number>0</number>
+              <number>10</number>
              </property>
              <item>
               <widget class="QLabel" name="settings_registration_label">
