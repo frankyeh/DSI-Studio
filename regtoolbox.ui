@@ -770,11 +770,19 @@
    </property>
   </action>
   <action name="actionSubject_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
+   </property>
    <property name="text">
     <string>Subject Image...</string>
    </property>
   </action>
   <action name="actionTemplate_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
+   </property>
    <property name="text">
     <string>Template Image...</string>
    </property>
@@ -798,6 +806,10 @@
    </property>
   </action>
   <action name="actionSet_Template_Size">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Set Template Dimension...</string>
    </property>
@@ -821,6 +833,10 @@
    </property>
   </action>
   <action name="actionSet_Subject_Dimension">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Set Subject Dimension...</string>
    </property>

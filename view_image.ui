@@ -537,17 +537,29 @@
      <property name="title">
       <string>Brain Extraction</string>
      </property>
+     <property name="icon">
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/icons/skull_strip.svg</normaloff>:/icons/icons/skull_strip.svg</iconset>
+     </property>
      <addaction name="separator"/>
     </widget>
     <widget class="QMenu" name="menuSegmentation">
      <property name="title">
       <string>Segmentation</string>
      </property>
+     <property name="icon">
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/icons/segmentation.svg</normaloff>:/icons/icons/segmentation.svg</iconset>
+     </property>
      <addaction name="separator"/>
     </widget>
     <widget class="QMenu" name="menuDeface">
      <property name="title">
       <string>Deface</string>
+     </property>
+     <property name="icon">
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/icons/deface_shield.svg</normaloff>:/icons/icons/deface_shield.svg</iconset>
      </property>
      <addaction name="separator"/>
     </widget>
@@ -574,6 +586,10 @@
    </property>
   </action>
   <action name="actionRegrid">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Regrid...</string>
    </property>
@@ -600,6 +616,10 @@
    </property>
   </action>
   <action name="actionResize">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Resize...</string>
    </property>
@@ -608,6 +628,10 @@
    </property>
   </action>
   <action name="actionTranslocate">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Translocate...</string>
    </property>
@@ -619,6 +643,10 @@
    </property>
   </action>
   <action name="actionCropToFit">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/crop_trim.svg</normaloff>:/icons/icons/crop_trim.svg</iconset>
+   </property>
    <property name="text">
     <string>Crop To Fit...</string>
    </property>
@@ -630,6 +658,10 @@
    </property>
   </action>
   <action name="actionSet_Translocation">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/move_translate.svg</normaloff>:/icons/icons/move_translate.svg</iconset>
+   </property>
    <property name="text">
     <string>Set Translocation...</string>
    </property>
@@ -638,6 +670,10 @@
    </property>
   </action>
   <action name="actionLower_threshold">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+   </property>
    <property name="text">
     <string>Lower Threshold...</string>
    </property>
@@ -649,6 +685,10 @@
    </property>
   </action>
   <action name="actionSet_Transformation">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/transform_apply.svg</normaloff>:/icons/icons/transform_apply.svg</iconset>
+   </property>
    <property name="text">
     <string>Set Transformation...</string>
    </property>
@@ -657,6 +697,10 @@
    </property>
   </action>
   <action name="actionIntensity_shift">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/img_math_add.svg</normaloff>:/icons/icons/img_math_add.svg</iconset>
+   </property>
    <property name="text">
     <string>Add Value...</string>
    </property>
@@ -668,6 +712,10 @@
    </property>
   </action>
   <action name="actionIntensity_scale">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/img_math_mul.svg</normaloff>:/icons/icons/img_math_mul.svg</iconset>
+   </property>
    <property name="text">
     <string>Multiply Value...</string>
    </property>
@@ -679,6 +727,10 @@
    </property>
   </action>
   <action name="actionUpper_Threshold">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+   </property>
    <property name="text">
     <string>Upper Threshold...</string>
    </property>
@@ -690,6 +742,10 @@
    </property>
   </action>
   <action name="actionNormalize_Intensity">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/intensity_normalize.svg</normaloff>:/icons/icons/intensity_normalize.svg</iconset>
+   </property>
    <property name="text">
     <string>Normalize</string>
    </property>
@@ -698,6 +754,10 @@
    </property>
   </action>
   <action name="actionMorphology_Edge">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_edge.svg</normaloff>:/icons/icons/filter_edge.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Edge</string>
    </property>
@@ -706,6 +766,10 @@
    </property>
   </action>
   <action name="actionMorphology_XY">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_edge.svg</normaloff>:/icons/icons/filter_edge.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Edge XY</string>
    </property>
@@ -714,6 +778,10 @@
    </property>
   </action>
   <action name="actionMorphology_XZ">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_edge.svg</normaloff>:/icons/icons/filter_edge.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Edge XZ</string>
    </property>
@@ -749,6 +817,10 @@
    </property>
   </action>
   <action name="actionMorphology_Smoothing">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Smoothing</string>
    </property>
@@ -757,6 +829,10 @@
    </property>
   </action>
   <action name="actionDownsample_by_2">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/zoom_out.svg</normaloff>:/icons/icons/zoom_out.svg</iconset>
+   </property>
    <property name="text">
     <string>Downsampling</string>
    </property>
@@ -765,6 +841,10 @@
    </property>
   </action>
   <action name="actionUpsample_by_2">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/zoom_in.svg</normaloff>:/icons/icons/zoom_in.svg</iconset>
+   </property>
    <property name="text">
     <string>Upsampling</string>
    </property>
@@ -773,6 +853,10 @@
    </property>
   </action>
   <action name="actionFlip_X">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip X</string>
    </property>
@@ -781,6 +865,10 @@
    </property>
   </action>
   <action name="actionFlip_Y">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Y</string>
    </property>
@@ -789,6 +877,10 @@
    </property>
   </action>
   <action name="actionFlip_Z">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip Z</string>
    </property>
@@ -797,6 +889,10 @@
    </property>
   </action>
   <action name="actionSwap_XY">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap XY</string>
    </property>
@@ -805,6 +901,10 @@
    </property>
   </action>
   <action name="actionSwap_XZ">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap XZ</string>
    </property>
@@ -813,6 +913,10 @@
    </property>
   </action>
   <action name="actionSwap_YZ">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap YZ</string>
    </property>
@@ -836,6 +940,10 @@
    </property>
   </action>
   <action name="actionMorphology_Dilation">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Dilation</string>
    </property>
@@ -844,6 +952,10 @@
    </property>
   </action>
   <action name="actionThreshold">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+   </property>
    <property name="text">
     <string>Threshold...</string>
    </property>
@@ -852,6 +964,10 @@
    </property>
   </action>
   <action name="actionMorphology_Defragment">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Defragment</string>
    </property>
@@ -860,6 +976,10 @@
    </property>
   </action>
   <action name="actionMorphology_Erosion">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_erode.svg</normaloff>:/icons/icons/morph_erode.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Erosion</string>
    </property>
@@ -868,6 +988,10 @@
    </property>
   </action>
   <action name="actionMean_Filter">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Mean Filter</string>
    </property>
@@ -876,6 +1000,10 @@
    </property>
   </action>
   <action name="actionGaussian_Filter">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Gaussian Filter</string>
    </property>
@@ -887,6 +1015,10 @@
    </property>
   </action>
   <action name="actionSobel_Filter">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_edge.svg</normaloff>:/icons/icons/filter_edge.svg</iconset>
+   </property>
    <property name="text">
     <string>Sobel Filter</string>
    </property>
@@ -895,6 +1027,10 @@
    </property>
   </action>
   <action name="actionSmoothing_Filter">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Smoothing Filter</string>
    </property>
@@ -906,6 +1042,10 @@
    </property>
   </action>
   <action name="actionTransform">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/transform_apply.svg</normaloff>:/icons/icons/transform_apply.svg</iconset>
+   </property>
    <property name="text">
     <string>Transform...</string>
    </property>
@@ -923,36 +1063,64 @@
    </property>
   </action>
   <action name="actionHeader_Flip_X">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Header Flip X</string>
    </property>
   </action>
   <action name="actionHeader_Flip_Y">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Header Flip Y</string>
    </property>
   </action>
   <action name="actionHeader_Flip_Z">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Header Flip Z</string>
    </property>
   </action>
   <action name="actionHeader_Swap_XY">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Header Swap XY</string>
    </property>
   </action>
   <action name="actionHeader_Swap_XZ">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Header Swap XZ</string>
    </property>
   </action>
   <action name="actionHeader_Swap_YZ">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Header Swap YZ</string>
    </property>
   </action>
   <action name="actionUndo">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/undo.svg</normaloff>:/icons/icons/undo.svg</iconset>
+   </property>
    <property name="text">
     <string>&amp;Undo</string>
    </property>
@@ -961,6 +1129,10 @@
    </property>
   </action>
   <action name="actionRedo">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/redo.svg</normaloff>:/icons/icons/redo.svg</iconset>
+   </property>
    <property name="text">
     <string>&amp;Redo</string>
    </property>
@@ -969,6 +1141,10 @@
    </property>
   </action>
   <action name="actionSelect_Value">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/select_cursor.svg</normaloff>:/icons/icons/select_cursor.svg</iconset>
+   </property>
    <property name="text">
     <string>Select Value...</string>
    </property>
@@ -992,6 +1168,10 @@
    </property>
   </action>
   <action name="actionReshape">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Reshape...</string>
    </property>
@@ -1030,6 +1210,10 @@
    </property>
   </action>
   <action name="actionMorphology_Defragment_By_Size">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Defragment By Size...</string>
    </property>
@@ -1041,6 +1225,10 @@
    </property>
   </action>
   <action name="actionEquation">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/math_equation.svg</normaloff>:/icons/icons/math_equation.svg</iconset>
+   </property>
    <property name="text">
     <string>Equation...</string>
    </property>
@@ -1052,6 +1240,10 @@
    </property>
   </action>
   <action name="actionSet_MNI">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
+   </property>
    <property name="text">
     <string>Set MNI...</string>
    </property>
@@ -1063,6 +1255,10 @@
    </property>
   </action>
   <action name="actionNormalize_Median">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/intensity_normalize.svg</normaloff>:/icons/icons/intensity_normalize.svg</iconset>
+   </property>
    <property name="text">
     <string>Normalize Otsu Median</string>
    </property>
@@ -1071,6 +1267,10 @@
    </property>
   </action>
   <action name="actionOtsu_Threshold">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+   </property>
    <property name="text">
     <string>Otsu Threshold...</string>
    </property>
@@ -1082,6 +1282,10 @@
    </property>
   </action>
   <action name="actionResize_At_Center">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+   </property>
    <property name="text">
     <string>Resize At Center...</string>
    </property>
@@ -1095,6 +1299,10 @@
    </property>
   </action>
   <action name="actionBias_Field">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
+   </property>
    <property name="text">
     <string>Bias Field Correction</string>
    </property>
@@ -1163,16 +1371,28 @@
    </property>
   </action>
   <action name="actionMorphology_Opening">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_opening.svg</normaloff>:/icons/icons/morph_opening.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Opening</string>
    </property>
   </action>
   <action name="actionMorphology_Closing">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_closing.svg</normaloff>:/icons/icons/morph_closing.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Closing</string>
    </property>
   </action>
   <action name="actionMorphology_Fill_Holes">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Fill Holes</string>
    </property>
@@ -1181,6 +1401,10 @@
    </property>
   </action>
   <action name="actionMorphology_Fill_Holes_By_Slice">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Fill Holes By Slice</string>
    </property>
@@ -1189,6 +1413,10 @@
    </property>
   </action>
   <action name="actionMorphology_Negate">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/invert_negate.svg</normaloff>:/icons/icons/invert_negate.svg</iconset>
+   </property>
    <property name="text">
     <string>Morphology Negate</string>
    </property>

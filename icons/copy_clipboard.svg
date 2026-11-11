@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <rect x="4.4" y="4.8" width="15.2" height="16.0" rx="2.4"
+        fill="#FFFFFF" stroke="#1E293B" stroke-width="1.9"/>
+  <rect x="8.5" y="2.8" width="7.0" height="3.6" rx="1.2"
+        fill="#DBEAFE" stroke="#1E293B" stroke-width="1.75"/>
+  <rect x="7.8" y="9.4" width="8.4" height="7.6" rx="1.4"
+        fill="#DBEAFE" stroke="#2563EB" stroke-width="1.85"/>
+</svg>

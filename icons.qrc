@@ -15,18 +15,38 @@
         <file>icons/average_fib.svg</file>
         <file>icons/axial.svg</file>
         <file>icons/bad_slice_alert.svg</file>
+        <file>icons/bias_field.svg</file>
+        <file>icons/boolean_intersect.svg</file>
+        <file>icons/boolean_subtract.svg</file>
+        <file>icons/btable_vectors.svg</file>
+        <file>icons/camera_recall.svg</file>
+        <file>icons/camera_store.svg</file>
+        <file>icons/check_all.svg</file>
+        <file>icons/cluster_nodes.svg</file>
         <file>icons/color_palette.svg</file>
         <file>icons/connectome_matrix.svg</file>
         <file>icons/connectometry.svg</file>
         <file>icons/console.svg</file>
+        <file>icons/copy_clipboard.svg</file>
+        <file>icons/copy_duplicate.svg</file>
         <file>icons/coronal.svg</file>
+        <file>icons/crop_trim.svg</file>
         <file>icons/crosshair_target.svg</file>
+        <file>icons/cut_scissors.svg</file>
         <file>icons/database.svg</file>
+        <file>icons/deface_shield.svg</file>
         <file>icons/delete_clear.svg</file>
         <file>icons/device_electrode.svg</file>
+        <file>icons/distortion_correct.svg</file>
+        <file>icons/doc_protocol.svg</file>
         <file>icons/download.svg</file>
         <file>icons/fiber_data_hub.svg</file>
+        <file>icons/filter_edge.svg</file>
+        <file>icons/filter_funnel.svg</file>
         <file>icons/filter_smooth.svg</file>
+        <file>icons/flip_depth.svg</file>
+        <file>icons/flip_horizontal.svg</file>
+        <file>icons/flip_vertical.svg</file>
         <file>icons/folder_sort.svg</file>
         <file>icons/image_editor.svg</file>
         <file>icons/image_editor_light.svg</file>
@@ -35,15 +55,22 @@
         <file>icons/img_math_min.svg</file>
         <file>icons/img_math_mul.svg</file>
         <file>icons/img_math_sub.svg</file>
+        <file>icons/intensity_normalize.svg</file>
         <file>icons/invert_negate.svg</file>
+        <file>icons/lab_flask.svg</file>
         <file>icons/linear_reg.svg</file>
         <file>icons/local_fibers.svg</file>
+        <file>icons/longitudinal_time.svg</file>
         <file>icons/mask_edit.svg</file>
+        <file>icons/math_equation.svg</file>
         <file>icons/more_expand.svg</file>
+        <file>icons/morph_closing.svg</file>
         <file>icons/morph_dilate.svg</file>
         <file>icons/morph_erode.svg</file>
         <file>icons/morph_fill_holes.svg</file>
+        <file>icons/morph_opening.svg</file>
         <file>icons/mosaic.svg</file>
+        <file>icons/motion_correct.svg</file>
         <file>icons/move_down.svg</file>
         <file>icons/move_translate.svg</file>
         <file>icons/move_up.svg</file>
@@ -51,7 +78,10 @@
         <file>icons/nonlinear_reg.svg</file>
         <file>icons/open_file.svg</file>
         <file>icons/open_folder.svg</file>
+        <file>icons/paint_brush.svg</file>
         <file>icons/quality_check.svg</file>
+        <file>icons/redo.svg</file>
+        <file>icons/resize_grid.svg</file>
         <file>icons/right_side_label.svg</file>
         <file>icons/roi_cube.svg</file>
         <file>icons/roi_edge.svg</file>
@@ -67,23 +97,32 @@
         <file>icons/save_all.svg</file>
         <file>icons/screenshot_camera.svg</file>
         <file>icons/segmentation.svg</file>
+        <file>icons/select_cursor.svg</file>
         <file>icons/settings.svg</file>
+        <file>icons/skull_strip.svg</file>
         <file>icons/slice_defrag.svg</file>
         <file>icons/slice_overlay.svg</file>
         <file>icons/sort_alpha.svg</file>
         <file>icons/sort_metric.svg</file>
+        <file>icons/split_separate.svg</file>
         <file>icons/stack_4d.svg</file>
         <file>icons/statistics.svg</file>
         <file>icons/stop.svg</file>
         <file>icons/surface_mesh.svg</file>
+        <file>icons/swap_axes.svg</file>
         <file>icons/template_fib.svg</file>
         <file>icons/threshold_binary.svg</file>
+        <file>icons/tract_reconnect.svg</file>
         <file>icons/tract_report.svg</file>
         <file>icons/tractography.svg</file>
         <file>icons/transform_apply.svg</file>
+        <file>icons/uncheck_all.svg</file>
+        <file>icons/undo.svg</file>
         <file>icons/unet_brain.svg</file>
         <file>icons/video_record.svg</file>
         <file>icons/view_3d_slices.svg</file>
+        <file>icons/view_split_dual.svg</file>
+        <file>icons/view_stereo_3d.svg</file>
         <file>icons/whole_brain_seed.svg</file>
         <file>icons/xnat_download.svg</file>
         <file>icons/zoom_in.svg</file>

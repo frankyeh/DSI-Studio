@@ -934,11 +934,19 @@
    </property>
   </action>
   <action name="actionSmooth_Signals">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+   </property>
    <property name="text">
     <string>Smooth Signals</string>
    </property>
   </action>
   <action name="actionSobel">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/filter_edge.svg</normaloff>:/icons/icons/filter_edge.svg</iconset>
+   </property>
    <property name="text">
     <string>Sobel</string>
    </property>

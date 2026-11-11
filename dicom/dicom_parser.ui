@@ -198,31 +198,55 @@
    </property>
   </action>
   <action name="actionFlip_bx">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip bx</string>
    </property>
   </action>
   <action name="actionFlip_by">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip by</string>
    </property>
   </action>
   <action name="actionFlip_bz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+   </property>
    <property name="text">
     <string>Flip bz</string>
    </property>
   </action>
   <action name="actionSwap_bx_by">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap bx by</string>
    </property>
   </action>
   <action name="actionSwap_bx_bz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap bx bz</string>
    </property>
   </action>
   <action name="actionSwap_by_bz">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+   </property>
    <property name="text">
     <string>Swap by bz</string>
    </property>
