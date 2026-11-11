@@ -158,8 +158,7 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->template_list->addItem(each.stem().string().c_str());
     ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(0);
-    for(auto* batch : {ui->tract_nifti_batch,ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,
-                       ui->conn_nifti_batch,ui->conn_dicom_batch})
+    for(auto* batch : {ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,ui->conn_dicom_batch})
         batch->hide(); // until its stage's "Batch" toggle is checked
 
     {
@@ -1561,6 +1560,17 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             QMessageBox::information(this,QApplication::applicationName(),
                 dicom_error.empty() ? "Finished." : QString::fromStdString("Finished with warnings:\n"+dicom_error));
         return true;
+    }
+
+    if(cmd[0] == "import_nifti_folder")
+    {
+        // one folder: a BIDS dataset (sub-* folders) goes to its derivatives folder, any other folder gets an SRC next to each NIfTI
+        auto dir = select_dir("Open NIfTI or BIDS Folder");
+        if(dir.isEmpty())
+            return true;
+        if(tipl::search_dirs(tipl::qt::to_path(dir),"sub-*").empty())
+            return command({"nifti_dir_to_src",dir.toStdString()},source);
+        return command({"bids_to_src",dir.toStdString(),(QDir(dir).path()+"/derivatives").toStdString()},source);
     }
 
     if(cmd[0] == "bids_to_src")
