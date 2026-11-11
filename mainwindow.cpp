@@ -539,9 +539,12 @@ void MainWindow::open_src_at(int row,int)
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
-    // each page's three stage cards stack when the window is too narrow to show them side by side
+    // each page's three stage cards stack, with the arrows between them pointing down, when the window is too narrow
+    bool stack = event->size().width() < 1100;
     for(auto* row : {ui->tract_stage_row,ui->conn_stage_row})
-        row->setDirection(event->size().width() < 1100 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+        row->setDirection(stack ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    for(auto* arrow : {ui->tract_arrow_1,ui->tract_arrow_2,ui->conn_arrow_1,ui->conn_arrow_2})
+        arrow->setText(QString(QChar(stack ? 0x2193 : 0x2192))); // down or right arrow
     QMainWindow::resizeEvent(event);
 }
 

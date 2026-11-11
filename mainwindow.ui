@@ -641,6 +641,15 @@ QLabel#tract_reconstruction_badge {
 }
 QLabel#tract_tracking_badge {
     background-color: #f59e0b;
+}
+QLabel#tract_arrow_1,
+QLabel#tract_arrow_2 {
+    color: #9aa3ad;
+    background-color: transparent;
+    font-size: 18pt;
+    font-weight: bold;
+    min-width: 22px;
+    min-height: 22px;
 }</string>
          </property>
          <layout class="QHBoxLayout" name="tractography_layout">
@@ -712,7 +721,7 @@ QLabel#tract_tracking_badge {
                </widget>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="tract_stage_row" stretch="1,1,1">
+               <layout class="QHBoxLayout" name="tract_stage_row" stretch="1,0,1,0,1">
                 <property name="spacing">
                  <number>10</number>
                 </property>
@@ -1102,6 +1111,22 @@ QLabel#tract_tracking_badge {
                  </widget>
                 </item>
                 <item>
+                 <widget class="QLabel" name="tract_arrow_1">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>→</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QFrame" name="tract_reconstruction_stage">
                   <layout class="QVBoxLayout" name="tract_reconstruction_layout">
                    <property name="spacing">
@@ -1260,6 +1285,22 @@ QLabel#tract_tracking_badge {
                     </spacer>
                    </item>
                   </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="tract_arrow_2">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>→</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
                  </widget>
                 </item>
                 <item>
@@ -1986,6 +2027,15 @@ QLabel#conn_db_badge {
 }
 QLabel#conn_analysis_badge {
     background-color: #ef4444;
+}
+QLabel#conn_arrow_1,
+QLabel#conn_arrow_2 {
+    color: #9aa3ad;
+    background-color: transparent;
+    font-size: 18pt;
+    font-weight: bold;
+    min-width: 22px;
+    min-height: 22px;
 }</string>
          </property>
          <layout class="QVBoxLayout" name="tab_conn_layout" stretch="0,0,0,1">
@@ -2022,7 +2072,7 @@ QLabel#conn_analysis_badge {
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="conn_stage_row" stretch="1,1,1">
+           <layout class="QHBoxLayout" name="conn_stage_row" stretch="1,0,1,0,1">
             <property name="spacing">
              <number>10</number>
             </property>
@@ -2128,6 +2178,22 @@ QLabel#conn_analysis_badge {
                 </spacer>
                </item>
               </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="conn_arrow_1">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>→</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
              </widget>
             </item>
             <item>
@@ -2254,6 +2320,22 @@ QLabel#conn_analysis_badge {
                 </spacer>
                </item>
               </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="conn_arrow_2">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>→</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
              </widget>
             </item>
             <item>
