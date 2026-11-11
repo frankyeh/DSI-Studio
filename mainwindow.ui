@@ -292,15 +292,6 @@ Tractography</string>
               <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
             </property>
            </item>
-           <item>
-            <property name="text">
-             <string>Setup</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
-            </property>
-           </item>
           </widget>
          </item>
          <item>
@@ -406,9 +397,7 @@ QFrame#tract_recent_panel {
     border: 1px solid #dddddf;
     border-radius: 9px;
 }
-QLabel#recent_files_title,
-QLabel#label_2,
-QLabel#label_3 {
+QLabel#recent_files_title {
     background-color: transparent;
 }
 QFrame#recent_src_card,
@@ -515,10 +504,7 @@ QLabel#tract_connectometry_title {
     font-weight: bold;
 }
 QLabel#tract_workflow_hint,
-QLabel#tract_input_hint,
 QLabel#nifti_folder_hint,
-QLabel#tract_reconstruction_hint,
-QLabel#tract_tracking_hint,
 QLabel#tract_connectometry_hint {
     color: #67676c;
 }
@@ -613,6 +599,7 @@ QFrame#tract_tracking_stage QPushButton#T1WFiberTracking {
     text-align: center;
 }
 QFrame#tract_input_stage QPushButton#tract_input_batch_toggle,
+QFrame#tract_input_stage QPushButton#tract_import_batch_toggle,
 QFrame#tract_reconstruction_stage QPushButton#tract_reconstruction_batch_toggle,
 QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
     color: #2563eb;
@@ -624,6 +611,24 @@ QFrame#tract_tracking_stage QPushButton#tract_tracking_batch_toggle {
 }
 QTabWidget#recent_tabs::pane {
     border: 0px;
+}
+QTabWidget#recent_tabs QTabBar::tab {
+    color: #4f4f54;
+    background-color: #f1f3f6;
+    border: 1px solid #dfe3e8;
+    border-radius: 12px;
+    padding: 4px 18px;
+    margin: 0px 6px 6px 0px;
+    min-width: 72px;
+}
+QTabWidget#recent_tabs QTabBar::tab:selected {
+    color: #ffffff;
+    background-color: #2563eb;
+    border-color: #2563eb;
+    font-weight: bold;
+}
+QTabWidget#recent_tabs QTabBar::tab:hover:!selected {
+    background-color: #e6e9ef;
 }
 QLabel#tract_input_badge,
 QLabel#tract_reconstruction_badge,
@@ -786,25 +791,6 @@ QLabel#tract_arrow_2 {
                       <widget class="QLabel" name="label_45">
                        <property name="text">
                         <string>Import</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="tract_input_hint">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
-                         <horstretch>1</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>NIFTI (.nii/.nii.gz), DICOM (.dcm), 2dseq, and Varian (.fdf) → SRC files (*.sz)</string>
-                       </property>
-                       <property name="textFormat">
-                        <enum>Qt::AutoText</enum>
-                       </property>
-                       <property name="wordWrap">
-                        <bool>true</bool>
                        </property>
                       </widget>
                      </item>
@@ -1107,6 +1093,57 @@ QLabel#tract_arrow_2 {
                      </widget>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QPushButton" name="tract_import_batch_toggle">
+                     <property name="text">
+                      <string>▸ Batch</string>
+                     </property>
+                     <property name="checkable">
+                      <bool>true</bool>
+                     </property>
+                     <property name="flat">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QFrame" name="tract_import_batch">
+                     <layout class="QGridLayout" name="tract_import_batch_layout">
+                      <property name="spacing">
+                       <number>6</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item row="0" column="0">
+                       <widget class="QPushButton" name="NII_qc">
+                        <property name="statusTip">
+                         <string>run show_qc_nii</string>
+                        </property>
+                        <property name="text">
+                         <string>NIFTI quality control...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+                        </property>
+                        <property name="toolTip">
+                         <string>Check NIfTI DWI files (*.nii, *.nii.gz) before conversion</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
                   </layout>
                  </widget>
                 </item>
@@ -1175,16 +1212,6 @@ QLabel#tract_arrow_2 {
                       <widget class="QLabel" name="label_17">
                        <property name="text">
                         <string>Reconstruct</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="tract_reconstruction_hint">
-                       <property name="text">
-                        <string>SRC files (*.sz) → FIB files (*.fz)</string>
-                       </property>
-                       <property name="wordWrap">
-                        <bool>true</bool>
                        </property>
                       </widget>
                      </item>
@@ -1265,6 +1292,23 @@ QLabel#tract_arrow_2 {
                         </property>
                         <property name="text">
                          <string>Batch SRC → FIB</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QPushButton" name="SRC_qc">
+                        <property name="statusTip">
+                         <string>run show_qc_src</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>Select SRC files to run quality control</string>
+                        </property>
+                        <property name="text">
+                         <string>SRC quality control...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
                         </property>
                        </widget>
                       </item>
@@ -1352,16 +1396,6 @@ QLabel#tract_arrow_2 {
                       <widget class="QLabel" name="label_28">
                        <property name="text">
                         <string>Track</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="tract_tracking_hint">
-                       <property name="text">
-                        <string>FIB files (*.fz) → tractography (*.tt.gz)</string>
-                       </property>
-                       <property name="wordWrap">
-                        <bool>true</bool>
                        </property>
                       </widget>
                      </item>
@@ -1481,6 +1515,23 @@ QLabel#tract_arrow_2 {
                         </property>
                        </widget>
                       </item>
+                      <item row="1" column="0">
+                       <widget class="QPushButton" name="FIB_qc">
+                        <property name="statusTip">
+                         <string>run show_qc_fib</string>
+                        </property>
+                        <property name="toolTip">
+                         <string>Select FIB files to run quality control</string>
+                        </property>
+                        <property name="text">
+                         <string>FIB quality control...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="icons.qrc">
+                          <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+                        </property>
+                       </widget>
+                      </item>
                      </layout>
                     </widget>
                    </item>
@@ -1573,6 +1624,9 @@ QLabel#tract_arrow_2 {
                      <property name="currentIndex">
                       <number>0</number>
                      </property>
+                     <property name="documentMode">
+                      <bool>true</bool>
+                     </property>
                      <widget class="QWidget" name="recent_fib_page">
                       <attribute name="title">
                        <string>FIB files (*.fz)</string>
@@ -1613,18 +1667,6 @@ QLabel#tract_arrow_2 {
                           </property>
                           <item>
                            <layout class="QHBoxLayout" name="recent_fib_header">
-                            <item>
-                             <widget class="QLabel" name="label_2">
-                              <property name="font">
-                               <font>
-                                <bold>true</bold>
-                               </font>
-                              </property>
-                              <property name="text">
-                               <string>FIB files (*.fz)</string>
-                              </property>
-                             </widget>
-                            </item>
                             <item>
                              <spacer name="recent_fib_header_spacer">
                               <property name="orientation">
@@ -1750,18 +1792,6 @@ QLabel#tract_arrow_2 {
                           </property>
                           <item>
                            <layout class="QHBoxLayout" name="recent_src_header">
-                            <item>
-                             <widget class="QLabel" name="label_3">
-                              <property name="font">
-                               <font>
-                                <bold>true</bold>
-                               </font>
-                              </property>
-                              <property name="text">
-                               <string>SRC files (*.sz)</string>
-                              </property>
-                             </widget>
-                            </item>
                             <item>
                              <spacer name="recent_src_header_spacer">
                               <property name="orientation">
@@ -2585,6 +2615,11 @@ QWidget#tab_4 QComboBox {
 QLabel#tools_page_hint,
 QLabel#tools_view_image_hint {
     color: #67676c;
+}
+QFrame#tools_appearance_footer {
+    border: 0px;
+    border-top: 1px solid #dddddf;
+    padding-top: 8px;
 }</string>
          </property>
          <layout class="QVBoxLayout" name="tools_page_layout">
@@ -2735,81 +2770,6 @@ QLabel#tools_view_image_hint {
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QGroupBox" name="tools_quality_group">
-              <property name="title">
-               <string>Quality control</string>
-              </property>
-              <layout class="QVBoxLayout" name="tools_quality_layout">
-               <property name="spacing">
-                <number>6</number>
-               </property>
-               <property name="leftMargin">
-                <number>10</number>
-               </property>
-               <property name="topMargin">
-                <number>14</number>
-               </property>
-               <property name="rightMargin">
-                <number>10</number>
-               </property>
-               <property name="bottomMargin">
-                <number>10</number>
-               </property>
-               <item>
-                <widget class="QPushButton" name="NII_qc">
-                 <property name="statusTip">
-                  <string>run show_qc_nii</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Select NIFTI files to run quality control</string>
-                 </property>
-                 <property name="text">
-                  <string>NIFTI quality control...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="SRC_qc">
-                 <property name="statusTip">
-                  <string>run show_qc_src</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Select SRC files to run quality control</string>
-                 </property>
-                 <property name="text">
-                  <string>SRC quality control...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="FIB_qc">
-                 <property name="statusTip">
-                  <string>run show_qc_fib</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Select FIB files to run quality control</string>
-                 </property>
-                 <property name="text">
-                  <string>FIB quality control...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item row="1" column="0">
              <widget class="QGroupBox" name="tools_utilities_group">
               <property name="title">
                <string>Data utilities</string>
@@ -2899,69 +2859,23 @@ QLabel#tools_view_image_hint {
             </property>
            </spacer>
           </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_setup">
-         <property name="styleSheet">
-          <string notr="true">QWidget#tab_setup {
-    color: #202124;
-    background-color: #ffffff;
-}
-QWidget#tab_setup QGroupBox {
-    background-color: #f7f7f8;
-    border: 1px solid #dddddf;
-    border-radius: 8px;
-    margin-top: 9px;
-}
-QWidget#tab_setup QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 10px;
-    padding: 0px 4px;
-    font-weight: bold;
-}
-QWidget#tab_setup QPushButton,
-QWidget#tab_setup QComboBox {
-    color: #202124;
-    background-color: #ffffff;
-    border: 1px solid #d9d9dc;
-    border-radius: 6px;
-    padding: 5px 9px;
-    min-height: 28px;
-}</string>
-         </property>
-         <layout class="QVBoxLayout" name="tab_setup_layout">
-          <property name="spacing">
-           <number>9</number>
-          </property>
-          <property name="leftMargin">
-           <number>12</number>
-          </property>
-          <property name="topMargin">
-           <number>12</number>
-          </property>
-          <property name="rightMargin">
-           <number>12</number>
-          </property>
-          <property name="bottomMargin">
-           <number>12</number>
-          </property>
           <item>
-           <widget class="QGroupBox" name="tools_appearance_group">
-            <property name="title">
-             <string>Appearance</string>
-            </property>
-            <layout class="QVBoxLayout" name="tools_appearance_layout">
+           <widget class="QFrame" name="tools_appearance_footer">
+            <layout class="QHBoxLayout" name="tools_appearance_footer_layout">
+             <property name="spacing">
+              <number>8</number>
+             </property>
              <property name="leftMargin">
-              <number>10</number>
+              <number>0</number>
              </property>
              <property name="topMargin">
-              <number>14</number>
+              <number>0</number>
              </property>
              <property name="rightMargin">
-              <number>10</number>
+              <number>0</number>
              </property>
              <property name="bottomMargin">
-              <number>10</number>
+              <number>0</number>
              </property>
              <item>
               <widget class="QLabel" name="tools_style_label">
@@ -2971,56 +2885,36 @@ QWidget#tab_setup QComboBox {
               </widget>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="tools_style_layout">
-               <property name="spacing">
-                <number>6</number>
-               </property>
-               <item>
-                <widget class="QComboBox" name="styles"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="clear_settings">
-                 <property name="toolTip">
-                  <string>Reset DSI Studio settings</string>
-                 </property>
-                 <property name="statusTip">
-                  <string>run reset_settings</string>
-                 </property>
-                 <property name="text">
-                  <string>Reset</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              <widget class="QComboBox" name="styles"/>
              </item>
              <item>
-              <spacer name="tools_appearance_spacer">
+              <spacer name="tools_appearance_footer_spacer">
                <property name="orientation">
-                <enum>Qt::Vertical</enum>
+                <enum>Qt::Horizontal</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>20</width>
-                 <height>58</height>
+                 <width>40</width>
+                 <height>20</height>
                 </size>
                </property>
               </spacer>
              </item>
+             <item>
+              <widget class="QPushButton" name="clear_settings">
+               <property name="toolTip">
+                <string>Reset DSI Studio settings</string>
+               </property>
+               <property name="statusTip">
+                <string>run reset_settings</string>
+               </property>
+               <property name="text">
+                <string>Reset settings</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
-          </item>
-          <item>
-           <spacer name="tab_setup_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </widget>
@@ -3058,6 +2952,12 @@ QWidget#tab_setup QComboBox {
    <sender>tract_tracking_batch_toggle</sender>
    <signal>toggled(bool)</signal>
    <receiver>tract_tracking_batch</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>tract_import_batch_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tract_import_batch</receiver>
    <slot>setVisible(bool)</slot>
   </connection>
  </connections>
