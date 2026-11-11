@@ -53,90 +53,6 @@
      <number>0</number>
     </property>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,1,0">
-      <property name="spacing">
-       <number>0</number>
-      </property>
-      <property name="leftMargin">
-       <number>5</number>
-      </property>
-      <property name="rightMargin">
-       <number>5</number>
-      </property>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-       </layout>
-      </item>
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Work Dir</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="workDir">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="editable">
-         <bool>false</bool>
-        </property>
-        <property name="currentIndex">
-         <number>-1</number>
-        </property>
-        <property name="sizeAdjustPolicy">
-         <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="browseDir">
-        <property name="statusTip">
-         <string>run set_work_dir</string>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="icons.qrc">
-          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
      <layout class="QHBoxLayout" name="main_body_layout">
       <property name="spacing">
        <number>0</number>
@@ -2879,6 +2795,155 @@ QFrame#tools_appearance_footer {
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QFrame" name="workdir_bar">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QFrame#workdir_bar {
+    background-color: #f6f7f9;
+    border: 0px;
+    border-top: 1px solid #e3e6ea;
+}
+QLabel#label {
+    color: #4f4f54;
+    background-color: #e9ecf1;
+    border: 1px solid #dfe3e8;
+    border-radius: 11px;
+    padding: 3px 10px;
+    font-weight: bold;
+}
+QComboBox#workDir {
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #cfd5dd;
+    border-radius: 13px;
+    padding: 4px 12px;
+    min-height: 22px;
+}
+QComboBox#workDir:hover {
+    border-color: #9fb3d9;
+}
+QComboBox#workDir QAbstractItemView {
+    background-color: #ffffff;
+    border: 1px solid #cfd5dd;
+    selection-background-color: #e0e7ff;
+    selection-color: #1e3a8a;
+}
+QPushButton#browseDir {
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #cfd5dd;
+    border-radius: 13px;
+    padding: 4px 14px;
+    min-height: 22px;
+}
+QPushButton#browseDir:hover {
+    background-color: #eef2fb;
+    border-color: #9fb3d9;
+}
+QPushButton#browseDir:pressed {
+    background-color: #e0e7ff;
+}
+QPushButton#browseDir:disabled {
+    color: #9a9a9f;
+    background-color: #f1f1f3;
+}</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,1,0">
+       <property name="bottomMargin">
+        <number>7</number>
+       </property>
+       <property name="rightMargin">
+        <number>12</number>
+       </property>
+       <property name="topMargin">
+        <number>7</number>
+       </property>
+       <property name="leftMargin">
+        <number>12</number>
+       </property>
+       <property name="spacing">
+        <number>8</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Work Dir</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="workDir">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="editable">
+          <bool>false</bool>
+         </property>
+         <property name="currentIndex">
+          <number>-1</number>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="browseDir">
+         <property name="statusTip">
+          <string>run set_work_dir</string>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="icon">
+          <iconset resource="icons.qrc">
+           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+         </property>
+         <property name="text">
+          <string>Browse...</string>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </item>
    </layout>
   </widget>
