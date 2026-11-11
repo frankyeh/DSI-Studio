@@ -124,7 +124,7 @@ https://brain.labsolver.org
 A typical GUI workflow is:
 
 1. **Import diffusion data:** `File → Open → DICOM/NIfTI`
-2. **Convert to `.sz`:** use **Step T1** conversion
+2. **Convert to `.sz`:** use **① Import** (NIfTI, DICOM, or 2dseq/FDF) on the Tractography page
 3. **Reconstruct to `.fz`:** choose a reconstruction method (e.g., DTI, GQI)
 4. **Run tractography:** use ROIs, atlas-based bundles, or your own definitions
 5. **Export:** tracts, maps, connectomes, and summary reports
