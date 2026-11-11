@@ -309,11 +309,34 @@ QLabel#tract_workflow_hint,
 QLabel#tract_input_hint,
 QLabel#tract_reconstruction_hint,
 QLabel#tract_tracking_hint,
-QLabel#tract_connectometry_hint,
-QLabel#tract_direct_header,
-QLabel#tract_dicom_header,
-QLabel#tract_batch_header {
+QLabel#tract_connectometry_hint {
     color: #67676c;
+}
+QTabWidget#tract_input_tabs::pane {
+    background-color: #ffffff;
+    border: 1px solid #dddddf;
+    border-radius: 7px;
+    top: -1px;
+}
+QTabWidget#tract_input_tabs QWidget#tract_nifti_tab,
+QTabWidget#tract_input_tabs QWidget#tract_dicom_tab,
+QTabWidget#tract_input_tabs QWidget#tract_others_tab {
+    background-color: transparent;
+}
+QTabWidget#tract_input_tabs QTabBar::tab {
+    color: #4f4f54;
+    background-color: #f1f1f3;
+    border: 1px solid #dddddf;
+    border-bottom: 0px;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    padding: 4px 14px;
+    margin-right: 2px;
+}
+QTabWidget#tract_input_tabs QTabBar::tab:selected {
+    color: #202124;
+    background-color: #ffffff;
+    font-weight: bold;
 }
 QWidget#tab QScrollBar:vertical {
     background-color: transparent;
@@ -777,193 +800,234 @@ QWidget#tab QScrollBar::sub-page {
                  </layout>
                 </item>
                 <item>
-                 <layout class="QGridLayout" name="tract_input_actions">
-                  <property name="horizontalSpacing">
-                   <number>6</number>
+                 <widget class="QTabWidget" name="tract_input_tabs">
+                  <property name="currentIndex">
+                   <number>0</number>
                   </property>
-                  <property name="verticalSpacing">
-                   <number>5</number>
+                  <property name="documentMode">
+                   <bool>false</bool>
                   </property>
-                  <item row="0" column="0">
-                   <widget class="QLabel" name="tract_direct_header">
-                    <property name="text">
-                     <string>Direct conversion</string>
+                  <widget class="QWidget" name="tract_nifti_tab">
+                   <attribute name="title">
+                    <string>NIFTI</string>
+                   </attribute>
+                   <layout class="QGridLayout" name="tract_nifti_tab_layout">
+                    <property name="leftMargin">
+                     <number>6</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="0" column="1">
-                   <widget class="QLabel" name="tract_dicom_header">
-                    <property name="text">
-                     <string>DICOM preparation</string>
+                    <property name="topMargin">
+                     <number>6</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="0" column="2">
-                   <widget class="QLabel" name="tract_batch_header">
-                    <property name="text">
-                     <string>Batch conversion</string>
+                    <property name="rightMargin">
+                     <number>6</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="0">
-                   <widget class="QPushButton" name="OpenDWI_NIFTI">
-                    <property name="statusTip">
-                     <string>run open_dwi_nifti</string>
+                    <property name="bottomMargin">
+                     <number>6</number>
                     </property>
-                    <property name="toolTip">
-                     <string>Convert one NIFTI file to SRC</string>
+                    <property name="horizontalSpacing">
+                     <number>6</number>
                     </property>
-                    <property name="text">
-                     <string>Step T1: NIFTI → SRC</string>
+                    <property name="verticalSpacing">
+                     <number>5</number>
                     </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    <item row="0" column="0">
+                     <widget class="QPushButton" name="OpenDWI_NIFTI">
+                      <property name="statusTip">
+                       <string>run open_dwi_nifti</string>
+                      </property>
+                      <property name="toolTip">
+                       <string>Convert one NIFTI file to SRC</string>
+                      </property>
+                      <property name="text">
+                       <string>Step T1: NIFTI → SRC</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                      <property name="autoDefault">
+                       <bool>false</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QPushButton" name="nii2src_bids">
+                      <property name="toolTip">
+                       <string>Convert a BIDS folder to SRC files</string>
+                      </property>
+                      <property name="statusTip">
+                       <string>run bids_to_src</string>
+                      </property>
+                      <property name="text">
+                       <string>Step B2a: BIDS NIFTI → SRC</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QPushButton" name="nii2src_sf">
+                      <property name="toolTip">
+                       <string>Convert a folder of NIFTI files to SRC</string>
+                      </property>
+                      <property name="statusTip">
+                       <string>run nifti_dir_to_src</string>
+                      </property>
+                      <property name="text">
+                       <string>Step B2b: NIFTI folder → SRC</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                  <widget class="QWidget" name="tract_dicom_tab">
+                   <attribute name="title">
+                    <string>DICOM</string>
+                   </attribute>
+                   <layout class="QGridLayout" name="tract_dicom_tab_layout">
+                    <property name="leftMargin">
+                     <number>6</number>
                     </property>
-                    <property name="autoDefault">
-                     <bool>false</bool>
+                    <property name="topMargin">
+                     <number>6</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="0">
-                   <widget class="QPushButton" name="OpenDWI_DICOM">
-                    <property name="statusTip">
-                     <string>run open_dwi_dicom</string>
+                    <property name="rightMargin">
+                     <number>6</number>
                     </property>
-                    <property name="toolTip">
-                     <string>Convert DICOM files to SRC</string>
+                    <property name="bottomMargin">
+                     <number>6</number>
                     </property>
-                    <property name="autoFillBackground">
-                     <bool>false</bool>
+                    <property name="horizontalSpacing">
+                     <number>6</number>
                     </property>
-                    <property name="text">
-                     <string>Step T1: DICOM → SRC</string>
+                    <property name="verticalSpacing">
+                     <number>5</number>
                     </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    <item row="0" column="0">
+                     <widget class="QPushButton" name="OpenDWI_DICOM">
+                      <property name="statusTip">
+                       <string>run open_dwi_dicom</string>
+                      </property>
+                      <property name="toolTip">
+                       <string>Convert DICOM files to SRC</string>
+                      </property>
+                      <property name="autoFillBackground">
+                       <bool>false</bool>
+                      </property>
+                      <property name="text">
+                       <string>Step T1: DICOM → SRC</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                      <property name="autoDefault">
+                       <bool>false</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QPushButton" name="RenameDICOM">
+                      <property name="toolTip">
+                       <string>Organize DICOM file names</string>
+                      </property>
+                      <property name="statusTip">
+                       <string>run rename_dicom</string>
+                      </property>
+                      <property name="text">
+                       <string>Step B1a: Rename DICOM files</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QPushButton" name="dicom2nii">
+                      <property name="toolTip">
+                       <string>Convert a DICOM folder to SRC</string>
+                      </property>
+                      <property name="statusTip">
+                       <string>run convert_dicom_dir</string>
+                      </property>
+                      <property name="text">
+                       <string>Step B1c: DICOM folder → SRC</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QPushButton" name="RenameDICOMDir">
+                      <property name="toolTip">
+                       <string>Rename DICOM files across folders</string>
+                      </property>
+                      <property name="statusTip">
+                       <string>run rename_dicom_dir</string>
+                      </property>
+                      <property name="text">
+                       <string>Step B1b: Rename DICOM folders</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                  <widget class="QWidget" name="tract_others_tab">
+                   <attribute name="title">
+                    <string>Others (2dseq, FDF)</string>
+                   </attribute>
+                   <layout class="QGridLayout" name="tract_others_tab_layout">
+                    <property name="leftMargin">
+                     <number>6</number>
                     </property>
-                    <property name="autoDefault">
-                     <bool>false</bool>
+                    <property name="topMargin">
+                     <number>6</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="3" column="0">
-                   <widget class="QPushButton" name="OpenDWI_2dseq">
-                    <property name="statusTip">
-                     <string>run open_dwi_2dseq</string>
+                    <property name="rightMargin">
+                     <number>6</number>
                     </property>
-                    <property name="toolTip">
-                     <string>Convert 2dseq or Varian FDF to SRC</string>
+                    <property name="bottomMargin">
+                     <number>6</number>
                     </property>
-                    <property name="text">
-                     <string>Step T1: 2dseq / FDF → SRC</string>
+                    <property name="horizontalSpacing">
+                     <number>6</number>
                     </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    <property name="verticalSpacing">
+                     <number>5</number>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="1">
-                   <widget class="QPushButton" name="RenameDICOM">
-                    <property name="toolTip">
-                     <string>Organize DICOM file names</string>
-                    </property>
-                    <property name="statusTip">
-                     <string>run rename_dicom</string>
-                    </property>
-                    <property name="text">
-                     <string>Step B1a: Rename DICOM files</string>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="1">
-                   <widget class="QPushButton" name="RenameDICOMDir">
-                    <property name="toolTip">
-                     <string>Rename DICOM files across folders</string>
-                    </property>
-                    <property name="statusTip">
-                     <string>run rename_dicom_dir</string>
-                    </property>
-                    <property name="text">
-                     <string>Step B1b: Rename DICOM folders</string>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="3" column="1">
-                   <widget class="QPushButton" name="dicom2nii">
-                    <property name="toolTip">
-                     <string>Convert a DICOM folder to SRC</string>
-                    </property>
-                    <property name="statusTip">
-                     <string>run convert_dicom_dir</string>
-                    </property>
-                    <property name="text">
-                     <string>Step B1c: DICOM folder → SRC</string>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="2">
-                   <widget class="QPushButton" name="nii2src_bids">
-                    <property name="toolTip">
-                     <string>Convert a BIDS folder to SRC files</string>
-                    </property>
-                    <property name="statusTip">
-                     <string>run bids_to_src</string>
-                    </property>
-                    <property name="text">
-                     <string>Step B2a: BIDS NIFTI → SRC</string>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="2">
-                   <widget class="QPushButton" name="nii2src_sf">
-                    <property name="toolTip">
-                     <string>Convert a folder of NIFTI files to SRC</string>
-                    </property>
-                    <property name="statusTip">
-                     <string>run nifti_dir_to_src</string>
-                    </property>
-                    <property name="text">
-                     <string>Step B2b: NIFTI folder → SRC</string>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="icons.qrc">
-                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="3" column="2">
-                   <spacer name="tract_batch_actions_spacer">
-                    <property name="orientation">
-                     <enum>Qt::Vertical</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>20</width>
-                      <height>42</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                 </layout>
+                    <item row="0" column="0">
+                     <widget class="QPushButton" name="OpenDWI_2dseq">
+                      <property name="statusTip">
+                       <string>run open_dwi_2dseq</string>
+                      </property>
+                      <property name="toolTip">
+                       <string>Convert 2dseq or Varian FDF to SRC</string>
+                      </property>
+                      <property name="text">
+                       <string>Step T1: 2dseq / FDF → SRC</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="icons.qrc">
+                        <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </widget>
                 </item>
                </layout>
               </widget>
