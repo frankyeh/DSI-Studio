@@ -2400,7 +2400,7 @@ QLabel#conn_arrow_2 {
                    <normaloff>:/icons/icons/connectometry.svg</normaloff>:/icons/icons/connectometry.svg</iconset>
                  </property>
                  <property name="text">
-                  <string>Correlational Tractography (*.dz)...</string>
+                  <string>Database (*.dz)</string>
                  </property>
                 </widget>
                </item>
