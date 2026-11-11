@@ -201,7 +201,17 @@ Tractography</string>
            </item>
            <item>
             <property name="text">
-             <string>Tools</string>
+             <string>Image
+Processing</string>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/image_editor.svg</normaloff>:/icons/icons/image_editor.svg</iconset>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>More</string>
             </property>
             <property name="icon">
              <iconset resource="icons.qrc">
@@ -259,6 +269,29 @@ Tractography</string>
               <property name="icon">
                <iconset resource="icons.qrc">
                 <normaloff>:/icons/icons/fiber_data_hub.svg</normaloff>:/icons/icons/fiber_data_hub.svg</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="xnat_download">
+              <property name="statusTip">
+               <string>run open_xnat</string>
+              </property>
+              <property name="toolTip">
+               <string>Connect to an XNAT server to download and process data</string>
+              </property>
+              <property name="icon">
+               <iconset resource="icons.qrc">
+                <normaloff>:/icons/icons/xnat_download.svg</normaloff>:/icons/icons/xnat_download.svg</iconset>
+              </property>
+              <property name="text">
+               <string>XNAT Download</string>
               </property>
               <property name="iconSize">
                <size>
@@ -1923,6 +1956,18 @@ QWidget#tab_conn QPushButton {
     min-height: 32px;
     text-align: left;
 }
+QFrame#conn_import_stage QPushButton#conn_import_more_toggle {
+    color: #2563eb;
+    background-color: transparent;
+    border: 0px;
+    min-height: 0px;
+    padding: 2px 0px;
+    font-weight: bold;
+}
+QFrame#conn_import_more {
+    background-color: transparent;
+    border: 0px;
+}
 QWidget#tab_conn QPushButton:hover {
     background-color: #f1f1f3;
     border-color: #bfc0c4;
@@ -2205,6 +2250,54 @@ QLabel#conn_arrow_2 {
                   </widget>
                  </item>
                 </layout>
+               </item>
+               <item>
+                <widget class="QPushButton" name="conn_import_more_toggle">
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>▸ More...</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QFrame" name="conn_import_more">
+                 <layout class="QVBoxLayout" name="conn_import_more_layout">
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="averagefib">
+                    <property name="statusTip">
+                     <string>run create_average</string>
+                    </property>
+                    <property name="toolTip">
+                     <string>Select FIB or NIFTI files for averaging</string>
+                    </property>
+                    <property name="text">
+                     <string>Create population average...</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/average_fib.svg</normaloff>:/icons/icons/average_fib.svg</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
                </item>
                <item>
                 <spacer name="conn_import_stage_spacer">
@@ -2612,19 +2705,26 @@ QLabel#conn_arrow_2 {
     color: #202124;
     background-color: transparent;
 }
-QFrame#tools_view_image_card,
-QWidget#tab_4 QGroupBox {
-    background-color: rgba(247,247,248,0.45);
+QFrame#tools_editor_card,
+QFrame#tools_linear_card,
+QFrame#tools_nonlinear_card {
+    background-color: rgba(250,250,250,0.45);
     border: 1px solid #dddddf;
-    border-radius: 8px;
+    border-radius: 9px;
 }
-QWidget#tab_4 QGroupBox {
-    margin-top: 9px;
+QFrame#tools_editor_card {
+    border-top: 4px solid #0ea5e9;
 }
-QWidget#tab_4 QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 10px;
-    padding: 0px 4px;
+QFrame#tools_linear_card {
+    border-top: 4px solid #10b981;
+}
+QFrame#tools_nonlinear_card {
+    border-top: 4px solid #f59e0b;
+}
+QLabel#tools_editor_title,
+QLabel#tools_linear_title,
+QLabel#tools_nonlinear_title {
+    font-size: 10pt;
     font-weight: bold;
 }
 QWidget#tab_4 QPushButton {
@@ -2643,17 +2743,24 @@ QWidget#tab_4 QPushButton:hover {
 QWidget#tab_4 QPushButton:pressed {
     background-color: #e2e2e4;
 }
-QPushButton#view_image {
+QWidget#tab_4 QPushButton#view_image,
+QWidget#tab_4 QPushButton#linear_reg,
+QWidget#tab_4 QPushButton#nonlinear_reg {
     color: #ffffff;
-    background-color: #2f2f2f;
-    border-color: #2f2f2f;
     font-weight: bold;
     text-align: center;
-    min-width: 150px;
 }
-QPushButton#view_image:hover {
-    background-color: #171717;
-    border-color: #171717;
+QWidget#tab_4 QPushButton#view_image {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+}
+QWidget#tab_4 QPushButton#linear_reg {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+QWidget#tab_4 QPushButton#nonlinear_reg {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
 }
 QWidget#tab_4 QComboBox {
     color: #202124;
@@ -2664,16 +2771,60 @@ QWidget#tab_4 QComboBox {
     min-height: 28px;
 }
 QLabel#tools_page_hint,
-QLabel#tools_view_image_hint {
+QLabel#tools_editor_hint,
+QLabel#tools_linear_hint,
+QLabel#tools_nonlinear_hint {
     color: #67676c;
 }
-QFrame#tools_appearance_footer {
+QFrame#tools_recent_card {
+    background-color: rgba(247,247,248,0.45);
+    border: 1px solid #dddddf;
+    border-radius: 9px;
+}
+QFrame#tools_recent_card QPushButton {
+    color: #202124;
+    background-color: #f4f4f5;
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    padding: 5px 9px;
+    min-height: 0px;
+    text-align: center;
+}
+QFrame#tools_recent_card QPushButton:hover {
+    background-color: #e9e9eb;
+    border-color: #c8c8cc;
+}
+QFrame#tools_recent_card QPushButton:pressed {
+    background-color: #dddddf;
+}
+QFrame#tools_recent_card QPushButton[segment="true"] {
+    color: #1e3a8a;
+    background-color: #e0e7ff;
+    border: 1px solid #a5b4fc;
+    border-radius: 11px;
+    padding: 2px 10px;
+    min-height: 20px;
+}
+QTableWidget#recentImage {
+    color: #202124;
+    background-color: transparent;
+    alternate-background-color: rgba(0,0,0,0.025);
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    selection-background-color: #e5e5e7;
+    selection-color: #202124;
+}
+QTableWidget#recentImage QHeaderView::section {
+    color: #4f4f54;
+    background-color: rgba(244,244,245,0.6);
     border: 0px;
-    border-top: 1px solid #dddddf;
-    padding-top: 8px;
+    border-right: 1px solid #e2e2e5;
+    border-bottom: 1px solid #d9d9dc;
+    padding: 2px 5px;
+    font-weight: bold;
 }</string>
          </property>
-         <layout class="QVBoxLayout" name="tools_page_layout">
+         <layout class="QVBoxLayout" name="tools_page_layout" stretch="0,0,0,1">
           <property name="spacing">
            <number>9</number>
           </property>
@@ -2698,200 +2849,407 @@ QFrame#tools_appearance_footer {
              </font>
             </property>
             <property name="text">
-             <string>Tools</string>
+             <string>Image Processing</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="tools_page_hint">
             <property name="text">
-             <string>Open images and run supporting processing utilities.</string>
+             <string>Edit, convert and register images (NIFTI, DICOM, 2dseq, Varian FDF).</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QFrame" name="tools_view_image_card">
-            <layout class="QHBoxLayout" name="tools_view_image_layout">
-             <property name="spacing">
-              <number>12</number>
-             </property>
-             <property name="leftMargin">
-              <number>12</number>
-             </property>
-             <property name="topMargin">
-              <number>10</number>
-             </property>
-             <property name="rightMargin">
-              <number>12</number>
-             </property>
-             <property name="bottomMargin">
-              <number>10</number>
-             </property>
+           <layout class="QHBoxLayout" name="tools_card_row" stretch="1,1,1">
+            <property name="spacing">
+             <number>10</number>
+            </property>
              <item>
-              <widget class="QPushButton" name="view_image">
-               <property name="statusTip">
-                <string>run open_image</string>
-               </property>
-               <property name="toolTip">
-                <string>Open NIFTI, DICOM, 2dseq, or Varian files</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/image_editor.svg</normaloff>:/icons/icons/image_editor.svg</iconset>
-               </property>
-               <property name="text">
-                <string>Image Editor</string>
-               </property>
+              <widget class="QFrame" name="tools_editor_card">
+               <layout class="QVBoxLayout" name="tools_editor_layout">
+                <property name="spacing">
+                 <number>6</number>
+                </property>
+                <property name="leftMargin">
+                 <number>12</number>
+                </property>
+                <property name="topMargin">
+                 <number>10</number>
+                </property>
+                <property name="rightMargin">
+                 <number>12</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>12</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="tools_editor_title">
+                  <property name="text">
+                   <string>Image Editor</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="tools_editor_hint">
+                  <property name="text">
+                   <string>View, edit, crop, resample and convert images, with ROI and mask tools.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="tools_editor_spacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="view_image">
+                  <property name="statusTip">
+                   <string>run open_image</string>
+                  </property>
+                  <property name="toolTip">
+                   <string>Open NIFTI, DICOM, 2dseq, or Varian files</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="icons.qrc">
+                    <normaloff>:/icons/icons/image_editor.svg</normaloff>:/icons/icons/image_editor.svg</iconset>
+                  </property>
+                  <property name="text">
+                   <string>Open image...</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="tools_view_image_hint">
-               <property name="text">
-                <string>Open NIFTI, DICOM, 2dseq, or Varian files for inspection and processing.</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
+              <widget class="QFrame" name="tools_linear_card">
+               <layout class="QVBoxLayout" name="tools_linear_layout">
+                <property name="spacing">
+                 <number>6</number>
+                </property>
+                <property name="leftMargin">
+                 <number>12</number>
+                </property>
+                <property name="topMargin">
+                 <number>10</number>
+                </property>
+                <property name="rightMargin">
+                 <number>12</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>12</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="tools_linear_title">
+                  <property name="text">
+                   <string>Linear Registration</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="tools_linear_hint">
+                  <property name="text">
+                   <string>Rigid or affine alignment of one image to another.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="tools_linear_spacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="linear_reg">
+                  <property name="toolTip">
+                   <string>Perform linear image registration</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="icons.qrc">
+                    <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+                  </property>
+                  <property name="text">
+                   <string>Linear registration...</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
+             </item>
+             <item>
+              <widget class="QFrame" name="tools_nonlinear_card">
+               <layout class="QVBoxLayout" name="tools_nonlinear_layout">
+                <property name="spacing">
+                 <number>6</number>
+                </property>
+                <property name="leftMargin">
+                 <number>12</number>
+                </property>
+                <property name="topMargin">
+                 <number>10</number>
+                </property>
+                <property name="rightMargin">
+                 <number>12</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>12</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="tools_nonlinear_title">
+                  <property name="text">
+                   <string>Nonlinear Registration</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="tools_nonlinear_hint">
+                  <property name="text">
+                   <string>Deformable alignment, e.g. to a template space.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="tools_nonlinear_spacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="nonlinear_reg">
+                  <property name="statusTip">
+                   <string>run open_nonlinear_registration</string>
+                  </property>
+                  <property name="toolTip">
+                   <string>Perform nonlinear image registration</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="icons.qrc">
+                    <normaloff>:/icons/icons/nonlinear_reg.svg</normaloff>:/icons/icons/nonlinear_reg.svg</iconset>
+                  </property>
+                  <property name="text">
+                   <string>Nonlinear registration...</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QFrame" name="tools_recent_card">
+            <layout class="QVBoxLayout" name="tools_recent_layout">
+             <property name="spacing">
+              <number>7</number>
+             </property>
+             <property name="leftMargin">
+              <number>8</number>
+             </property>
+             <property name="topMargin">
+              <number>8</number>
+             </property>
+             <property name="rightMargin">
+              <number>8</number>
+             </property>
+             <property name="bottomMargin">
+              <number>8</number>
+             </property>
+             <item>
+              <layout class="QHBoxLayout" name="tools_recent_header">
+               <item>
+                <widget class="QPushButton" name="tools_recent_toggle">
+                 <property name="text">
+                  <string>Recent Images</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                 <property name="segment" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="tools_recent_header_spacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="open_selected_image">
+                 <property name="toolTip">
+                  <string>Open the selected image</string>
+                 </property>
+                 <property name="text">
+                  <string>Open</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="icons.qrc">
+                   <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="clear_image_history">
+                 <property name="statusTip">
+                  <string>run clear_recent_image</string>
+                 </property>
+                 <property name="text">
+                  <string>Clear</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QTableWidget" name="recentImage">
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="showGrid">
+               <bool>false</bool>
+              </property>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderVisible">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="verticalHeaderMinimumSectionSize">
+               <number>18</number>
+              </attribute>
+              <attribute name="verticalHeaderDefaultSectionSize">
+               <number>20</number>
+              </attribute>
+              <column>
+               <property name="text">
+                <string>File Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Directory</string>
+               </property>
+              </column>
+             </widget>
              </item>
             </layout>
            </widget>
           </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_more">
+         <property name="styleSheet">
+          <string notr="true">QWidget#tab_more {
+    color: #202124;
+    background-color: transparent;
+}
+QWidget#tab_more QPushButton {
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #d9d9dc;
+    border-radius: 6px;
+    padding: 6px 9px;
+    min-height: 28px;
+    text-align: left;
+}
+QWidget#tab_more QPushButton:hover {
+    background-color: #eeeeef;
+    border-color: #c5c5c9;
+}
+QWidget#tab_more QPushButton:pressed {
+    background-color: #e2e2e4;
+}
+QWidget#tab_more QComboBox {
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #d9d9dc;
+    border-radius: 6px;
+    padding: 5px 8px;
+    min-height: 28px;
+}
+QFrame#tools_appearance_footer {
+    border: 0px;
+    border-top: 1px solid #dddddf;
+    padding-top: 8px;
+}</string>
+         </property>
+         <layout class="QVBoxLayout" name="more_page_layout">
+          <property name="spacing">
+           <number>9</number>
+          </property>
+          <property name="leftMargin">
+           <number>12</number>
+          </property>
+          <property name="topMargin">
+           <number>10</number>
+          </property>
+          <property name="rightMargin">
+           <number>12</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
           <item>
-           <layout class="QGridLayout" name="tools_sections_layout" columnstretch="1,1">
-            <property name="horizontalSpacing">
-             <number>10</number>
+           <widget class="QLabel" name="more_page_title">
+            <property name="font">
+             <font>
+              <pointsize>11</pointsize>
+              <bold>true</bold>
+             </font>
             </property>
-            <property name="verticalSpacing">
-             <number>8</number>
+            <property name="text">
+             <string>More</string>
             </property>
-            <item row="0" column="0">
-             <widget class="QGroupBox" name="tools_registration_group">
-              <property name="title">
-               <string>Registration</string>
-              </property>
-              <layout class="QVBoxLayout" name="tools_registration_layout">
-               <property name="spacing">
-                <number>6</number>
-               </property>
-               <property name="leftMargin">
-                <number>10</number>
-               </property>
-               <property name="topMargin">
-                <number>14</number>
-               </property>
-               <property name="rightMargin">
-                <number>10</number>
-               </property>
-               <property name="bottomMargin">
-                <number>10</number>
-               </property>
-               <item>
-                <widget class="QPushButton" name="linear_reg">
-                 <property name="toolTip">
-                  <string>Perform linear image registration</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
-                 </property>
-                 <property name="text">
-                  <string>Linear registration...</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="nonlinear_reg">
-                 <property name="statusTip">
-                  <string>run open_nonlinear_registration</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Perform nonlinear image registration</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/nonlinear_reg.svg</normaloff>:/icons/icons/nonlinear_reg.svg</iconset>
-                 </property>
-                 <property name="text">
-                  <string>Nonlinear registration...</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QGroupBox" name="tools_utilities_group">
-              <property name="title">
-               <string>Data utilities</string>
-              </property>
-              <layout class="QVBoxLayout" name="tools_utilities_layout">
-               <property name="spacing">
-                <number>6</number>
-               </property>
-               <property name="leftMargin">
-                <number>10</number>
-               </property>
-               <property name="topMargin">
-                <number>14</number>
-               </property>
-               <property name="rightMargin">
-                <number>10</number>
-               </property>
-               <property name="bottomMargin">
-                <number>10</number>
-               </property>
-               <item>
-                <widget class="QPushButton" name="xnat_download">
-                 <property name="statusTip">
-                  <string>run open_xnat</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Connect to an XNAT server to download and process data</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/xnat_download.svg</normaloff>:/icons/icons/xnat_download.svg</iconset>
-                 </property>
-                 <property name="text">
-                  <string>XNAT download...</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="averagefib">
-                 <property name="statusTip">
-                  <string>run create_average</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Select FIB or NIFTI files for averaging</string>
-                 </property>
-                 <property name="text">
-                  <string>Create population average...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/average_fib.svg</normaloff>:/icons/icons/average_fib.svg</iconset>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <spacer name="tools_page_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
+           </widget>
           </item>
           <item>
            <widget class="QFrame" name="tools_appearance_footer">
@@ -2950,6 +3308,13 @@ QFrame#tools_appearance_footer {
             </layout>
            </widget>
           </item>
+          <item>
+           <spacer name="more_page_spacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
        </widget>
@@ -2985,6 +3350,10 @@ QComboBox#workDir {
     border-radius: 13px;
     padding: 4px 12px;
     min-height: 22px;
+}
+QComboBox#workDir::drop-down {
+    width: 0px;
+    border: 0px;
 }
 QComboBox#workDir:hover {
     border-color: #9fb3d9;
@@ -3066,7 +3435,10 @@ QPushButton#browseDir:disabled {
           </size>
          </property>
          <property name="editable">
-          <bool>false</bool>
+          <bool>true</bool>
+         </property>
+         <property name="insertPolicy">
+          <enum>QComboBox::InsertAtTop</enum>
          </property>
          <property name="currentIndex">
           <number>-1</number>
@@ -3113,6 +3485,12 @@ QPushButton#browseDir:disabled {
   <include location="icons.qrc"/>
  </resources>
  <connections>
+  <connection>
+   <sender>conn_import_more_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>conn_import_more</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
   <connection>
    <sender>nav_rail</sender>
    <signal>currentRowChanged(int)</signal>
