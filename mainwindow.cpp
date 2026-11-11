@@ -3,6 +3,7 @@
 #include <QUrl>
 #include <QMessageBox>
 #include <QDragEnterEvent>
+#include <QResizeEvent>
 #include <QMimeData>
 #include <QAction>
 #include <QTextStream>
@@ -536,6 +537,12 @@ void MainWindow::open_src_at(int row,int)
         loadSrc({item->data(Qt::UserRole).toString()});
 }
 
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    // the three stage cards stack when the window is too narrow to show them side by side
+    ui->tract_stage_row->setDirection(event->size().width() < 1100 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    QMainWindow::resizeEvent(event);
+}
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
