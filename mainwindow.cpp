@@ -158,7 +158,8 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->template_list->addItem(each.stem().string().c_str());
     ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(0);
-    for(auto* batch : {ui->tract_nifti_batch,ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch})
+    for(auto* batch : {ui->tract_nifti_batch,ui->tract_input_batch,ui->tract_reconstruction_batch,ui->tract_tracking_batch,
+                       ui->conn_nifti_batch,ui->conn_dicom_batch})
         batch->hide(); // until its stage's "Batch" toggle is checked
 
     {
@@ -539,8 +540,9 @@ void MainWindow::open_src_at(int row,int)
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
-    // the three stage cards stack when the window is too narrow to show them side by side
-    ui->tract_stage_row->setDirection(event->size().width() < 1100 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    // each page's three stage cards stack when the window is too narrow to show them side by side
+    for(auto* row : {ui->tract_stage_row,ui->conn_stage_row})
+        row->setDirection(event->size().width() < 1100 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     QMainWindow::resizeEvent(event);
 }
 
