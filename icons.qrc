@@ -14,6 +14,7 @@
         <file>icons/auto_track.svg</file>
         <file>icons/average_fib.svg</file>
         <file>icons/axial.svg</file>
+        <file>icons/bad_slice_alert.svg</file>
         <file>icons/bias_field.svg</file>
         <file>icons/boolean_intersect.svg</file>
         <file>icons/boolean_subtract.svg</file>
@@ -60,7 +61,9 @@
         <file>icons/linear_reg.svg</file>
         <file>icons/local_fibers.svg</file>
         <file>icons/longitudinal_time.svg</file>
+        <file>icons/mask_edit.svg</file>
         <file>icons/math_equation.svg</file>
+        <file>icons/more_expand.svg</file>
         <file>icons/morph_closing.svg</file>
         <file>icons/morph_dilate.svg</file>
         <file>icons/morph_erode.svg</file>
@@ -79,6 +82,7 @@
         <file>icons/quality_check.svg</file>
         <file>icons/redo.svg</file>
         <file>icons/resize_grid.svg</file>
+        <file>icons/right_side_label.svg</file>
         <file>icons/roi_cube.svg</file>
         <file>icons/roi_edge.svg</file>
         <file>icons/roi_freehand.svg</file>
@@ -96,6 +100,7 @@
         <file>icons/select_cursor.svg</file>
         <file>icons/settings.svg</file>
         <file>icons/skull_strip.svg</file>
+        <file>icons/slice_defrag.svg</file>
         <file>icons/slice_overlay.svg</file>
         <file>icons/sort_alpha.svg</file>
         <file>icons/sort_metric.svg</file>
@@ -113,6 +118,7 @@
         <file>icons/transform_apply.svg</file>
         <file>icons/uncheck_all.svg</file>
         <file>icons/undo.svg</file>
+        <file>icons/unet_brain.svg</file>
         <file>icons/video_record.svg</file>
         <file>icons/view_3d_slices.svg</file>
         <file>icons/view_split_dual.svg</file>

@@ -1,6 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <path d="M 9.8 20.2 V 16.8 C 5.8 16.5 3.8 13.6 4.0 10.0 C 4.2 6.2 7.2 4.2 10.6 4.6 C 11.3 4.7 11.8 5.2 12.0 5.8 C 12.2 5.2 12.7 4.7 13.4 4.6 C 16.8 4.2 19.8 6.2 20.0 10.0 C 20.2 13.6 18.2 16.5 14.2 16.8 V 20.2"
-        fill="#DBEAFE" fill-opacity="0.48" stroke="#1E293B" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 12.0 5.8 V 13.6" fill="none" stroke="#1E293B" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M 7.8 11.6 C 9.4 9.4 14.6 9.4 16.2 11.6" fill="none" stroke="#2563EB" stroke-width="2.0" stroke-linecap="round"/>
+  <path d="M 9.6 16.0 C 9.8 18.2 10.5 20.4 12.0 20.8 C 13.5 20.4 14.2 18.2 14.4 16.0 Z"
+        fill="#93C5FD" stroke="#1E293B" stroke-width="1.75" stroke-linejoin="round"/>
+  <path d="M 12.0 5.8 C 11.3 3.4 8.8 2.8 6.4 3.9 C 3.8 5.0 2.7 7.8 3.2 10.8 C 3.4 11.5 3.9 12.0 4.6 12.2 C 3.2 12.9 2.9 14.6 3.8 16.1 C 4.8 17.7 7.6 18.0 9.8 16.6 C 10.6 16.1 11.3 15.9 12.0 15.9 C 12.7 15.9 13.4 16.1 14.2 16.6 C 16.4 18.0 19.2 17.7 20.2 16.1 C 21.1 14.6 20.8 12.9 19.4 12.2 C 20.1 12.0 20.6 11.5 20.8 10.8 C 21.3 7.8 20.2 5.0 17.6 3.9 C 15.2 2.8 12.7 3.4 12.0 5.8 Z"
+        fill="#DBEAFE" stroke="#1E293B" stroke-width="1.9" stroke-linejoin="round"/>
+  <path d="M 12.0 5.5 V 9.6 M 4.6 12.2 L 6.8 11.5 M 19.4 12.2 L 17.2 11.5"
+        fill="none" stroke="#1E293B" stroke-width="1.55" stroke-linecap="round"/>
+  <path d="M 8.5 10.1 C 10.2 8.9 11.4 9.7 12.0 10.7 C 12.6 9.7 13.8 8.9 15.5 10.1 M 9.5 13.1 C 10.6 11.8 11.4 11.1 12.0 10.7 C 12.6 11.1 13.4 11.8 14.5 13.1"
+        fill="none" stroke="#2563EB" stroke-width="2.05" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -893,12 +893,22 @@
         <widget class="QPushButton" name="reset_rendering">
          <property name="maximumSize">
           <size>
-           <width>60</width>
+           <width>76</width>
            <height>16777215</height>
           </size>
          </property>
          <property name="text">
           <string>Reset</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -1695,6 +1705,16 @@
                <property name="text">
                 <string>Autotrack...</string>
                </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>:/icons/icons/auto_track.svg</normaloff>:/icons/icons/auto_track.svg</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>16</width>
+                 <height>16</height>
+                </size>
+               </property>
               </widget>
              </item>
              <item>
@@ -2385,7 +2405,11 @@ Tracking</string>
           <string>Show right side label</string>
          </property>
          <property name="text">
-          <string>R</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>:/icons/icons/right_side_label.svg</normaloff>:/icons/icons/right_side_label.svg</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
