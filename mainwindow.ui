@@ -313,20 +313,18 @@ QFrame#tract_recent_panel {
     border: 1px solid #dddddf;
     border-radius: 9px;
 }
-QLabel#recent_files_title {
-    background-color: transparent;
-}
 QFrame#recent_fib_card,
 QFrame#recent_src_card,
+QFrame#recent_template_card,
 QFrame#recent_fib_actions,
-QFrame#recent_src_actions {
+QFrame#recent_src_actions,
+QFrame#recent_template_actions {
     background-color: transparent;
     border: 0px;
 }
 QFrame#tract_input_stage,
 QFrame#tract_reconstruction_stage,
 QFrame#tract_tracking_stage,
-QFrame#tract_template_stage,
 QFrame#tract_connectometry_stage {
     background-color: #fafafa;
     border: 1px solid #dddddf;
@@ -353,7 +351,6 @@ QWidget#tab QPushButton:disabled {
 QFrame#tract_input_stage QPushButton,
 QFrame#tract_reconstruction_stage QPushButton,
 QFrame#tract_tracking_stage QPushButton,
-QFrame#tract_template_stage QPushButton,
 QFrame#tract_connectometry_stage QPushButton {
     color: #202124;
     background-color: #ffffff;
@@ -373,7 +370,6 @@ QPushButton#FiberTracking {
 QFrame#tract_input_stage QPushButton:hover,
 QFrame#tract_reconstruction_stage QPushButton:hover,
 QFrame#tract_tracking_stage QPushButton:hover,
-QFrame#tract_template_stage QPushButton:hover,
 QFrame#tract_connectometry_stage QPushButton:hover {
     background-color: #f1f1f3;
     border-color: #bfc0c4;
@@ -381,7 +377,6 @@ QFrame#tract_connectometry_stage QPushButton:hover {
 QFrame#tract_input_stage QPushButton:pressed,
 QFrame#tract_reconstruction_stage QPushButton:pressed,
 QFrame#tract_tracking_stage QPushButton:pressed,
-QFrame#tract_template_stage QPushButton:pressed,
 QFrame#tract_connectometry_stage QPushButton:pressed {
     background-color: #e5e5e7;
 }
@@ -1432,7 +1427,7 @@ QLabel#tract_arrow_2 {
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="tract_lower_row" stretch="3,2">
+               <layout class="QHBoxLayout" name="tract_lower_row">
                 <property name="spacing">
                  <number>10</number>
                 </property>
@@ -1468,7 +1463,7 @@ QLabel#tract_arrow_2 {
                     <height>200</height>
                    </size>
                   </property>
-                  <layout class="QVBoxLayout" name="tract_recent_layout" stretch="0,1,1">
+                  <layout class="QVBoxLayout" name="tract_recent_layout" stretch="0,1,1,1">
                    <property name="spacing">
                     <number>7</number>
                    </property>
@@ -1502,22 +1497,9 @@ QLabel#tract_arrow_2 {
                       <number>0</number>
                      </property>
                      <item>
-                      <widget class="QLabel" name="recent_files_title">
-                       <property name="font">
-                        <font>
-                         <pointsize>10</pointsize>
-                         <bold>true</bold>
-                        </font>
-                       </property>
-                       <property name="text">
-                        <string>Continue</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
                       <widget class="QPushButton" name="recent_fib_toggle">
                        <property name="text">
-                        <string>FIB files</string>
+                        <string>Recent FIB</string>
                        </property>
                        <property name="checkable">
                         <bool>true</bool>
@@ -1536,7 +1518,26 @@ QLabel#tract_arrow_2 {
                      <item>
                       <widget class="QPushButton" name="recent_src_toggle">
                        <property name="text">
-                        <string>SRC files</string>
+                        <string>Recent SRC</string>
+                       </property>
+                       <property name="checkable">
+                        <bool>true</bool>
+                       </property>
+                       <property name="checked">
+                        <bool>false</bool>
+                       </property>
+                       <property name="autoExclusive">
+                        <bool>true</bool>
+                       </property>
+                       <property name="segment" stdset="0">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="recent_template_toggle">
+                       <property name="text">
+                        <string>Template FIB</string>
                        </property>
                        <property name="checkable">
                         <bool>true</bool>
@@ -1649,6 +1650,44 @@ QLabel#tract_arrow_2 {
                           </property>
                           <property name="text">
                            <string>Clear</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QFrame" name="recent_template_actions">
+                       <layout class="QHBoxLayout" name="recent_template_actions_layout">
+                        <property name="spacing">
+                         <number>6</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QPushButton" name="TemplateFiberTracking">
+                          <property name="statusTip">
+                           <string>run open_template</string>
+                          </property>
+                          <property name="toolTip">
+                           <string>Open the selected population-averaged FIB template</string>
+                          </property>
+                          <property name="text">
+                           <string>Open template</string>
+                          </property>
+                          <property name="icon">
+                           <iconset resource="icons.qrc">
+                            <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
                           </property>
                          </widget>
                         </item>
@@ -1781,88 +1820,44 @@ QLabel#tract_arrow_2 {
                      </layout>
                     </widget>
                    </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QFrame" name="tract_template_stage">
-                  <property name="minimumSize">
-                   <size>
-                    <width>180</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>260</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <layout class="QVBoxLayout" name="tract_template_layout" stretch="0,1,0">
-                   <property name="spacing">
-                    <number>5</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>7</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>8</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>8</number>
-                   </property>
                    <item>
-                    <widget class="QLabel" name="label_4">
-                     <property name="font">
-                      <font>
-                       <bold>true</bold>
-                      </font>
-                     </property>
-                     <property name="wordWrap">
-                      <bool>true</bool>
-                     </property>
-                     <property name="text">
-                      <string>Start from a template</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QListWidget" name="template_list">
-                     <property name="verticalScrollBarPolicy">
-                      <enum>Qt::ScrollBarAsNeeded</enum>
-                     </property>
-                     <property name="horizontalScrollBarPolicy">
-                      <enum>Qt::ScrollBarAlwaysOff</enum>
-                     </property>
-                     <property name="flow">
-                      <enum>QListView::TopToBottom</enum>
-                     </property>
-                     <property name="isWrapping" stdset="0">
-                      <bool>false</bool>
-                     </property>
-                     <property name="resizeMode">
-                      <enum>QListView::Adjust</enum>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="TemplateFiberTracking">
-                     <property name="statusTip">
-                      <string>run open_template</string>
-                     </property>
-                     <property name="toolTip">
-                      <string>Open the selected population-averaged FIB template</string>
-                     </property>
-                     <property name="text">
-                      <string>Open selected</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="icons.qrc">
-                       <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-                     </property>
+                    <widget class="QFrame" name="recent_template_card">
+                     <layout class="QVBoxLayout" name="recent_template_layout">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QListWidget" name="template_list">
+                        <property name="verticalScrollBarPolicy">
+                         <enum>Qt::ScrollBarAsNeeded</enum>
+                        </property>
+                        <property name="horizontalScrollBarPolicy">
+                         <enum>Qt::ScrollBarAlwaysOff</enum>
+                        </property>
+                        <property name="flow">
+                         <enum>QListView::TopToBottom</enum>
+                        </property>
+                        <property name="isWrapping" stdset="0">
+                         <bool>false</bool>
+                        </property>
+                        <property name="resizeMode">
+                         <enum>QListView::Adjust</enum>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
                     </widget>
                    </item>
                   </layout>
@@ -3017,6 +3012,18 @@ QPushButton#browseDir:disabled {
    <sender>tract_fmt_other</sender>
    <signal>toggled(bool)</signal>
    <receiver>tract_others_tab</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>recent_template_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>recent_template_card</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+  <connection>
+   <sender>recent_template_toggle</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>recent_template_actions</receiver>
    <slot>setVisible(bool)</slot>
   </connection>
  </connections>
