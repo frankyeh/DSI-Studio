@@ -366,7 +366,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.8
-          modules: qtcharts qtsvg
+          modules: qtcharts
           cache: true
       - name: Cache ccache
         uses: actions/cache@v4
@@ -455,7 +455,7 @@ jobs:
     - name: Install Qt
       uses: Kidev/install-qt-action@v4.6.0
       with:
-        modules: qtcharts qtsvg
+        modules: qtcharts
         cache: true
     - name: Build
       shell: cmd
@@ -490,7 +490,7 @@ jobs:
     - name: Install Qt
       uses: Kidev/install-qt-action@v4.6.0
       with:
-        modules: qtcharts qtsvg
+        modules: qtcharts
         cache: true
     - name: Build debug CPU package
       shell: cmd
@@ -560,7 +560,7 @@ jobs:
     - name: Install Qt
       uses: Kidev/install-qt-action@v4.6.0
       with:
-        modules: qtcharts qtsvg
+        modules: qtcharts
         cache: true
     - name: Build
       shell: cmd
@@ -599,7 +599,7 @@ jobs:
         host: windows_arm64
         target: desktop
         arch: win64_msvc2022_arm64
-        modules: qtcharts qtsvg
+        modules: qtcharts
         cache: true
     - name: Build Windows ARM64
       shell: cmd

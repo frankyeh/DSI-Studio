@@ -79,7 +79,7 @@ jobs:
       - name: Install Qt
         uses: Kidev/install-qt-action@v4.6.0
         with:
-          modules: qtcharts qtsvg
+          modules: qtcharts
           cache: true
 
       - name: Build Windows CPU
@@ -116,7 +116,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.8
-          modules: qtcharts qtsvg
+          modules: qtcharts
           cache: true
 
       - name: Cache ccache
