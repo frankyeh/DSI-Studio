@@ -886,6 +886,13 @@ std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2][Corrections][Volume Orientation Correction]","orientation_correction"},
     {"[Step T2][Reconstruction]","reconstruction"},
     {"[Step T2b(2)][Partial FOV]","partial_fov"}};
+std::string to_cmd(const std::string& cmd)
+{
+    for(const auto& [old_cmd,new_cmd] : legacy_cmd)
+        if(cmd == old_cmd)
+            return tipl::warning() << "legacy command " << old_cmd << " will soon be replaced by " << new_cmd,new_cmd;
+    return cmd;
+}
 bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
@@ -907,12 +914,7 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
-        for(const auto& [old_cmd,new_cmd] : legacy_cmd)
-            if(cmd == old_cmd)
-            {
-                cmd = new_cmd;
-                break;
-            }
+        cmd = to_cmd(cmd);
         if((tipl::ends_with(param,{".sz",".gz"})) &&
            !tipl::match_files(reg_file_name,param,file_name.u8string(),param))
             return error_msg = step + " cannot find a matched file for " + file_name.u8string(),false;
@@ -934,16 +936,9 @@ bool src_data::command(std::vector<std::string> cmds)
 {
     cmds.resize(2);
     std::string cmd = cmds[0],param = cmds[1];
-    std::string log_cmd = cmd;
-    for(const auto& [old_cmd,new_cmd] : legacy_cmd)
-        if(cmd == new_cmd)
-        {
-            log_cmd = old_cmd;
-            break;
-        }
     auto log_step = [&](void)
     {
-        voxel.steps += param.empty() ? (log_cmd+"\n") : (log_cmd+"="+param+"\n");
+        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
         return true;
     };
 
@@ -3340,7 +3335,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
     {
     tipl::progress prog("open ",dwi_file_name.u8string());
     if(voxel.steps.empty())
-        voxel.steps = "[Step T2][Reconstruction] open " + dwi_file_name.filename().u8string() + "\n";
+        voxel.steps = "open=" + dwi_file_name.filename().u8string() + "\n";
 
     if(!std::filesystem::exists(dwi_file_name))
         return error_msg = "file does not exist: " + dwi_file_name.u8string(),false;
@@ -3561,7 +3556,7 @@ bool src_data::save_fib(void)
                                                           voxel.other_image[index],voxel.dim.plane_size());
     }
     mat_writer.write("report",voxel.report + voxel.recon_report.str());
-    mat_writer.write("steps",voxel.steps + voxel.step_report.str() + "[Step T2b][Run reconstruction]\n");
+    mat_writer.write("steps",voxel.steps + voxel.step_report.str() + "recon\n");
     mat_writer.write("intro",voxel.intro);
     mat_writer.close();
     std::error_code error;
