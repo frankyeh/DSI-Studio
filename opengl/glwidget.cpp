@@ -131,6 +131,7 @@ bool check_error(const char* line)
             tipl::out() << "GL_OUT_OF_MEMORY at " << line << std::endl;
             break;
         }
+        code = glGetError();
     }
     return true;
 }
