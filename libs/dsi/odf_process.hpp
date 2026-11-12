@@ -170,7 +170,7 @@ public:
     {
         odf_data.clear();
         {
-            voxel.step_report << "[Step T2b(2)][ODFs]=checked" << std::endl;
+            voxel.step_report << "odf=checked" << std::endl;
             size_t total_count = 0;
             odf_index_map.resize(voxel.mask.size());
             for (size_t index = 0,sz = voxel.mask.size();index < sz;++index)
