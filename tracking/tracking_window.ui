@@ -566,7 +566,7 @@
     </font>
    </property>
    <property name="windowTitle">
-    <string>Step T3a: Assign Regions</string>
+    <string>Assign Regions</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
@@ -824,7 +824,7 @@
     </size>
    </property>
    <property name="windowTitle">
-    <string>Step T3c: Options</string>
+    <string>Options</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1462,7 +1462,7 @@
     </size>
    </property>
    <property name="windowTitle">
-    <string>Step T3d: Tracts</string>
+    <string>Tracts</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1895,7 +1895,7 @@ Tracking</string>
     <bool>false</bool>
    </property>
    <property name="windowTitle">
-    <string>Step T3b: Draw Regions</string>
+    <string>Draw Regions</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
