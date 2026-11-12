@@ -79,14 +79,14 @@ bool src_data::reconstruction(void)
         switch (voxel.method_id)
         {
         case 1://DTI
-            voxel.step_report << "[Step T2b]=DTI" << std::endl;
+            voxel.step_report << "method=DTI" << std::endl;
             if (!reconstruct2<ReadDWIData,
                     Dwi2Tensor>("DTI reconstruction"))
                 return false;
             break;
         case 4://GQI
-            voxel.step_report << "[Step T2b]=GQI" << std::endl;
-            voxel.step_report << "[Step T2b][Diffusion sampling length ratio]=" << float(voxel.param[0]) << std::endl;
+            voxel.step_report << "method=GQI" << std::endl;
+            voxel.step_report << "param=" << float(voxel.param[0]) << std::endl;
 
             voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
@@ -126,10 +126,10 @@ bool src_data::reconstruction(void)
                 return false;
             break;
         case 7:
-            voxel.step_report << "[Step T2b]=QSDR" << std::endl;
-            voxel.step_report << "[Step T2b][QSDR resolution]=" << voxel.qsdr_reso << std::endl;
-            voxel.step_report << "[Step T2b][Template]=" << template_name_list[voxel.template_id] << std::endl;
-            voxel.step_report << "[Step T2b][Diffusion sampling length ratio]=" << voxel.param[0] << std::endl;
+            voxel.step_report << "method=QSDR" << std::endl;
+            voxel.step_report << "qsdr_reso=" << voxel.qsdr_reso << std::endl;
+            voxel.step_report << "template=" << template_name_list[voxel.template_id] << std::endl;
+            voxel.step_report << "param=" << voxel.param[0] << std::endl;
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
@@ -168,7 +168,7 @@ bool src_data::reconstruction(void)
             return false;
         }
 
-        voxel.step_report << "[Step T2c][Output metrics]=" << voxel.other_output << std::endl;
+        voxel.step_report << "other_output=" << voxel.other_output << std::endl;
         if(voxel.dti_ignore_high_b)
             voxel.recon_report << " The tensor metrics were calculated using DWI with b-value lower than 1750 s/mm².";
         return save_fib();
