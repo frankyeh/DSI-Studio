@@ -18,7 +18,7 @@
 void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
-extern std::vector<std::pair<std::string,std::string> > legacy_cmd;
+std::string to_cmd(const std::string& cmd);
 
 bool reconstruction_window::load_src(int index)
 {
@@ -264,13 +264,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     if(cmds.size() > 2)
         return tipl::error() << (error_msg = "too many parameters"),false;
     cmds.resize(2);
-    std::string cmd = cmds[0],param = cmds[1];
-    for(const auto& [old_cmd,new_cmd] : legacy_cmd)
-        if(cmd == old_cmd)
-        {
-            cmd = new_cmd;
-            break;
-        }
+    std::string cmd = to_cmd(cmds[0]),param = cmds[1];
 
     error_msg.clear();
     auto fail = [&](const std::string& msg = std::string())
