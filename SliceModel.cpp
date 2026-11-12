@@ -817,7 +817,6 @@ void CustomSliceModel::argmin(void)
             while (!arg_ended)
             {
                 tipl::inverse(arg_min = arg,handle->dim,handle->vs,dim,vs);
-                std::this_thread::yield();
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
             tipl::inverse(arg_min = arg,handle->dim,handle->vs,dim,vs);
