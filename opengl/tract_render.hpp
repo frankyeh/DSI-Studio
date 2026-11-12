@@ -108,7 +108,7 @@ public:
         {
             if(!wait)
                 return std::shared_ptr<end_reading>();
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
         std::lock_guard<std::mutex> lock(reading_lock);
         ++reading_threads;
@@ -132,7 +132,7 @@ public:
             if(!wait)
                 return std::shared_ptr<end_writing>();
             about_to_write = true;
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
         writing = true;
         about_to_write = false;

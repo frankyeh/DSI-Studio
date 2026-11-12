@@ -270,7 +270,7 @@ void group_connectometry_analysis::clear(void)
     if(!threads.empty())
     {
         while(terminated)
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         terminated = true;
         wait();
         threads.clear();

@@ -312,7 +312,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     {
                         // pre tracking stage
                         while(!thread.is_ended() && !thread.max_tract_count && prog2(0,1))
-                            std::this_thread::yield();
+                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
                         // now start tracking
                         while(!thread.is_ended() &&
                               prog2(thread.get_total_tract_count(),thread.max_tract_count))
@@ -325,7 +325,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                                 no_result = true;
                                 break;
                             }
-                            std::this_thread::yield();
+                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
                         }
                         thread.end_thread();
                         if(prog2.aborted())

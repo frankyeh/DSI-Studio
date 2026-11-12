@@ -2214,7 +2214,7 @@ bool fib_data::map_to_mni(bool background)
     {
         reg_threads.push_back(std::make_shared<std::thread>(lambda));
         while(p(prog,4))
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         if(p.aborted())
         {
             if(error_msg.empty())

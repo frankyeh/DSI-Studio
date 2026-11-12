@@ -27,7 +27,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     {
         if(thread_id)
         {
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
         {
