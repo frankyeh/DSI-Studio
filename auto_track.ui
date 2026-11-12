@@ -34,7 +34,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string> Step B4(a): Specify FIB Files</string>
+           <string>Specify FIB Files</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <property name="spacing">
@@ -189,7 +189,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>Step B4(b): Select Atlas</string>
+           <string>Select Atlas</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="topMargin">
@@ -246,7 +246,7 @@
              </sizepolicy>
             </property>
             <property name="title">
-             <string>Step B4(c): Parameters</string>
+             <string>Parameters</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_5">
              <item>
