@@ -418,13 +418,13 @@
         </rect>
        </property>
        <attribute name="label">
-        <string>Step T2: reconstruction</string>
+        <string>reconstruction</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5" stretch="1,0">
         <item>
          <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
-           <string>Step T2a: Specify a Mask</string>
+           <string>Specify a Mask</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="topMargin">
@@ -767,7 +767,7 @@
             <item>
              <widget class="QGroupBox" name="method_group">
               <property name="title">
-               <string>Step T2b: Specify a Model</string>
+               <string>Specify a Model</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_10">
                <property name="spacing">
@@ -979,7 +979,7 @@
             <item>
              <widget class="QGroupBox" name="hist_param_group">
               <property name="title">
-               <string>Step T2b specify parameters</string>
+               <string>specify parameters</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
                <item>
@@ -1117,7 +1117,7 @@
             <item>
              <widget class="QGroupBox" name="groupBox">
               <property name="title">
-               <string>Step T2c: Specify Outputs</string>
+               <string>Specify Outputs</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_15">
                <property name="topMargin">
