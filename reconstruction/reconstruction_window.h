@@ -74,7 +74,6 @@ private slots:
     void on_actionT1W_based_QSDR_triggered();
     void on_change_fib_output_clicked();
     void on_fib_output_editingFinished();
-    void on_more_outputs_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
