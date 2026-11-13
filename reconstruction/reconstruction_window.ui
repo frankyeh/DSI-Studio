@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="font">
-   <font />
+   <font/>
   </property>
   <property name="windowTitle">
    <string>Reconstruction</string>
@@ -60,14 +60,14 @@ QRadioButton#DTI:hover, QRadioButton#GQI:hover, QRadioButton#QSDR:hover { backgr
 QRadioButton#DTI:focus, QRadioButton#GQI:focus, QRadioButton#QSDR:focus { border-color: #a5b4fc; }
 QRadioButton#DTI:checked, QRadioButton#GQI:checked, QRadioButton#QSDR:checked { color: #1e3a8a; background-color: #e0e7ff; border-color: #a5b4fc; }
 QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled { color: #9a9a9f; }
-QStackedWidget#pages QFrame[card="true"] { background-color: #ffffff; border: 1px solid #dddddf; border-top: 4px solid #0ea5e9; border-radius: 9px; }
+QStackedWidget#pages QFrame[card=&quot;true&quot;] { background-color: #ffffff; border: 1px solid #dddddf; border-top: 4px solid #0ea5e9; border-radius: 9px; }
 QFrame#method_group, QFrame#volume_group, QFrame#btable_check_group, QFrame#performance_group { border-top-color: #10b981; }
 QFrame#hist_param_group, QFrame#image_group, QFrame#qc_card, QFrame#btable_orient_group, QFrame#groupBox { border-top-color: #f59e0b; }
 QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
-QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bold; background: transparent; border: 0px; padding-bottom: 2px; }
-QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
-QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages QFrame[card="true"] QWidget#qsdr_options, QStackedWidget#pages QFrame[card="true"] QWidget#GQIOption_2, QStackedWidget#pages QFrame[card="true"] QWidget#ODF_metrics, QStackedWidget#pages QFrame[card="true"] QWidget#source_widget { background: transparent; border: 0px; }</string>
+QStackedWidget#pages QLabel[cardTitle=&quot;true&quot;] { color: #202124; font-weight: bold; background: transparent; border: 0px; padding-bottom: 2px; }
+QStackedWidget#pages QFrame[card=&quot;true&quot;] QLabel, QStackedWidget#pages QFrame[card=&quot;true&quot;] QCheckBox { background: transparent; }
+QStackedWidget#pages QFrame[card=&quot;true&quot;] QWidget#mask_edit, QStackedWidget#pages QFrame[card=&quot;true&quot;] QWidget#qsdr_options, QStackedWidget#pages QFrame[card=&quot;true&quot;] QWidget#GQIOption_2, QStackedWidget#pages QFrame[card=&quot;true&quot;] QWidget#ODF_metrics, QStackedWidget#pages QFrame[card=&quot;true&quot;] QWidget#source_widget { background: transparent; border: 0px; }</string>
    </property>
    <layout class="QHBoxLayout" name="verticalLayout">
     <property name="spacing">
@@ -87,6 +87,18 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
     </property>
     <item>
      <widget class="QFrame" name="sidebar">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>200</width>
+        <height>16777215</height>
+       </size>
+      </property>
       <layout class="QVBoxLayout" name="sidebar_layout">
        <property name="spacing">
         <number>0</number>
@@ -117,17 +129,17 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
            <height>16777215</height>
           </size>
          </property>
-         <property name="iconSize">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
          </property>
          <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
          </property>
          <property name="currentRow">
           <number>0</number>
@@ -204,6 +216,14 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
            <bool>true</bool>
           </property>
           <widget class="QWidget" name="recon_content">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>657</width>
+             <height>731</height>
+            </rect>
+           </property>
            <layout class="QVBoxLayout" name="recon_content_layout">
             <item>
              <widget class="QFrame" name="groupBox_2">
@@ -585,7 +605,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
-                   <property name="sizeHint">
+                   <property name="sizeHint" stdset="0">
                     <size>
                      <width>0</width>
                      <height>0</height>
@@ -762,7 +782,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="primary_template" />
+                  <widget class="QComboBox" name="primary_template"/>
                  </item>
                  <item>
                   <widget class="QCheckBox" name="high_accuracy">
@@ -779,7 +799,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
-                   <property name="sizeHint">
+                   <property name="sizeHint" stdset="0">
                     <size>
                      <width>0</width>
                      <height>0</height>
@@ -797,7 +817,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
-              <property name="sizeHint">
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>0</width>
                 <height>0</height>
@@ -811,7 +831,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
         </item>
         <item>
          <widget class="QFrame" name="run_bar">
-          <layout class="QHBoxLayout" name="run_bar_layout" stretch="1,0,0,0">
+          <layout class="QHBoxLayout" name="run_bar_layout" stretch="1,0">
            <property name="leftMargin">
             <number>10</number>
            </property>
@@ -856,12 +876,12 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="fib_output" />
+               <widget class="QLineEdit" name="fib_output"/>
               </item>
               <item>
                <widget class="QPushButton" name="change_fib_output">
                 <property name="text">
-                 <string />
+                 <string/>
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
@@ -932,6 +952,14 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
            <bool>true</bool>
           </property>
           <widget class="QWidget" name="inspect_content">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>773</width>
+             <height>1094</height>
+            </rect>
+           </property>
            <layout class="QVBoxLayout" name="inspect_content_layout">
             <item>
              <widget class="QFrame" name="viewer_card">
@@ -983,7 +1011,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                  <item>
                   <widget class="QLabel" name="bad_slice_label">
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                   </widget>
                  </item>
@@ -992,7 +1020,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
-                   <property name="sizeHint">
+                   <property name="sizeHint" stdset="0">
                     <size>
                      <width>0</width>
                      <height>0</height>
@@ -1006,6 +1034,18 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                 <layout class="QHBoxLayout" name="viewer_split" stretch="0,1">
                  <item>
                   <widget class="QTableView" name="volume_list">
+                   <property name="minimumSize">
+                    <size>
+                     <width>200</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>260</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
                    <property name="toolTip">
                     <string>DWI volumes (read-only); edit gradients on the B-table page</string>
                    </property>
@@ -1027,22 +1067,16 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="showGrid">
                     <bool>false</bool>
                    </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>200</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>260</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QWidget" name="source_widget" native="true">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>340</height>
+                    </size>
+                   </property>
                    <layout class="QVBoxLayout" name="verticalLayout_6">
                     <property name="spacing">
                      <number>0</number>
@@ -1069,11 +1103,11 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                         <property name="minimumSize">
                          <size>
                           <width>24</width>
-                          <height>0</height>
+                          <height>38</height>
                          </size>
                         </property>
                         <property name="text">
-                         <string />
+                         <string/>
                         </property>
                         <property name="icon">
                          <iconset resource="../icons.qrc">
@@ -1086,11 +1120,11 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                         <property name="minimumSize">
                          <size>
                           <width>24</width>
-                          <height>0</height>
+                          <height>38</height>
                          </size>
                         </property>
                         <property name="text">
-                         <string />
+                         <string/>
                         </property>
                         <property name="icon">
                          <iconset resource="../icons.qrc">
@@ -1152,10 +1186,10 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                        </widget>
                       </item>
                       <item>
-                       <widget class="QDoubleSpinBox" name="min_value" />
+                       <widget class="QDoubleSpinBox" name="min_value"/>
                       </item>
                       <item>
-                       <widget class="QDoubleSpinBox" name="max_value" />
+                       <widget class="QDoubleSpinBox" name="max_value"/>
                       </item>
                       <item>
                        <widget class="QLabel" name="label_14">
@@ -1167,7 +1201,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                      </layout>
                     </item>
                     <item>
-                     <widget class="QGraphicsView" name="view_source" />
+                     <widget class="QGraphicsView" name="view_source"/>
                     </item>
                     <item>
                      <widget class="QSlider" name="z_pos">
@@ -1177,12 +1211,6 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                      </widget>
                     </item>
                    </layout>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>340</height>
-                    </size>
-                   </property>
                   </widget>
                  </item>
                 </layout>
@@ -1321,7 +1349,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
                  </property>
-                 <property name="sizeHint">
+                 <property name="sizeHint" stdset="0">
                   <size>
                    <width>0</width>
                    <height>0</height>
@@ -2004,6 +2032,14 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
            <bool>true</bool>
           </property>
           <widget class="QWidget" name="options_content">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>706</width>
+             <height>424</height>
+            </rect>
+           </property>
            <layout class="QVBoxLayout" name="options_content_layout">
             <item>
              <widget class="QFrame" name="hist_param_group">
@@ -2223,7 +2259,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
-                   <property name="sizeHint">
+                   <property name="sizeHint" stdset="0">
                     <size>
                      <width>0</width>
                      <height>0</height>
@@ -2565,7 +2601,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
-                   <property name="sizeHint">
+                   <property name="sizeHint" stdset="0">
                     <size>
                      <width>0</width>
                      <height>0</height>
@@ -2583,7 +2619,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
-              <property name="sizeHint">
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>0</width>
                 <height>0</height>
@@ -2612,21 +2648,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>Save</string>
+     <string>&amp;File</string>
     </property>
-    <addaction name="actionSet_Output_File" />
-    <addaction name="actionSave_Mask" />
-    <addaction name="separator" />
-    <addaction name="actionSave_SRC_file_as" />
-    <addaction name="actionSave_4D_nifti" />
-    <addaction name="actionSave_b0" />
-    <addaction name="actionSave_DWI_sum" />
-    <addaction name="separator" />
-    <addaction name="actionSave_b_table" />
-    <addaction name="actionSave_bvals" />
-    <addaction name="actionSave_bvecs" />
+    <addaction name="actionSave_Mask"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_SRC_file_as"/>
+    <addaction name="actionSave_4D_nifti"/>
+    <addaction name="actionSave_b0"/>
+    <addaction name="actionSave_DWI_sum"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_b_table"/>
+    <addaction name="actionSave_bvals"/>
+    <addaction name="actionSave_bvecs"/>
    </widget>
-   <addaction name="menuFile" />
+   <addaction name="menuFile"/>
   </widget>
   <action name="actionSet_Output_File">
    <property name="text">
@@ -2634,6 +2669,10 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
    </property>
   </action>
   <action name="actionSave_Mask">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
+   </property>
    <property name="text">
     <string>Save Mask...</string>
    </property>
@@ -3208,7 +3247,7 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
   </action>
  </widget>
  <resources>
-  <include location="../icons.qrc" />
+  <include location="../icons.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -3216,264 +3255,704 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
    <signal>clicked()</signal>
    <receiver>actionManual_Align</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Partial_FOV</sender>
    <signal>clicked()</signal>
    <receiver>actionPartial_FOV</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_T1W_based_QSDR</sender>
    <signal>clicked()</signal>
    <receiver>actionT1W_based_QSDR</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_x</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_x</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_y</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_y</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_z</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_z</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_xy</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_xy</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_xz</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_xz</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_yz</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_yz</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Align_ACPC</sender>
    <signal>clicked()</signal>
    <receiver>actionAlign_ACPC</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Manual_Rotation</sender>
    <signal>clicked()</signal>
    <receiver>actionManual_Rotation</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Resample</sender>
    <signal>clicked()</signal>
    <receiver>actionResample</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Rotate</sender>
    <signal>clicked()</signal>
    <receiver>actionRotate</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Overwrite_Voxel_Size</sender>
    <signal>clicked()</signal>
    <receiver>actionOverwrite_Voxel_Size</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Attach_Images</sender>
    <signal>clicked()</signal>
    <receiver>actionAttach_Images</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Smooth_Signals</sender>
    <signal>clicked()</signal>
    <receiver>actionSmooth_Signals</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Scheme_Balance</sender>
    <signal>clicked()</signal>
    <receiver>actionScheme_Balance</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Erase_Background_Signals</sender>
    <signal>clicked()</signal>
    <receiver>actionErase_Background_Signals</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Trim_image</sender>
    <signal>clicked()</signal>
    <receiver>actionTrim_image</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Probablistic_Masking</sender>
    <signal>clicked()</signal>
    <receiver>actionProbablistic_Masking</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Run_FSL_Topup</sender>
    <signal>clicked()</signal>
    <receiver>actionRun_FSL_Topup</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_TOPUP_only</sender>
    <signal>clicked()</signal>
    <receiver>actionTOPUP_only</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_EDDY</sender>
    <signal>clicked()</signal>
    <receiver>actionEDDY</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_T1w_Distortion_Correction</sender>
    <signal>clicked()</signal>
    <receiver>actionT1w_Distortion_Correction</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Correct_Bias_Field</sender>
    <signal>clicked()</signal>
    <receiver>actionCorrect_Bias_Field</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Eddy_Motion_Correction</sender>
    <signal>clicked()</signal>
    <receiver>actionEddy_Motion_Correction</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Volume_Orientation_Correction</sender>
    <signal>clicked()</signal>
    <receiver>actionVolume_Orientation_Correction</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Load_bvals</sender>
    <signal>clicked()</signal>
    <receiver>actionLoad_bvals</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Load_bvecs</sender>
    <signal>clicked()</signal>
    <receiver>actionLoad_bvecs</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Check_b_table2</sender>
    <signal>clicked()</signal>
    <receiver>actionCheck_b_table2</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Check_b_table</sender>
    <signal>clicked()</signal>
    <receiver>actionCheck_b_table</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Regenerate_b_table</sender>
    <signal>clicked()</signal>
    <receiver>actionRegenerate_b_table</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Regenerate_b_table_from_src</sender>
    <signal>clicked()</signal>
    <receiver>actionRegenerate_b_table_from_src</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_bx</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_bx</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_by</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_by</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Flip_bz</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_bz</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_swap_bxby</sender>
    <signal>clicked()</signal>
    <receiver>actionswap_bxby</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_swap_bybz</sender>
    <signal>clicked()</signal>
    <receiver>actionswap_bybz</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_swap_bxbz</sender>
    <signal>clicked()</signal>
    <receiver>actionswap_bxbz</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>nav_rail</sender>
    <signal>currentRowChanged(int)</signal>
    <receiver>pages</receiver>
    <slot>setCurrentIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>actionSave_Mask</sender>
    <signal>triggered()</signal>
    <receiver>save_mask</receiver>
    <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>actionSet_Output_File</sender>
    <signal>triggered()</signal>
    <receiver>change_fib_output</receiver>
    <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Enable_TEST_features</sender>
    <signal>clicked()</signal>
    <receiver>actionEnable_TEST_features</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>btn_Image_upsample_to_T1W_TESTING</sender>
    <signal>clicked()</signal>
    <receiver>actionImage_upsample_to_T1W_TESTING</receiver>
    <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
   </connection>
  </connections>
 </ui>
