@@ -7,6 +7,7 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QSettings>
+#include <QPainter>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
 
@@ -53,6 +54,23 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
+    for(int i = 0;i < 3;++i)
+    {
+        QPixmap pix(20,20);
+        pix.fill(Qt::transparent);
+        QPainter painter(&pix);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(i == 0 ? "#0ea5e9" : i == 1 ? "#10b981" : "#f59e0b"));
+        painter.drawEllipse(1,1,18,18);
+        painter.setPen(Qt::white);
+        QFont font = painter.font();
+        font.setBold(true);
+        font.setPointSize(10);
+        painter.setFont(font);
+        painter.drawText(pix.rect(),Qt::AlignCenter,QString::number(i+1));
+        ui->nav_rail->item(i)->setIcon(QIcon(pix));
+    }
     // Navigation includes a disclosure row without a corresponding page.
     ui->nav_rail->item(4)->setHidden(true);
     ui->nav_rail->item(5)->setHidden(true);
@@ -68,14 +86,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     {
         if(item != ui->nav_rail->item(3))
             return;
-        bool expand = ui->nav_rail->item(4)->isHidden();
-        ui->nav_rail->item(4)->setHidden(!expand);
-        ui->nav_rail->item(5)->setHidden(!expand || handle->voxel.is_histology);
-        item->setText(expand ? "▾ Edit..." : "▸ Edit...");
-        if(!expand && ui->pages->currentIndex() >= 3)
-            ui->pages->setCurrentIndex(2);
-        int page = ui->pages->currentIndex();
-        ui->nav_rail->setCurrentRow(page < 3 ? page : page+1);
+        ui->nav_rail->item(4)->setHidden(false);
+        ui->nav_rail->item(5)->setHidden(handle->voxel.is_histology);
+        ui->nav_rail->item(3)->setHidden(true);
+        ui->nav_rail->setCurrentRow(4);
     });
     connect(ui->volume_list,&QListWidget::currentRowChanged,this,[this](int row)
     {
@@ -221,7 +235,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     });
 
     connect(ui->more_odf_outputs,&QPushButton::clicked,this,&reconstruction_window::on_more_outputs_clicked);
-    ui->mask_edit->setVisible(false);
 
     {
         foreach (QAction* action, findChildren<QAction*>())
@@ -925,12 +938,7 @@ void reconstruction_window::on_align_slices_clicked()
 
 }
 
-void reconstruction_window::on_edit_mask_clicked()
-{
-    bool expanded = ui->edit_mask->isChecked();
-    ui->mask_edit->setVisible(expanded);
-    ui->edit_mask->setText(expanded ? "▾ Less..." : "▸ More...");
-}
+
 
 
 void match_template_resolution(tipl::image<3>& VG,
