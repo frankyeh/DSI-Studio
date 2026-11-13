@@ -106,7 +106,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(int row = first.row();row <= last.row() && row < ui->volume_list->count();++row)
             if(row >= 0 && ui->b_table->item(row,0) && ui->b_table->item(row,1) &&
                ui->b_table->item(row,2) && ui->b_table->item(row,3))
-                ui->volume_list->item(row)->setText(QString("#%1  b=%2  (%3, %4, %5)")
+                ui->volume_list->item(row)->setText(QString("#%1  b%2  (%3, %4, %5)")
                     .arg(row+1).arg(ui->b_table->item(row,0)->text())
                     .arg(ui->b_table->item(row,1)->text()).arg(ui->b_table->item(row,2)->text())
                     .arg(ui->b_table->item(row,3)->text()));
@@ -285,7 +285,7 @@ void reconstruction_window::load_b_table(void)
         ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0])));
         ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1])));
         ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2])));
-        ui->volume_list->addItem(QString("#%1  b=%2  (%3, %4, %5)")
+        ui->volume_list->addItem(QString("#%1  b%2  (%3, %4, %5)")
             .arg(index+1).arg(handle->src_bvalues[index])
             .arg(handle->src_bvectors[index][0]).arg(handle->src_bvectors[index][1])
             .arg(handle->src_bvectors[index][2]));
