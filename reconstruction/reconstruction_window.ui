@@ -2389,9 +2389,9 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       </widget>
                      </item>
                      <item row="0" column="2">
-                      <widget class="QPushButton" name="btn_Probablistic_Masking">
+                      <widget class="QPushButton" name="btn_Mask_Background_Signals">
                        <property name="text">
-                        <string>Probablistic Masking...</string>
+                        <string>Masking Background Signals...</string>
                        </property>
                        <property name="icon">
                         <iconset resource="../icons.qrc">
@@ -3416,16 +3416,16 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     <string>run check_btable2</string>
    </property>
   </action>
-  <action name="actionProbablistic_Masking">
+  <action name="actionMask_Background_Signals">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
    </property>
    <property name="text">
-    <string>Probablistic Masking...</string>
+    <string>Masking Background Signals...</string>
    </property>
    <property name="toolTip">
-    <string>run probabilistic_masking</string>
+    <string>run mask_background_signals</string>
    </property>
   </action>
   <action name="actionT1w_Distortion_Correction">
@@ -3762,9 +3762,9 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
    </hints>
   </connection>
   <connection>
-   <sender>btn_Probablistic_Masking</sender>
+   <sender>btn_Mask_Background_Signals</sender>
    <signal>clicked()</signal>
-   <receiver>actionProbablistic_Masking</receiver>
+   <receiver>actionMask_Background_Signals</receiver>
    <slot>trigger()</slot>
    <hints>
     <hint type="sourcelabel">
