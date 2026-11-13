@@ -183,12 +183,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     disclosure(ui->btable_check_group_toggle,ui->btable_check_group_controls,"Check");
     disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group_controls,"Regenerate");
 
-    ui->btable_orient_group->hide();
-    connect(ui->btable_orient_toggle,&QPushButton::toggled,this,[this](bool checked)
-    {
-        ui->btable_orient_group->setVisible(checked);
-        ui->btable_orient_toggle->setText(checked ? "▾ Flip and swap..." : "▸ Flip and swap...");
-    });
+    disclosure(ui->btable_orient_toggle,ui->btable_orient_controls,"Flip and swap");
 
     ui->method_advanced->hide();
     connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
