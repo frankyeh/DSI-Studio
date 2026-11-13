@@ -1075,7 +1075,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   </widget>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="method_detail_layout">
+                  <widget class="QWidget" name="method_detail"><layout class="QVBoxLayout" name="method_detail_layout">
                    <property name="spacing">
                     <number>6</number>
                    </property>
@@ -1157,7 +1157,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                           </widget>
                          </item>
                          <item>
-                          <layout class="QHBoxLayout" name="qsdr_reso_row_layout">
+                          <widget class="QWidget" name="qsdr_reso_row"><layout class="QHBoxLayout" name="qsdr_reso_row_layout">
                            <property name="spacing">
                             <number>5</number>
                            </property>
@@ -1203,7 +1203,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                              </property>
                             </widget>
                            </item>
-                          </layout>
+                          </layout></widget>
                          </item>
                          <item>
                           <layout class="QHBoxLayout" name="method_template_widget_layout">
@@ -1309,7 +1309,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                     </widget>
                    </item>
                    <item>
-                    <layout class="QGridLayout" name="DTI_metrics_grid">
+                    <widget class="QWidget" name="DTI_metrics"><layout class="QGridLayout" name="DTI_metrics_grid">
                      <property name="leftMargin">
                       <number>0</number>
                      </property>
@@ -1438,10 +1438,10 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                    </layout>
+                    </layout></widget>
                    </item>
                    <item>
-                    <layout class="QGridLayout" name="horizontalLayout_13">
+                    <widget class="QWidget" name="ODF_metrics"><layout class="QGridLayout" name="horizontalLayout_13">
                      <property name="leftMargin">
                       <number>0</number>
                      </property>
@@ -1503,9 +1503,9 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                    </layout>
+                    </layout></widget>
                    </item>
-                  </layout>
+                  </layout></widget>
                  </item>
                 </layout>
                </widget>
