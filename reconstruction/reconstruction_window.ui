@@ -55,8 +55,6 @@ QStackedWidget#pages QPushButton:disabled { color: #9a9a9f; background-color: #e
 QWidget#mask_edit QPushButton, QFrame#image_group QPushButton, QFrame#signal_group QPushButton, QFrame#correction_group QPushButton, QFrame#btable_orient_group QPushButton { background-color: #f4f4f5; min-height: 22px; }
 QWidget#mask_edit QPushButton:hover, QFrame#image_group QPushButton:hover, QFrame#signal_group QPushButton:hover, QFrame#correction_group QPushButton:hover, QFrame#btable_orient_group QPushButton:hover { background-color: #e9e9eb; border-color: #c8c8cc; }
 QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet, QStackedWidget#pages QPushButton#load_mask, QStackedWidget#pages QPushButton#save_mask { font-weight: bold; }
-QStackedWidget#pages QPushButton#more_outputs, QStackedWidget#pages QPushButton#more_odf_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
-QStackedWidget#pages QPushButton#more_outputs:hover, QStackedWidget#pages QPushButton#more_odf_outputs:hover { color: #1e40af; }
 QFrame#sidebar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 7px 3px; min-height: 30px; font-weight: bold; }
 QFrame#sidebar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
 QFrame#sidebar QPushButton#doDTI:pressed { background-color: #047857; }
