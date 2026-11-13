@@ -66,6 +66,10 @@ QFrame#hist_param_group, QFrame#image_group, QFrame#qc_card, QFrame#btable_orien
 QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
 QFrame#fsl_group { border-top-color: #2563eb; }
+QFrame#btable_regenerate_group { border-top-color: #10b981; }
+QFrame#image_group QPushButton#image_group_toggle, QFrame#signal_group QPushButton#signal_group_toggle, QFrame#btable_check_group QPushButton#btable_check_group_toggle, QFrame#btable_regenerate_group QPushButton#btable_regenerate_group_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
+QFrame#image_group QPushButton#image_group_toggle:hover, QFrame#signal_group QPushButton#signal_group_toggle:hover, QFrame#btable_check_group QPushButton#btable_check_group_toggle:hover, QFrame#btable_regenerate_group QPushButton#btable_regenerate_group_toggle:hover { color: #1e40af; }
+
 QFrame#btable_table_card { border-top-color: #10b981; }
 QStackedWidget#pages QPushButton#method_more_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
 QStackedWidget#pages QPushButton#method_more_toggle:hover { color: #1e40af; }
@@ -172,7 +176,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            </property>
            <item>
             <property name="text">
-             <string>Reconstruction</string>
+             <string>Mask</string>
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
@@ -180,7 +184,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
             </property>
            </item>
            <item>
-            <property name="text">
+   <item><property name="text"><string>Methods</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset></property></item>         <property name="text">
              <string>Edit DWI</string>
             </property>
             <property name="icon">
@@ -603,8 +607,27 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                 </layout>
                </widget>
               </item>
+              
               <item>
-               <widget class="QFrame" name="method_group">
+               <spacer name="recon_spacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="methods_page"><layout class="QVBoxLayout" name="methods_layout"><item><widget class="QScrollArea" name="methods_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="methods_content"><layout class="QVBoxLayout" name="methods_content_layout"><item><widget class="QFrame" name="method_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -842,28 +865,276 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    </layout>
                   </widget></item></layout></widget></item>
                 </layout>
-               </widget>
-              </item>
-              <item>
-               <spacer name="recon_spacer">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
+               </widget></item><item><widget class="QFrame" name="groupBox">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
                 </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </widget>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="inspect_page">
+                <layout class="QVBoxLayout" name="verticalLayout_15">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="groupBox_title">
+                   <property name="text">
+                    <string>Output metrics</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_12">
+                   <property name="spacing">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="label_8">
+                     <property name="text">
+                      <string>DTI metrics:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_fa">
+                     <property name="toolTip">
+                      <string>fa</string>
+                     </property>
+                     <property name="statusTip">
+                      <string>fa</string>
+                     </property>
+                     <property name="text">
+                      <string>fa</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_rd">
+                     <property name="toolTip">
+                      <string>rd</string>
+                     </property>
+                     <property name="statusTip">
+                      <string>rd</string>
+                     </property>
+                     <property name="text">
+                      <string>rd</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_rd12">
+                     <property name="toolTip">
+                      <string>rd1,rd2</string>
+                     </property>
+                     <property name="statusTip">
+                      <string>rd1,rd2</string>
+                     </property>
+                     <property name="text">
+                      <string>rd1,rd2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_ad">
+                     <property name="statusTip">
+                      <string>ad</string>
+                     </property>
+                     <property name="text">
+                      <string>ad</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_md">
+                     <property name="toolTip">
+                      <string>md</string>
+                     </property>
+                     <property name="statusTip">
+                      <string>md</string>
+                     </property>
+                     <property name="text">
+                      <string>md</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_tensor">
+                     <property name="toolTip">
+                      <string>tensor</string>
+                     </property>
+                     <property name="statusTip">
+                      <string>tensor</string>
+                     </property>
+                     <property name="text">
+                      <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="output_helix">
+                     <property name="statusTip">
+                      <string>helix</string>
+                     </property>
+                     <property name="text">
+                      <string>helix</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_10">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="dti_ignore_high_b">
+                     <property name="toolTip">
+                      <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
+                     </property>
+                     <property name="statusTip">
+                      <string>calculate DTI metrics by using only b &lt; 1750</string>
+                     </property>
+                     <property name="text">
+                      <string>ignore high b</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="more_outputs">
+                     <property name="text">
+                      <string>More...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/more_expand.svg</normaloff>:/icons/icons/more_expand.svg</iconset>
+                     </property>
+                     <property name="iconSize">
+                      <size>
+                       <width>16</width>
+                       <height>16</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_18">
+                   <property name="spacing">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QWidget" name="ODF_metrics" native="true">
+                     <layout class="QHBoxLayout" name="horizontalLayout_13">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QLabel" name="label_10">
+                        <property name="text">
+                         <string>ODF metrics:</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QCheckBox" name="output_rdi">
+                        <property name="statusTip">
+                         <string>rdi</string>
+                        </property>
+                        <property name="text">
+                         <string>rdi</string>
+                        </property>
+                        <property name="checked">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QCheckBox" name="output_gfa">
+                        <property name="statusTip">
+                         <string>gfa</string>
+                        </property>
+                        <property name="text">
+                         <string>gfa</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QCheckBox" name="output_odf">
+                        <property name="statusTip">
+                         <string>odf</string>
+                        </property>
+                        <property name="text">
+                         <string>odf vectors (rarely used)</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget></item><item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget><widget class="QWidget" name="inspect_page">
          <layout class="QVBoxLayout" name="inspect_layout">
           <property name="leftMargin">
            <number>0</number>
@@ -924,51 +1195,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   </widget>
                  </item>
                  
-                 <item>
-                  <layout class="QHBoxLayout" name="viewer_split" stretch="0,1">
-                   <item>
-                    <layout class="QVBoxLayout" name="volume_column">
-                     <item>
-                      <widget class="QTableView" name="volume_list">
-                       <property name="minimumSize">
-                        <size>
-                         <width>200</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="maximumSize">
-                        <size>
-                         <width>260</width>
-                         <height>16777215</height>
-                        </size>
-                       </property>
-                       <property name="toolTip">
-                        <string>DWI volumes (read-only); edit gradients on the B-table page</string>
-                       </property>
-                       <property name="editTriggers">
-                        <set>QAbstractItemView::NoEditTriggers</set>
-                       </property>
-                       <property name="alternatingRowColors">
-                        <bool>true</bool>
-                       </property>
-                       <property name="selectionMode">
-                        <enum>QAbstractItemView::SingleSelection</enum>
-                       </property>
-                       <property name="selectionBehavior">
-                        <enum>QAbstractItemView::SelectRows</enum>
-                       </property>
-                       <property name="verticalScrollMode">
-                        <enum>QAbstractItemView::ScrollPerPixel</enum>
-                       </property>
-                       <property name="showGrid">
-                        <bool>false</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <layout class="QVBoxLayout" name="volume_actions">
-                       <item>
-                        <widget class="QPushButton" name="delete_2">
+                 <item><layout class="QHBoxLayout" name="volume_top_actions"><item><widget class="QPushButton" name="delete_2">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                            <horstretch>0</horstretch>
@@ -988,10 +1215,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                           <iconset resource="../icons.qrc">
                            <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
                          </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QPushButton" name="remove_below">
+                        </widget></item><item><widget class="QPushButton" name="remove_below">
                          <property name="text">
                           <string>Remove below</string>
                          </property>
@@ -999,9 +1223,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                           <iconset resource="../icons.qrc">
                            <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
                          </property>
-                        </widget>
-                       </item>
-                      <item><widget class="QPushButton" name="show_bad_slice">
+                        </widget></item><item><widget class="QPushButton" name="show_bad_slice">
                      <property name="text">
                       <string>Show bad slice</string>
                      </property>
@@ -1019,7 +1241,15 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="text">
                       <string />
                      </property>
-                    </widget></item><item><widget class="QPushButton" name="align_slices">
+                    </widget></item></layout></item><item>
+                  <layout class="QHBoxLayout" name="viewer_split" stretch="0,1">
+                   <item>
+                    <layout class="QVBoxLayout" name="volume_column">
+                     <item>
+                      <widget class="QListWidget" name="volume_list"><property name="minimumSize"><size><width>220</width><height>0</height></size></property><property name="maximumSize"><size><width>320</width><height>16777215</height></size></property><property name="toolTip"><string>Volumes: DWI index, b-value and gradient vector. Edit gradients in the B-table tab.</string></property><property name="alternatingRowColors"><bool>true</bool></property><property name="selectionMode"><enum>QAbstractItemView::SingleSelection</enum></property></widget>
+                     </item>
+                     <item>
+                      <layout class="QVBoxLayout" name="volume_actions"><item><widget class="QPushButton" name="align_slices">
                    <property name="text">
                     <string>Align Slice...</string>
                    </property>
@@ -1285,15 +1515,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  <item>
                   <widget class="QLabel" name="image_group_title">
                    <property name="text">
-                    <string>Image</string>
+                    <string>Volume editing</string>
                    </property>
                    <property name="cardTitle" stdset="0">
                     <bool>true</bool>
                    </property>
                   </widget>
                  </item>
-                 <item>
-                  <layout class="QGridLayout" name="image_grid">
+                 <item><widget class="QPushButton" name="image_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Volume editing...</string></property></widget></item><item><widget class="QWidget" name="image_edit_controls"><layout class="QVBoxLayout" name="image_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="image_grid">
                    <item row="0" column="0">
                     <widget class="QPushButton" name="btn_Flip_x">
                      <property name="text">
@@ -1416,8 +1645,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                     </widget>
                    </item>
                    
-                  </layout>
-                 </item>
+                  </layout></item></layout></widget></item>
                 </layout>
                </widget>
               </item>
@@ -1442,15 +1670,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  <item>
                   <widget class="QLabel" name="signal_group_title">
                    <property name="text">
-                    <string>Signals</string>
+                    <string>Signal editing</string>
                    </property>
                    <property name="cardTitle" stdset="0">
                     <bool>true</bool>
                    </property>
                   </widget>
                  </item>
-                 <item>
-                  <layout class="QGridLayout" name="signal_grid">
+                 <item><widget class="QPushButton" name="signal_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Signal editing...</string></property></widget></item><item><widget class="QWidget" name="signal_edit_controls"><layout class="QVBoxLayout" name="signal_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="signal_grid">
                    <item row="0" column="0">
                     <widget class="QPushButton" name="btn_Smooth_Signals">
                      <property name="text">
@@ -1506,8 +1733,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </property>
                     </widget>
                    </item>
-                  </layout>
-                 </item>
+                  </layout></item></layout></widget></item>
                 </layout>
                </widget>
               </item>
@@ -1625,38 +1851,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
             </column>
            </widget></item></layout></widget></item>
           
-          <item>
-           <widget class="QFrame" name="btable_check_group">
-            <property name="card" stdset="0">
-             <bool>true</bool>
-            </property>
-            <layout class="QVBoxLayout" name="btable_check_group_layout">
-             <property name="leftMargin">
-              <number>12</number>
-             </property>
-             <property name="topMargin">
-              <number>10</number>
-             </property>
-             <property name="rightMargin">
-              <number>12</number>
-             </property>
-             <property name="bottomMargin">
-              <number>12</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="btable_check_group_title">
-               <property name="text">
-                <string>Check and regenerate</string>
-               </property>
-               <property name="cardTitle" stdset="0">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <layout class="QGridLayout" name="btable_check_grid">
-               <item row="0" column="0">
-                <widget class="QPushButton" name="btn_Check_b_table2">
+          <item><layout class="QHBoxLayout" name="btable_validation_row"><item><widget class="QFrame" name="btable_check_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_check_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_check_group_title"><property name="text"><string>Check</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QPushButton" name="btable_check_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Check...</string></property></widget></item><item><widget class="QWidget" name="btable_check_group_controls"><layout class="QHBoxLayout" name="btable_check_group_buttons"><item><widget class="QPushButton" name="btn_Check_b_table2">
                  <property name="text">
                   <string>Check B-table...</string>
                  </property>
@@ -1664,10 +1859,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                  </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="btn_Check_b_table">
+                </widget></item><item><widget class="QPushButton" name="btn_Check_b_table">
                  <property name="text">
                   <string>Check B-table (Template-Based)...</string>
                  </property>
@@ -1675,10 +1867,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                  </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QPushButton" name="btn_Regenerate_b_table">
+                </widget></item></layout></widget></item></layout></widget></item><item><widget class="QFrame" name="btable_regenerate_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_regenerate_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_regenerate_group_title"><property name="text"><string>Regenerate</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QPushButton" name="btable_regenerate_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Regenerate...</string></property></widget></item><item><widget class="QWidget" name="btable_regenerate_group_controls"><layout class="QHBoxLayout" name="btable_regenerate_group_buttons"><item><widget class="QPushButton" name="btn_Regenerate_b_table">
                  <property name="text">
                   <string>Regenerate B-table (Template-Based)...</string>
                  </property>
@@ -1686,10 +1875,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
                  </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QPushButton" name="btn_Regenerate_b_table_from_src">
+                </widget></item><item><widget class="QPushButton" name="btn_Regenerate_b_table_from_src">
                  <property name="text">
                   <string>Regenerate B-table from SRC...</string>
                  </property>
@@ -1697,13 +1883,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
                  </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </widget>
-          </item>
+                </widget></item></layout></widget></item></layout></widget></item></layout></item>
           <item><widget class="QPushButton" name="btable_orient_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Flip and swap...</string></property></widget></item><item>
            <widget class="QFrame" name="btable_orient_group">
             <property name="card" stdset="0">
@@ -2068,275 +2248,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       </size>
                      </property>
                     </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget></item><item><widget class="QFrame" name="groupBox">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_15">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="groupBox_title">
-                   <property name="text">
-                    <string>Output metrics</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_12">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_8">
-                     <property name="text">
-                      <string>DTI metrics:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_fa">
-                     <property name="toolTip">
-                      <string>fa</string>
-                     </property>
-                     <property name="statusTip">
-                      <string>fa</string>
-                     </property>
-                     <property name="text">
-                      <string>fa</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_rd">
-                     <property name="toolTip">
-                      <string>rd</string>
-                     </property>
-                     <property name="statusTip">
-                      <string>rd</string>
-                     </property>
-                     <property name="text">
-                      <string>rd</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_rd12">
-                     <property name="toolTip">
-                      <string>rd1,rd2</string>
-                     </property>
-                     <property name="statusTip">
-                      <string>rd1,rd2</string>
-                     </property>
-                     <property name="text">
-                      <string>rd1,rd2</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_ad">
-                     <property name="statusTip">
-                      <string>ad</string>
-                     </property>
-                     <property name="text">
-                      <string>ad</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_md">
-                     <property name="toolTip">
-                      <string>md</string>
-                     </property>
-                     <property name="statusTip">
-                      <string>md</string>
-                     </property>
-                     <property name="text">
-                      <string>md</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_tensor">
-                     <property name="toolTip">
-                      <string>tensor</string>
-                     </property>
-                     <property name="statusTip">
-                      <string>tensor</string>
-                     </property>
-                     <property name="text">
-                      <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_helix">
-                     <property name="statusTip">
-                      <string>helix</string>
-                     </property>
-                     <property name="text">
-                      <string>helix</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="horizontalSpacer_10">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="dti_ignore_high_b">
-                     <property name="toolTip">
-                      <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
-                     </property>
-                     <property name="statusTip">
-                      <string>calculate DTI metrics by using only b &lt; 1750</string>
-                     </property>
-                     <property name="text">
-                      <string>ignore high b</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="more_outputs">
-                     <property name="text">
-                      <string>More...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/more_expand.svg</normaloff>:/icons/icons/more_expand.svg</iconset>
-                     </property>
-                     <property name="iconSize">
-                      <size>
-                       <width>16</width>
-                       <height>16</height>
-                      </size>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_18">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QWidget" name="ODF_metrics" native="true">
-                     <layout class="QHBoxLayout" name="horizontalLayout_13">
-                      <property name="spacing">
-                       <number>0</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>0</number>
-                      </property>
-                      <item>
-                       <widget class="QLabel" name="label_10">
-                        <property name="text">
-                         <string>ODF metrics:</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_rdi">
-                        <property name="statusTip">
-                         <string>rdi</string>
-                        </property>
-                        <property name="text">
-                         <string>rdi</string>
-                        </property>
-                        <property name="checked">
-                         <bool>true</bool>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_gfa">
-                        <property name="statusTip">
-                         <string>gfa</string>
-                        </property>
-                        <property name="text">
-                         <string>gfa</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_odf">
-                        <property name="statusTip">
-                         <string>odf</string>
-                        </property>
-                        <property name="text">
-                         <string>odf vectors (rarely used)</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <spacer name="horizontalSpacer">
-                        <property name="orientation">
-                         <enum>Qt::Horizontal</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
-                         <size>
-                          <width>40</width>
-                          <height>20</height>
-                         </size>
-                        </property>
-                       </spacer>
-                      </item>
-                     </layout>
-                    </widget>
                    </item>
                   </layout>
                  </item>
