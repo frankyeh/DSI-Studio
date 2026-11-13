@@ -153,7 +153,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
         for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->signal_group,
-                          ui->testing_group,ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
+                          ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
                           ui->btn_Manual_Rotation,ui->btn_Resample,ui->btn_Rotate,ui->btn_Overwrite_Voxel_Size,ui->btn_Attach_Images})
             each->hide();
 
@@ -635,6 +635,9 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
 }
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
+    if(!checked)
+        return;
+    ui->DTI_metrics->setVisible(true);
     ui->high_accuracy->setVisible(!checked); // GQI and QSDR only
     if(checked)
         ui->high_accuracy->setChecked(false);
@@ -658,6 +661,9 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
+    if(!checked)
+        return;
+    ui->DTI_metrics->setVisible(false);
     ui->qsdr_options->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
     ui->ODF_metrics->setVisible(checked);
@@ -678,6 +684,9 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
+    if(!checked)
+        return;
+    ui->DTI_metrics->setVisible(false);
     ui->qsdr_options->setVisible(checked);
     ui->GQIOption_2->setVisible(checked);
     ui->ODF_metrics->setVisible(checked);
@@ -810,11 +819,6 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     load_b_table();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_actionEnable_TEST_features_triggered()
-{
-    ui->align_slices->setVisible(true);
 }
 
 void reconstruction_window::on_SagView_clicked()
