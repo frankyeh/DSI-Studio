@@ -55,8 +55,8 @@ QStackedWidget#pages QPushButton:disabled { color: #9a9a9f; background-color: #e
 QWidget#mask_edit QPushButton, QFrame#image_group QPushButton, QFrame#signal_group QPushButton, QFrame#correction_group QPushButton, QFrame#btable_orient_group QPushButton { background-color: #f4f4f5; min-height: 22px; }
 QWidget#mask_edit QPushButton:hover, QFrame#image_group QPushButton:hover, QFrame#signal_group QPushButton:hover, QFrame#correction_group QPushButton:hover, QFrame#btable_orient_group QPushButton:hover { background-color: #e9e9eb; border-color: #c8c8cc; }
 QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet, QStackedWidget#pages QPushButton#load_mask, QStackedWidget#pages QPushButton#save_mask { font-weight: bold; }
-QStackedWidget#pages QPushButton#edit_mask, QStackedWidget#pages QPushButton#more_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
-QStackedWidget#pages QPushButton#edit_mask:hover, QStackedWidget#pages QPushButton#more_outputs:hover { color: #1e40af; }
+QStackedWidget#pages QPushButton#edit_mask, QStackedWidget#pages QPushButton#more_outputs, QStackedWidget#pages QPushButton#more_odf_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
+QStackedWidget#pages QPushButton#edit_mask:hover, QStackedWidget#pages QPushButton#more_outputs:hover, QStackedWidget#pages QPushButton#more_odf_outputs:hover { color: #1e40af; }
 QFrame#sidebar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 7px 3px; min-height: 30px; font-weight: bold; }
 QFrame#sidebar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
 QFrame#sidebar QPushButton#doDTI:pressed { background-color: #047857; }
@@ -70,7 +70,7 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
 QStackedWidget#pages QFrame[card="true"] { background-color: #ffffff; border: 1px solid #dddddf; border-top: 4px solid #0ea5e9; border-radius: 9px; }
 QFrame#method_group, QFrame#volume_group, QFrame#btable_check_group, QFrame#performance_group { border-top-color: #10b981; }
 QFrame#hist_param_group, QFrame#image_group, QFrame#qc_card, QFrame#btable_orient_group, QFrame#groupBox { border-top-color: #f59e0b; }
-QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
+QFrame#signal_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
 QFrame#fsl_group { border-top-color: #2563eb; }
 QFrame#btable_regenerate_group { border-top-color: #10b981; }
@@ -915,7 +915,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                     </item>
                    </layout>
                   </widget></item></layout></widget></item>
-                <item><widget class="QWidget" name="DTI_metrics"><layout class="QGridLayout" name="DTI_metrics_grid"><property name="horizontalSpacing"><number>12</number></property><property name="verticalSpacing"><number>6</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>4</number></property><item row="0" column="0" colspan="3"><widget class="QLabel" name="label_8">
+                <item><widget class="QWidget" name="DTI_metrics"><layout class="QGridLayout" name="DTI_metrics_grid"><property name="horizontalSpacing"><number>10</number></property><property name="verticalSpacing"><number>5</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>4</number></property><item row="0" column="0" colspan="2"><widget class="QLabel" name="label_8">
                      <property name="text">
                       <string>DTI metrics:</string>
                      </property>
@@ -945,7 +945,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget></item><item row="1" column="2"><widget class="QCheckBox" name="output_rd12">
+                    </widget></item><item row="2" column="0"><widget class="QCheckBox" name="output_rd12">
                      <property name="toolTip">
                       <string>rd1,rd2</string>
                      </property>
@@ -955,14 +955,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="text">
                       <string>rd1,rd2</string>
                      </property>
-                    </widget></item><item row="2" column="0"><widget class="QCheckBox" name="output_ad">
+                    </widget></item><item row="2" column="1"><widget class="QCheckBox" name="output_ad">
                      <property name="statusTip">
                       <string>ad</string>
                      </property>
                      <property name="text">
                       <string>ad</string>
                      </property>
-                    </widget></item><item row="2" column="1"><widget class="QCheckBox" name="output_md">
+                    </widget></item><item row="3" column="0"><widget class="QCheckBox" name="output_md">
                      <property name="toolTip">
                       <string>md</string>
                      </property>
@@ -975,7 +975,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget></item><item row="2" column="2"><widget class="QCheckBox" name="output_tensor">
+                    </widget></item><item row="3" column="1"><widget class="QCheckBox" name="output_helix">
+                     <property name="statusTip">
+                      <string>helix</string>
+                     </property>
+                     <property name="text">
+                      <string>helix</string>
+                     </property>
+                    </widget></item><item row="4" column="0" colspan="2"><widget class="QCheckBox" name="output_tensor">
                      <property name="toolTip">
                       <string>tensor</string>
                      </property>
@@ -985,14 +992,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="text">
                       <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
                      </property>
-                    </widget></item><item row="3" column="0"><widget class="QCheckBox" name="output_helix">
-                     <property name="statusTip">
-                      <string>helix</string>
-                     </property>
-                     <property name="text">
-                      <string>helix</string>
-                     </property>
-                    </widget></item><item row="3" column="1"><widget class="QCheckBox" name="dti_ignore_high_b">
+                    </widget></item><item row="5" column="0"><widget class="QCheckBox" name="dti_ignore_high_b">
                      <property name="toolTip">
                       <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
                      </property>
@@ -1005,7 +1005,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget></item><item row="3" column="2"><widget class="QPushButton" name="more_outputs">
+                    </widget></item><item row="5" column="1"><widget class="QPushButton" name="more_outputs">
                      <property name="text">
                       <string>More...</string>
                      </property>
@@ -1019,32 +1019,11 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <height>16</height>
                       </size>
                      </property>
-                    </widget></item></layout></widget></item><item><widget class="QWidget" name="ODF_metrics" native="true">
-                     <layout class="QHBoxLayout" name="horizontalLayout_13">
-                      <property name="spacing">
-                       <number>0</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>0</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>0</number>
-                      </property>
-                      <item>
-                       <widget class="QLabel" name="label_10">
+                    </widget></item></layout></widget></item><item><widget class="QWidget" name="ODF_metrics"><layout class="QGridLayout" name="horizontalLayout_13"><property name="horizontalSpacing"><number>10</number></property><property name="verticalSpacing"><number>5</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>4</number></property><item row="0" column="0" colspan="2"><widget class="QLabel" name="label_10">
                         <property name="text">
                          <string>ODF metrics:</string>
                         </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_rdi">
+                       </widget></item><item row="1" column="0"><widget class="QCheckBox" name="output_rdi">
                         <property name="statusTip">
                          <string>rdi</string>
                         </property>
@@ -1054,43 +1033,21 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                         <property name="checked">
                          <bool>true</bool>
                         </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_gfa">
+                       </widget></item><item row="1" column="1"><widget class="QCheckBox" name="output_gfa">
                         <property name="statusTip">
                          <string>gfa</string>
                         </property>
                         <property name="text">
                          <string>gfa</string>
                         </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QCheckBox" name="output_odf">
+                       </widget></item><item row="2" column="0" colspan="2"><widget class="QCheckBox" name="output_odf">
                         <property name="statusTip">
                          <string>odf</string>
                         </property>
                         <property name="text">
                          <string>odf vectors (rarely used)</string>
                         </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <spacer name="horizontalSpacer">
-                        <property name="orientation">
-                         <enum>Qt::Horizontal</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
-                         <size>
-                          <width>40</width>
-                          <height>20</height>
-                         </size>
-                        </property>
-                       </spacer>
-                      </item>
-                     </layout>
-                    </widget></item></layout>
+                       </widget></item><item row="3" column="0"><widget class="QPushButton" name="more_odf_outputs"><property name="text"><string>More...</string></property><property name="flat"><bool>true</bool></property></widget></item></layout></widget></item></layout>
                </widget></item><item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
 <widget class="QWidget" name="inspect_page">
          <layout class="QVBoxLayout" name="inspect_layout" stretch="0,1">
