@@ -126,7 +126,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         delete ui->menuCorrections;
         delete ui->menuB_table;
         delete ui->menuFile;
-        for(int row : {1,2,3}) // Inspect DWI, Edit DWI, B-table
+        for(int row : {1,2}) // Inspect / Edit DWI, B-table
             ui->nav_rail->item(row)->setHidden(true);
         auto actions = ui->menuEdit->actions();
         for(int i = 4;i < actions.size();++i)
@@ -906,18 +906,10 @@ void reconstruction_window::on_fib_output_editingFinished()
 
 void reconstruction_window::on_nav_rail_currentRowChanged(int row)
 {
-    // the volume table and DWI view are shared by Inspect DWI, Edit DWI, and B-table
+    // the volume table is shared by Inspect / Edit DWI and B-table
     if(row == 1)
-    {
         ui->inspect_table_layout->insertWidget(1,ui->b_table);
-        ui->inspect_view_layout->addWidget(ui->source_widget);
-    }
     if(row == 2)
-    {
-        ui->edit_table_layout->addWidget(ui->b_table);
-        ui->edit_view_layout->addWidget(ui->source_widget);
-    }
-    if(row == 3)
         ui->btable_table_layout->addWidget(ui->b_table);
 }
 

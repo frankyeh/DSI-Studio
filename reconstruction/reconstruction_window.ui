@@ -110,12 +110,7 @@ QLabel#method_hint { color: #67676c; }</string>
          </item>
          <item>
           <property name="text">
-           <string>Inspect DWI</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Edit DWI</string>
+           <string>Inspect / Edit DWI</string>
           </property>
          </item>
          <item>
@@ -971,7 +966,7 @@ Reconstruction</string>
        </layout>
       </widget>
       <widget class="QWidget" name="inspect_page">
-       <layout class="QHBoxLayout" name="inspect_layout" stretch="2,3">
+       <layout class="QHBoxLayout" name="inspect_layout" stretch="2,3,2">
         <item>
          <layout class="QVBoxLayout" name="inspect_table_layout">
           <item>
@@ -1234,300 +1229,312 @@ Reconstruction</string>
           </item>
          </layout>
         </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="edit_page">
-       <layout class="QHBoxLayout" name="edit_layout" stretch="2,3,3">
         <item>
-         <layout class="QVBoxLayout" name="edit_table_layout" />
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="edit_view_layout" />
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="edit_tools_layout">
-          <item>
-           <widget class="QGroupBox" name="volume_group">
-            <property name="title">
-             <string>Volumes</string>
+         <widget class="QScrollArea" name="edit_scroll">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="edit_tools">
+           <layout class="QVBoxLayout" name="edit_tools_layout">
+            <property name="leftMargin">
+             <number>0</number>
             </property>
-            <layout class="QHBoxLayout" name="volume_row">
-             <item>
-              <widget class="QPushButton" name="delete_2">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Remove row</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="remove_below">
-               <property name="text">
-                <string>Remove below</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="align_slices">
-               <property name="text">
-                <string>Align Slice...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>16</width>
-                 <height>16</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="volume_spacer">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="image_group">
-            <property name="title">
-             <string>Image</string>
+            <property name="topMargin">
+             <number>0</number>
             </property>
-            <layout class="QGridLayout" name="image_grid">
-             <item row="0" column="0">
-              <widget class="QPushButton" name="btn_Flip_x">
-               <property name="text">
-                <string>Image Flip X</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QPushButton" name="btn_Flip_y">
-               <property name="text">
-                <string>Image Flip Y</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QPushButton" name="btn_Flip_z">
-               <property name="text">
-                <string>Image Flip Z</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="btn_Flip_xy">
-               <property name="text">
-                <string>Image Swap XY</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="btn_Flip_xz">
-               <property name="text">
-                <string>Image Swap XZ</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QPushButton" name="btn_Flip_yz">
-               <property name="text">
-                <string>Image Swap YZ</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="btn_Align_ACPC">
-               <property name="text">
-                <string>Align AC-PC...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QPushButton" name="btn_Manual_Rotation">
-               <property name="text">
-                <string>Rotate...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QPushButton" name="btn_Resample">
-               <property name="text">
-                <string>Resample to Isotropic</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QPushButton" name="btn_Rotate">
-               <property name="text">
-                <string>Resample to T1w/T2w...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QPushButton" name="btn_Overwrite_Voxel_Size">
-               <property name="text">
-                <string>Overwrite Voxel Size...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QPushButton" name="btn_Attach_Images">
-               <property name="text">
-                <string>Attach Images...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="signal_group">
-            <property name="title">
-             <string>Signals</string>
+            <property name="rightMargin">
+             <number>4</number>
             </property>
-            <layout class="QGridLayout" name="signal_grid">
-             <item row="0" column="0">
-              <widget class="QPushButton" name="btn_Smooth_Signals">
-               <property name="text">
-                <string>Smooth Signals</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QPushButton" name="btn_Scheme_Balance">
-               <property name="text">
-                <string>Scheme Balance</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QPushButton" name="btn_Erase_Background_Signals">
-               <property name="text">
-                <string>Erase Background Signals</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="btn_Trim_image">
-               <property name="text">
-                <string>Crop Background Volume</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="btn_Probablistic_Masking">
-               <property name="text">
-                <string>Probablistic Masking...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="correction_group">
-            <property name="title">
-             <string>Corrections</string>
+            <property name="bottomMargin">
+             <number>0</number>
             </property>
-            <layout class="QGridLayout" name="correction_grid">
-             <item row="0" column="0">
-              <widget class="QPushButton" name="btn_Run_FSL_Topup">
-               <property name="text">
-                <string>TOPUP/EDDY...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QPushButton" name="btn_TOPUP_only">
-               <property name="text">
-                <string>TOPUP...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QPushButton" name="btn_EDDY">
-               <property name="text">
-                <string>EDDY...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="btn_T1w_Distortion_Correction">
-               <property name="text">
-                <string>T1w Distortion Correction...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="btn_Correct_Bias_Field">
-               <property name="text">
-                <string>Bias Field Correction......</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QPushButton" name="btn_Eddy_Motion_Correction">
-               <property name="text">
-                <string>Motion Correction...</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="btn_Volume_Orientation_Correction">
-               <property name="text">
-                <string>Volume Orientation Correction...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <spacer name="edit_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint">
-             <size>
-              <width>20</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
+            <item>
+             <widget class="QGroupBox" name="volume_group">
+              <property name="title">
+               <string>Volumes</string>
+              </property>
+              <layout class="QHBoxLayout" name="volume_row">
+               <item>
+                <widget class="QPushButton" name="delete_2">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Remove row</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="remove_below">
+                 <property name="text">
+                  <string>Remove below</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="align_slices">
+                 <property name="text">
+                  <string>Align Slice...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>16</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="volume_spacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="image_group">
+              <property name="title">
+               <string>Image</string>
+              </property>
+              <layout class="QGridLayout" name="image_grid">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="btn_Flip_x">
+                 <property name="text">
+                  <string>Image Flip X</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="btn_Flip_y">
+                 <property name="text">
+                  <string>Image Flip Y</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="btn_Flip_z">
+                 <property name="text">
+                  <string>Image Flip Z</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="btn_Flip_xy">
+                 <property name="text">
+                  <string>Image Swap XY</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QPushButton" name="btn_Flip_xz">
+                 <property name="text">
+                  <string>Image Swap XZ</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QPushButton" name="btn_Flip_yz">
+                 <property name="text">
+                  <string>Image Swap YZ</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QPushButton" name="btn_Align_ACPC">
+                 <property name="text">
+                  <string>Align AC-PC...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QPushButton" name="btn_Manual_Rotation">
+                 <property name="text">
+                  <string>Rotate...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QPushButton" name="btn_Resample">
+                 <property name="text">
+                  <string>Resample to Isotropic</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QPushButton" name="btn_Rotate">
+                 <property name="text">
+                  <string>Resample to T1w/T2w...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0">
+                <widget class="QPushButton" name="btn_Overwrite_Voxel_Size">
+                 <property name="text">
+                  <string>Overwrite Voxel Size...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="1">
+                <widget class="QPushButton" name="btn_Attach_Images">
+                 <property name="text">
+                  <string>Attach Images...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="signal_group">
+              <property name="title">
+               <string>Signals</string>
+              </property>
+              <layout class="QGridLayout" name="signal_grid">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="btn_Smooth_Signals">
+                 <property name="text">
+                  <string>Smooth Signals</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="btn_Scheme_Balance">
+                 <property name="text">
+                  <string>Scheme Balance</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="btn_Erase_Background_Signals">
+                 <property name="text">
+                  <string>Erase Background Signals</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="btn_Trim_image">
+                 <property name="text">
+                  <string>Crop Background Volume</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QPushButton" name="btn_Probablistic_Masking">
+                 <property name="text">
+                  <string>Probablistic Masking...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="correction_group">
+              <property name="title">
+               <string>Corrections</string>
+              </property>
+              <layout class="QGridLayout" name="correction_grid">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="btn_Run_FSL_Topup">
+                 <property name="text">
+                  <string>TOPUP/EDDY...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="btn_TOPUP_only">
+                 <property name="text">
+                  <string>TOPUP...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="btn_EDDY">
+                 <property name="text">
+                  <string>EDDY...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="btn_T1w_Distortion_Correction">
+                 <property name="text">
+                  <string>T1w Distortion Correction...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QPushButton" name="btn_Correct_Bias_Field">
+                 <property name="text">
+                  <string>Bias Field Correction......</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QPushButton" name="btn_Eddy_Motion_Correction">
+                 <property name="text">
+                  <string>Motion Correction...</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QPushButton" name="btn_Volume_Orientation_Correction">
+                 <property name="text">
+                  <string>Volume Orientation Correction...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="edit_spacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint">
+               <size>
+                <width>20</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -2651,30 +2658,6 @@ Reconstruction</string>
    <slot>trigger()</slot>
   </connection>
   <connection>
-   <sender>btn_Save_SRC_file_as</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_SRC_file_as</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_4D_nifti</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_4D_nifti</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_b0</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_b0</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_DWI_sum</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_DWI_sum</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
    <sender>btn_Flip_x</sender>
    <signal>clicked()</signal>
    <receiver>actionFlip_x</receiver>
@@ -2816,6 +2799,30 @@ Reconstruction</string>
    <sender>btn_Volume_Orientation_Correction</sender>
    <signal>clicked()</signal>
    <receiver>actionVolume_Orientation_Correction</receiver>
+   <slot>trigger()</slot>
+  </connection>
+  <connection>
+   <sender>btn_Save_SRC_file_as</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSave_SRC_file_as</receiver>
+   <slot>trigger()</slot>
+  </connection>
+  <connection>
+   <sender>btn_Save_4D_nifti</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSave_4D_nifti</receiver>
+   <slot>trigger()</slot>
+  </connection>
+  <connection>
+   <sender>btn_Save_b0</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSave_b0</receiver>
+   <slot>trigger()</slot>
+  </connection>
+  <connection>
+   <sender>btn_Save_DWI_sum</sender>
+   <signal>clicked()</signal>
+   <receiver>actionSave_DWI_sum</receiver>
    <slot>trigger()</slot>
   </connection>
   <connection>
