@@ -137,7 +137,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(int row : {2,3}) // Preprocessing, B-table
             ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
-        for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->qc_card,ui->volume_group,ui->signal_group,
+        for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->qc_card,ui->signal_group,
                           ui->testing_group,ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
                           ui->btn_Manual_Rotation,ui->btn_Resample,ui->btn_Rotate,ui->btn_Overwrite_Voxel_Size,ui->btn_Attach_Images})
             each->hide();
@@ -151,6 +151,13 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
 
     on_b_table_itemSelectionChanged();
+
+    ui->btable_orient_group->hide();
+    connect(ui->btable_orient_toggle,&QPushButton::toggled,this,[this](bool checked)
+    {
+        ui->btable_orient_group->setVisible(checked);
+        ui->btable_orient_toggle->setText(checked ? "▾ Flip and swap..." : "▸ Flip and swap...");
+    });
 
     ui->mask_edit->setVisible(false);
 
