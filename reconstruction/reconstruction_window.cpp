@@ -61,14 +61,14 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         QPainter painter(&pix);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(i == 0 ? "#0ea5e9" : i == 1 ? "#10b981" : "#f59e0b"));
+        painter.setBrush(QColor(i == 0 ? "#15803d" : i == 1 ? "#059669" : "#16a34a"));
         painter.drawEllipse(1,1,18,18);
         painter.setPen(Qt::white);
         QFont font = painter.font();
         font.setBold(true);
-        font.setPointSize(10);
+        font.setPointSize(8);
         painter.setFont(font);
-        painter.drawText(pix.rect(),Qt::AlignCenter,QString::number(i+1));
+        painter.drawText(pix.rect(),Qt::AlignCenter,QString("2%1").arg(QChar('a'+i)));
         ui->nav_rail->item(i)->setIcon(QIcon(pix));
     }
     // Navigation includes a disclosure row without a corresponding page.
