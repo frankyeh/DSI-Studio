@@ -52,7 +52,7 @@ private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);
     void on_DTI_toggled(bool checked);
-    void on_save_mask_clicked();
+    void on_actionSave_Mask_triggered();
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
@@ -69,7 +69,7 @@ private slots:
     void on_remove_below_clicked();
 
     void on_show_bad_slice_clicked();
-    void on_align_slices_clicked();
+    void on_align_selected_dwi_clicked();
     void on_actionManual_Align_triggered();
     void on_actionT1W_based_QSDR_triggered();
     void on_change_fib_output_clicked();

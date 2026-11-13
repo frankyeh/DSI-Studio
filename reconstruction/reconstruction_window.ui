@@ -54,7 +54,7 @@ QStackedWidget#pages QPushButton:focus { border-color: #a5b4fc; }
 QStackedWidget#pages QPushButton:disabled { color: #9a9a9f; background-color: #eeeeef; border-color: #e3e3e6; }
 QWidget#mask_edit QPushButton, QFrame#image_group QPushButton, QFrame#signal_group QPushButton, QFrame#correction_group QPushButton, QFrame#btable_orient_group QPushButton { background-color: #f4f4f5; min-height: 22px; }
 QWidget#mask_edit QPushButton:hover, QFrame#image_group QPushButton:hover, QFrame#signal_group QPushButton:hover, QFrame#correction_group QPushButton:hover, QFrame#btable_orient_group QPushButton:hover { background-color: #e9e9eb; border-color: #c8c8cc; }
-QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet, QStackedWidget#pages QPushButton#load_mask, QStackedWidget#pages QPushButton#save_mask { font-weight: bold; }
+QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet { font-weight: bold; }
 QFrame#sidebar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 7px 3px; min-height: 30px; font-weight: bold; }
 QFrame#sidebar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
 QFrame#sidebar QPushButton#doDTI:pressed { background-color: #047857; }
@@ -424,31 +424,8 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </property>
                     </widget>
                    </item>
-                   <item>
-                    <widget class="QPushButton" name="load_mask">
-                     <property name="toolTip">
-                      <string>run mask_open</string>
-                     </property>
-                     <property name="text">
-                      <string>Open...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="save_mask">
-                     <property name="text">
-                      <string>Save...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
+                   
+                   
                   </layout>
                  </item>
                  <item>
@@ -2166,9 +2143,9 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       </widget>
                      </item>
                      <item row="2" column="1">
-                      <widget class="QPushButton" name="align_slices">
+                      <widget class="QPushButton" name="align_selected_dwi">
                        <property name="text">
-                        <string>Align Slice...</string>
+                        <string>Align Selected DWI...</string>
                        </property>
                        <property name="icon">
                         <iconset resource="../icons.qrc">
@@ -2804,6 +2781,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     <addaction name="actionLoad_bvals"/>
     <addaction name="actionLoad_bvecs"/>
     <addaction name="separator"/>
+    <addaction name="actionOpen_Mask"/>
     <addaction name="actionSave_Mask"/>
     <addaction name="separator"/>
     <addaction name="actionSave_SRC_file_as"/>
@@ -2817,6 +2795,18 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
    </widget>
    <addaction name="menuFile"/>
   </widget>
+  <action name="actionOpen_Mask">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Open Mask...</string>
+   </property>
+   <property name="toolTip">
+    <string>run mask_open</string>
+   </property>
+  </action>
   <action name="actionSave_Mask">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -3945,21 +3935,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>actionSave_Mask</sender>
-   <signal>triggered()</signal>
-   <receiver>save_mask</receiver>
-   <slot>click()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
+  
  </connections>
 </ui>
