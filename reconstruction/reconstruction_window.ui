@@ -74,6 +74,8 @@ QFrame#signal_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
 QFrame#fsl_group { border-top-color: #2563eb; }
 QFrame#btable_regenerate_group { border-top-color: #10b981; }
+QFrame#bias_group { border-top-color: #8b5cf6; }
+QLabel#preprocess_arrow_1, QLabel#preprocess_arrow_2 { color: #9aa3ad; font-size: 18pt; font-weight: bold; min-height: 24px; }
 QWidget#dwi_edit_disclosures QPushButton#image_group_toggle, QWidget#dwi_edit_disclosures QPushButton#signal_group_toggle { color: #2563eb; background-color: transparent; border: 0px; font-weight: bold; text-align: left; min-height: 28px; padding: 3px 0px; }
 QWidget#dwi_edit_disclosures QPushButton#image_group_toggle:hover, QWidget#dwi_edit_disclosures QPushButton#signal_group_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#image_group_toggle, QStackedWidget#pages QPushButton#signal_group_toggle, QStackedWidget#pages QPushButton#btable_check_group_toggle, QStackedWidget#pages QPushButton#btable_regenerate_group_toggle, QStackedWidget#pages QPushButton#btable_orient_toggle, QStackedWidget#pages QPushButton#image_group_collapse, QStackedWidget#pages QPushButton#signal_group_collapse, QStackedWidget#pages QPushButton#btable_check_group_collapse, QStackedWidget#pages QPushButton#btable_regenerate_group_collapse, QStackedWidget#pages QPushButton#btable_orient_group_collapse { color: #2563eb; background-color: transparent; border: 0px; min-height: 28px; padding: 2px 0px; font-weight: bold; text-align: left; }
@@ -598,80 +600,43 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
           </item>
          </layout>
         </widget>
-<widget class="QWidget" name="preprocess_page">
-         <layout class="QVBoxLayout" name="preprocess_layout">
-          <item><widget class="QScrollArea" name="preprocess_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="preprocess_content"><layout class="QVBoxLayout" name="preprocess_content_layout"><item><layout class="QHBoxLayout" name="preprocess_cards_row"><item><widget class="QFrame" name="fsl_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="fsl_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="fsl_group_title"><property name="text"><string>FSL</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><layout class="QGridLayout" name="fsl_tools_grid"><item row="0" column="0"><widget class="QPushButton" name="btn_Run_FSL_Topup">
-                 <property name="text">
-                  <string>TOPUP/EDDY...</string>
-                 </property>
+<widget class="QWidget" name="preprocess_page"><layout class="QVBoxLayout" name="preprocess_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QScrollArea" name="preprocess_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="preprocess_content"><layout class="QVBoxLayout" name="preprocess_content_layout"><property name="spacing"><number>8</number></property><property name="topMargin"><number>12</number></property><item alignment="Qt::AlignHCenter"><widget class="QFrame" name="fsl_group"><property name="card" stdset="0"><bool>true</bool></property><property name="minimumSize"><size><width>230</width><height>0</height></size></property><property name="maximumSize"><size><width>230</width><height>16777215</height></size></property><layout class="QVBoxLayout" name="fsl_group_layout"><property name="spacing"><number>7</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="fsl_group_title"><property name="text"><string>Susceptibility distortion correction</string></property><property name="wordWrap"><bool>true</bool></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QPushButton" name="btn_TOPUP_only">
+                 <property name="text"><string>FSL topup</string></property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_TOPUP_only">
-                 <property name="text">
-                  <string>TOPUP...</string>
-                 </property>
+                </widget></item><item><widget class="QPushButton" name="btn_Run_FSL_Topup">
+                 <property name="text"><string>FSL topup/eddy</string></property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="2" column="0"><widget class="QPushButton" name="btn_EDDY">
-                 <property name="text">
-                  <string>EDDY...</string>
-                 </property>
+                </widget></item><item><widget class="QPushButton" name="btn_T1w_Distortion_Correction">
+                 <property name="text"><string>T1w-based correction</string></property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item></layout></item></layout></widget></item><item><widget class="QFrame" name="correction_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="correction_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="correction_group_title"><property name="text"><string>Built-In</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><layout class="QGridLayout" name="builtin_tools_grid"><item row="0" column="0"><widget class="QPushButton" name="btn_T1w_Distortion_Correction">
-                 <property name="text">
-                  <string>T1w Distortion Correction...</string>
-                 </property>
+                </widget></item></layout></widget></item><item alignment="Qt::AlignHCenter"><widget class="QLabel" name="preprocess_arrow_1"><property name="text"><string>↓</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item><item alignment="Qt::AlignHCenter"><widget class="QFrame" name="correction_group"><property name="card" stdset="0"><bool>true</bool></property><property name="minimumSize"><size><width>230</width><height>0</height></size></property><property name="maximumSize"><size><width>230</width><height>16777215</height></size></property><layout class="QVBoxLayout" name="correction_group_layout"><property name="spacing"><number>7</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="correction_group_title"><property name="text"><string>Eddy and motion correction</string></property><property name="wordWrap"><bool>true</bool></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QPushButton" name="btn_EDDY">
+                 <property name="text"><string>FSL eddy</string></property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_Correct_Bias_Field">
-                 <property name="text">
-                  <string>Bias Field Correction...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
-                 </property>
-                </widget></item><item row="2" column="0"><widget class="QPushButton" name="btn_Eddy_Motion_Correction">
-                 <property name="text">
-                  <string>Motion Correction...</string>
-                 </property>
+                </widget></item><item><widget class="QPushButton" name="btn_Eddy_Motion_Correction">
+                 <property name="text"><string>Motion Correction</string></property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/motion_correct.svg</normaloff>:/icons/icons/motion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="3" column="0"><widget class="QPushButton" name="btn_Volume_Orientation_Correction">
-                 <property name="text">
-                  <string>Volume Orientation Correction...</string>
-                 </property>
+                </widget></item></layout></widget></item><item alignment="Qt::AlignHCenter"><widget class="QLabel" name="preprocess_arrow_2"><property name="text"><string>↓</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item><item alignment="Qt::AlignHCenter"><widget class="QFrame" name="bias_group"><property name="card" stdset="0"><bool>true</bool></property><property name="minimumSize"><size><width>230</width><height>0</height></size></property><property name="maximumSize"><size><width>230</width><height>16777215</height></size></property><layout class="QVBoxLayout" name="bias_group_layout"><property name="spacing"><number>7</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btn_Correct_Bias_Field">
+                 <property name="text"><string>Bias Field Correction</string></property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
+                   <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
                  </property>
-                </widget></item></layout></item></layout></widget></item></layout></item>
-          <item>
-           <spacer name="preprocess_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item></layout></widget></widget></item>
-         </layout>
-        </widget>
+                </widget></item></layout></widget></item><item><spacer name="preprocess_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
 <widget class="QWidget" name="methods_page"><layout class="QVBoxLayout" name="methods_layout"><item><widget class="QScrollArea" name="methods_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="methods_content"><layout class="QVBoxLayout" name="methods_content_layout"><item><widget class="QFrame" name="method_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
@@ -2540,18 +2505,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     <string>run check_btable2</string>
    </property>
   </action>
-  <action name="actionVolume_Orientation_Correction">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Volume Orientation Correction...</string>
-   </property>
-   <property name="toolTip">
-    <string>run orientation_correction</string>
-   </property>
-  </action>
+  
   <action name="actionProbablistic_Masking">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -3009,22 +2963,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>btn_Volume_Orientation_Correction</sender>
-   <signal>clicked()</signal>
-   <receiver>actionVolume_Orientation_Correction</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
+  
   
   
   <connection>
