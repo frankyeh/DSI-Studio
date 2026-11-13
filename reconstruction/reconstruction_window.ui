@@ -80,6 +80,9 @@ QStackedWidget#pages QPushButton#image_group_toggle, QStackedWidget#pages QPushB
 QStackedWidget#pages QPushButton#image_group_toggle:hover, QStackedWidget#pages QPushButton#signal_group_toggle:hover { color: #1e40af; }
 
 QFrame#btable_table_card { border-top-color: #10b981; }
+QStackedWidget#pages QWidget#recon_page QFrame[card=&quot;true&quot;] { border: 1px solid #15803d; border-top: 4px solid #15803d; }
+QStackedWidget#pages QWidget#preprocess_page QFrame[card=&quot;true&quot;] { border: 1px solid #059669; border-top: 4px solid #059669; }
+QStackedWidget#pages QWidget#methods_page QFrame[card=&quot;true&quot;] { border: 1px solid #16a34a; border-top: 4px solid #16a34a; }
 QStackedWidget#pages QPushButton#method_more_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
 QStackedWidget#pages QPushButton#method_more_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#zoom_in, QStackedWidget#pages QPushButton#zoom_out { min-height: 0px; padding: 3px; border-radius: 6px; }
