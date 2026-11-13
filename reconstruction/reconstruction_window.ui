@@ -634,7 +634,17 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
                  </property>
-                </widget></item></layout></widget></item><item><spacer name="preprocess_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
+                </widget></item><item>
+                    <widget class="QPushButton" name="btn_Resample">
+                     <property name="text">
+                      <string>Resample to Isotropic</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+                     </property>
+                    </widget>
+                   </item></layout></widget></item><item><spacer name="preprocess_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
 <widget class="QWidget" name="methods_page"><layout class="QVBoxLayout" name="methods_layout"><item><widget class="QScrollArea" name="methods_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="methods_content"><layout class="QVBoxLayout" name="methods_content_layout"><item><widget class="QFrame" name="method_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
@@ -1571,17 +1581,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="0">
-                    <widget class="QPushButton" name="btn_Resample">
-                     <property name="text">
-                      <string>Resample to Isotropic</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
+                   
                    <item row="2" column="1">
                     <widget class="QPushButton" name="btn_Rotate">
                      <property name="text">
