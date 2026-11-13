@@ -488,7 +488,7 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!info) // item is a real row, but guard anyway rather than trust that indirectly
             return;
         enable_chat(true);
-        ui->ai_approval->setChecked(info->model_settings.value("approval").toString() == "auto");
+        ui->ai_approval->setChecked(info->model_settings.value("approval").toString() != "manual");
         ui->ai_work_dir->setText(info->model_settings.contains("cwd") ?
             info->model_settings["cwd"].toString() : main_window.work_dir());
         update_model_list();
@@ -642,7 +642,7 @@ QJsonObject AIAgent::ai_request(const QJsonObject& request)
         } guard{*this};
         dispatching_info = &info;
         ai_chat_context = chat;
-        ai_auto_approve = info.model_settings.value("approval").toString() == "auto";
+        ai_auto_approve = info.model_settings.value("approval").toString() != "manual"; // auto by default
         result = main_window.dispatch_cmd(info,request); // MainWindow's command center handles everything
     }
     if(&info == selected_info()) // set_work_dir may have moved this chat's directory
