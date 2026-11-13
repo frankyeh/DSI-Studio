@@ -77,6 +77,7 @@ private slots:
     void on_change_fib_output_clicked();
     void on_fib_output_editingFinished();
     void on_more_outputs_clicked();
+    void on_nav_rail_currentRowChanged(int row);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
