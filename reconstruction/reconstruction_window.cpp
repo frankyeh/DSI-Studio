@@ -149,7 +149,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(auto* each : {ui->actionSave_SRC_file_as,ui->actionSave_4D_nifti,ui->actionSave_b0,ui->actionSave_DWI_sum,
                           ui->actionSave_b_table,ui->actionSave_bvals,ui->actionSave_bvecs})
             each->setVisible(false);
-        for(int row : {0,5}) // Preprocessing and Edit Btable
+        for(int row : {1,4}) // Preprocessing and Edit Btable
             ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
         for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->signal_group,
