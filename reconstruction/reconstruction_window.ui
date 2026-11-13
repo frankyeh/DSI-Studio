@@ -962,7 +962,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       </widget>
                      </item>
                      <item>
-                      <layout class="QHBoxLayout" name="volume_actions">
+                      <layout class="QVBoxLayout" name="volume_actions">
                        <item>
                         <widget class="QPushButton" name="delete_2">
                          <property name="sizePolicy">
