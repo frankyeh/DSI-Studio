@@ -51,9 +51,9 @@ QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton
 QStackedWidget#pages QPushButton#edit_mask, QStackedWidget#pages QPushButton#more_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
 QStackedWidget#pages QPushButton#edit_mask:hover, QStackedWidget#pages QPushButton#more_outputs:hover { color: #1e40af; }
 QFrame#sidebar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 8px 18px; min-height: 30px; font-weight: bold; }
-QFrame#run_bar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
-QFrame#run_bar QPushButton#doDTI:pressed { background-color: #047857; }
-QFrame#run_bar QPushButton#doDTI:disabled { color: #ecfdf5; background-color: #a7e3cf; border-color: #a7e3cf; }
+QFrame#sidebar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
+QFrame#sidebar QPushButton#doDTI:pressed { background-color: #047857; }
+QFrame#sidebar QPushButton#doDTI:disabled { color: #ecfdf5; background-color: #a7e3cf; border-color: #a7e3cf; }
 QRadioButton#DTI, QRadioButton#GQI, QRadioButton#QSDR { color: #4f4f54; background-color: #f1f3f6; border: 1px solid #dfe3e8; border-radius: 15px; padding: 6px 20px; min-height: 18px; font-weight: bold; }
 QRadioButton#DTI::indicator, QRadioButton#GQI::indicator, QRadioButton#QSDR::indicator { width: 0px; height: 0px; }
 QRadioButton#DTI:hover, QRadioButton#GQI:hover, QRadioButton#QSDR:hover { background-color: #e6e9ef; }
@@ -1670,11 +1670,11 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <height>16</height>
                       </size>
                      </property>
-                    </widget></item><item><widget class="QLabel" name="bad_slice_label">
+                    </widget></item>></layout></item<item><widget class="QLabel" name="bad_slice_label">
                      <property name="text">
                       <string />
                      </property>
-                    </widget></item></layout></item><item>
+                    </widget></item><item>
                   <layout class="QHBoxLayout" name="viewer_split" stretch="0,1">
                    <item>
                     <layout class="QVBoxLayout" name="volume_column">
