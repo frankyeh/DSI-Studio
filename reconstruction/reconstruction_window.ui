@@ -915,51 +915,11 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                     </item>
                    </layout>
                   </widget></item></layout></widget></item>
-                </layout>
-               </widget></item><item><widget class="QFrame" name="groupBox">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_15">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="groupBox_title">
-                   <property name="text">
-                    <string>Output metrics</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_12">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_8">
+                <item><widget class="QWidget" name="DTI_metrics"><layout class="QGridLayout" name="DTI_metrics_grid"><property name="horizontalSpacing"><number>12</number></property><property name="verticalSpacing"><number>6</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>4</number></property><item row="0" column="0" colspan="3"><widget class="QLabel" name="label_8">
                      <property name="text">
                       <string>DTI metrics:</string>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_fa">
+                    </widget></item><item row="1" column="0"><widget class="QCheckBox" name="output_fa">
                      <property name="toolTip">
                       <string>fa</string>
                      </property>
@@ -972,10 +932,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_rd">
+                    </widget></item><item row="1" column="1"><widget class="QCheckBox" name="output_rd">
                      <property name="toolTip">
                       <string>rd</string>
                      </property>
@@ -988,10 +945,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_rd12">
+                    </widget></item><item row="1" column="2"><widget class="QCheckBox" name="output_rd12">
                      <property name="toolTip">
                       <string>rd1,rd2</string>
                      </property>
@@ -1001,20 +955,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="text">
                       <string>rd1,rd2</string>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_ad">
+                    </widget></item><item row="2" column="0"><widget class="QCheckBox" name="output_ad">
                      <property name="statusTip">
                       <string>ad</string>
                      </property>
                      <property name="text">
                       <string>ad</string>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_md">
+                    </widget></item><item row="2" column="1"><widget class="QCheckBox" name="output_md">
                      <property name="toolTip">
                       <string>md</string>
                      </property>
@@ -1027,10 +975,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_tensor">
+                    </widget></item><item row="2" column="2"><widget class="QCheckBox" name="output_tensor">
                      <property name="toolTip">
                       <string>tensor</string>
                      </property>
@@ -1040,33 +985,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="text">
                       <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="output_helix">
+                    </widget></item><item row="3" column="0"><widget class="QCheckBox" name="output_helix">
                      <property name="statusTip">
                       <string>helix</string>
                      </property>
                      <property name="text">
                       <string>helix</string>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="horizontalSpacer_10">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="dti_ignore_high_b">
+                    </widget></item><item row="3" column="1"><widget class="QCheckBox" name="dti_ignore_high_b">
                      <property name="toolTip">
                       <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
                      </property>
@@ -1079,10 +1005,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="checked">
                       <bool>true</bool>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="more_outputs">
+                    </widget></item><item row="3" column="2"><widget class="QPushButton" name="more_outputs">
                      <property name="text">
                       <string>More...</string>
                      </property>
@@ -1096,20 +1019,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <height>16</height>
                       </size>
                      </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_18">
-                   <property name="spacing">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QWidget" name="ODF_metrics" native="true">
+                    </widget></item></layout></widget></item><item><widget class="QWidget" name="ODF_metrics" native="true">
                      <layout class="QHBoxLayout" name="horizontalLayout_13">
                       <property name="spacing">
                        <number>0</number>
@@ -1180,11 +1090,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </spacer>
                       </item>
                      </layout>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
+                    </widget></item></layout>
                </widget></item><item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
 <widget class="QWidget" name="inspect_page">
          <layout class="QVBoxLayout" name="inspect_layout" stretch="0,1">
@@ -2125,76 +2031,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  </item>
                 </layout>
                </widget></item></layout></item>
-              <item>
-               <widget class="QFrame" name="testing_group">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="testing_group_layout">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="testing_group_title">
-                   <property name="text">
-                    <string>Testing</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="testing_row">
-                   <item>
-                    <widget class="QPushButton" name="btn_Enable_TEST_features">
-                     <property name="text">
-                      <string>Enable TEST features</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/lab_flask.svg</normaloff>:/icons/icons/lab_flask.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="btn_Image_upsample_to_T1W_TESTING">
-                     <property name="text">
-                      <string>Image Upsample to T1W (TESTING)...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="testing_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>0</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget>
-              </item>
+              
               <item>
                <spacer name="options_spacer">
                 <property name="orientation">
@@ -2509,24 +2346,8 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     <string>run save_b0</string>
    </property>
   </action>
-  <action name="actionEnable_TEST_features">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/lab_flask.svg</normaloff>:/icons/icons/lab_flask.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Enable TEST features</string>
-   </property>
-  </action>
-  <action name="actionImage_upsample_to_T1W_TESTING">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Image Upsample to T1W (TESTING)...</string>
-   </property>
-  </action>
+  
+  
   <action name="actionAlign_ACPC">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -3524,37 +3345,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>btn_Enable_TEST_features</sender>
-   <signal>clicked()</signal>
-   <receiver>actionEnable_TEST_features</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>btn_Image_upsample_to_T1W_TESTING</sender>
-   <signal>clicked()</signal>
-   <receiver>actionImage_upsample_to_T1W_TESTING</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
+  
+  
  </connections>
 </ui>
