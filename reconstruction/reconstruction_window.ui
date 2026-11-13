@@ -2181,7 +2181,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
                  </property>
                 </widget></item></layout></widget></item></layout></widget></item></layout></item>
-          <item><widget class="QPushButton" name="btable_orient_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Flip and swap...</string></property></widget></item><item>
+          <item>
            <widget class="QFrame" name="btable_orient_group">
             <property name="card" stdset="0">
              <bool>true</bool>
@@ -2199,18 +2199,8 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
              <property name="bottomMargin">
               <number>12</number>
              </property>
-             <item>
-              <widget class="QLabel" name="btable_orient_group_title">
-               <property name="text">
-                <string>Orientation</string>
-               </property>
-               <property name="cardTitle" stdset="0">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <layout class="QGridLayout" name="btable_orient_grid">
+             <item><widget class="QPushButton" name="btable_orient_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Flip and swap...</string></property></widget></item>
+             <item><widget class="QWidget" name="btable_orient_controls"><layout class="QVBoxLayout" name="btable_orient_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="btable_orient_grid">
                <item row="0" column="0">
                 <widget class="QPushButton" name="btn_Flip_bx">
                  <property name="text">
@@ -2277,8 +2267,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  </property>
                 </widget>
                </item>
-              </layout>
-             </item>
+              </layout></item></layout></widget></item>
             </layout>
            </widget>
           </item>
