@@ -1724,25 +1724,13 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            <number>0</number>
           </property>
           <item>
-           <widget class="QScrollArea" name="inspect_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="inspect_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>-159</y>
-               <width>655</width>
-               <height>457</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="inspect_content_layout">
-              <item>
-               <widget class="QFrame" name="viewer_card">
+           <widget class="QFrame" name="viewer_card">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>1</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -2043,10 +2031,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  </item>
                 </layout>
                </widget>
-              </item>
-             </layout>
-            </widget>
-           </widget>
           </item>
           <item>
            <layout class="QVBoxLayout" name="dwi_edit_disclosures_layout">
