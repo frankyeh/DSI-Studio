@@ -65,6 +65,10 @@ QFrame#method_group, QFrame#volume_group, QFrame#btable_check_group, QFrame#perf
 QFrame#hist_param_group, QFrame#image_group, QFrame#qc_card, QFrame#btable_orient_group, QFrame#groupBox { border-top-color: #f59e0b; }
 QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
+QFrame#fsl_group { border-top-color: #2563eb; }
+QFrame#btable_table_card { border-top-color: #10b981; }
+QStackedWidget#pages QPushButton#btable_orient_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
+QStackedWidget#pages QPushButton#btable_orient_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#zoom_in, QStackedWidget#pages QPushButton#zoom_out { min-height: 0px; padding: 3px; border-radius: 6px; }
 QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bold; background: transparent; border: 0px; padding-bottom: 2px; }
 QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
