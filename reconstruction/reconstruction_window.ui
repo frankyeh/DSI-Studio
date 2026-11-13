@@ -46,7 +46,7 @@ QWidget#fib_output_widget QLabel#label_6 { color: #4f4f54; background-color: #e9
 QWidget#fib_output_widget QLineEdit#fib_output { color: #202124; background-color: #ffffff; border: 1px solid #cfd5dd; border-radius: 11px; padding: 4px 8px; min-height: 22px; }
 QWidget#fib_output_widget QPushButton#change_fib_output { background-color: #ffffff; border: 1px solid #cfd5dd; border-radius: 11px; padding: 3px 8px; min-height: 22px; }
 QFrame#run_bar { background-color: #f7f7f8; border: 0px; border-top: 1px solid #e3e6ea; }
-QScrollArea#preprocess_scroll, QWidget#preprocess_content, QScrollArea#recon_scroll, QWidget#recon_content, QScrollArea#methods_scroll, QWidget#methods_content, QScrollArea#inspect_scroll, QWidget#inspect_content, QScrollArea#options_scroll, QWidget#options_content { background-color: transparent; }
+QWidget#preprocess_content, QWidget#recon_content, QWidget#methods_content { background-color: transparent; }
 QStackedWidget#pages QPushButton { color: #202124; background-color: #ffffff; border: 1px solid #d9d9dc; border-radius: 7px; padding: 5px 9px; min-height: 26px; }
 QStackedWidget#pages QPushButton:hover { background-color: #f1f1f3; border-color: #bfc0c4; }
 QStackedWidget#pages QPushButton:pressed { background-color: #e5e5e7; }
@@ -352,22 +352,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            <number>0</number>
           </property>
           <item>
-           <widget class="QScrollArea" name="recon_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="recon_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>669</width>
-               <height>634</height>
-              </rect>
-             </property>
+           <widget class="QWidget" name="recon_content">
              <layout class="QVBoxLayout" name="recon_content_layout">
               <item>
                <widget class="QFrame" name="groupBox_2">
@@ -669,7 +654,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
               </item>
              </layout>
             </widget>
-           </widget>
           </item>
          </layout>
         </widget>
@@ -688,22 +672,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            <number>0</number>
           </property>
           <item>
-           <widget class="QScrollArea" name="preprocess_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="preprocess_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>669</width>
-               <height>634</height>
-              </rect>
-             </property>
+           <widget class="QWidget" name="preprocess_content">
              <layout class="QVBoxLayout" name="preprocess_content_layout">
               <property name="spacing">
                <number>8</number>
@@ -957,29 +926,13 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
               </item>
              </layout>
             </widget>
-           </widget>
           </item>
          </layout>
         </widget>
         <widget class="QWidget" name="methods_page">
          <layout class="QVBoxLayout" name="methods_layout">
           <item>
-           <widget class="QScrollArea" name="methods_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="methods_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>651</width>
-               <height>616</height>
-              </rect>
-             </property>
+           <widget class="QWidget" name="methods_content">
              <layout class="QVBoxLayout" name="methods_content_layout">
               <item>
                <widget class="QFrame" name="method_group">
@@ -1705,7 +1658,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
               </item>
              </layout>
             </widget>
-           </widget>
           </item>
          </layout>
         </widget>
@@ -1724,25 +1676,13 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            <number>0</number>
           </property>
           <item>
-           <widget class="QScrollArea" name="inspect_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="inspect_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>-159</y>
-               <width>655</width>
-               <height>457</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="inspect_content_layout">
-              <item>
-               <widget class="QFrame" name="viewer_card">
+           <widget class="QFrame" name="viewer_card">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>1</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -2043,10 +1983,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  </item>
                 </layout>
                </widget>
-              </item>
-             </layout>
-            </widget>
-           </widget>
           </item>
           <item>
            <layout class="QVBoxLayout" name="dwi_edit_disclosures_layout">
