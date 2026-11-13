@@ -693,8 +693,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->ODF_metrics->setVisible(!checked);
 
 
-    ui->qsdr_reso->setVisible(!checked);
-    ui->qsdr_reso_label->setVisible(!checked);
+    ui->qsdr_reso_row->setVisible(!checked);
 
     if(filenames.size() == 1)
     {
@@ -717,8 +716,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->ODF_metrics->setVisible(checked);
 
 
-    ui->qsdr_reso->setVisible(!checked);
-    ui->qsdr_reso_label->setVisible(!checked);
+    ui->qsdr_reso_row->setVisible(!checked);
 
     if(filenames.size() == 1)
     {
@@ -741,8 +739,7 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     ui->ODF_metrics->setVisible(checked);
 
 
-    ui->qsdr_reso->setVisible(checked);
-    ui->qsdr_reso_label->setVisible(checked);
+    ui->qsdr_reso_row->setVisible(checked);
 
     if(filenames.size() == 1)
     {
