@@ -205,6 +205,18 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     on_b_table_itemSelectionChanged();
 
+    ui->image_group->hide();
+    ui->signal_group->hide();
+    connect(ui->image_group_toggle,&QPushButton::clicked,this,[this]()
+    {
+        ui->image_group_toggle->hide();
+        ui->image_group->show();
+    });
+    connect(ui->signal_group_toggle,&QPushButton::clicked,this,[this]()
+    {
+        ui->signal_group_toggle->hide();
+        ui->signal_group->show();
+    });
     auto disclosure = [this](QPushButton* link,QFrame* card,QPushButton* collapse)
     {
         card->hide();
@@ -221,8 +233,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             link->show();
         });
     };
-    disclosure(ui->image_group_toggle,ui->image_group,ui->image_group_collapse);
-    disclosure(ui->signal_group_toggle,ui->signal_group,ui->signal_group_collapse);
     disclosure(ui->btable_check_group_toggle,ui->btable_check_group,ui->btable_check_group_collapse);
     disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group,ui->btable_regenerate_group_collapse);
     disclosure(ui->btable_orient_toggle,ui->btable_orient_group,ui->btable_orient_group_collapse);
