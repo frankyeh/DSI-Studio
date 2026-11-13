@@ -1,11 +1,13 @@
 #include <filesystem>
 #include <QSplitter>
+#include <QSignalBlocker>
 #include <QThread>
 #include <QImage>
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QSettings>
+#include <QPainter>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
 
@@ -52,6 +54,66 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
+    for(int i = 0;i < 3;++i)
+    {
+        QPixmap pix(20,20);
+        pix.fill(Qt::transparent);
+        QPainter painter(&pix);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(i == 0 ? "#0ea5e9" : i == 1 ? "#10b981" : "#f59e0b"));
+        painter.drawEllipse(1,1,18,18);
+        painter.setPen(Qt::white);
+        QFont font = painter.font();
+        font.setBold(true);
+        font.setPointSize(10);
+        painter.setFont(font);
+        painter.drawText(pix.rect(),Qt::AlignCenter,QString::number(i+1));
+        ui->nav_rail->item(i)->setIcon(QIcon(pix));
+    }
+    // Navigation includes a disclosure row without a corresponding page.
+    ui->nav_rail->item(4)->setHidden(true);
+    ui->nav_rail->item(5)->setHidden(true);
+    ui->nav_rail->item(3)->setForeground(QColor("#2563eb"));
+    connect(ui->nav_rail,&QListWidget::currentRowChanged,this,[this](int row)
+    {
+        if(row >= 0 && row < 3)
+            ui->pages->setCurrentIndex(row);
+        if(row >= 4 && row <= 5)
+            ui->pages->setCurrentIndex(row-1);
+    });
+    connect(ui->nav_rail,&QListWidget::itemClicked,this,[this](QListWidgetItem* item)
+    {
+        if(item != ui->nav_rail->item(3))
+            return;
+        ui->nav_rail->item(4)->setHidden(false);
+        ui->nav_rail->item(5)->setHidden(handle->voxel.is_histology);
+        ui->nav_rail->item(3)->setHidden(true);
+        ui->nav_rail->setCurrentRow(4);
+    });
+    connect(ui->volume_list,&QListWidget::currentRowChanged,this,[this](int row)
+    {
+        if(row >= 0 && row != ui->b_table->currentRow())
+            ui->b_table->selectRow(row);
+    });
+    connect(ui->b_table,&QTableWidget::itemSelectionChanged,this,[this]()
+    {
+        if(ui->volume_list->currentRow() != ui->b_table->currentRow())
+            ui->volume_list->setCurrentRow(ui->b_table->currentRow());
+    });
+    connect(ui->b_table->model(),&QAbstractItemModel::dataChanged,this,[this](const QModelIndex& first,const QModelIndex& last)
+    {
+        for(int row = first.row();row <= last.row() && row < ui->volume_list->count();++row)
+            if(row >= 0 && ui->b_table->item(row,0) && ui->b_table->item(row,1) &&
+               ui->b_table->item(row,2) && ui->b_table->item(row,3))
+                ui->volume_list->item(row)->setText(QString("#%1  b%2  (%3, %4, %5)")
+                    .arg(row+1).arg(ui->b_table->item(row,0)->text())
+                    .arg(ui->b_table->item(row,1)->text().toDouble(),0,'f',3)
+                    .arg(ui->b_table->item(row,2)->text().toDouble(),0,'f',3)
+                    .arg(ui->b_table->item(row,3)->text().toDouble(),0,'f',3));
+    });
+    // saving the mask is reached from the File menu
+    ui->save_mask->hide();
     outputs = {
         ui->output_fa,
         ui->output_rd,
@@ -75,13 +137,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     };
     for(auto each : adv_outputs)
         each->hide();
-    ui->groupBox->hide(); // until More... is checked
     if(!load_src(0))
         throw std::runtime_error(handle->error_msg);
 
     setWindowTitle(filenames[0]);
     ui->ThreadCount->setMaximum(tipl::max_thread_count);
-    ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
     ui->b_table->setColumnWidth(0,60);
@@ -125,14 +185,16 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     if(handle->voxel.is_histology)
     {
-        delete ui->menuCorrections;
-        delete ui->menuB_table;
-        delete ui->menuFile;
-        ui->source_page->hide();
-        ui->toolBox->removeItem(0);
-        auto actions = ui->menuEdit->actions();
-        for(int i = 4;i < actions.size();++i)
-            actions[i]->setVisible(false);
+        for(auto* each : {ui->actionSave_SRC_file_as,ui->actionSave_4D_nifti,ui->actionSave_b0,ui->actionSave_DWI_sum,
+                          ui->actionSave_b_table,ui->actionSave_bvals,ui->actionSave_bvecs})
+            each->setVisible(false);
+        for(int row : {1,5}) // Preprocessing and Edit Btable
+            ui->nav_rail->item(row)->setHidden(true);
+        // Inspect / Edit DWI keeps only the image flips that apply to histology
+        for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->signal_group,
+                          ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
+                          ui->btn_Manual_Rotation,ui->btn_Resample,ui->btn_Rotate,ui->btn_Overwrite_Voxel_Size,ui->btn_Attach_Images})
+            each->hide();
 
         ui->hist_downsampling->setValue(std::ceil(std::log2(handle->voxel.hist_image.width()))-12);
     }
@@ -144,7 +206,27 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     on_b_table_itemSelectionChanged();
 
-    ui->mask_edit->setVisible(false);
+    ui->image_group->hide();
+    ui->signal_group->hide();
+    connect(ui->image_group_toggle,&QPushButton::clicked,this,[this]()
+    {
+        ui->image_group_toggle->hide();
+        ui->image_group->show();
+    });
+    connect(ui->signal_group_toggle,&QPushButton::clicked,this,[this]()
+    {
+        ui->signal_group_toggle->hide();
+        ui->signal_group->show();
+    });
+    ui->method_detail->hide();
+    connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
+    {
+        ui->method_detail->setVisible(checked);
+        if(checked)
+            for(auto each : adv_outputs)
+                each->show();
+        ui->method_more_toggle->setText(checked ? "▾ Less..." : "▸ More...");
+    });
 
     {
         foreach (QAction* action, findChildren<QAction*>())
@@ -174,16 +256,24 @@ void reconstruction_window::load_b_table(void)
 {
     if(handle->src_bvalues.empty())
         return;
+    QSignalBlocker block(ui->volume_list);
+    ui->volume_list->clear();
     ui->b_table->clear();
     ui->b_table->setRowCount(handle->src_bvalues.size());
     for(unsigned int index = 0;index < handle->src_bvalues.size();++index)
     {
         ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(handle->src_bvalues[index])));
-        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0])));
-        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1])));
-        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2])));
+        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0],'f',3)));
+        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1],'f',3)));
+        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2],'f',3)));
+        ui->volume_list->addItem(QString("#%1  b%2  (%3, %4, %5)")
+            .arg(index+1).arg(handle->src_bvalues[index])
+            .arg(handle->src_bvectors[index][0],0,'f',3)
+            .arg(handle->src_bvectors[index][1],0,'f',3)
+            .arg(handle->src_bvectors[index][2],0,'f',3));
     }
     ui->b_table->selectRow(0);
+    ui->volume_list->setCurrentRow(0);
 }
 
 void reconstruction_window::on_b_table_itemSelectionChanged()
@@ -225,6 +315,8 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
 void reconstruction_window::resizeEvent ( QResizeEvent * event )
 {
     QMainWindow::resizeEvent(event);
+    ui->horizontalLayout_5->setDirection(width() < 900 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    ui->viewer_split->setDirection(width() < 800 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::showEvent ( QShowEvent * event )
@@ -489,7 +581,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         if(!ok)
             return fail("canceled");
     }
-    if((cmd == "probabilistic_masking" || cmd == "correct_by_t1w" || cmd == "correct_by_t2w") && param.empty())
+    if((cmd == "mask_background_signals" || cmd == "probabilistic_masking" || cmd == "correct_by_t1w" || cmd == "correct_by_t2w") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
@@ -572,6 +664,9 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
 }
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
+    if(!checked)
+        return;
+    ui->DTI_metrics->setVisible(true);
     ui->high_accuracy->setVisible(!checked); // GQI and QSDR only
     if(checked)
         ui->high_accuracy->setChecked(false);
@@ -580,8 +675,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->ODF_metrics->setVisible(!checked);
 
 
-    ui->qsdr_reso->setVisible(!checked);
-    ui->qsdr_reso_label->setVisible(!checked);
+    ui->qsdr_reso_row->setVisible(!checked);
 
     if(filenames.size() == 1)
     {
@@ -595,13 +689,16 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
+    if(!checked)
+        return;
+    ui->DTI_metrics->setVisible(false);
+    ui->high_accuracy->setVisible(true);
     ui->qsdr_options->setVisible(!checked);
     ui->GQIOption_2->setVisible(checked);
     ui->ODF_metrics->setVisible(checked);
 
 
-    ui->qsdr_reso->setVisible(!checked);
-    ui->qsdr_reso_label->setVisible(!checked);
+    ui->qsdr_reso_row->setVisible(!checked);
 
     if(filenames.size() == 1)
     {
@@ -615,15 +712,16 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
+    if(!checked)
+        return;
+    ui->DTI_metrics->setVisible(false);
+    ui->high_accuracy->setVisible(true);
     ui->qsdr_options->setVisible(checked);
     ui->GQIOption_2->setVisible(checked);
     ui->ODF_metrics->setVisible(checked);
 
 
-    ui->qsdr_reso->setVisible(checked);
-    ui->qsdr_reso_label->setVisible(checked);
-
-    ui->menuQSDR->setEnabled(checked);
+    ui->qsdr_reso_row->setVisible(checked);
 
     if(filenames.size() == 1)
     {
@@ -751,11 +849,6 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
-void reconstruction_window::on_actionEnable_TEST_features_triggered()
-{
-    ui->align_slices->setVisible(true);
-}
-
 void reconstruction_window::on_SagView_clicked()
 {
     view_orientation = 0;
@@ -792,8 +885,13 @@ void reconstruction_window::on_show_bad_slice_clicked()
                 is_bad[bad_slices[i].first] = 1;
 
         for(int i = 0;i < ui->b_table->rowCount();++i)
+        {
+            QColor color = is_bad[i] ? QColor(255,200,200) : QColor(255,255,255);
             for(int j = 0;j < ui->b_table->columnCount();++j)
-                ui->b_table->item(i, j)->setData(Qt::BackgroundRole,is_bad[i] ?  QColor (255,200,200): QColor (255,255,255));
+                ui->b_table->item(i,j)->setData(Qt::BackgroundRole,color);
+            if(i < ui->volume_list->count())
+                ui->volume_list->item(i)->setBackground(color);
+        }
     }
     if(bad_slices.size() == 0)
     {
@@ -829,12 +927,7 @@ void reconstruction_window::on_align_slices_clicked()
 
 }
 
-void reconstruction_window::on_edit_mask_clicked()
-{
-    ui->edit_mask->setVisible(false);
-    ui->mask_edit->setVisible(true);
 
-}
 
 
 void match_template_resolution(tipl::image<3>& VG,
@@ -906,10 +999,5 @@ void reconstruction_window::on_fib_output_editingFinished()
 }
 
 
-void reconstruction_window::on_more_outputs_clicked()
-{
-    ui->more_outputs->hide();
-    for(auto each : adv_outputs)
-        each->show();
-}
+
 

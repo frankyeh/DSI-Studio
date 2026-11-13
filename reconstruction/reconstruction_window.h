@@ -62,7 +62,6 @@ private slots:
     void on_delete_2_clicked();
     void on_SlicePos_valueChanged(int value);
     void on_actionManual_Rotation_triggered();
-    void on_actionEnable_TEST_features_triggered();
     void on_SagView_clicked();
     void on_CorView_clicked();
     void on_AxiView_clicked();
@@ -71,12 +70,10 @@ private slots:
 
     void on_show_bad_slice_clicked();
     void on_align_slices_clicked();
-    void on_edit_mask_clicked();
     void on_actionManual_Align_triggered();
     void on_actionT1W_based_QSDR_triggered();
     void on_change_fib_output_clicked();
     void on_fib_output_editingFinished();
-    void on_more_outputs_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

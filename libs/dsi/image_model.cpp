@@ -865,7 +865,7 @@ std::vector<std::pair<std::string,std::string> > legacy_cmd{
     {"[Step T2][Edit][Resample]","resample"},
     {"[Step T2][Edit][Align ACPC]","align_acpc"},
     {"[Step T2][Edit][Crop Background]","crop_background"},
-    {"[Step T2][Edit][Probablistic Masking]","probabilistic_masking"},
+    {"[Step T2][Edit][Masking Background Signals]","mask_background_signals"},
     {"[Step T2][Edit][Overwrite Voxel Size]","set_voxel_size"},
     {"[Step T2][Edit][Smooth Signals]","smooth_signals"},
     {"[Step T2][B-table][Check B-table]","check_btable"},
@@ -1214,7 +1214,7 @@ bool src_data::command(std::vector<std::string> cmds)
         param = std::to_string(threshold);
         return log_step();
     }
-    if(cmd == "probabilistic_masking")
+    if(cmd == "mask_background_signals" || cmd == "probabilistic_masking")
     {
         if(param.empty())
             return error_msg = "please assign file name",false;
