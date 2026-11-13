@@ -688,8 +688,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   </widget>
                  </item>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_5">
-                   <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_5"><item><layout class="QHBoxLayout" name="method_radio_row"><item>
                     <widget class="QRadioButton" name="DTI">
                      <property name="text">
                       <string>DTI</string>
@@ -698,8 +697,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       <bool>false</bool>
                      </property>
                     </widget>
-                   </item>
-                   <item>
+                   </item><item>
                     <widget class="QRadioButton" name="GQI">
                      <property name="text">
                       <string>GQI</string>
@@ -708,8 +706,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       <bool>true</bool>
                      </property>
                     </widget>
-                   </item>
-                   <item>
+                   </item><item>
                     <widget class="QRadioButton" name="QSDR">
                      <property name="enabled">
                       <bool>true</bool>
@@ -718,12 +715,11 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       <string>QSDR</string>
                      </property>
                     </widget>
-                   </item>
-                   <item><widget class="QLabel" name="label_15">
+                   </item></layout></item><item><layout class="QHBoxLayout" name="method_template_row"><item><widget class="QLabel" name="label_15">
                      <property name="text">
                       <string>Template</string>
                      </property>
-                    </widget></item><item><widget class="QComboBox" name="primary_template" /></item><item>
+                    </widget></item><item><widget class="QComboBox" name="primary_template" /></item></layout></item><item>
                     <spacer name="method_spacer">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
@@ -735,8 +731,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       </size>
                      </property>
                     </spacer>
-                   </item>
-                  </layout>
+                   </item></layout>
                  </item>
                  <item>
                   <widget class="QLabel" name="method_hint">
