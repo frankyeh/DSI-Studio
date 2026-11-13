@@ -56,6 +56,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     // Navigation includes a disclosure row without a corresponding page.
     ui->nav_rail->item(4)->setHidden(true);
     ui->nav_rail->item(5)->setHidden(true);
+    ui->nav_rail->item(3)->setForeground(QColor("#2563eb"));
     connect(ui->nav_rail,&QListWidget::currentRowChanged,this,[this](int row)
     {
         if(row >= 0 && row < 3)
@@ -69,7 +70,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             return;
         bool expand = ui->nav_rail->item(4)->isHidden();
         ui->nav_rail->item(4)->setHidden(!expand);
-        ui->nav_rail->item(5)->setHidden(!expand);
+        ui->nav_rail->item(5)->setHidden(!expand || handle->voxel.is_histology);
         item->setText(expand ? "▾ Edit..." : "▸ Edit...");
         if(!expand && ui->pages->currentIndex() >= 3)
             ui->pages->setCurrentIndex(2);
