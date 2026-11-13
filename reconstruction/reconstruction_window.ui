@@ -1883,8 +1883,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
               </item>
               
               
-              <item>
-               <widget class="QFrame" name="image_group">
+              <item><layout class="QVBoxLayout" name="image_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="image_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Volume editing...</string></property></widget></item><item><widget class="QFrame" name="image_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -1902,7 +1901,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <number>12</number>
                  </property>
                  
-                 <item><widget class="QPushButton" name="image_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Volume editing...</string></property></widget></item><item><widget class="QWidget" name="image_edit_controls"><layout class="QVBoxLayout" name="image_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="image_grid">
+                 <item><widget class="QPushButton" name="image_group_collapse"><property name="flat"><bool>true</bool></property><property name="text"><string>▾ Volume editing...</string></property></widget></item><item><widget class="QWidget" name="image_edit_controls"><layout class="QVBoxLayout" name="image_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="image_grid">
                    <item row="0" column="0">
                     <widget class="QPushButton" name="btn_Flip_x">
                      <property name="text">
@@ -2027,10 +2026,8 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    
                   </layout></item></layout></widget></item>
                 </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QFrame" name="signal_group">
+               </widget></item></layout></item>
+              <item><layout class="QVBoxLayout" name="signal_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="signal_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Signal editing...</string></property></widget></item><item><widget class="QFrame" name="signal_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -2048,7 +2045,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <number>12</number>
                  </property>
                  
-                 <item><widget class="QPushButton" name="signal_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Signal editing...</string></property></widget></item><item><widget class="QWidget" name="signal_edit_controls"><layout class="QVBoxLayout" name="signal_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="signal_grid">
+                 <item><widget class="QPushButton" name="signal_group_collapse"><property name="flat"><bool>true</bool></property><property name="text"><string>▾ Signal editing...</string></property></widget></item><item><widget class="QWidget" name="signal_edit_controls"><layout class="QVBoxLayout" name="signal_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="signal_grid">
                    <item row="0" column="0">
                     <widget class="QPushButton" name="btn_Smooth_Signals">
                      <property name="text">
@@ -2106,8 +2103,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    </item>
                   </layout></item></layout></widget></item>
                 </layout>
-               </widget>
-              </item>
+               </widget></item></layout></item>
              </layout>
             </widget>
            </widget>
@@ -2148,7 +2144,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
             </column>
            </widget></item></layout></widget></item>
           
-          <item><layout class="QHBoxLayout" name="btable_validation_row"><item><widget class="QFrame" name="btable_check_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_check_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btable_check_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Check...</string></property></widget></item><item><widget class="QWidget" name="btable_check_group_controls"><layout class="QHBoxLayout" name="btable_check_group_buttons"><item><widget class="QPushButton" name="btn_Check_b_table2">
+          <item><layout class="QHBoxLayout" name="btable_validation_row"><item><layout class="QVBoxLayout" name="btable_check_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="btable_check_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Check...</string></property></widget></item><item><widget class="QFrame" name="btable_check_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_check_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btable_check_group_collapse"><property name="flat"><bool>true</bool></property><property name="text"><string>▾ Check...</string></property></widget></item><item><widget class="QWidget" name="btable_check_group_controls"><layout class="QHBoxLayout" name="btable_check_group_buttons"><item><widget class="QPushButton" name="btn_Check_b_table2">
                  <property name="text">
                   <string>Check B-table...</string>
                  </property>
@@ -2164,7 +2160,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                  </property>
-                </widget></item></layout></widget></item></layout></widget></item><item><widget class="QFrame" name="btable_regenerate_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_regenerate_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btable_regenerate_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Regenerate...</string></property></widget></item><item><widget class="QWidget" name="btable_regenerate_group_controls"><layout class="QHBoxLayout" name="btable_regenerate_group_buttons"><item><widget class="QPushButton" name="btn_Regenerate_b_table">
+                </widget></item></layout></widget></item></layout></widget></item></layout></item><item><layout class="QVBoxLayout" name="btable_regenerate_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="btable_regenerate_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Regenerate...</string></property></widget></item><item><widget class="QFrame" name="btable_regenerate_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_regenerate_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btable_regenerate_group_collapse"><property name="flat"><bool>true</bool></property><property name="text"><string>▾ Regenerate...</string></property></widget></item><item><widget class="QWidget" name="btable_regenerate_group_controls"><layout class="QHBoxLayout" name="btable_regenerate_group_buttons"><item><widget class="QPushButton" name="btn_Regenerate_b_table">
                  <property name="text">
                   <string>Regenerate B-table (Template-Based)...</string>
                  </property>
@@ -2180,9 +2176,8 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
                  </property>
-                </widget></item></layout></widget></item></layout></widget></item></layout></item>
-          <item>
-           <widget class="QFrame" name="btable_orient_group">
+                </widget></item></layout></widget></item></layout></widget></item></layout></item></layout></item>
+          <item><layout class="QVBoxLayout" name="btable_orient_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="btable_orient_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Flip and swap...</string></property></widget></item><item><widget class="QFrame" name="btable_orient_group">
             <property name="card" stdset="0">
              <bool>true</bool>
             </property>
@@ -2199,7 +2194,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
              <property name="bottomMargin">
               <number>12</number>
              </property>
-             <item><widget class="QPushButton" name="btable_orient_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Flip and swap...</string></property></widget></item>
+             <item><widget class="QPushButton" name="btable_orient_group_collapse"><property name="flat"><bool>true</bool></property><property name="text"><string>▾ Flip and swap...</string></property></widget></item>
              <item><widget class="QWidget" name="btable_orient_controls"><layout class="QVBoxLayout" name="btable_orient_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="btable_orient_grid">
                <item row="0" column="0">
                 <widget class="QPushButton" name="btn_Flip_bx">
@@ -2269,8 +2264,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                </item>
               </layout></item></layout></widget></item>
             </layout>
-           </widget>
-          </item>
+           </widget></item></layout></item>
          </layout>
         </widget>
        </widget>
