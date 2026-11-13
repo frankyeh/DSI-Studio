@@ -167,27 +167,21 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     on_b_table_itemSelectionChanged();
 
-    for(auto* each : {ui->image_edit_controls,ui->signal_edit_controls,
-                      ui->btable_check_group_controls,ui->btable_regenerate_group_controls})
-        each->hide();
-    for(auto button : {ui->image_group_toggle,ui->signal_group_toggle,
-                       ui->btable_check_group_toggle,ui->btable_regenerate_group_toggle})
-        connect(button,&QPushButton::toggled,this,[button](bool checked)
+    auto disclosure = [this](QPushButton* button,QWidget* content,const QString& label)
+    {
+        content->hide();
+        button->setChecked(false);
+        button->setText("▸ "+label+"...");
+        connect(button,&QPushButton::toggled,this,[button,content,label](bool expanded)
         {
-            QWidget* controls = nullptr;
-            QString label;
-            if(button->objectName() == "image_group_toggle")
-                controls = button->parentWidget()->findChild<QWidget*>("image_edit_controls"), label = "Volume editing";
-            if(button->objectName() == "signal_group_toggle")
-                controls = button->parentWidget()->findChild<QWidget*>("signal_edit_controls"), label = "Signal editing";
-            if(button->objectName() == "btable_check_group_toggle")
-                controls = button->parentWidget()->findChild<QWidget*>("btable_check_group_controls"), label = "Check";
-            if(button->objectName() == "btable_regenerate_group_toggle")
-                controls = button->parentWidget()->findChild<QWidget*>("btable_regenerate_group_controls"), label = "Regenerate";
-            if(controls)
-                controls->setVisible(checked);
-            button->setText((checked ? "▾ " : "▸ ")+label+"...");
+            content->setVisible(expanded);
+            button->setText((expanded ? "▾ " : "▸ ")+label+"...");
         });
+    };
+    disclosure(ui->image_group_toggle,ui->image_edit_controls,"Volume editing");
+    disclosure(ui->signal_group_toggle,ui->signal_edit_controls,"Signal editing");
+    disclosure(ui->btable_check_group_toggle,ui->btable_check_group_controls,"Check");
+    disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group_controls,"Regenerate");
 
     ui->btable_orient_group->hide();
     connect(ui->btable_orient_toggle,&QPushButton::toggled,this,[this](bool checked)
