@@ -52,6 +52,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
+    // Inspect / Edit DWI lists volumes read-only from the same model and selection as the editable b-table,
+    // so row changes, bad-slice colors and the current volume stay in sync without a second copy
+    ui->volume_list->setModel(ui->b_table->model());
+    ui->volume_list->setSelectionModel(ui->b_table->selectionModel());
+    ui->volume_list->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->volume_list->verticalHeader()->setDefaultSectionSize(20);
     outputs = {
         ui->output_fa,
         ui->output_rd,
@@ -903,15 +909,6 @@ void reconstruction_window::on_fib_output_editingFinished()
     handle->output_file_name = ui->fib_output->text().toStdString();
 }
 
-
-void reconstruction_window::on_nav_rail_currentRowChanged(int row)
-{
-    // the volume table is shared by Inspect / Edit DWI and B-table
-    if(row == 1)
-        ui->inspect_table_layout->insertWidget(1,ui->b_table);
-    if(row == 2)
-        ui->btable_table_layout->addWidget(ui->b_table);
-}
 
 void reconstruction_window::on_more_outputs_clicked()
 {

@@ -44,7 +44,9 @@ QStackedWidget#pages QPushButton:disabled { color: #9a9a9f; background-color: #e
 QStackedWidget#pages QPushButton#doDTI { color: #ffffff; background-color: #1f5eff; border: 1px solid #1f5eff; border-radius: 9px; padding: 10px 16px; }
 QStackedWidget#pages QPushButton#doDTI:hover { background-color: #1a50db; }
 QStackedWidget#pages QPushButton#doDTI:pressed { background-color: #1744b8; }
-QLabel#method_hint { color: #67676c; }</string>
+QLabel#method_hint { color: #67676c; }
+QTableView#volume_list { border: 1px solid #dddddf; border-radius: 9px; background-color: #ffffff; alternate-background-color: #f7f7f8; font-size: 9pt; }
+QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }</string>
    </property>
    <layout class="QHBoxLayout" name="verticalLayout">
     <property name="spacing">
@@ -1011,7 +1013,13 @@ Reconstruction</string>
            </layout>
           </item>
           <item>
-           <widget class="QTableWidget" name="b_table">
+           <widget class="QTableView" name="volume_list">
+            <property name="toolTip">
+             <string>DWI volumes (read-only); edit gradients on the B-table page</string>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
             <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
@@ -1021,26 +1029,12 @@ Reconstruction</string>
             <property name="selectionBehavior">
              <enum>QAbstractItemView::SelectRows</enum>
             </property>
-            <column>
-             <property name="text">
-              <string>b value</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>bx</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>by</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>bz</string>
-             </property>
-            </column>
+            <property name="verticalScrollMode">
+             <enum>QAbstractItemView::ScrollPerPixel</enum>
+            </property>
+            <property name="showGrid">
+             <bool>false</bool>
+            </property>
            </widget>
           </item>
           <item>
@@ -1541,7 +1535,41 @@ Reconstruction</string>
       <widget class="QWidget" name="btable_page">
        <layout class="QHBoxLayout" name="btable_layout" stretch="3,2">
         <item>
-         <layout class="QVBoxLayout" name="btable_table_layout" />
+         <layout class="QVBoxLayout" name="btable_table_layout">
+          <item>
+           <widget class="QTableWidget" name="b_table">
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::SingleSelection</enum>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <column>
+             <property name="text">
+              <string>b value</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>bx</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>by</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>bz</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <layout class="QVBoxLayout" name="btable_tools_layout">
