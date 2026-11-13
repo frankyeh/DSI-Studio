@@ -38,7 +38,7 @@ QListWidget#nav_rail::item:selected { color: #202124; background-color: #e0e7ff;
 QLabel#method_hint { color: #67676c; }
 QListWidget#volume_list { border: 1px solid #dddddf; border-radius: 9px; background-color: #ffffff; alternate-background-color: #f7f7f8; font-size: 9pt; }
 QListWidget#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }
-QFrame#cpu_pill, QFrame#template_pill { background-color: #e9ecf1; border: 1px solid #dfe3e8; border-radius: 13px; }
+QFrame#cpu_pill { background-color: #e9ecf1; border: 1px solid #dfe3e8; border-radius: 13px; }
 QFrame#cpu_pill QLabel#label_9 { color: #4f4f54; background-color: transparent; border: 0px; font-weight: bold; }
 QFrame#cpu_pill QSpinBox#ThreadCount { color: #202124; background-color: #ffffff; border: 1px solid #cfd5dd; border-radius: 11px; padding: 3px 4px; min-height: 22px; }
 QWidget#fib_output_widget { background-color: #ffffff; border: 1px solid #cfd5dd; border-radius: 13px; }
@@ -87,7 +87,7 @@ QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bol
 QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
 QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages QFrame[card="true"] QWidget#qsdr_options, QStackedWidget#pages QFrame[card="true"] QWidget#GQIOption_2, QStackedWidget#pages QFrame[card="true"] QWidget#ODF_metrics, QStackedWidget#pages QFrame[card="true"] QWidget#source_widget { background: transparent; border: 0px; }
 QFrame#sidebar QPushButton#doDTI { margin: 8px; padding: 9px 4px; min-height: 28px; }
-QFrame#sidebar QFrame#cpu_pill, QFrame#sidebar QFrame#template_pill { margin: 8px; }
+QFrame#sidebar QFrame#cpu_pill { margin: 8px; }
 QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color: #ffffff; border: 1px solid #d9d9dc; border-radius: 7px; padding: 4px 8px; }</string>
    </property>
    <layout class="QVBoxLayout" name="central_layout" stretch="1,0">
@@ -190,11 +190,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
 <item><property name="text"><string>Edit Btable</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset></property></item>
           </widget>
          </item>
-        <item><widget class="QFrame" name="template_pill"><layout class="QVBoxLayout" name="template_pill_layout"><property name="spacing"><number>3</number></property><property name="leftMargin"><number>8</number></property><property name="rightMargin"><number>8</number></property><property name="topMargin"><number>5</number></property><property name="bottomMargin"><number>5</number></property><item><layout class="QVBoxLayout" name="method_template_row"><item><widget class="QLabel" name="label_15">
-                     <property name="text">
-                      <string>Template</string>
-                     </property>
-                    </widget></item><item><widget class="QComboBox" name="primary_template" /></item></layout></item></layout></widget></item><item><widget class="QFrame" name="cpu_pill"><layout class="QHBoxLayout" name="cpu_pill_layout"><property name="spacing"><number>6</number></property><property name="leftMargin"><number>8</number></property><property name="rightMargin"><number>8</number></property><property name="topMargin"><number>4</number></property><property name="bottomMargin"><number>4</number></property><item><layout class="QHBoxLayout" name="thread_row">
+        <item><widget class="QFrame" name="cpu_pill"><layout class="QHBoxLayout" name="cpu_pill_layout"><property name="spacing"><number>6</number></property><property name="leftMargin"><number>8</number></property><property name="rightMargin"><number>8</number></property><property name="topMargin"><number>4</number></property><property name="bottomMargin"><number>4</number></property><item><layout class="QHBoxLayout" name="thread_row">
                    <item>
                     <widget class="QLabel" name="label_9">
                      <property name="text">
@@ -800,7 +796,11 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <string>mm</string>
                       </property>
                      </widget>
-                    </item></layout></widget></item>
+                    </item></layout></widget></item><item><widget class="QWidget" name="method_template_widget"><layout class="QHBoxLayout" name="method_template_widget_layout"><property name="spacing"><number>5</number></property><property name="leftMargin"><number>8</number></property><property name="rightMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QHBoxLayout" name="method_template_row"><item><widget class="QLabel" name="label_15">
+                     <property name="text">
+                      <string>Template</string>
+                     </property>
+                    </widget></item><item><widget class="QComboBox" name="primary_template" /></item></layout></item></layout></widget></item>
                     <item>
                      <spacer name="horizontalSpacer_5">
                       <property name="orientation">
