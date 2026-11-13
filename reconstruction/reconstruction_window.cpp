@@ -856,8 +856,13 @@ void reconstruction_window::on_show_bad_slice_clicked()
                 is_bad[bad_slices[i].first] = 1;
 
         for(int i = 0;i < ui->b_table->rowCount();++i)
+        {
+            QColor color = is_bad[i] ? QColor(255,200,200) : QColor(255,255,255);
             for(int j = 0;j < ui->b_table->columnCount();++j)
-                ui->b_table->item(i, j)->setData(Qt::BackgroundRole,is_bad[i] ?  QColor (255,200,200): QColor (255,255,255));
+                ui->b_table->item(i,j)->setData(Qt::BackgroundRole,color);
+            if(i < ui->volume_list->count())
+                ui->volume_list->item(i)->setBackground(color);
+        }
     }
     if(bad_slices.size() == 0)
     {
