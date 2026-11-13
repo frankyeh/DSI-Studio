@@ -70,7 +70,6 @@ private slots:
 
     void on_show_bad_slice_clicked();
     void on_align_slices_clicked();
-    void on_edit_mask_clicked();
     void on_actionManual_Align_triggered();
     void on_actionT1W_based_QSDR_triggered();
     void on_change_fib_output_clicked();
