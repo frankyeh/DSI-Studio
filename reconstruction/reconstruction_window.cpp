@@ -152,7 +152,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(int row : {0,5}) // Preprocessing and Edit Btable
             ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
-        for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->qc_card,ui->signal_group,
+        for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->signal_group,
                           ui->testing_group,ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
                           ui->btn_Manual_Rotation,ui->btn_Resample,ui->btn_Rotate,ui->btn_Overwrite_Voxel_Size,ui->btn_Attach_Images})
             each->hide();
