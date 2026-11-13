@@ -2766,6 +2766,18 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     </item>
     <item>
      <widget class="QFrame" name="run_bar">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size><width>0</width><height>52</height></size>
+      </property>
+      <property name="maximumSize">
+       <size><width>16777215</width><height>52</height></size>
+      </property>
       <layout class="QHBoxLayout" name="run_bar_layout">
        <property name="leftMargin">
         <number>10</number>
