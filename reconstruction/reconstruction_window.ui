@@ -184,9 +184,9 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            <item><property name="text"><string>Mask</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset></property></item>
 <item><property name="text"><string>Preprocessing</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset></property></item>
 <item><property name="text"><string>Methods</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset></property></item>
+<item><property name="text"><string>▸ Edit...</string></property><property name="toolTip"><string>Show Edit DWI and Edit Btable</string></property></item>
 <item><property name="text"><string>Edit DWI</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/whole_brain_seed.svg</normaloff>:/icons/icons/whole_brain_seed.svg</iconset></property></item>
 <item><property name="text"><string>Edit Btable</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset></property></item>
-<item><property name="text"><string>Options</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset></property></item>
           </widget>
          </item>
         <item><widget class="QFrame" name="cpu_pill"><layout class="QHBoxLayout" name="cpu_pill_layout"><property name="spacing"><number>6</number></property><property name="leftMargin"><number>8</number></property><property name="rightMargin"><number>8</number></property><property name="topMargin"><number>4</number></property><property name="bottomMargin"><number>4</number></property><item><layout class="QHBoxLayout" name="thread_row">
@@ -1048,7 +1048,173 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                          <string>odf vectors (rarely used)</string>
                         </property>
                        </widget></item><item row="3" column="0"><widget class="QPushButton" name="more_odf_outputs"><property name="text"><string>More...</string></property><property name="flat"><bool>true</bool></property></widget></item></layout></widget></item></layout>
-               </widget></item><item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
+               </widget></item><item><widget class="QFrame" name="hist_param_group">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="hist_param_group_title">
+                   <property name="text">
+                    <string>Parameters</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                   <item>
+                    <widget class="QLabel" name="label_3">
+                     <property name="text">
+                      <string>in-plane resolution(mm)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QDoubleSpinBox" name="hist_resolution">
+                     <property name="decimals">
+                      <number>3</number>
+                     </property>
+                     <property name="minimum">
+                      <double>0.001000000000000</double>
+                     </property>
+                     <property name="maximum">
+                      <double>0.500000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.050000000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>0.050000000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_2">
+                     <property name="text">
+                      <string>downsample (iterations)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="hist_downsampling">
+                     <property name="toolTip">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each downsampling reduced the resolution by two fold.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>3</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_3">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_8">
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>raw image smoothing (iterations)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="hist_raw_smoothing">
+                     <property name="maximum">
+                      <number>12</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>2</number>
+                     </property>
+                     <property name="value">
+                      <number>4</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_4">
+                     <property name="text">
+                      <string>tensor smoothing (iterations)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="hist_tensor_smoothing">
+                     <property name="minimum">
+                      <number>4</number>
+                     </property>
+                     <property name="maximum">
+                      <number>128</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>8</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_9">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                <item><widget class="QPushButton" name="btn_Attach_Images">
+                     <property name="text">
+                      <string>Attach Images...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
+                     </property>
+                    </widget></item></layout>
+               </widget></item>
+<item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
 <widget class="QWidget" name="inspect_page">
          <layout class="QVBoxLayout" name="inspect_layout" stretch="0,1">
           <property name="leftMargin">
@@ -1591,7 +1757,52 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
         </widget>
 <widget class="QWidget" name="btable_page">
          <layout class="QVBoxLayout" name="btable_layout" stretch="1,0,0">
-          <item><widget class="QFrame" name="btable_table_card"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_table_card_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_table_card_title"><property name="text"><string>B-table</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QTableWidget" name="b_table">
+          <item><widget class="QFrame" name="qc_card">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <layout class="QVBoxLayout" name="qc_card_layout">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="qc_card_title">
+                   <property name="text">
+                    <string>Content</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QTextBrowser" name="report">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>160</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget></item>
+<item><widget class="QFrame" name="btable_table_card"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_table_card_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_table_card_title"><property name="text"><string>B-table</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QTableWidget" name="b_table">
             <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
@@ -1746,268 +1957,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            </widget></item></layout></item>
          </layout>
         </widget>
-<widget class="QWidget" name="options_page">
-         <layout class="QVBoxLayout" name="options_layout">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QScrollArea" name="options_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="options_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>706</width>
-               <height>424</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="options_content_layout">
-              <item><layout class="QHBoxLayout" name="options_three_card_row"><item><widget class="QFrame" name="hist_param_group">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_14">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="hist_param_group_title">
-                   <property name="text">
-                    <string>Parameters</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout">
-                   <item>
-                    <widget class="QLabel" name="label_3">
-                     <property name="text">
-                      <string>in-plane resolution(mm)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="hist_resolution">
-                     <property name="decimals">
-                      <number>3</number>
-                     </property>
-                     <property name="minimum">
-                      <double>0.001000000000000</double>
-                     </property>
-                     <property name="maximum">
-                      <double>0.500000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.050000000000000</double>
-                     </property>
-                     <property name="value">
-                      <double>0.050000000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_2">
-                     <property name="text">
-                      <string>downsample (iterations)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="hist_downsampling">
-                     <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each downsampling reduced the resolution by two fold.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                     </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>3</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="horizontalSpacer_3">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_8">
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_5">
-                     <property name="text">
-                      <string>raw image smoothing (iterations)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="hist_raw_smoothing">
-                     <property name="maximum">
-                      <number>12</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>2</number>
-                     </property>
-                     <property name="value">
-                      <number>4</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_4">
-                     <property name="text">
-                      <string>tensor smoothing (iterations)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="hist_tensor_smoothing">
-                     <property name="minimum">
-                      <number>4</number>
-                     </property>
-                     <property name="maximum">
-                      <number>128</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>8</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="horizontalSpacer_9">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                <item><widget class="QPushButton" name="btn_Attach_Images">
-                     <property name="text">
-                      <string>Attach Images...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
-                     </property>
-                    </widget></item></layout>
-               </widget></item><item><widget class="QFrame" name="qc_card">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="qc_card_layout">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="qc_card_title">
-                   <property name="text">
-                    <string>Content</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QTextBrowser" name="report">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>160</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget></item></layout></item>
-              
-              <item>
-               <spacer name="options_spacer">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </widget>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+
        </widget>
       </item>
      </layout>
@@ -3270,22 +3220,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>nav_rail</sender>
-   <signal>currentRowChanged(int)</signal>
-   <receiver>pages</receiver>
-   <slot>setCurrentIndex(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
+  
   <connection>
    <sender>actionSave_Mask</sender>
    <signal>triggered()</signal>
