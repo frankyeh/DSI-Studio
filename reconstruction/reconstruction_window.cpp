@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <QSplitter>
+#include <QSignalBlocker>
 #include <QThread>
 #include <QImage>
 #include <QMessageBox>
@@ -52,12 +53,26 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
-    // Inspect / Edit DWI lists volumes read-only from the same model and selection as the editable b-table,
-    // so row changes, bad-slice colors and the current volume stay in sync without a second copy
-    ui->volume_list->setModel(ui->b_table->model());
-    ui->volume_list->setSelectionModel(ui->b_table->selectionModel());
-    ui->volume_list->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->volume_list->verticalHeader()->setDefaultSectionSize(20);
+    connect(ui->volume_list,&QListWidget::currentRowChanged,this,[this](int row)
+    {
+        if(row >= 0 && row != ui->b_table->currentRow())
+            ui->b_table->selectRow(row);
+    });
+    connect(ui->b_table,&QTableWidget::itemSelectionChanged,this,[this]()
+    {
+        if(ui->volume_list->currentRow() != ui->b_table->currentRow())
+            ui->volume_list->setCurrentRow(ui->b_table->currentRow());
+    });
+    connect(ui->b_table->model(),&QAbstractItemModel::dataChanged,this,[this](const QModelIndex& first,const QModelIndex& last)
+    {
+        for(int row = first.row();row <= last.row() && row < ui->volume_list->count();++row)
+            if(row >= 0 && ui->b_table->item(row,0) && ui->b_table->item(row,1) &&
+               ui->b_table->item(row,2) && ui->b_table->item(row,3))
+                ui->volume_list->item(row)->setText(QString("#%1  b=%2  (%3, %4, %5)")
+                    .arg(row+1).arg(ui->b_table->item(row,0)->text())
+                    .arg(ui->b_table->item(row,1)->text()).arg(ui->b_table->item(row,2)->text())
+                    .arg(ui->b_table->item(row,3)->text()));
+    });
     // saving the mask is reached from the File menu
     ui->save_mask->hide();
     outputs = {
@@ -134,7 +149,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(auto* each : {ui->actionSave_SRC_file_as,ui->actionSave_4D_nifti,ui->actionSave_b0,ui->actionSave_DWI_sum,
                           ui->actionSave_b_table,ui->actionSave_bvals,ui->actionSave_bvecs})
             each->setVisible(false);
-        for(int row : {2,3}) // Preprocessing, B-table
+        for(int row : {3,4}) // Preprocessing, B-table
             ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
         for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->qc_card,ui->signal_group,
@@ -151,6 +166,28 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
 
     on_b_table_itemSelectionChanged();
+
+    for(auto* each : {ui->image_edit_controls,ui->signal_edit_controls,
+                      ui->btable_check_group_controls,ui->btable_regenerate_group_controls})
+        each->hide();
+    for(auto button : {ui->image_group_toggle,ui->signal_group_toggle,
+                       ui->btable_check_group_toggle,ui->btable_regenerate_group_toggle})
+        connect(button,&QPushButton::toggled,this,[button](bool checked)
+        {
+            QWidget* controls = nullptr;
+            QString label;
+            if(button->objectName() == "image_group_toggle")
+                controls = button->parentWidget()->findChild<QWidget*>("image_edit_controls"), label = "Volume editing";
+            if(button->objectName() == "signal_group_toggle")
+                controls = button->parentWidget()->findChild<QWidget*>("signal_edit_controls"), label = "Signal editing";
+            if(button->objectName() == "btable_check_group_toggle")
+                controls = button->parentWidget()->findChild<QWidget*>("btable_check_group_controls"), label = "Check";
+            if(button->objectName() == "btable_regenerate_group_toggle")
+                controls = button->parentWidget()->findChild<QWidget*>("btable_regenerate_group_controls"), label = "Regenerate";
+            if(controls)
+                controls->setVisible(checked);
+            button->setText((checked ? "▾ " : "▸ ")+label+"...");
+        });
 
     ui->btable_orient_group->hide();
     connect(ui->btable_orient_toggle,&QPushButton::toggled,this,[this](bool checked)
@@ -196,6 +233,8 @@ void reconstruction_window::load_b_table(void)
 {
     if(handle->src_bvalues.empty())
         return;
+    QSignalBlocker block(ui->volume_list);
+    ui->volume_list->clear();
     ui->b_table->clear();
     ui->b_table->setRowCount(handle->src_bvalues.size());
     for(unsigned int index = 0;index < handle->src_bvalues.size();++index)
@@ -204,8 +243,13 @@ void reconstruction_window::load_b_table(void)
         ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0])));
         ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1])));
         ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2])));
+        ui->volume_list->addItem(QString("#%1  b=%2  (%3, %4, %5)")
+            .arg(index+1).arg(handle->src_bvalues[index])
+            .arg(handle->src_bvectors[index][0]).arg(handle->src_bvectors[index][1])
+            .arg(handle->src_bvectors[index][2]));
     }
     ui->b_table->selectRow(0);
+    ui->volume_list->setCurrentRow(0);
 }
 
 void reconstruction_window::on_b_table_itemSelectionChanged()
