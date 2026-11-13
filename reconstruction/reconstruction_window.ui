@@ -67,6 +67,8 @@ QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
 QFrame#fsl_group { border-top-color: #2563eb; }
 QFrame#btable_regenerate_group { border-top-color: #10b981; }
+QWidget#dwi_edit_disclosures QPushButton#image_group_toggle, QWidget#dwi_edit_disclosures QPushButton#signal_group_toggle { color: #2563eb; background-color: transparent; border: 0px; font-weight: bold; text-align: left; min-height: 28px; padding: 3px 0px; }
+QWidget#dwi_edit_disclosures QPushButton#image_group_toggle:hover, QWidget#dwi_edit_disclosures QPushButton#signal_group_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#image_group_toggle, QStackedWidget#pages QPushButton#signal_group_toggle, QStackedWidget#pages QPushButton#btable_check_group_toggle, QStackedWidget#pages QPushButton#btable_regenerate_group_toggle, QStackedWidget#pages QPushButton#btable_orient_toggle, QStackedWidget#pages QPushButton#image_group_collapse, QStackedWidget#pages QPushButton#signal_group_collapse, QStackedWidget#pages QPushButton#btable_check_group_collapse, QStackedWidget#pages QPushButton#btable_regenerate_group_collapse, QStackedWidget#pages QPushButton#btable_orient_group_collapse { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
 QStackedWidget#pages QPushButton#image_group_toggle:hover, QStackedWidget#pages QPushButton#signal_group_toggle:hover, QStackedWidget#pages QPushButton#btable_check_group_toggle:hover, QStackedWidget#pages QPushButton#btable_regenerate_group_toggle:hover, QStackedWidget#pages QPushButton#btable_orient_toggle:hover, QStackedWidget#pages QPushButton#image_group_collapse:hover, QStackedWidget#pages QPushButton#signal_group_collapse:hover, QStackedWidget#pages QPushButton#btable_check_group_collapse:hover, QStackedWidget#pages QPushButton#btable_regenerate_group_collapse:hover, QStackedWidget#pages QPushButton#btable_orient_group_collapse:hover { color: #1e40af; }
 
@@ -1522,25 +1524,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item>
-           <widget class="QScrollArea" name="inspect_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="inspect_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>773</width>
-               <height>1094</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="inspect_content_layout">
-              <item><layout class="QVBoxLayout" name="image_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="image_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Volume editing...</string></property></widget></item><item><widget class="QFrame" name="image_group">
+          <item><widget class="QWidget" name="dwi_edit_disclosures"><layout class="QVBoxLayout" name="dwi_edit_disclosures_layout"><property name="spacing"><number>4</number></property><property name="leftMargin"><number>8</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>8</number></property><property name="bottomMargin"><number>4</number></property><item><layout class="QVBoxLayout" name="image_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="image_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Volume editing...</string></property><property name="minimumSize"><size><width>0</width><height>28</height></size></property><property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item><item><widget class="QFrame" name="image_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -1683,8 +1667,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    
                   </layout></item></layout></widget></item>
                 </layout>
-               </widget></item></layout></item>
-<item><layout class="QVBoxLayout" name="signal_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="signal_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Signal editing...</string></property></widget></item><item><widget class="QFrame" name="signal_group">
+               </widget></item></layout></item><item><layout class="QVBoxLayout" name="signal_group_disclosure_layout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="signal_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Signal editing...</string></property><property name="minimumSize"><size><width>0</width><height>28</height></size></property><property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property></widget></item><item><widget class="QFrame" name="signal_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -1760,7 +1743,27 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    </item>
                   </layout></item></layout></widget></item>
                 </layout>
-               </widget></item></layout></item>
+               </widget></item></layout></item></layout></widget></item>
+<item>
+           <widget class="QScrollArea" name="inspect_scroll">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="inspect_content">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>773</width>
+               <height>1094</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="inspect_content_layout">
+              
+
 <item>
                <widget class="QFrame" name="viewer_card">
                 <property name="card" stdset="0">
