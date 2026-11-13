@@ -172,53 +172,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
             </size>
            </property>
            <property name="currentRow">
-            <number>0</number>
+            <number>1</number>
            </property>
-           <item>
-            <property name="text">
-             <string>Mask</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
-            </property>
-           </item>
-           <item>
-   <item><property name="text"><string>Methods</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset></property></item>         <property name="text">
-             <string>Edit DWI</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/whole_brain_seed.svg</normaloff>:/icons/icons/whole_brain_seed.svg</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Preprocessing</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>B-table</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Options</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../icons.qrc">
-              <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
-            </property>
-           </item>
+           <item><property name="text"><string>Preprocessing</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset></property></item>
+<item><property name="text"><string>Mask</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset></property></item>
+<item><property name="text"><string>Methods</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset></property></item>
+<item><property name="text"><string>Options</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset></property></item>
+<item><property name="text"><string>Edit DWI</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/whole_brain_seed.svg</normaloff>:/icons/icons/whole_brain_seed.svg</iconset></property></item>
+<item><property name="text"><string>Edit Btable</string></property><property name="icon"><iconset resource="../icons.qrc"><normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset></property></item>
           </widget>
          </item>
         <item>
@@ -259,9 +220,83 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
       <item>
        <widget class="QStackedWidget" name="pages">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
-        <widget class="QWidget" name="recon_page">
+        <widget class="QWidget" name="preprocess_page">
+         <layout class="QVBoxLayout" name="preprocess_layout">
+          <item><layout class="QHBoxLayout" name="preprocess_cards_row"><item><widget class="QFrame" name="fsl_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="fsl_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="fsl_group_title"><property name="text"><string>FSL</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><layout class="QGridLayout" name="fsl_tools_grid"><item row="0" column="0"><widget class="QPushButton" name="btn_Run_FSL_Topup">
+                 <property name="text">
+                  <string>TOPUP/EDDY...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+                 </property>
+                </widget></item><item row="0" column="1"><widget class="QPushButton" name="btn_TOPUP_only">
+                 <property name="text">
+                  <string>TOPUP...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+                 </property>
+                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_EDDY">
+                 <property name="text">
+                  <string>EDDY...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+                 </property>
+                </widget></item></layout></item></layout></widget></item><item><widget class="QFrame" name="correction_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="correction_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="correction_group_title"><property name="text"><string>Built-In</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><layout class="QGridLayout" name="builtin_tools_grid"><item row="0" column="0"><widget class="QPushButton" name="btn_T1w_Distortion_Correction">
+                 <property name="text">
+                  <string>T1w Distortion Correction...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+                 </property>
+                </widget></item><item row="0" column="1"><widget class="QPushButton" name="btn_Correct_Bias_Field">
+                 <property name="text">
+                  <string>Bias Field Correction......</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
+                 </property>
+                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_Eddy_Motion_Correction">
+                 <property name="text">
+                  <string>Motion Correction...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/motion_correct.svg</normaloff>:/icons/icons/motion_correct.svg</iconset>
+                 </property>
+                </widget></item><item row="1" column="1"><widget class="QPushButton" name="btn_Volume_Orientation_Correction">
+                 <property name="text">
+                  <string>Volume Orientation Correction...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
+                 </property>
+                </widget></item></layout></item></layout></widget></item></layout></item>
+          <item>
+           <spacer name="preprocess_spacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+<widget class="QWidget" name="recon_page">
          <layout class="QVBoxLayout" name="recon_layout" stretch="1,0">
           <property name="spacing">
            <number>0</number>
@@ -627,7 +662,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="methods_page"><layout class="QVBoxLayout" name="methods_layout"><item><widget class="QScrollArea" name="methods_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="methods_content"><layout class="QVBoxLayout" name="methods_content_layout"><item><widget class="QFrame" name="method_group">
+<widget class="QWidget" name="methods_page"><layout class="QVBoxLayout" name="methods_layout"><item><widget class="QScrollArea" name="methods_scroll"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><widget class="QWidget" name="methods_content"><layout class="QVBoxLayout" name="methods_content_layout"><item><widget class="QFrame" name="method_group">
                 <property name="card" stdset="0">
                  <bool>true</bool>
                 </property>
@@ -1134,7 +1169,363 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   </layout>
                  </item>
                 </layout>
-               </widget></item><item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget><widget class="QWidget" name="inspect_page">
+               </widget></item><item><spacer name="methods_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item></layout></widget></widget></item></layout></widget>
+<widget class="QWidget" name="options_page">
+         <layout class="QVBoxLayout" name="options_layout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QScrollArea" name="options_scroll">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="options_content">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>706</width>
+               <height>424</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="options_content_layout">
+              <item><layout class="QHBoxLayout" name="options_three_card_row"><item><widget class="QFrame" name="hist_param_group">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="hist_param_group_title">
+                   <property name="text">
+                    <string>Parameters</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                   <item>
+                    <widget class="QLabel" name="label_3">
+                     <property name="text">
+                      <string>in-plane resolution(mm)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QDoubleSpinBox" name="hist_resolution">
+                     <property name="decimals">
+                      <number>3</number>
+                     </property>
+                     <property name="minimum">
+                      <double>0.001000000000000</double>
+                     </property>
+                     <property name="maximum">
+                      <double>0.500000000000000</double>
+                     </property>
+                     <property name="singleStep">
+                      <double>0.050000000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>0.050000000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_2">
+                     <property name="text">
+                      <string>downsample (iterations)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="hist_downsampling">
+                     <property name="toolTip">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each downsampling reduced the resolution by two fold.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>3</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_3">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_8">
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>raw image smoothing (iterations)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="hist_raw_smoothing">
+                     <property name="maximum">
+                      <number>12</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>2</number>
+                     </property>
+                     <property name="value">
+                      <number>4</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_4">
+                     <property name="text">
+                      <string>tensor smoothing (iterations)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="hist_tensor_smoothing">
+                     <property name="minimum">
+                      <number>4</number>
+                     </property>
+                     <property name="maximum">
+                      <number>128</number>
+                     </property>
+                     <property name="singleStep">
+                      <number>8</number>
+                     </property>
+                     <property name="value">
+                      <number>8</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_9">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                <item><widget class="QPushButton" name="btn_Attach_Images">
+                     <property name="text">
+                      <string>Attach Images...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
+                     </property>
+                    </widget></item></layout>
+               </widget></item><item><widget class="QFrame" name="performance_group">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <layout class="QVBoxLayout" name="performance_group_layout">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="performance_group_title">
+                   <property name="text">
+                    <string>Performance</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="thread_row">
+                   <item>
+                    <widget class="QLabel" name="label_9">
+                     <property name="text">
+                      <string>Threads:</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSpinBox" name="ThreadCount">
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>128</number>
+                     </property>
+                     <property name="value">
+                      <number>4</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="thread_spacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget></item></layout></item>
+              <item>
+               <widget class="QFrame" name="testing_group">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <layout class="QVBoxLayout" name="testing_group_layout">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="testing_group_title">
+                   <property name="text">
+                    <string>Testing</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="testing_row">
+                   <item>
+                    <widget class="QPushButton" name="btn_Enable_TEST_features">
+                     <property name="text">
+                      <string>Enable TEST features</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/lab_flask.svg</normaloff>:/icons/icons/lab_flask.svg</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="btn_Image_upsample_to_T1W_TESTING">
+                     <property name="text">
+                      <string>Image Upsample to T1W (TESTING)...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="testing_spacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="options_spacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+<widget class="QWidget" name="inspect_page">
          <layout class="QVBoxLayout" name="inspect_layout">
           <property name="leftMargin">
            <number>0</number>
@@ -1743,81 +2134,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="preprocess_page">
-         <layout class="QVBoxLayout" name="preprocess_layout">
-          <item><layout class="QHBoxLayout" name="preprocess_cards_row"><item><widget class="QFrame" name="fsl_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="fsl_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="fsl_group_title"><property name="text"><string>FSL</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><layout class="QGridLayout" name="fsl_tools_grid"><item row="0" column="0"><widget class="QPushButton" name="btn_Run_FSL_Topup">
-                 <property name="text">
-                  <string>TOPUP/EDDY...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
-                 </property>
-                </widget></item><item row="0" column="1"><widget class="QPushButton" name="btn_TOPUP_only">
-                 <property name="text">
-                  <string>TOPUP...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
-                 </property>
-                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_EDDY">
-                 <property name="text">
-                  <string>EDDY...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
-                 </property>
-                </widget></item></layout></item></layout></widget></item><item><widget class="QFrame" name="correction_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="correction_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="correction_group_title"><property name="text"><string>Built-In</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><layout class="QGridLayout" name="builtin_tools_grid"><item row="0" column="0"><widget class="QPushButton" name="btn_T1w_Distortion_Correction">
-                 <property name="text">
-                  <string>T1w Distortion Correction...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
-                 </property>
-                </widget></item><item row="0" column="1"><widget class="QPushButton" name="btn_Correct_Bias_Field">
-                 <property name="text">
-                  <string>Bias Field Correction......</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
-                 </property>
-                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_Eddy_Motion_Correction">
-                 <property name="text">
-                  <string>Motion Correction...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/motion_correct.svg</normaloff>:/icons/icons/motion_correct.svg</iconset>
-                 </property>
-                </widget></item><item row="1" column="1"><widget class="QPushButton" name="btn_Volume_Orientation_Correction">
-                 <property name="text">
-                  <string>Volume Orientation Correction...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
-                 </property>
-                </widget></item></layout></item></layout></widget></item></layout></item>
-          <item>
-           <spacer name="preprocess_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="btable_page">
+<widget class="QWidget" name="btable_page">
          <layout class="QVBoxLayout" name="btable_layout" stretch="1,0,0,0">
           <item><widget class="QFrame" name="btable_table_card"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_table_card_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_table_card_title"><property name="text"><string>B-table</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QTableWidget" name="b_table">
             <property name="alternatingRowColors">
@@ -1983,361 +2300,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
               </layout>
              </item>
             </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="options_page">
-         <layout class="QVBoxLayout" name="options_layout">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QScrollArea" name="options_scroll">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="widgetResizable">
-             <bool>true</bool>
-            </property>
-            <widget class="QWidget" name="options_content">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>706</width>
-               <height>424</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="options_content_layout">
-              <item><layout class="QHBoxLayout" name="options_three_card_row"><item><widget class="QFrame" name="hist_param_group">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_14">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="hist_param_group_title">
-                   <property name="text">
-                    <string>Parameters</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout">
-                   <item>
-                    <widget class="QLabel" name="label_3">
-                     <property name="text">
-                      <string>in-plane resolution(mm)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QDoubleSpinBox" name="hist_resolution">
-                     <property name="decimals">
-                      <number>3</number>
-                     </property>
-                     <property name="minimum">
-                      <double>0.001000000000000</double>
-                     </property>
-                     <property name="maximum">
-                      <double>0.500000000000000</double>
-                     </property>
-                     <property name="singleStep">
-                      <double>0.050000000000000</double>
-                     </property>
-                     <property name="value">
-                      <double>0.050000000000000</double>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_2">
-                     <property name="text">
-                      <string>downsample (iterations)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="hist_downsampling">
-                     <property name="toolTip">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each downsampling reduced the resolution by two fold.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                     </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>3</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="horizontalSpacer_3">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_8">
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QLabel" name="label_5">
-                     <property name="text">
-                      <string>raw image smoothing (iterations)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="hist_raw_smoothing">
-                     <property name="maximum">
-                      <number>12</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>2</number>
-                     </property>
-                     <property name="value">
-                      <number>4</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_4">
-                     <property name="text">
-                      <string>tensor smoothing (iterations)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="hist_tensor_smoothing">
-                     <property name="minimum">
-                      <number>4</number>
-                     </property>
-                     <property name="maximum">
-                      <number>128</number>
-                     </property>
-                     <property name="singleStep">
-                      <number>8</number>
-                     </property>
-                     <property name="value">
-                      <number>8</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="horizontalSpacer_9">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                <item><widget class="QPushButton" name="btn_Attach_Images">
-                     <property name="text">
-                      <string>Attach Images...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
-                     </property>
-                    </widget></item></layout>
-               </widget></item><item><widget class="QFrame" name="performance_group">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="performance_group_layout">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="performance_group_title">
-                   <property name="text">
-                    <string>Performance</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="thread_row">
-                   <item>
-                    <widget class="QLabel" name="label_9">
-                     <property name="text">
-                      <string>Threads:</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QSpinBox" name="ThreadCount">
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>128</number>
-                     </property>
-                     <property name="value">
-                      <number>4</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="thread_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>0</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget></item></layout></item>
-              <item>
-               <widget class="QFrame" name="testing_group">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="testing_group_layout">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="testing_group_title">
-                   <property name="text">
-                    <string>Testing</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="testing_row">
-                   <item>
-                    <widget class="QPushButton" name="btn_Enable_TEST_features">
-                     <property name="text">
-                      <string>Enable TEST features</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/lab_flask.svg</normaloff>:/icons/icons/lab_flask.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="btn_Image_upsample_to_T1W_TESTING">
-                     <property name="text">
-                      <string>Image Upsample to T1W (TESTING)...</string>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="../icons.qrc">
-                       <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="testing_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>0</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <spacer name="options_spacer">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </widget>
            </widget>
           </item>
          </layout>
