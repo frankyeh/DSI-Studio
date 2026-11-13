@@ -58,9 +58,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->volume_list->setSelectionModel(ui->b_table->selectionModel());
     ui->volume_list->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->volume_list->verticalHeader()->setDefaultSectionSize(20);
-    // saving the mask and choosing the output file are reached from the Save menu
+    // saving the mask is reached from the File menu
     ui->save_mask->hide();
-    ui->change_fib_output->hide();
     outputs = {
         ui->output_fa,
         ui->output_rd,
@@ -136,10 +135,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(auto* each : {ui->actionSave_SRC_file_as,ui->actionSave_4D_nifti,ui->actionSave_b0,ui->actionSave_DWI_sum,
                           ui->actionSave_b_table,ui->actionSave_bvals,ui->actionSave_bvecs})
             each->setVisible(false);
-        ui->nav_rail->item(2)->setHidden(true); // B-table
+        for(int row : {2,3}) // Preprocessing, B-table
+            ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
         for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->qc_card,ui->volume_group,ui->signal_group,
-                          ui->correction_group,ui->testing_group,ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
+                          ui->testing_group,ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
                           ui->btn_Manual_Rotation,ui->btn_Resample,ui->btn_Rotate,ui->btn_Overwrite_Voxel_Size,ui->btn_Attach_Images})
             each->hide();
 
