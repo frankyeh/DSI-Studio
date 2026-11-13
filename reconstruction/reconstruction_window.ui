@@ -67,14 +67,12 @@ QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
 QFrame#fsl_group { border-top-color: #2563eb; }
 QFrame#btable_regenerate_group { border-top-color: #10b981; }
-QFrame#image_group QPushButton#image_group_toggle, QFrame#signal_group QPushButton#signal_group_toggle, QFrame#btable_check_group QPushButton#btable_check_group_toggle, QFrame#btable_regenerate_group QPushButton#btable_regenerate_group_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
-QFrame#image_group QPushButton#image_group_toggle:hover, QFrame#signal_group QPushButton#signal_group_toggle:hover, QFrame#btable_check_group QPushButton#btable_check_group_toggle:hover, QFrame#btable_regenerate_group QPushButton#btable_regenerate_group_toggle:hover { color: #1e40af; }
+QStackedWidget#pages QPushButton#image_group_toggle, QStackedWidget#pages QPushButton#signal_group_toggle, QStackedWidget#pages QPushButton#btable_check_group_toggle, QStackedWidget#pages QPushButton#btable_regenerate_group_toggle, QStackedWidget#pages QPushButton#btable_orient_toggle, QStackedWidget#pages QPushButton#image_group_collapse, QStackedWidget#pages QPushButton#signal_group_collapse, QStackedWidget#pages QPushButton#btable_check_group_collapse, QStackedWidget#pages QPushButton#btable_regenerate_group_collapse, QStackedWidget#pages QPushButton#btable_orient_group_collapse { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
+QStackedWidget#pages QPushButton#image_group_toggle:hover, QStackedWidget#pages QPushButton#signal_group_toggle:hover, QStackedWidget#pages QPushButton#btable_check_group_toggle:hover, QStackedWidget#pages QPushButton#btable_regenerate_group_toggle:hover, QStackedWidget#pages QPushButton#btable_orient_toggle:hover, QStackedWidget#pages QPushButton#image_group_collapse:hover, QStackedWidget#pages QPushButton#signal_group_collapse:hover, QStackedWidget#pages QPushButton#btable_check_group_collapse:hover, QStackedWidget#pages QPushButton#btable_regenerate_group_collapse:hover, QStackedWidget#pages QPushButton#btable_orient_group_collapse:hover { color: #1e40af; }
 
 QFrame#btable_table_card { border-top-color: #10b981; }
 QStackedWidget#pages QPushButton#method_more_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
 QStackedWidget#pages QPushButton#method_more_toggle:hover { color: #1e40af; }
-QStackedWidget#pages QPushButton#btable_orient_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
-QStackedWidget#pages QPushButton#btable_orient_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#zoom_in, QStackedWidget#pages QPushButton#zoom_out { min-height: 0px; padding: 3px; border-radius: 6px; }
 QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bold; background: transparent; border: 0px; padding-bottom: 2px; }
 QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
