@@ -366,7 +366,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             handle->error_msg = msg;
         error_msg = handle->error_msg;
         tipl::error() << error_msg;
-        if(source == command_source::User && !error_msg.empty())
+        if(source == command_source::User && !error_msg.empty() && !tipl::ends_with(error_msg,{"canceled","aborted"})) // a user cancel needs no dialog
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
@@ -426,7 +426,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             ok = false;
             error_msg = QFileInfo(filenames[index]).fileName().toStdString() + " : " + msg;
             tipl::error() << error_msg;
-            if(source == command_source::User)
+            if(source == command_source::User && !tipl::ends_with(msg,{"canceled","aborted"}))
                 QMessageBox::critical(this,"ERROR",error_msg.c_str());
         };
         tipl::progress prog("process SRC files",true);
