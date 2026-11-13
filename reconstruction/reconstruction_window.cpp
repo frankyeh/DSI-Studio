@@ -159,6 +159,13 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->btable_orient_toggle->setText(checked ? "▾ Flip and swap..." : "▸ Flip and swap...");
     });
 
+    ui->method_advanced->hide();
+    connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
+    {
+        ui->method_advanced->setVisible(checked);
+        ui->method_more_toggle->setText(checked ? "▾ Less..." : "▸ More...");
+    });
+
     ui->mask_edit->setVisible(false);
 
     {
