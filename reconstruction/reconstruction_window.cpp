@@ -53,6 +53,29 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
+    // Navigation includes a disclosure row without a corresponding page.
+    ui->nav_rail->item(4)->setHidden(true);
+    ui->nav_rail->item(5)->setHidden(true);
+    connect(ui->nav_rail,&QListWidget::currentRowChanged,this,[this](int row)
+    {
+        if(row >= 0 && row < 3)
+            ui->pages->setCurrentIndex(row);
+        if(row >= 4 && row <= 5)
+            ui->pages->setCurrentIndex(row-1);
+    });
+    connect(ui->nav_rail,&QListWidget::itemClicked,this,[this](QListWidgetItem* item)
+    {
+        if(item != ui->nav_rail->item(3))
+            return;
+        bool expand = ui->nav_rail->item(4)->isHidden();
+        ui->nav_rail->item(4)->setHidden(!expand);
+        ui->nav_rail->item(5)->setHidden(!expand);
+        item->setText(expand ? "▾ Edit..." : "▸ Edit...");
+        if(!expand && ui->pages->currentIndex() >= 3)
+            ui->pages->setCurrentIndex(2);
+        int page = ui->pages->currentIndex();
+        ui->nav_rail->setCurrentRow(page < 3 ? page : page+1);
+    });
     connect(ui->volume_list,&QListWidget::currentRowChanged,this,[this](int row)
     {
         if(row >= 0 && row != ui->b_table->currentRow())
@@ -149,7 +172,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         for(auto* each : {ui->actionSave_SRC_file_as,ui->actionSave_4D_nifti,ui->actionSave_b0,ui->actionSave_DWI_sum,
                           ui->actionSave_b_table,ui->actionSave_bvals,ui->actionSave_bvecs})
             each->setVisible(false);
-        for(int row : {1,4}) // Preprocessing and Edit Btable
+        for(int row : {1,5}) // Preprocessing and Edit Btable
             ui->nav_rail->item(row)->setHidden(true);
         // Inspect / Edit DWI keeps only the image flips that apply to histology
         for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->signal_group,
@@ -288,7 +311,6 @@ void reconstruction_window::resizeEvent ( QResizeEvent * event )
     ui->horizontalLayout_5->setDirection(width() < 900 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     ui->viewer_split->setDirection(width() < 800 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     ui->preprocess_cards_row->setDirection(width() < 900 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
-    ui->options_three_card_row->setDirection(width() < 1100 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::showEvent ( QShowEvent * event )
