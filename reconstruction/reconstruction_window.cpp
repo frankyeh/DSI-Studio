@@ -108,8 +108,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                ui->b_table->item(row,2) && ui->b_table->item(row,3))
                 ui->volume_list->item(row)->setText(QString("#%1  b%2  (%3, %4, %5)")
                     .arg(row+1).arg(ui->b_table->item(row,0)->text())
-                    .arg(ui->b_table->item(row,1)->text()).arg(ui->b_table->item(row,2)->text())
-                    .arg(ui->b_table->item(row,3)->text()));
+                    .arg(ui->b_table->item(row,1)->text().toDouble(),0,'f',3)
+                    .arg(ui->b_table->item(row,2)->text().toDouble(),0,'f',3)
+                    .arg(ui->b_table->item(row,3)->text().toDouble(),0,'f',3));
     });
     // saving the mask is reached from the File menu
     ui->save_mask->hide();
@@ -282,13 +283,14 @@ void reconstruction_window::load_b_table(void)
     for(unsigned int index = 0;index < handle->src_bvalues.size();++index)
     {
         ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(handle->src_bvalues[index])));
-        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0])));
-        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1])));
-        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2])));
+        ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0],'f',3)));
+        ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1],'f',3)));
+        ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2],'f',3)));
         ui->volume_list->addItem(QString("#%1  b%2  (%3, %4, %5)")
             .arg(index+1).arg(handle->src_bvalues[index])
-            .arg(handle->src_bvectors[index][0]).arg(handle->src_bvectors[index][1])
-            .arg(handle->src_bvectors[index][2]));
+            .arg(handle->src_bvectors[index][0],0,'f',3)
+            .arg(handle->src_bvectors[index][1],0,'f',3)
+            .arg(handle->src_bvectors[index][2],0,'f',3));
     }
     ui->b_table->selectRow(0);
     ui->volume_list->setCurrentRow(0);
