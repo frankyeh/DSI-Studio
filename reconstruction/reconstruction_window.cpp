@@ -44,7 +44,6 @@ bool reconstruction_window::load_src(int index)
     ui->min_value->setValue(0.0);
     load_b_table();
 
-    ui->align_slices->setVisible(false);
     return true;
 }
 
@@ -112,8 +111,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                     .arg(ui->b_table->item(row,2)->text().toDouble(),0,'f',3)
                     .arg(ui->b_table->item(row,3)->text().toDouble(),0,'f',3));
     });
-    // saving the mask is reached from the File menu
-    ui->save_mask->hide();
     outputs = {
         ui->output_fa,
         ui->output_rd,
@@ -337,7 +334,7 @@ reconstruction_window::~reconstruction_window()
 }
 
 
-void reconstruction_window::on_save_mask_clicked()
+void reconstruction_window::on_actionSave_Mask_triggered()
 {
     QString filename = tipl::qt::save_image_file(this,absolute_path+"/mask.nii.gz",
             "Nifti file(*nii.gz *.nii);;Text files (*.txt);;All files (*)" );
@@ -903,8 +900,10 @@ void reconstruction_window::on_show_bad_slice_clicked()
 
 }
 
-void reconstruction_window::on_align_slices_clicked()
+void reconstruction_window::on_align_selected_dwi_clicked()
 {
+    if(ui->b_table->currentRow() < 0)
+        return;
     tipl::image<3> from(handle->src_dwi_data[ui->b_table->currentRow()]),to(handle->src_dwi_data[0]);
     tipl::normalize(from);
     tipl::normalize(to);
