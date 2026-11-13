@@ -167,23 +167,27 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     on_b_table_itemSelectionChanged();
 
-    auto disclosure = [this](QPushButton* button,QWidget* content,const QString& label)
+    auto disclosure = [this](QPushButton* link,QFrame* card,QPushButton* collapse)
     {
-        content->hide();
-        button->setChecked(false);
-        button->setText("▸ "+label+"...");
-        connect(button,&QPushButton::toggled,this,[button,content,label](bool expanded)
+        card->hide();
+        link->setChecked(false);
+        connect(link,&QPushButton::clicked,this,[link,card]()
         {
-            content->setVisible(expanded);
-            button->setText((expanded ? "▾ " : "▸ ")+label+"...");
+            link->hide();
+            card->show();
+        });
+        connect(collapse,&QPushButton::clicked,this,[link,card]()
+        {
+            card->hide();
+            link->setChecked(false);
+            link->show();
         });
     };
-    disclosure(ui->image_group_toggle,ui->image_edit_controls,"Volume editing");
-    disclosure(ui->signal_group_toggle,ui->signal_edit_controls,"Signal editing");
-    disclosure(ui->btable_check_group_toggle,ui->btable_check_group_controls,"Check");
-    disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group_controls,"Regenerate");
-
-    disclosure(ui->btable_orient_toggle,ui->btable_orient_controls,"Flip and swap");
+    disclosure(ui->image_group_toggle,ui->image_group,ui->image_group_collapse);
+    disclosure(ui->signal_group_toggle,ui->signal_group,ui->signal_group_collapse);
+    disclosure(ui->btable_check_group_toggle,ui->btable_check_group,ui->btable_check_group_collapse);
+    disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group,ui->btable_regenerate_group_collapse);
+    disclosure(ui->btable_orient_toggle,ui->btable_orient_group,ui->btable_orient_group_collapse);
 
     ui->method_advanced->hide();
     connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
