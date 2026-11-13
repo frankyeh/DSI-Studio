@@ -724,14 +724,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    </item></layout>
                  </item>
                  
-                 <item><widget class="QPushButton" name="method_more_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ More...</string></property></widget></item><item><widget class="QWidget" name="method_detail"><layout class="QVBoxLayout" name="method_detail_layout"><property name="spacing"><number>6</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QWidget" name="method_advanced" native="true"><layout class="QVBoxLayout" name="method_advanced_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QCheckBox" name="high_accuracy">
-                     <property name="statusTip">
-                      <string>fixel</string>
-                     </property>
-                     <property name="text">
-                      <string>high accuracy</string>
-                     </property>
-                    </widget></item><item><widget class="QWidget" name="GQIOption_2" native="true">
+                 <item><widget class="QPushButton" name="method_more_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ More...</string></property></widget></item><item><widget class="QWidget" name="method_detail"><layout class="QVBoxLayout" name="method_detail_layout"><property name="spacing"><number>6</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QWidget" name="method_advanced" native="true"><layout class="QVBoxLayout" name="method_advanced_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QWidget" name="GQIOption_2" native="true">
                    <layout class="QHBoxLayout" name="GQIOption">
                     <property name="spacing">
                      <number>0</number>
@@ -979,7 +972,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                         <property name="text">
                          <string>gfa</string>
                         </property>
-                       </widget></item><item row="2" column="0" colspan="2"><widget class="QCheckBox" name="output_odf">
+                       </widget></item><item row="2" column="0"><widget class="QCheckBox" name="high_accuracy">
+                     <property name="statusTip">
+                      <string>fixel</string>
+                     </property>
+                     <property name="text">
+                      <string>high accuracy</string>
+                     </property>
+                    </widget></item><item row="2" column="1"><widget class="QCheckBox" name="output_odf">
                         <property name="statusTip">
                          <string>odf</string>
                         </property>
