@@ -2023,9 +2023,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
 #endif
             if(python.isEmpty())
                 return os_speak(text) || fail("cannot start speech");
-            if(QProcess::execute(python,{"-c","import edge_tts"}) &&
-               QMessageBox::question(this,QApplication::applicationName(),
-                    "Install edge-tts (Python package) for a natural voice?") == QMessageBox::Yes)
+            if(QProcess::execute(python,{"-c","import edge_tts"}) && ai_agent &&
+               ai_agent->approve("Install edge-tts for a natural voice",python+" -m pip install edge-tts"))
                 QProcess::startDetached(python,{"-m","pip","install","edge-tts"});
             process = new QProcess(this);
             process->setObjectName("voice_process");
