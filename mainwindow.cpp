@@ -18,7 +18,6 @@
 #include <QLineEdit>
 #include <QUuid>
 #include <QProcess>
-#include <QProcessEnvironment>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -1993,19 +1992,12 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
         auto text = QString::fromUtf8(cmd[1].c_str());
         auto os_speak = [](const QString& text)
         {
-#ifdef Q_OS_WIN
-            QProcess process;
-            auto env = QProcessEnvironment::systemEnvironment();
-            env.insert("DSI_VOICE_TEXT",text);
-            process.setProcessEnvironment(env);
-            process.setProgram("powershell.exe");
-            process.setArguments({"-NoProfile","-NonInteractive","-WindowStyle","Hidden","-Command",
-                "[void](New-Object -ComObject SAPI.SpVoice).Speak($env:DSI_VOICE_TEXT)"});
-            return process.startDetached();
-#elif defined(Q_OS_MACOS)
+#ifdef Q_OS_MACOS
             return QProcess::startDetached("/usr/bin/say",{text});
-#else
+#elif defined(Q_OS_LINUX)
             return QProcess::startDetached("spd-say",{"--",text});
+#else
+            return false;
 #endif
         };
         // a natural voice by edge-tts in a persistent python process, which queues the text and
@@ -2022,7 +2014,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             auto python = QStandardPaths::findExecutable("python3");
 #endif
             if(python.isEmpty())
-                return os_speak(text) || fail("cannot start speech");
+                return os_speak(text) || fail("cannot start speech: install Python");
             if(QProcess::execute(python,{"-c","import edge_tts"}) && ai_agent &&
                ai_agent->approve("Install edge-tts for a natural voice",python+" -m pip install edge-tts"))
                 QProcess::startDetached(python,{"-m","pip","install","edge-tts"});
