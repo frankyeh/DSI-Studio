@@ -230,7 +230,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="0" column="1"><widget class="QPushButton" name="btn_TOPUP_only">
+                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_TOPUP_only">
                  <property name="text">
                   <string>TOPUP...</string>
                  </property>
@@ -238,7 +238,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_EDDY">
+                </widget></item><item row="2" column="0"><widget class="QPushButton" name="btn_EDDY">
                  <property name="text">
                   <string>EDDY...</string>
                  </property>
@@ -254,15 +254,15 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="0" column="1"><widget class="QPushButton" name="btn_Correct_Bias_Field">
+                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_Correct_Bias_Field">
                  <property name="text">
-                  <string>Bias Field Correction......</string>
+                  <string>Bias Field Correction...</string>
                  </property>
                  <property name="icon">
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
                  </property>
-                </widget></item><item row="1" column="0"><widget class="QPushButton" name="btn_Eddy_Motion_Correction">
+                </widget></item><item row="2" column="0"><widget class="QPushButton" name="btn_Eddy_Motion_Correction">
                  <property name="text">
                   <string>Motion Correction...</string>
                  </property>
@@ -270,7 +270,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/motion_correct.svg</normaloff>:/icons/icons/motion_correct.svg</iconset>
                  </property>
-                </widget></item><item row="1" column="1"><widget class="QPushButton" name="btn_Volume_Orientation_Correction">
+                </widget></item><item row="3" column="0"><widget class="QPushButton" name="btn_Volume_Orientation_Correction">
                  <property name="text">
                   <string>Volume Orientation Correction...</string>
                  </property>
