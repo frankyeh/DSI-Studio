@@ -103,7 +103,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     absolute_path = QFileInfo(filenames[0]).absolutePath();
 
     ui->fib_output_widget->setVisible(filenames.size() == 1);
-    ui->actionSet_Output_File->setVisible(filenames.size() == 1);
     switch(settings.value("rec_method_id",int(handle->voxel.method_id)).toInt())
     {
     case 1:
