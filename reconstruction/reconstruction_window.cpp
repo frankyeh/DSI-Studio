@@ -218,26 +218,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->signal_group_toggle->hide();
         ui->signal_group->show();
     });
-    auto disclosure = [this](QPushButton* link,QFrame* card,QPushButton* collapse)
-    {
-        card->hide();
-        link->setChecked(false);
-        connect(link,&QPushButton::clicked,this,[link,card]()
-        {
-            link->hide();
-            card->show();
-        });
-        connect(collapse,&QPushButton::clicked,this,[link,card]()
-        {
-            card->hide();
-            link->setChecked(false);
-            link->show();
-        });
-    };
-    disclosure(ui->btable_check_group_toggle,ui->btable_check_group,ui->btable_check_group_collapse);
-    disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group,ui->btable_regenerate_group_collapse);
-    disclosure(ui->btable_orient_toggle,ui->btable_orient_group,ui->btable_orient_group_collapse);
-
     ui->method_detail->hide();
     connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
     {
