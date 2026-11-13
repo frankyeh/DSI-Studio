@@ -26,7 +26,7 @@
    <font />
   </property>
   <property name="windowTitle">
-   <string>Reconstruction</string>
+   <string>Mask / Method</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
@@ -50,7 +50,7 @@ QWidget#mask_edit QPushButton:hover, QFrame#image_group QPushButton:hover, QFram
 QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet, QStackedWidget#pages QPushButton#load_mask, QStackedWidget#pages QPushButton#save_mask { font-weight: bold; }
 QStackedWidget#pages QPushButton#edit_mask, QStackedWidget#pages QPushButton#more_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
 QStackedWidget#pages QPushButton#edit_mask:hover, QStackedWidget#pages QPushButton#more_outputs:hover { color: #1e40af; }
-QFrame#run_bar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 8px 18px; min-height: 30px; font-weight: bold; }
+QFrame#sidebar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 8px 18px; min-height: 30px; font-weight: bold; }
 QFrame#run_bar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
 QFrame#run_bar QPushButton#doDTI:pressed { background-color: #047857; }
 QFrame#run_bar QPushButton#doDTI:disabled { color: #ecfdf5; background-color: #a7e3cf; border-color: #a7e3cf; }
@@ -75,6 +75,7 @@ QStackedWidget#pages QPushButton#zoom_in, QStackedWidget#pages QPushButton#zoom_
 QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bold; background: transparent; border: 0px; padding-bottom: 2px; }
 QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
 QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages QFrame[card="true"] QWidget#qsdr_options, QStackedWidget#pages QFrame[card="true"] QWidget#GQIOption_2, QStackedWidget#pages QFrame[card="true"] QWidget#ODF_metrics, QStackedWidget#pages QFrame[card="true"] QWidget#source_widget { background: transparent; border: 0px; }
+QFrame#sidebar QPushButton#doDTI { margin: 8px; padding: 9px 4px; min-height: 28px; }
 QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color: #ffffff; border: 1px solid #d9d9dc; border-radius: 7px; padding: 4px 8px; }</string>
    </property>
    <layout class="QVBoxLayout" name="central_layout" stretch="1,0">
@@ -180,7 +181,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            </item>
            <item>
             <property name="text">
-             <string>Inspect / Edit DWI</string>
+             <string>Edit DWI</string>
             </property>
             <property name="icon">
              <iconset resource="../icons.qrc">
@@ -216,7 +217,39 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
            </item>
           </widget>
          </item>
-        </layout>
+        <item>
+<widget class="QPushButton" name="doDTI">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>run recon</string>
+         </property>
+         <property name="layoutDirection">
+          <enum>Qt::LeftToRight</enum>
+         </property>
+         <property name="text">
+          <string>Run Reconstruction</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
+        </widget>
+</item>
+</layout>
        </widget>
       </item>
       <item>
@@ -2404,7 +2437,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
     </item>
     <item>
      <widget class="QFrame" name="run_bar">
-      <layout class="QHBoxLayout" name="run_bar_layout" stretch="1,0">
+      <layout class="QHBoxLayout" name="run_bar_layout">
        <property name="leftMargin">
         <number>10</number>
        </property>
@@ -2465,38 +2498,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
          </layout>
         </widget>
        </item>
-       <item>
-        <widget class="QPushButton" name="doDTI">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>run recon</string>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::LeftToRight</enum>
-         </property>
-         <property name="text">
-          <string>Run Reconstruction</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
-         </property>
-         <property name="flat">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
+       
       </layout>
      </widget>
     </item>
