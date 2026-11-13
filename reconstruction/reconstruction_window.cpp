@@ -227,14 +227,15 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     disclosure(ui->btable_regenerate_group_toggle,ui->btable_regenerate_group,ui->btable_regenerate_group_collapse);
     disclosure(ui->btable_orient_toggle,ui->btable_orient_group,ui->btable_orient_group_collapse);
 
-    ui->method_advanced->hide();
+    ui->method_detail->hide();
     connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
     {
-        ui->method_advanced->setVisible(checked);
+        ui->method_detail->setVisible(checked);
+        if(checked)
+            for(auto each : adv_outputs)
+                each->show();
         ui->method_more_toggle->setText(checked ? "▾ Less..." : "▸ More...");
     });
-
-    connect(ui->more_odf_outputs,&QPushButton::clicked,this,&reconstruction_window::on_more_outputs_clicked);
 
     {
         foreach (QAction* action, findChildren<QAction*>())
@@ -1010,11 +1011,5 @@ void reconstruction_window::on_fib_output_editingFinished()
 }
 
 
-void reconstruction_window::on_more_outputs_clicked()
-{
-    ui->more_outputs->hide();
-    ui->more_odf_outputs->hide();
-    for(auto each : adv_outputs)
-        each->show();
-}
+
 
