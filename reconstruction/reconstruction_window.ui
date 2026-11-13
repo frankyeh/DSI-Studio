@@ -1290,7 +1290,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="verticalSpacing">
                       <number>5</number>
                      </property>
-                     <item row="1" column="0">
+                     <item row="0" column="0">
                       <widget class="QCheckBox" name="output_fa">
                        <property name="toolTip">
                         <string>fa</string>
@@ -1306,7 +1306,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="1" column="1">
+                     <item row="0" column="1">
                       <widget class="QCheckBox" name="output_rd">
                        <property name="toolTip">
                         <string>rd</string>
@@ -1322,7 +1322,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="2" column="0">
+                     <item row="0" column="2">
                       <widget class="QCheckBox" name="output_rd12">
                        <property name="toolTip">
                         <string>rd1,rd2</string>
@@ -1335,7 +1335,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="2" column="1">
+                     <item row="1" column="0">
                       <widget class="QCheckBox" name="output_ad">
                        <property name="statusTip">
                         <string>ad</string>
@@ -1345,7 +1345,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="3" column="0">
+                     <item row="1" column="1">
                       <widget class="QCheckBox" name="output_md">
                        <property name="toolTip">
                         <string>md</string>
@@ -1361,7 +1361,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="3" column="1">
+                     <item row="1" column="2">
                       <widget class="QCheckBox" name="output_helix">
                        <property name="statusTip">
                         <string>helix</string>
@@ -1371,20 +1371,20 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="4" column="0" colspan="2">
+                     <item row="2" column="0">
                       <widget class="QCheckBox" name="output_tensor">
                        <property name="toolTip">
-                        <string>tensor</string>
+                        <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
                        </property>
                        <property name="statusTip">
                         <string>tensor</string>
                        </property>
                        <property name="text">
-                        <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
+                        <string>tensor</string>
                        </property>
                       </widget>
                      </item>
-                     <item row="5" column="0">
+                     <item row="2" column="1">
                       <widget class="QCheckBox" name="dti_ignore_high_b">
                        <property name="toolTip">
                         <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
@@ -1422,7 +1422,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      <property name="verticalSpacing">
                       <number>5</number>
                      </property>
-                     <item row="1" column="0">
+                     <item row="0" column="0">
                       <widget class="QCheckBox" name="output_rdi">
                        <property name="statusTip">
                         <string>rdi</string>
@@ -1435,7 +1435,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="1" column="1">
+                     <item row="1" column="0">
                       <widget class="QCheckBox" name="output_gfa">
                        <property name="statusTip">
                         <string>gfa</string>
@@ -1445,7 +1445,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="2" column="0">
+                     <item row="0" column="1">
                       <widget class="QCheckBox" name="high_accuracy">
                        <property name="statusTip">
                         <string>fixel</string>
@@ -1455,7 +1455,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="2" column="1">
+                     <item row="0" column="2">
                       <widget class="QCheckBox" name="output_odf">
                        <property name="statusTip">
                         <string>odf</string>
