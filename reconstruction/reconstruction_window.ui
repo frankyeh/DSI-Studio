@@ -321,7 +321,13 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
        </widget>
       </item>
       <item>
-       <widget class="QStackedWidget" name="pages">
+       <layout class="QVBoxLayout" name="reconstruction_right_layout" stretch="1,0">
+        <property name="spacing"><number>0</number></property>
+        <property name="leftMargin"><number>0</number></property>
+        <property name="topMargin"><number>0</number></property>
+        <property name="rightMargin"><number>0</number></property>
+        <property name="bottomMargin"><number>0</number></property>
+        <item><widget class="QStackedWidget" name="pages">
         <property name="currentIndex">
          <number>0</number>
         </property>
@@ -2760,12 +2766,8 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
           </item>
          </layout>
         </widget>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <widget class="QFrame" name="run_bar">
+       </widget></item>
+        <item><widget class="QFrame" name="run_bar">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
         <horstretch>0</horstretch>
@@ -2840,7 +2842,10 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
         </widget>
        </item>
       </layout>
-     </widget>
+     </widget></item>
+       </layout>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
