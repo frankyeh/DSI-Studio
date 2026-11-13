@@ -335,7 +335,6 @@ void reconstruction_window::resizeEvent ( QResizeEvent * event )
     QMainWindow::resizeEvent(event);
     ui->horizontalLayout_5->setDirection(width() < 900 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     ui->viewer_split->setDirection(width() < 800 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
-    ui->preprocess_cards_row->setDirection(width() < 900 ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 void reconstruction_window::showEvent ( QShowEvent * event )
