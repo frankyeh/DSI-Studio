@@ -2385,7 +2385,7 @@ int ai(tipl::program_option<tipl::out>& po) // --action=ai: a headless Web sessi
     web.status = [](session_status,const QString& message){tipl::out() << message.toStdString();};
     // std::cerr is silenced after start; the exit is queued, as exit() before exec() would be lost and leave it hanging
     web.warn = [&](const QString& text){chat << "\nerror: " << text.toStdString() << std::endl;QTimer::singleShot(0,[]{QCoreApplication::exit(1);});};
-    std::string approval = po.has("approval") ? po.get("approval") : std::string("manual");
+    std::string approval = po.get("approval","auto");
     if(approval != "manual" && approval != "read_only" && approval != "auto")
         return tipl::error() << "--approval must be manual, read_only, or auto",1;
     std::map<QString,QJsonObject> agent_cache; // readiness on this host: probed in parallel, reused for 5 minutes
