@@ -75,6 +75,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     };
     for(auto each : adv_outputs)
         each->hide();
+    ui->groupBox->hide(); // until More... is checked
     if(!load_src(0))
         throw std::runtime_error(handle->error_msg);
 

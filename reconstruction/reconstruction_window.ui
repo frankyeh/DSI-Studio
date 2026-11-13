@@ -409,6 +409,65 @@
        </layout>
       </widget>
       <widget class="QWidget" name="page_3">
+       <property name="styleSheet">
+        <string notr="true">QWidget#page_3 QGroupBox {
+    background-color: rgba(250,250,250,0.45);
+    border: 1px solid #dddddf;
+    border-radius: 9px;
+    margin-top: 14px;
+    padding: 6px 6px 4px 6px;
+}
+QWidget#page_3 QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0px 4px;
+    color: #202124;
+    font-weight: 600;
+}
+QWidget#page_3 QPushButton {
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    padding: 4px 9px;
+}
+QWidget#page_3 QPushButton:hover {
+    background-color: #f4f4f5;
+    border-color: #c8c8cc;
+}
+QWidget#page_3 QPushButton:pressed {
+    background-color: #e9e9eb;
+}
+QWidget#page_3 QPushButton:disabled {
+    color: #9a9a9f;
+    background-color: #eeeeef;
+}
+QWidget#page_3 QPushButton#more_options {
+    color: #1f5eff;
+    background-color: transparent;
+    border: 0px;
+    padding: 2px 4px;
+    text-align: left;
+}
+QWidget#page_3 QPushButton#doDTI {
+    color: #ffffff;
+    background-color: #1f5eff;
+    border: 1px solid #1f5eff;
+    border-radius: 9px;
+    padding: 10px 16px;
+}
+QWidget#page_3 QPushButton#doDTI:hover {
+    background-color: #1a50db;
+}
+QWidget#page_3 QPushButton#doDTI:pressed {
+    background-color: #1744b8;
+}
+QWidget#page_3 QPushButton#doDTI:disabled {
+    color: #e8ecff;
+    background-color: #9db5f7;
+    border-color: #9db5f7;
+}</string>
+       </property>
        <property name="geometry">
         <rect>
          <x>0</x>
@@ -424,7 +483,7 @@
         <item>
          <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
-           <string>Specify a Mask</string>
+           <string>Mask</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="topMargin">
@@ -767,7 +826,7 @@
             <item>
              <widget class="QGroupBox" name="method_group">
               <property name="title">
-               <string>Specify a Model</string>
+               <string>Method</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_10">
                <property name="spacing">
@@ -979,7 +1038,7 @@
             <item>
              <widget class="QGroupBox" name="hist_param_group">
               <property name="title">
-               <string>specify parameters</string>
+               <string>Parameters</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
                <item>
@@ -1115,9 +1174,25 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="more_options">
+              <property name="toolTip">
+               <string>Show output metrics</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>▸ More...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QGroupBox" name="groupBox">
               <property name="title">
-               <string>Specify Outputs</string>
+               <string>Outputs</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_15">
                <property name="topMargin">
@@ -2174,5 +2249,12 @@ Reconstruction</string>
  <resources>
   <include location="../icons.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>more_options</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>groupBox</receiver>
+   <slot>setVisible(bool)</slot>
+  </connection>
+ </connections>
 </ui>
