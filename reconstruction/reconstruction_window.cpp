@@ -581,7 +581,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         if(!ok)
             return fail("canceled");
     }
-    if((cmd == "probabilistic_masking" || cmd == "correct_by_t1w" || cmd == "correct_by_t2w") && param.empty())
+    if((cmd == "mask_background_signals" || cmd == "correct_by_t1w" || cmd == "correct_by_t2w") && param.empty())
     {
         QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
