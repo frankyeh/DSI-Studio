@@ -582,6 +582,15 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 MainWindow::~MainWindow()
 {
+    if(auto* voice = findChild<QProcess*>("voice_process",Qt::FindDirectChildrenOnly))
+    {
+        voice->closeWriteChannel();
+        if(!voice->waitForFinished(200))
+        {
+            kill_process_tree(voice);
+            voice->waitForFinished(500);
+        }
+    }
     console.log_window = nullptr;
     QStringList workdir_list;
     for (int index = 0;index < 10 && index < ui->workDir->count();++index)
@@ -1981,25 +1990,77 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     {
         if(cmd.size() != 2 || cmd[1].empty())
             return fail("usage: voice <text>");
+        auto text = QString::fromUtf8(cmd[1].c_str());
+        auto os_speak = [](const QString& text)
+        {
 #ifdef Q_OS_WIN
-        QProcess process;
-        auto env = QProcessEnvironment::systemEnvironment();
-        env.insert("DSI_VOICE_TEXT",QString::fromUtf8(cmd[1].c_str()));
-        process.setProcessEnvironment(env);
-        process.setProgram("powershell.exe");
-        process.setArguments({
-                "-NoProfile",
-                "-NonInteractive",
-                "-Command",
-                "$v=New-Object -ComObject SAPI.SpVoice;"
-                "$z=$v.GetVoices()|Where-Object {$_.GetDescription() -like '*Zira*'}|Select-Object -First 1;"
-                "if($z){$v.Voice=$z};"
-                "[void]$v.Speak($env:DSI_VOICE_TEXT)"
-            });
-        return process.startDetached() || fail("cannot start Windows speech");
+            QProcess process;
+            auto env = QProcessEnvironment::systemEnvironment();
+            env.insert("DSI_VOICE_TEXT",text);
+            process.setProcessEnvironment(env);
+            process.setProgram("powershell.exe");
+            process.setArguments({"-NoProfile","-NonInteractive","-WindowStyle","Hidden","-Command",
+                "[void](New-Object -ComObject SAPI.SpVoice).Speak($env:DSI_VOICE_TEXT)"});
+            return process.startDetached();
+#elif defined(Q_OS_MACOS)
+            return QProcess::startDetached("/usr/bin/say",{text});
 #else
-        return fail("voice is available only on Windows");
+            return QProcess::startDetached("spd-say",{"--",text});
 #endif
+        };
+        // a natural voice by edge-tts in a persistent python process, which queues the text and
+        // prints back what it cannot speak for the system voice
+        auto* process = findChild<QProcess*>("voice_process",Qt::FindDirectChildrenOnly);
+        if(!process || process->state() == QProcess::NotRunning)
+        {
+            delete process;
+#ifdef Q_OS_WIN
+            auto python = QStandardPaths::findExecutable("python");
+#elif defined(Q_OS_MACOS)
+            auto python = QStandardPaths::findExecutable("python3",{"/opt/homebrew/bin","/usr/local/bin"});
+#else
+            auto python = QStandardPaths::findExecutable("python3");
+#endif
+            if(python.isEmpty())
+                return os_speak(text) || fail("cannot start speech");
+            if(QProcess::execute(python,{"-c","import edge_tts"}) &&
+               QMessageBox::question(this,QApplication::applicationName(),
+                    "Install edge-tts (Python package) for a natural voice?") == QMessageBox::Yes)
+                QProcess::startDetached(python,{"-m","pip","install","edge-tts"});
+            process = new QProcess(this);
+            process->setObjectName("voice_process");
+            process->setStandardErrorFile(QProcess::nullDevice());
+            connect(process,&QProcess::readyReadStandardOutput,this,[process,os_speak]()
+            {
+                while(process->canReadLine())
+                    os_speak(QString::fromUtf8(process->readLine()).trimmed());
+            });
+            process->start(python,{"-X","utf8","-u","-c",
+                "import json,os,subprocess,sys,tempfile\n"
+                "tmp=os.path.join(tempfile.gettempdir(),'dsi_voice.mp3')\n"
+                "def play():\n"
+                "    if sys.platform=='win32':\n"
+                "        import ctypes\n"
+                "        mci=ctypes.windll.winmm.mciSendStringW\n"
+                "        mci(f'open \"{tmp}\" type mpegvideo alias v',None,0,0)\n"
+                "        r=mci('play v wait',None,0,0)\n"
+                "        mci('close v',None,0,0)\n"
+                "        if r:\n"
+                "            raise OSError()\n"
+                "    else:\n"
+                "        subprocess.run(['afplay',tmp] if sys.platform=='darwin' else\n"
+                "                       ['ffplay','-nodisp','-autoexit','-loglevel','quiet',tmp],check=True)\n"
+                "for raw in sys.stdin.buffer:\n"
+                "    t=json.loads(raw)[0]\n"
+                "    try:\n"
+                "        import edge_tts\n"
+                "        edge_tts.Communicate(t,'en-US-AvaNeural').save_sync(tmp)\n"
+                "        play()\n"
+                "    except Exception:\n"
+                "        print(t,flush=True)\n"});
+        }
+        auto line = QJsonDocument(QJsonArray{text}).toJson(QJsonDocument::Compact)+'\n';
+        return process->write(line) == line.size() || os_speak(text) || fail("cannot start speech");
     }
     auto approve = [&](const QString& title,const QString& request,bool) // every AI file write or shell command needs the local user's approval
     {
