@@ -323,7 +323,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
       <item>
        <widget class="QStackedWidget" name="pages">
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="recon_page">
          <layout class="QVBoxLayout" name="recon_layout" stretch="1">
@@ -2413,7 +2413,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
          </layout>
         </widget>
         <widget class="QWidget" name="btable_page">
-         <layout class="QVBoxLayout" name="btable_layout">
+         <layout class="QVBoxLayout" name="btable_layout" stretch="1,0">
           <property name="spacing">
            <number>8</number>
           </property>
@@ -2484,37 +2484,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                 </widget>
                </item>
                <item>
-                <widget class="QScrollArea" name="btable_tools_scroll">
-                 <property name="minimumSize">
-                  <size>
-                   <width>190</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>260</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="frameShape">
-                  <enum>QFrame::NoFrame</enum>
-                 </property>
-                 <property name="horizontalScrollBarPolicy">
-                  <enum>Qt::ScrollBarAsNeeded</enum>
-                 </property>
-                 <property name="widgetResizable">
-                  <bool>true</bool>
-                 </property>
-                 <widget class="QWidget" name="btable_tools_content">
-                  <property name="geometry">
-                   <rect>
-                    <x>0</x>
-                    <y>-116</y>
-                    <width>273</width>
-                    <height>486</height>
-                   </rect>
-                  </property>
+                <widget class="QWidget" name="btable_tools_content">
                   <layout class="QVBoxLayout" name="btable_tools_layout">
                    <property name="spacing">
                     <number>8</number>
@@ -2735,7 +2705,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    </item>
                   </layout>
                  </widget>
-                </widget>
                </item>
               </layout>
              </item>
@@ -2788,19 +2757,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
              </item>
             </layout>
            </widget>
-          </item>
-          <item>
-           <spacer name="btable_bottom_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </widget>
