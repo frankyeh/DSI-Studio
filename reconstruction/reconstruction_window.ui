@@ -35,8 +35,6 @@ QListWidget#nav_rail { background-color: transparent; border: 0px; padding-top: 
 QListWidget#nav_rail::item { color: #202124; margin: 2px 8px; padding: 7px 6px; border: 1px solid transparent; border-radius: 8px; }
 QListWidget#nav_rail::item:hover { background-color: #e6e9ef; }
 QListWidget#nav_rail::item:selected { color: #202124; background-color: #e0e7ff; border: 1px solid #c7d2fe; }
-QStackedWidget#pages QGroupBox { background-color: rgba(250,250,250,0.45); border: 1px solid #dddddf; border-radius: 9px; margin-top: 14px; padding: 6px 6px 4px 6px; }
-QStackedWidget#pages QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0px 4px; color: #202124; font-weight: 600; }
 QLabel#method_hint { color: #67676c; }
 QTableView#volume_list { border: 1px solid #dddddf; border-radius: 9px; background-color: #ffffff; alternate-background-color: #f7f7f8; font-size: 9pt; }
 QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }
@@ -47,8 +45,8 @@ QStackedWidget#pages QPushButton:hover { background-color: #f1f1f3; border-color
 QStackedWidget#pages QPushButton:pressed { background-color: #e5e5e7; }
 QStackedWidget#pages QPushButton:focus { border-color: #a5b4fc; }
 QStackedWidget#pages QPushButton:disabled { color: #9a9a9f; background-color: #eeeeef; border-color: #e3e3e6; }
-QWidget#mask_edit QPushButton, QGroupBox#image_group QPushButton, QGroupBox#signal_group QPushButton, QGroupBox#correction_group QPushButton, QGroupBox#btable_orient_group QPushButton { background-color: #f4f4f5; min-height: 22px; }
-QWidget#mask_edit QPushButton:hover, QGroupBox#image_group QPushButton:hover, QGroupBox#signal_group QPushButton:hover, QGroupBox#correction_group QPushButton:hover, QGroupBox#btable_orient_group QPushButton:hover { background-color: #e9e9eb; border-color: #c8c8cc; }
+QWidget#mask_edit QPushButton, QFrame#image_group QPushButton, QFrame#signal_group QPushButton, QFrame#correction_group QPushButton, QFrame#btable_orient_group QPushButton { background-color: #f4f4f5; min-height: 22px; }
+QWidget#mask_edit QPushButton:hover, QFrame#image_group QPushButton:hover, QFrame#signal_group QPushButton:hover, QFrame#correction_group QPushButton:hover, QFrame#btable_orient_group QPushButton:hover { background-color: #e9e9eb; border-color: #c8c8cc; }
 QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet, QStackedWidget#pages QPushButton#load_mask, QStackedWidget#pages QPushButton#save_mask { font-weight: bold; }
 QStackedWidget#pages QPushButton#edit_mask, QStackedWidget#pages QPushButton#more_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 4px; font-weight: bold; }
 QStackedWidget#pages QPushButton#edit_mask:hover, QStackedWidget#pages QPushButton#more_outputs:hover { color: #1e40af; }
@@ -61,7 +59,15 @@ QRadioButton#DTI::indicator, QRadioButton#GQI::indicator, QRadioButton#QSDR::ind
 QRadioButton#DTI:hover, QRadioButton#GQI:hover, QRadioButton#QSDR:hover { background-color: #e6e9ef; }
 QRadioButton#DTI:focus, QRadioButton#GQI:focus, QRadioButton#QSDR:focus { border-color: #a5b4fc; }
 QRadioButton#DTI:checked, QRadioButton#GQI:checked, QRadioButton#QSDR:checked { color: #1e3a8a; background-color: #e0e7ff; border-color: #a5b4fc; }
-QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled { color: #9a9a9f; }</string>
+QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled { color: #9a9a9f; }
+QStackedWidget#pages QFrame[card="true"] { background-color: #ffffff; border: 1px solid #dddddf; border-top: 4px solid #0ea5e9; border-radius: 9px; }
+QFrame#method_group, QFrame#volume_group, QFrame#btable_check_group, QFrame#performance_group { border-top-color: #10b981; }
+QFrame#hist_param_group, QFrame#image_group, QFrame#qc_card, QFrame#btable_orient_group, QFrame#groupBox { border-top-color: #f59e0b; }
+QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
+QFrame#correction_group { border-top-color: #ef4444; }
+QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bold; background: transparent; border: 0px; padding-bottom: 2px; }
+QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
+QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages QFrame[card="true"] QWidget#qsdr_options, QStackedWidget#pages QFrame[card="true"] QWidget#GQIOption_2, QStackedWidget#pages QFrame[card="true"] QWidget#ODF_metrics, QStackedWidget#pages QFrame[card="true"] QWidget#source_widget { background: transparent; border: 0px; }</string>
    </property>
    <layout class="QHBoxLayout" name="verticalLayout">
     <property name="spacing">
@@ -101,14 +107,20 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
         <widget class="QListWidget" name="nav_rail">
          <property name="minimumSize">
           <size>
-           <width>124</width>
+           <width>176</width>
            <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>150</width>
+           <width>176</width>
            <height>16777215</height>
+          </size>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
           </size>
          </property>
          <property name="frameShape">
@@ -124,20 +136,36 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
           <property name="text">
            <string>Reconstruction</string>
           </property>
+          <property name="icon">
+           <iconset resource="../icons.qrc">
+            <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+          </property>
          </item>
          <item>
           <property name="text">
            <string>Inspect / Edit DWI</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../icons.qrc">
+            <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
           </property>
          </item>
          <item>
           <property name="text">
            <string>B-table</string>
           </property>
+          <property name="icon">
+           <iconset resource="../icons.qrc">
+            <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
+          </property>
          </item>
          <item>
           <property name="text">
            <string>Options</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../icons.qrc">
+            <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
           </property>
          </item>
         </widget>
@@ -178,11 +206,33 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
           <widget class="QWidget" name="recon_content">
            <layout class="QVBoxLayout" name="recon_content_layout">
             <item>
-             <widget class="QGroupBox" name="groupBox_2">
-              <property name="title">
-               <string>Mask</string>
+             <widget class="QFrame" name="groupBox_2">
+              <property name="card" stdset="0">
+               <bool>true</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_2">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="groupBox_2_title">
+                 <property name="text">
+                  <string>Mask</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <layout class="QHBoxLayout" name="mask_source_row">
                  <item>
@@ -471,11 +521,33 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="method_group">
-              <property name="title">
-               <string>Method</string>
+             <widget class="QFrame" name="method_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_10">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="method_group_title">
+                 <property name="text">
+                  <string>Method</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <item>
@@ -709,11 +781,1102 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="hist_param_group">
-              <property name="title">
-               <string>Parameters</string>
+             <spacer name="recon_spacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="run_bar">
+          <layout class="QHBoxLayout" name="run_bar_layout" stretch="1,0,0,0">
+           <property name="leftMargin">
+            <number>10</number>
+           </property>
+           <property name="topMargin">
+            <number>8</number>
+           </property>
+           <property name="rightMargin">
+            <number>10</number>
+           </property>
+           <property name="bottomMargin">
+            <number>8</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="fib_output_widget" native="true">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>11</height>
+              </size>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Output</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="fib_output" />
+              </item>
+              <item>
+               <widget class="QPushButton" name="change_fib_output">
+                <property name="text">
+                 <string />
+                </property>
+                <property name="icon">
+                 <iconset resource="../icons.qrc">
+                  <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="doDTI">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>run recon</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="text">
+              <string>Run Reconstruction</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../icons.qrc">
+               <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="inspect_page">
+       <layout class="QVBoxLayout" name="inspect_layout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="inspect_scroll">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="inspect_content">
+           <layout class="QVBoxLayout" name="inspect_content_layout">
+            <item>
+             <widget class="QFrame" name="viewer_card">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="viewer_card_layout">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="viewer_card_title">
+                 <property name="text">
+                  <string>DWI volumes</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_21">
+                 <item>
+                  <widget class="QPushButton" name="show_bad_slice">
+                   <property name="text">
+                    <string>Show bad slice</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/bad_slice_alert.svg</normaloff>:/icons/icons/bad_slice_alert.svg</iconset>
+                   </property>
+                   <property name="iconSize">
+                    <size>
+                     <width>16</width>
+                     <height>16</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="bad_slice_label">
+                   <property name="text">
+                    <string />
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="inspect_spacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="viewer_split" stretch="0,1">
+                 <item>
+                  <widget class="QTableView" name="volume_list">
+                   <property name="toolTip">
+                    <string>DWI volumes (read-only); edit gradients on the B-table page</string>
+                   </property>
+                   <property name="editTriggers">
+                    <set>QAbstractItemView::NoEditTriggers</set>
+                   </property>
+                   <property name="alternatingRowColors">
+                    <bool>true</bool>
+                   </property>
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::SingleSelection</enum>
+                   </property>
+                   <property name="selectionBehavior">
+                    <enum>QAbstractItemView::SelectRows</enum>
+                   </property>
+                   <property name="verticalScrollMode">
+                    <enum>QAbstractItemView::ScrollPerPixel</enum>
+                   </property>
+                   <property name="showGrid">
+                    <bool>false</bool>
+                   </property>
+                   <property name="minimumSize">
+                    <size>
+                     <width>200</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>260</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="source_widget" native="true">
+                   <layout class="QVBoxLayout" name="verticalLayout_6">
+                    <property name="spacing">
+                     <number>0</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_11">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QPushButton" name="zoom_in">
+                        <property name="minimumSize">
+                         <size>
+                          <width>24</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                        <property name="text">
+                         <string />
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../icons.qrc">
+                          <normaloff>:/icons/icons/zoom_in.svg</normaloff>:/icons/icons/zoom_in.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="zoom_out">
+                        <property name="minimumSize">
+                         <size>
+                          <width>24</width>
+                          <height>0</height>
+                         </size>
+                        </property>
+                        <property name="text">
+                         <string />
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../icons.qrc">
+                          <normaloff>:/icons/icons/zoom_out.svg</normaloff>:/icons/icons/zoom_out.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="SagView">
+                        <property name="text">
+                         <string>...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../icons.qrc">
+                          <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="CorView">
+                        <property name="text">
+                         <string>...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../icons.qrc">
+                          <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QToolButton" name="AxiView">
+                        <property name="text">
+                         <string>...</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="../icons.qrc">
+                          <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_4">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="label_13">
+                        <property name="text">
+                         <string>min</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QDoubleSpinBox" name="min_value" />
+                      </item>
+                      <item>
+                       <widget class="QDoubleSpinBox" name="max_value" />
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="label_14">
+                        <property name="text">
+                         <string>max</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <widget class="QGraphicsView" name="view_source" />
+                    </item>
+                    <item>
+                     <widget class="QSlider" name="z_pos">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>340</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="qc_card">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="qc_card_layout">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="qc_card_title">
+                 <property name="text">
+                  <string>Quality control</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTextBrowser" name="report">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>160</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="volume_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QHBoxLayout" name="volume_row">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="volume_group_title">
+                 <property name="text">
+                  <string>Volumes</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="delete_2">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Remove row</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="remove_below">
+                 <property name="text">
+                  <string>Remove below</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="align_slices">
+                 <property name="text">
+                  <string>Align Slice...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../icons.qrc">
+                   <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>16</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="volume_spacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="image_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="image_group_layout">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="image_group_title">
+                 <property name="text">
+                  <string>Image</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QGridLayout" name="image_grid">
+                 <item row="0" column="0">
+                  <widget class="QPushButton" name="btn_Flip_x">
+                   <property name="text">
+                    <string>Image Flip X</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QPushButton" name="btn_Flip_y">
+                   <property name="text">
+                    <string>Image Flip Y</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QPushButton" name="btn_Flip_z">
+                   <property name="text">
+                    <string>Image Flip Z</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QPushButton" name="btn_Flip_xy">
+                   <property name="text">
+                    <string>Image Swap XY</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QPushButton" name="btn_Flip_xz">
+                   <property name="text">
+                    <string>Image Swap XZ</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QPushButton" name="btn_Flip_yz">
+                   <property name="text">
+                    <string>Image Swap YZ</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QPushButton" name="btn_Align_ACPC">
+                   <property name="text">
+                    <string>Align AC-PC...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QPushButton" name="btn_Manual_Rotation">
+                   <property name="text">
+                    <string>Rotate...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QPushButton" name="btn_Resample">
+                   <property name="text">
+                    <string>Resample to Isotropic</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QPushButton" name="btn_Rotate">
+                   <property name="text">
+                    <string>Resample to T1w/T2w...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QPushButton" name="btn_Overwrite_Voxel_Size">
+                   <property name="text">
+                    <string>Overwrite Voxel Size...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QPushButton" name="btn_Attach_Images">
+                   <property name="text">
+                    <string>Attach Images...</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="signal_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="signal_group_layout">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="signal_group_title">
+                 <property name="text">
+                  <string>Signals</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QGridLayout" name="signal_grid">
+                 <item row="0" column="0">
+                  <widget class="QPushButton" name="btn_Smooth_Signals">
+                   <property name="text">
+                    <string>Smooth Signals</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QPushButton" name="btn_Scheme_Balance">
+                   <property name="text">
+                    <string>Scheme Balance</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QPushButton" name="btn_Erase_Background_Signals">
+                   <property name="text">
+                    <string>Erase Background Signals</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QPushButton" name="btn_Trim_image">
+                   <property name="text">
+                    <string>Crop Background Volume</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QPushButton" name="btn_Probablistic_Masking">
+                   <property name="text">
+                    <string>Probablistic Masking...</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="correction_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="correction_group_layout">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="correction_group_title">
+                 <property name="text">
+                  <string>Corrections</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QGridLayout" name="correction_grid">
+                 <item row="0" column="0">
+                  <widget class="QPushButton" name="btn_Run_FSL_Topup">
+                   <property name="text">
+                    <string>TOPUP/EDDY...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QPushButton" name="btn_TOPUP_only">
+                   <property name="text">
+                    <string>TOPUP...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QPushButton" name="btn_EDDY">
+                   <property name="text">
+                    <string>EDDY...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QPushButton" name="btn_T1w_Distortion_Correction">
+                   <property name="text">
+                    <string>T1w Distortion Correction...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QPushButton" name="btn_Correct_Bias_Field">
+                   <property name="text">
+                    <string>Bias Field Correction......</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QPushButton" name="btn_Eddy_Motion_Correction">
+                   <property name="text">
+                    <string>Motion Correction...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QPushButton" name="btn_Volume_Orientation_Correction">
+                   <property name="text">
+                    <string>Volume Orientation Correction...</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="btable_page">
+       <layout class="QVBoxLayout" name="btable_layout" stretch="1,0,0,0">
+        <item>
+         <widget class="QTableWidget" name="b_table">
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <column>
+           <property name="text">
+            <string>b value</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>bx</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>by</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>bz</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="btable_file_group">
+          <property name="card" stdset="0">
+           <bool>true</bool>
+          </property>
+          <layout class="QVBoxLayout" name="btable_file_group_layout">
+           <property name="leftMargin">
+            <number>12</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>12</number>
+           </property>
+           <property name="bottomMargin">
+            <number>12</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="btable_file_group_title">
+             <property name="text">
+              <string>Load</string>
+             </property>
+             <property name="cardTitle" stdset="0">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="btable_file_grid">
+             <item row="0" column="0">
+              <widget class="QPushButton" name="btn_Load_bvals">
+               <property name="text">
+                <string>Load Bvals...</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="btn_Load_bvecs">
+               <property name="text">
+                <string>Load Bvecs...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="btable_check_group">
+          <property name="card" stdset="0">
+           <bool>true</bool>
+          </property>
+          <layout class="QVBoxLayout" name="btable_check_group_layout">
+           <property name="leftMargin">
+            <number>12</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>12</number>
+           </property>
+           <property name="bottomMargin">
+            <number>12</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="btable_check_group_title">
+             <property name="text">
+              <string>Check and regenerate</string>
+             </property>
+             <property name="cardTitle" stdset="0">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="btable_check_grid">
+             <item row="0" column="0">
+              <widget class="QPushButton" name="btn_Check_b_table2">
+               <property name="text">
+                <string>Check B-table...</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="btn_Check_b_table">
+               <property name="text">
+                <string>Check B-table (Template-Based)...</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QPushButton" name="btn_Regenerate_b_table">
+               <property name="text">
+                <string>Regenerate B-table (Template-Based)...</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QPushButton" name="btn_Regenerate_b_table_from_src">
+               <property name="text">
+                <string>Regenerate B-table from SRC...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="btable_orient_group">
+          <property name="card" stdset="0">
+           <bool>true</bool>
+          </property>
+          <layout class="QVBoxLayout" name="btable_orient_group_layout">
+           <property name="leftMargin">
+            <number>12</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>12</number>
+           </property>
+           <property name="bottomMargin">
+            <number>12</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="btable_orient_group_title">
+             <property name="text">
+              <string>Orientation</string>
+             </property>
+             <property name="cardTitle" stdset="0">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="btable_orient_grid">
+             <item row="0" column="0">
+              <widget class="QPushButton" name="btn_Flip_bx">
+               <property name="text">
+                <string>Flip Bx</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="btn_Flip_by">
+               <property name="text">
+                <string>Flip By</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QPushButton" name="btn_Flip_bz">
+               <property name="text">
+                <string>Flip Bz</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3">
+              <widget class="QPushButton" name="btn_swap_bxby">
+               <property name="text">
+                <string>Swap BxBy</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="4">
+              <widget class="QPushButton" name="btn_swap_bybz">
+               <property name="text">
+                <string>Swap ByBz</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="5">
+              <widget class="QPushButton" name="btn_swap_bxbz">
+               <property name="text">
+                <string>Swap BxBz</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="options_page">
+       <layout class="QVBoxLayout" name="options_layout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="options_scroll">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="options_content">
+           <layout class="QVBoxLayout" name="options_content_layout">
+            <item>
+             <widget class="QFrame" name="hist_param_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="hist_param_group_title">
+                 <property name="text">
+                  <string>Parameters</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout">
                  <item>
@@ -847,918 +2010,104 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
              </widget>
             </item>
             <item>
-             <spacer name="recon_spacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-        <item>
-         <widget class="QFrame" name="run_bar">
-          <layout class="QHBoxLayout" name="run_bar_layout" stretch="1,0,0,0">
-           <property name="leftMargin">
-            <number>10</number>
-           </property>
-           <property name="topMargin">
-            <number>8</number>
-           </property>
-           <property name="rightMargin">
-            <number>10</number>
-           </property>
-           <property name="bottomMargin">
-            <number>8</number>
-           </property>
-           <item>
-            <widget class="QWidget" name="fib_output_widget" native="true">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>11</height>
-              </size>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="label_6">
-                <property name="text">
-                 <string>Save As</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="fib_output" />
-              </item>
-              <item>
-               <widget class="QPushButton" name="change_fib_output">
-                <property name="text">
-                 <string />
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_9">
-             <property name="text">
-              <string>Threads:</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="ThreadCount">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>128</number>
-             </property>
-             <property name="value">
-              <number>4</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="doDTI">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>run recon</string>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::LeftToRight</enum>
-             </property>
-             <property name="text">
-              <string>Run Reconstruction</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../icons.qrc">
-               <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="inspect_page">
-       <layout class="QVBoxLayout" name="inspect_layout">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QScrollArea" name="inspect_scroll">
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="inspect_content">
-           <layout class="QVBoxLayout" name="inspect_content_layout">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_21">
-              <item>
-               <widget class="QPushButton" name="show_bad_slice">
-                <property name="text">
-                 <string>Show bad slice</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/bad_slice_alert.svg</normaloff>:/icons/icons/bad_slice_alert.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="bad_slice_label">
-                <property name="text">
-                 <string />
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="inspect_spacer">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QTableView" name="volume_list">
-              <property name="toolTip">
-               <string>DWI volumes (read-only); edit gradients on the B-table page</string>
-              </property>
-              <property name="editTriggers">
-               <set>QAbstractItemView::NoEditTriggers</set>
-              </property>
-              <property name="alternatingRowColors">
+             <widget class="QFrame" name="performance_group">
+              <property name="card" stdset="0">
                <bool>true</bool>
               </property>
-              <property name="selectionMode">
-               <enum>QAbstractItemView::SingleSelection</enum>
-              </property>
-              <property name="selectionBehavior">
-               <enum>QAbstractItemView::SelectRows</enum>
-              </property>
-              <property name="verticalScrollMode">
-               <enum>QAbstractItemView::ScrollPerPixel</enum>
-              </property>
-              <property name="showGrid">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>120</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>200</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QWidget" name="source_widget" native="true">
-              <layout class="QVBoxLayout" name="verticalLayout_6">
-               <property name="spacing">
-                <number>0</number>
-               </property>
+              <layout class="QVBoxLayout" name="performance_group_layout">
                <property name="leftMargin">
-                <number>0</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
-                <number>0</number>
+                <number>10</number>
                </property>
                <property name="rightMargin">
-                <number>0</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>0</number>
+                <number>12</number>
                </property>
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_11">
-                 <property name="spacing">
-                  <number>0</number>
+                <widget class="QLabel" name="performance_group_title">
+                 <property name="text">
+                  <string>Performance</string>
                  </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="thread_row">
                  <item>
-                  <widget class="QPushButton" name="zoom_in">
-                   <property name="minimumSize">
-                    <size>
-                     <width>24</width>
-                     <height>0</height>
-                    </size>
-                   </property>
+                  <widget class="QLabel" name="label_9">
                    <property name="text">
-                    <string />
+                    <string>Threads:</string>
                    </property>
-                   <property name="icon">
-                    <iconset resource="../icons.qrc">
-                     <normaloff>:/icons/icons/zoom_in.svg</normaloff>:/icons/icons/zoom_in.svg</iconset>
+                   <property name="alignment">
+                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="zoom_out">
-                   <property name="minimumSize">
-                    <size>
-                     <width>24</width>
-                     <height>0</height>
-                    </size>
+                  <widget class="QSpinBox" name="ThreadCount">
+                   <property name="minimum">
+                    <number>1</number>
                    </property>
-                   <property name="text">
-                    <string />
+                   <property name="maximum">
+                    <number>128</number>
                    </property>
-                   <property name="icon">
-                    <iconset resource="../icons.qrc">
-                     <normaloff>:/icons/icons/zoom_out.svg</normaloff>:/icons/icons/zoom_out.svg</iconset>
+                   <property name="value">
+                    <number>4</number>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QToolButton" name="SagView">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                   <property name="icon">
-                    <iconset resource="../icons.qrc">
-                     <normaloff>:/icons/icons/sagittal.svg</normaloff>:/icons/icons/sagittal.svg</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="CorView">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                   <property name="icon">
-                    <iconset resource="../icons.qrc">
-                     <normaloff>:/icons/icons/coronal.svg</normaloff>:/icons/icons/coronal.svg</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QToolButton" name="AxiView">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                   <property name="icon">
-                    <iconset resource="../icons.qrc">
-                     <normaloff>:/icons/icons/axial.svg</normaloff>:/icons/icons/axial.svg</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_4">
+                  <spacer name="thread_spacer">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
-                   <property name="sizeHint" stdset="0">
+                   <property name="sizeHint">
                     <size>
-                     <width>40</width>
-                     <height>20</height>
+                     <width>0</width>
+                     <height>0</height>
                     </size>
                    </property>
                   </spacer>
                  </item>
-                 <item>
-                  <widget class="QLabel" name="label_13">
-                   <property name="text">
-                    <string>min</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QDoubleSpinBox" name="min_value" />
-                 </item>
-                 <item>
-                  <widget class="QDoubleSpinBox" name="max_value" />
-                 </item>
-                 <item>
-                  <widget class="QLabel" name="label_14">
-                   <property name="text">
-                    <string>max</string>
-                   </property>
-                  </widget>
-                 </item>
                 </layout>
                </item>
-               <item>
-                <widget class="QGraphicsView" name="view_source" />
-               </item>
-               <item>
-                <widget class="QSlider" name="z_pos">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>340</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QTextBrowser" name="report">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>160</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QGridLayout" name="export_grid">
-              <item row="0" column="0">
-               <widget class="QPushButton" name="btn_Save_SRC_file_as">
-                <property name="text">
-                 <string>Save SRC File as...</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QPushButton" name="btn_Save_4D_nifti">
-                <property name="text">
-                 <string>Save 4D NIFTI...</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QPushButton" name="btn_Save_b0">
-                <property name="text">
-                 <string>Save B0...</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="3">
-               <widget class="QPushButton" name="btn_Save_DWI_sum">
-                <property name="text">
-                 <string>Save DWI Sum...</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="volume_group">
-              <property name="title">
-               <string>Volumes</string>
-              </property>
-              <layout class="QHBoxLayout" name="volume_row">
-               <item>
-                <widget class="QPushButton" name="delete_2">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>Remove row</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="remove_below">
-                 <property name="text">
-                  <string>Remove below</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="align_slices">
-                 <property name="text">
-                  <string>Align Slice...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
-                 </property>
-                 <property name="iconSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="volume_spacer">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
               </layout>
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="image_group">
-              <property name="title">
-               <string>Image</string>
-              </property>
-              <layout class="QGridLayout" name="image_grid">
-               <item row="0" column="0">
-                <widget class="QPushButton" name="btn_Flip_x">
-                 <property name="text">
-                  <string>Image Flip X</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="btn_Flip_y">
-                 <property name="text">
-                  <string>Image Flip Y</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
-                <widget class="QPushButton" name="btn_Flip_z">
-                 <property name="text">
-                  <string>Image Flip Z</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="3">
-                <widget class="QPushButton" name="btn_Flip_xy">
-                 <property name="text">
-                  <string>Image Swap XY</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QPushButton" name="btn_Flip_xz">
-                 <property name="text">
-                  <string>Image Swap XZ</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QPushButton" name="btn_Flip_yz">
-                 <property name="text">
-                  <string>Image Swap YZ</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="2">
-                <widget class="QPushButton" name="btn_Align_ACPC">
-                 <property name="text">
-                  <string>Align AC-PC...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="3">
-                <widget class="QPushButton" name="btn_Manual_Rotation">
-                 <property name="text">
-                  <string>Rotate...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="0">
-                <widget class="QPushButton" name="btn_Resample">
-                 <property name="text">
-                  <string>Resample to Isotropic</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="1">
-                <widget class="QPushButton" name="btn_Rotate">
-                 <property name="text">
-                  <string>Resample to T1w/T2w...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="2">
-                <widget class="QPushButton" name="btn_Overwrite_Voxel_Size">
-                 <property name="text">
-                  <string>Overwrite Voxel Size...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="3">
-                <widget class="QPushButton" name="btn_Attach_Images">
-                 <property name="text">
-                  <string>Attach Images...</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="signal_group">
-              <property name="title">
-               <string>Signals</string>
-              </property>
-              <layout class="QGridLayout" name="signal_grid">
-               <item row="0" column="0">
-                <widget class="QPushButton" name="btn_Smooth_Signals">
-                 <property name="text">
-                  <string>Smooth Signals</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="btn_Scheme_Balance">
-                 <property name="text">
-                  <string>Scheme Balance</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
-                <widget class="QPushButton" name="btn_Erase_Background_Signals">
-                 <property name="text">
-                  <string>Erase Background Signals</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QPushButton" name="btn_Trim_image">
-                 <property name="text">
-                  <string>Crop Background Volume</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QPushButton" name="btn_Probablistic_Masking">
-                 <property name="text">
-                  <string>Probablistic Masking...</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="correction_group">
-              <property name="title">
-               <string>Corrections</string>
-              </property>
-              <layout class="QGridLayout" name="correction_grid">
-               <item row="0" column="0">
-                <widget class="QPushButton" name="btn_Run_FSL_Topup">
-                 <property name="text">
-                  <string>TOPUP/EDDY...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="btn_TOPUP_only">
-                 <property name="text">
-                  <string>TOPUP...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
-                <widget class="QPushButton" name="btn_EDDY">
-                 <property name="text">
-                  <string>EDDY...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="3">
-                <widget class="QPushButton" name="btn_T1w_Distortion_Correction">
-                 <property name="text">
-                  <string>T1w Distortion Correction...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QPushButton" name="btn_Correct_Bias_Field">
-                 <property name="text">
-                  <string>Bias Field Correction......</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QPushButton" name="btn_Eddy_Motion_Correction">
-                 <property name="text">
-                  <string>Motion Correction...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="2">
-                <widget class="QPushButton" name="btn_Volume_Orientation_Correction">
-                 <property name="text">
-                  <string>Volume Orientation Correction...</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="btable_page">
-       <layout class="QVBoxLayout" name="btable_layout" stretch="1,0,0,0">
-        <item>
-         <widget class="QTableWidget" name="b_table">
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <column>
-           <property name="text">
-            <string>b value</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>bx</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>by</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>bz</string>
-           </property>
-          </column>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="btable_file_group">
-          <property name="title">
-           <string>Files</string>
-          </property>
-          <layout class="QGridLayout" name="btable_file_grid">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="btn_Load_bvals">
-             <property name="text">
-              <string>Load Bvals...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="btn_Load_bvecs">
-             <property name="text">
-              <string>Load Bvecs...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="btn_Save_b_table">
-             <property name="text">
-              <string>Save B-table...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QPushButton" name="btn_Save_bvals">
-             <property name="text">
-              <string>Save Bvals...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="4">
-            <widget class="QPushButton" name="btn_Save_bvecs">
-             <property name="text">
-              <string>Save Bvecs...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="btable_check_group">
-          <property name="title">
-           <string>Check and regenerate</string>
-          </property>
-          <layout class="QGridLayout" name="btable_check_grid">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="btn_Check_b_table2">
-             <property name="text">
-              <string>Check B-table...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="btn_Check_b_table">
-             <property name="text">
-              <string>Check B-table (Template-Based)...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="btn_Regenerate_b_table">
-             <property name="text">
-              <string>Regenerate B-table (Template-Based)...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="btn_Regenerate_b_table_from_src">
-             <property name="text">
-              <string>Regenerate B-table from SRC...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="btable_orient_group">
-          <property name="title">
-           <string>Orientation</string>
-          </property>
-          <layout class="QGridLayout" name="btable_orient_grid">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="btn_Flip_bx">
-             <property name="text">
-              <string>Flip Bx</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="btn_Flip_by">
-             <property name="text">
-              <string>Flip By</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="btn_Flip_bz">
-             <property name="text">
-              <string>Flip Bz</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QPushButton" name="btn_swap_bxby">
-             <property name="text">
-              <string>Swap BxBy</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="4">
-            <widget class="QPushButton" name="btn_swap_bybz">
-             <property name="text">
-              <string>Swap ByBz</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="5">
-            <widget class="QPushButton" name="btn_swap_bxbz">
-             <property name="text">
-              <string>Swap BxBz</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="options_page">
-       <layout class="QVBoxLayout" name="options_layout">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QScrollArea" name="options_scroll">
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="options_content">
-           <layout class="QVBoxLayout" name="options_content_layout">
-            <item>
-             <widget class="QGroupBox" name="groupBox">
-              <property name="title">
-               <string>Output metrics</string>
+             <widget class="QFrame" name="groupBox">
+              <property name="card" stdset="0">
+               <bool>true</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_15">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
                <property name="topMargin">
-                <number>3</number>
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>6</number>
+                <number>12</number>
                </property>
+               <item>
+                <widget class="QLabel" name="groupBox_title">
+                 <property name="text">
+                  <string>Output metrics</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_12">
                  <property name="spacing">
@@ -2004,6 +2353,68 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
              </widget>
             </item>
             <item>
+             <widget class="QFrame" name="testing_group">
+              <property name="card" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="testing_group_layout">
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>12</number>
+               </property>
+               <property name="bottomMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="testing_group_title">
+                 <property name="text">
+                  <string>Testing</string>
+                 </property>
+                 <property name="cardTitle" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="testing_row">
+                 <item>
+                  <widget class="QPushButton" name="btn_Enable_TEST_features">
+                   <property name="text">
+                    <string>Enable TEST features</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="btn_Image_upsample_to_T1W_TESTING">
+                   <property name="text">
+                    <string>Image Upsample to T1W (TESTING)...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="testing_spacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <spacer name="options_spacer">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -2037,90 +2448,32 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>Save</string>
     </property>
+    <addaction name="actionSet_Output_File" />
+    <addaction name="actionSave_Mask" />
+    <addaction name="separator" />
     <addaction name="actionSave_SRC_file_as" />
     <addaction name="actionSave_4D_nifti" />
     <addaction name="actionSave_b0" />
     <addaction name="actionSave_DWI_sum" />
-   </widget>
-   <widget class="QMenu" name="menuB_table">
-    <property name="title">
-     <string>B-table</string>
-    </property>
+    <addaction name="separator" />
     <addaction name="actionSave_b_table" />
     <addaction name="actionSave_bvals" />
     <addaction name="actionSave_bvecs" />
-    <addaction name="actionLoad_bvals" />
-    <addaction name="actionLoad_bvecs" />
-    <addaction name="separator" />
-    <addaction name="actionRegenerate_b_table" />
-    <addaction name="actionRegenerate_b_table_from_src" />
-    <addaction name="actionCheck_b_table2" />
-    <addaction name="actionCheck_b_table" />
-    <addaction name="separator" />
-    <addaction name="actionFlip_bx" />
-    <addaction name="actionFlip_by" />
-    <addaction name="actionFlip_bz" />
-    <addaction name="actionswap_bxby" />
-    <addaction name="actionswap_bybz" />
-    <addaction name="actionswap_bxbz" />
-   </widget>
-   <widget class="QMenu" name="menuCorrections">
-    <property name="title">
-     <string>Corrections</string>
-    </property>
-    <addaction name="actionRun_FSL_Topup" />
-    <addaction name="actionTOPUP_only" />
-    <addaction name="actionT1w_Distortion_Correction" />
-    <addaction name="actionEDDY" />
-    <addaction name="separator" />
-    <addaction name="actionCorrect_Bias_Field" />
-    <addaction name="actionEddy_Motion_Correction" />
-    <addaction name="actionVolume_Orientation_Correction" />
-    <addaction name="separator" />
-   </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-    <addaction name="actionFlip_x" />
-    <addaction name="actionFlip_y" />
-    <addaction name="actionFlip_z" />
-    <addaction name="actionFlip_xy" />
-    <addaction name="actionFlip_xz" />
-    <addaction name="actionFlip_yz" />
-    <addaction name="separator" />
-    <addaction name="actionAlign_ACPC" />
-    <addaction name="actionManual_Rotation" />
-    <addaction name="actionResample" />
-    <addaction name="actionRotate" />
-    <addaction name="actionOverwrite_Voxel_Size" />
-    <addaction name="actionImage_upsample_to_T1W_TESTING" />
-    <addaction name="actionAttach_Images" />
-    <addaction name="separator" />
-    <addaction name="actionSmooth_Signals" />
-    <addaction name="actionScheme_Balance" />
-    <addaction name="actionErase_Background_Signals" />
-    <addaction name="actionTrim_image" />
-    <addaction name="actionProbablistic_Masking" />
-    <addaction name="separator" />
-    <addaction name="actionEnable_TEST_features" />
-   </widget>
-   <widget class="QMenu" name="menuQSDR">
-    <property name="title">
-     <string>QSDR</string>
-    </property>
-    <addaction name="actionManual_Align" />
-    <addaction name="actionPartial_FOV" />
-    <addaction name="actionT1W_based_QSDR" />
    </widget>
    <addaction name="menuFile" />
-   <addaction name="menuEdit" />
-   <addaction name="menuB_table" />
-   <addaction name="menuCorrections" />
-   <addaction name="menuQSDR" />
   </widget>
+  <action name="actionSet_Output_File">
+   <property name="text">
+    <string>Set Output FIB File...</string>
+   </property>
+  </action>
+  <action name="actionSave_Mask">
+   <property name="text">
+    <string>Save Mask...</string>
+   </property>
+  </action>
   <action name="actionSave_4D_nifti">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -2857,30 +3210,6 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
    <slot>trigger()</slot>
   </connection>
   <connection>
-   <sender>btn_Save_SRC_file_as</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_SRC_file_as</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_4D_nifti</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_4D_nifti</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_b0</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_b0</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_DWI_sum</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_DWI_sum</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
    <sender>btn_Load_bvals</sender>
    <signal>clicked()</signal>
    <receiver>actionLoad_bvals</receiver>
@@ -2890,24 +3219,6 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
    <sender>btn_Load_bvecs</sender>
    <signal>clicked()</signal>
    <receiver>actionLoad_bvecs</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_b_table</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_b_table</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_bvals</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_bvals</receiver>
-   <slot>trigger()</slot>
-  </connection>
-  <connection>
-   <sender>btn_Save_bvecs</sender>
-   <signal>clicked()</signal>
-   <receiver>actionSave_bvecs</receiver>
    <slot>trigger()</slot>
   </connection>
   <connection>
@@ -2975,6 +3286,30 @@ QRadioButton#DTI:disabled, QRadioButton#GQI:disabled, QRadioButton#QSDR:disabled
    <signal>currentRowChanged(int)</signal>
    <receiver>pages</receiver>
    <slot>setCurrentIndex(int)</slot>
+  </connection>
+  <connection>
+   <sender>actionSave_Mask</sender>
+   <signal>triggered()</signal>
+   <receiver>save_mask</receiver>
+   <slot>click()</slot>
+  </connection>
+  <connection>
+   <sender>actionSet_Output_File</sender>
+   <signal>triggered()</signal>
+   <receiver>change_fib_output</receiver>
+   <slot>click()</slot>
+  </connection>
+  <connection>
+   <sender>btn_Enable_TEST_features</sender>
+   <signal>clicked()</signal>
+   <receiver>actionEnable_TEST_features</receiver>
+   <slot>trigger()</slot>
+  </connection>
+  <connection>
+   <sender>btn_Image_upsample_to_T1W_TESTING</sender>
+   <signal>clicked()</signal>
+   <receiver>actionImage_upsample_to_T1W_TESTING</receiver>
+   <slot>trigger()</slot>
   </connection>
  </connections>
 </ui>

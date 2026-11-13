@@ -58,6 +58,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->volume_list->setSelectionModel(ui->b_table->selectionModel());
     ui->volume_list->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->volume_list->verticalHeader()->setDefaultSectionSize(20);
+    // saving the mask and choosing the output file are reached from the Save menu
+    ui->save_mask->hide();
+    ui->change_fib_output->hide();
     outputs = {
         ui->output_fa,
         ui->output_rd,
@@ -101,6 +104,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     absolute_path = QFileInfo(filenames[0]).absolutePath();
 
     ui->fib_output_widget->setVisible(filenames.size() == 1);
+    ui->actionSet_Output_File->setVisible(filenames.size() == 1);
     switch(settings.value("rec_method_id",int(handle->voxel.method_id)).toInt())
     {
     case 1:
@@ -129,14 +133,15 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     if(handle->voxel.is_histology)
     {
-        delete ui->menuCorrections;
-        delete ui->menuB_table;
-        delete ui->menuFile;
-        for(int row : {1,2}) // Inspect / Edit DWI, B-table
-            ui->nav_rail->item(row)->setHidden(true);
-        auto actions = ui->menuEdit->actions();
-        for(int i = 4;i < actions.size();++i)
-            actions[i]->setVisible(false);
+        for(auto* each : {ui->actionSave_SRC_file_as,ui->actionSave_4D_nifti,ui->actionSave_b0,ui->actionSave_DWI_sum,
+                          ui->actionSave_b_table,ui->actionSave_bvals,ui->actionSave_bvecs})
+            each->setVisible(false);
+        ui->nav_rail->item(2)->setHidden(true); // B-table
+        // Inspect / Edit DWI keeps only the image flips that apply to histology
+        for(auto* each : std::initializer_list<QWidget*>{ui->viewer_card,ui->qc_card,ui->volume_group,ui->signal_group,
+                          ui->correction_group,ui->testing_group,ui->btn_Flip_xz,ui->btn_Flip_yz,ui->btn_Align_ACPC,
+                          ui->btn_Manual_Rotation,ui->btn_Resample,ui->btn_Rotate,ui->btn_Overwrite_Voxel_Size,ui->btn_Attach_Images})
+            each->hide();
 
         ui->hist_downsampling->setValue(std::ceil(std::log2(handle->voxel.hist_image.width()))-12);
     }
@@ -626,8 +631,6 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->qsdr_reso->setVisible(checked);
     ui->qsdr_reso_label->setVisible(checked);
-
-    ui->menuQSDR->setEnabled(checked);
 
     if(filenames.size() == 1)
     {
