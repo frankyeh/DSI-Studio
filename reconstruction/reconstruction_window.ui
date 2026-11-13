@@ -1435,6 +1435,50 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   </layout>
                  </item>
                 </layout>
+               </widget></item><item><widget class="QFrame" name="qc_card">
+                <property name="card" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <layout class="QVBoxLayout" name="qc_card_layout">
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="qc_card_title">
+                   <property name="text">
+                    <string>Content</string>
+                   </property>
+                   <property name="cardTitle" stdset="0">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QTextBrowser" name="report">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>160</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </widget></item></layout></item>
               <item>
                <widget class="QFrame" name="testing_group">
@@ -1837,53 +1881,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                 </layout>
                </widget>
               </item>
-              <item>
-               <widget class="QFrame" name="qc_card">
-                <property name="card" stdset="0">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="qc_card_layout">
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="qc_card_title">
-                   <property name="text">
-                    <string>Quality control</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QTextBrowser" name="report">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>160</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
+              
               
               <item>
                <widget class="QFrame" name="image_group">
@@ -1903,16 +1901,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  <property name="bottomMargin">
                   <number>12</number>
                  </property>
-                 <item>
-                  <widget class="QLabel" name="image_group_title">
-                   <property name="text">
-                    <string>Volume editing</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
+                 
                  <item><widget class="QPushButton" name="image_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Volume editing...</string></property></widget></item><item><widget class="QWidget" name="image_edit_controls"><layout class="QVBoxLayout" name="image_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="image_grid">
                    <item row="0" column="0">
                     <widget class="QPushButton" name="btn_Flip_x">
@@ -2058,16 +2047,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                  <property name="bottomMargin">
                   <number>12</number>
                  </property>
-                 <item>
-                  <widget class="QLabel" name="signal_group_title">
-                   <property name="text">
-                    <string>Signal editing</string>
-                   </property>
-                   <property name="cardTitle" stdset="0">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
+                 
                  <item><widget class="QPushButton" name="signal_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Signal editing...</string></property></widget></item><item><widget class="QWidget" name="signal_edit_controls"><layout class="QVBoxLayout" name="signal_edit_controls_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><layout class="QGridLayout" name="signal_grid">
                    <item row="0" column="0">
                     <widget class="QPushButton" name="btn_Smooth_Signals">
@@ -2168,7 +2148,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
             </column>
            </widget></item></layout></widget></item>
           
-          <item><layout class="QHBoxLayout" name="btable_validation_row"><item><widget class="QFrame" name="btable_check_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_check_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_check_group_title"><property name="text"><string>Check</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QPushButton" name="btable_check_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Check...</string></property></widget></item><item><widget class="QWidget" name="btable_check_group_controls"><layout class="QHBoxLayout" name="btable_check_group_buttons"><item><widget class="QPushButton" name="btn_Check_b_table2">
+          <item><layout class="QHBoxLayout" name="btable_validation_row"><item><widget class="QFrame" name="btable_check_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_check_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btable_check_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Check...</string></property></widget></item><item><widget class="QWidget" name="btable_check_group_controls"><layout class="QHBoxLayout" name="btable_check_group_buttons"><item><widget class="QPushButton" name="btn_Check_b_table2">
                  <property name="text">
                   <string>Check B-table...</string>
                  </property>
@@ -2184,7 +2164,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                   <iconset resource="../icons.qrc">
                    <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                  </property>
-                </widget></item></layout></widget></item></layout></widget></item><item><widget class="QFrame" name="btable_regenerate_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_regenerate_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QLabel" name="btable_regenerate_group_title"><property name="text"><string>Regenerate</string></property><property name="cardTitle" stdset="0"><bool>true</bool></property></widget></item><item><widget class="QPushButton" name="btable_regenerate_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Regenerate...</string></property></widget></item><item><widget class="QWidget" name="btable_regenerate_group_controls"><layout class="QHBoxLayout" name="btable_regenerate_group_buttons"><item><widget class="QPushButton" name="btn_Regenerate_b_table">
+                </widget></item></layout></widget></item></layout></widget></item><item><widget class="QFrame" name="btable_regenerate_group"><property name="card" stdset="0"><bool>true</bool></property><layout class="QVBoxLayout" name="btable_regenerate_group_layout"><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>10</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property><item><widget class="QPushButton" name="btable_regenerate_group_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ Regenerate...</string></property></widget></item><item><widget class="QWidget" name="btable_regenerate_group_controls"><layout class="QHBoxLayout" name="btable_regenerate_group_buttons"><item><widget class="QPushButton" name="btn_Regenerate_b_table">
                  <property name="text">
                   <string>Regenerate B-table (Template-Based)...</string>
                  </property>
