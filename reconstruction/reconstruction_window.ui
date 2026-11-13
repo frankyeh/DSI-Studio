@@ -55,8 +55,8 @@ QStackedWidget#pages QPushButton:disabled { color: #9a9a9f; background-color: #e
 QWidget#mask_edit QPushButton, QFrame#image_group QPushButton, QFrame#signal_group QPushButton, QFrame#correction_group QPushButton, QFrame#btable_orient_group QPushButton { background-color: #f4f4f5; min-height: 22px; }
 QWidget#mask_edit QPushButton:hover, QFrame#image_group QPushButton:hover, QFrame#signal_group QPushButton:hover, QFrame#correction_group QPushButton:hover, QFrame#btable_orient_group QPushButton:hover { background-color: #e9e9eb; border-color: #c8c8cc; }
 QStackedWidget#pages QPushButton#from_template, QStackedWidget#pages QPushButton#from_unet, QStackedWidget#pages QPushButton#load_mask, QStackedWidget#pages QPushButton#save_mask { font-weight: bold; }
-QStackedWidget#pages QPushButton#edit_mask, QStackedWidget#pages QPushButton#more_outputs, QStackedWidget#pages QPushButton#more_odf_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
-QStackedWidget#pages QPushButton#edit_mask:hover, QStackedWidget#pages QPushButton#more_outputs:hover, QStackedWidget#pages QPushButton#more_odf_outputs:hover { color: #1e40af; }
+QStackedWidget#pages QPushButton#more_outputs, QStackedWidget#pages QPushButton#more_odf_outputs { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; }
+QStackedWidget#pages QPushButton#more_outputs:hover, QStackedWidget#pages QPushButton#more_odf_outputs:hover { color: #1e40af; }
 QFrame#sidebar QPushButton#doDTI { color: #ffffff; background-color: #10b981; border: 1px solid #10b981; border-radius: 9px; padding: 7px 3px; min-height: 30px; font-weight: bold; }
 QFrame#sidebar QPushButton#doDTI:hover { background-color: #059669; border-color: #059669; }
 QFrame#sidebar QPushButton#doDTI:pressed { background-color: #047857; }
@@ -87,6 +87,7 @@ QStackedWidget#pages QLabel[cardTitle="true"] { color: #202124; font-weight: bol
 QStackedWidget#pages QFrame[card="true"] QLabel, QStackedWidget#pages QFrame[card="true"] QCheckBox { background: transparent; }
 QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages QFrame[card="true"] QWidget#qsdr_options, QStackedWidget#pages QFrame[card="true"] QWidget#GQIOption_2, QStackedWidget#pages QFrame[card="true"] QWidget#ODF_metrics, QStackedWidget#pages QFrame[card="true"] QWidget#source_widget { background: transparent; border: 0px; }
 QFrame#sidebar QPushButton#doDTI { margin: 8px; padding: 9px 4px; min-height: 28px; }
+QFrame#sidebar QFrame#cpu_pill { margin: 8px; }
 QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color: #ffffff; border: 1px solid #d9d9dc; border-radius: 7px; padding: 4px 8px; }</string>
    </property>
    <layout class="QVBoxLayout" name="central_layout" stretch="1,0">
@@ -385,19 +386,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </property>
                     </widget>
                    </item>
-                   <item>
-                    <widget class="QPushButton" name="edit_mask">
-                     <property name="checkable">
-                      <bool>true</bool>
-                     </property>
-                     <property name="flat">
-                      <bool>true</bool>
-                     </property>
-                     <property name="text">
-                      <string>▸ More...</string>
-                     </property>
-                    </widget>
-                   </item>
+                   
                   </layout>
                  </item>
                  <item>
