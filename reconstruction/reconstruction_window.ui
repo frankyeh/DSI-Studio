@@ -1756,7 +1756,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
          </layout>
         </widget>
 <widget class="QWidget" name="btable_page">
-         <layout class="QVBoxLayout" name="btable_layout" stretch="1,0,0">
+         <layout class="QVBoxLayout" name="btable_layout" stretch="0,1,0,0">
           <item><widget class="QFrame" name="qc_card">
                 <property name="card" stdset="0">
                  <bool>true</bool>
