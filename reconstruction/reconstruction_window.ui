@@ -721,6 +721,10 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                     <property name="text">
                      <string>Manual Align...</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+                    </property>
                    </widget>
                   </item>
                   <item row="1" column="1">
@@ -728,12 +732,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                     <property name="text">
                      <string>Partial FOV...</string>
                     </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/crop_trim.svg</normaloff>:/icons/icons/crop_trim.svg</iconset>
+                    </property>
                    </widget>
                   </item>
                   <item row="1" column="2">
                    <widget class="QPushButton" name="btn_T1W_based_QSDR">
                     <property name="text">
                      <string>T1W-based QSDR...</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
                     </property>
                    </widget>
                   </item>
@@ -1355,12 +1367,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Image Flip X</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="1">
                   <widget class="QPushButton" name="btn_Flip_y">
                    <property name="text">
                     <string>Image Flip Y</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1369,12 +1389,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Image Flip Z</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="3">
                   <widget class="QPushButton" name="btn_Flip_xy">
                    <property name="text">
                     <string>Image Swap XY</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1383,12 +1411,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Image Swap XZ</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
                   <widget class="QPushButton" name="btn_Flip_yz">
                    <property name="text">
                     <string>Image Swap YZ</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1397,12 +1433,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Align AC-PC...</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/crosshair_target.svg</normaloff>:/icons/icons/crosshair_target.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="3">
                   <widget class="QPushButton" name="btn_Manual_Rotation">
                    <property name="text">
                     <string>Rotate...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1411,12 +1455,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Resample to Isotropic</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="2" column="1">
                   <widget class="QPushButton" name="btn_Rotate">
                    <property name="text">
                     <string>Resample to T1w/T2w...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1425,12 +1477,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Overwrite Voxel Size...</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/ruler_measure.svg</normaloff>:/icons/icons/ruler_measure.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="2" column="3">
                   <widget class="QPushButton" name="btn_Attach_Images">
                    <property name="text">
                     <string>Attach Images...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/slice_overlay.svg</normaloff>:/icons/icons/slice_overlay.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1474,12 +1534,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Smooth Signals</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="1">
                   <widget class="QPushButton" name="btn_Scheme_Balance">
                    <property name="text">
                     <string>Scheme Balance</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1488,6 +1556,10 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Erase Background Signals</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="0">
@@ -1495,12 +1567,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Crop Background Volume</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/crop_trim.svg</normaloff>:/icons/icons/crop_trim.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
                   <widget class="QPushButton" name="btn_Probablistic_Masking">
                    <property name="text">
                     <string>Probablistic Masking...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1544,12 +1624,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>TOPUP/EDDY...</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="1">
                   <widget class="QPushButton" name="btn_TOPUP_only">
                    <property name="text">
                     <string>TOPUP...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1558,12 +1646,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>EDDY...</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="3">
                   <widget class="QPushButton" name="btn_T1w_Distortion_Correction">
                    <property name="text">
                     <string>T1w Distortion Correction...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/distortion_correct.svg</normaloff>:/icons/icons/distortion_correct.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1572,6 +1668,10 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Bias Field Correction......</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/bias_field.svg</normaloff>:/icons/icons/bias_field.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
@@ -1579,12 +1679,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Motion Correction...</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/motion_correct.svg</normaloff>:/icons/icons/motion_correct.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="2">
                   <widget class="QPushButton" name="btn_Volume_Orientation_Correction">
                    <property name="text">
                     <string>Volume Orientation Correction...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/rotate_sync.svg</normaloff>:/icons/icons/rotate_sync.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1669,12 +1777,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                <property name="text">
                 <string>Load Bvals...</string>
                </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="1">
               <widget class="QPushButton" name="btn_Load_bvecs">
                <property name="text">
                 <string>Load Bvecs...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1718,12 +1834,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                <property name="text">
                 <string>Check B-table...</string>
                </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="1">
               <widget class="QPushButton" name="btn_Check_b_table">
                <property name="text">
                 <string>Check B-table (Template-Based)...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/quality_check.svg</normaloff>:/icons/icons/quality_check.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1732,12 +1856,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                <property name="text">
                 <string>Regenerate B-table (Template-Based)...</string>
                </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
+               </property>
               </widget>
              </item>
              <item row="1" column="1">
               <widget class="QPushButton" name="btn_Regenerate_b_table_from_src">
                <property name="text">
                 <string>Regenerate B-table from SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1781,12 +1913,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                <property name="text">
                 <string>Flip Bx</string>
                </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/flip_horizontal.svg</normaloff>:/icons/icons/flip_horizontal.svg</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="1">
               <widget class="QPushButton" name="btn_Flip_by">
                <property name="text">
                 <string>Flip By</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/flip_vertical.svg</normaloff>:/icons/icons/flip_vertical.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1795,12 +1935,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                <property name="text">
                 <string>Flip Bz</string>
                </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/flip_depth.svg</normaloff>:/icons/icons/flip_depth.svg</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="3">
               <widget class="QPushButton" name="btn_swap_bxby">
                <property name="text">
                 <string>Swap BxBy</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
                </property>
               </widget>
              </item>
@@ -1809,12 +1957,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                <property name="text">
                 <string>Swap ByBz</string>
                </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="5">
               <widget class="QPushButton" name="btn_swap_bxbz">
                <property name="text">
                 <string>Swap BxBz</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../icons.qrc">
+                 <normaloff>:/icons/icons/swap_axes.svg</normaloff>:/icons/icons/swap_axes.svg</iconset>
                </property>
               </widget>
              </item>
@@ -2387,12 +2543,20 @@ QStackedWidget#pages QFrame[card="true"] QWidget#mask_edit, QStackedWidget#pages
                    <property name="text">
                     <string>Enable TEST features</string>
                    </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/lab_flask.svg</normaloff>:/icons/icons/lab_flask.svg</iconset>
+                   </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QPushButton" name="btn_Image_upsample_to_T1W_TESTING">
                    <property name="text">
                     <string>Image Upsample to T1W (TESTING)...</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="../icons.qrc">
+                     <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
                    </property>
                   </widget>
                  </item>
