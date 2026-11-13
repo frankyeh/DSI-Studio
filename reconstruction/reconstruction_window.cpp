@@ -837,9 +837,9 @@ void reconstruction_window::on_align_slices_clicked()
 
 void reconstruction_window::on_edit_mask_clicked()
 {
-    ui->edit_mask->setVisible(false);
-    ui->mask_edit->setVisible(true);
-
+    bool expanded = ui->edit_mask->isChecked();
+    ui->mask_edit->setVisible(expanded);
+    ui->edit_mask->setText(expanded ? "▾ Less..." : "▸ More...");
 }
 
 
