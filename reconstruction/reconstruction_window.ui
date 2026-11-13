@@ -2748,11 +2748,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
    </widget>
    <addaction name="menuFile" />
   </widget>
-  <action name="actionSet_Output_File">
-   <property name="text">
-    <string>Set Output FIB File...</string>
-   </property>
-  </action>
   <action name="actionSave_Mask">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -3979,22 +3974,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
    <sender>actionSave_Mask</sender>
    <signal>triggered()</signal>
    <receiver>save_mask</receiver>
-   <slot>click()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>actionSet_Output_File</sender>
-   <signal>triggered()</signal>
-   <receiver>change_fib_output</receiver>
    <slot>click()</slot>
    <hints>
     <hint type="sourcelabel">
