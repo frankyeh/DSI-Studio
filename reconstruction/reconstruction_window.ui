@@ -1670,7 +1670,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <height>16</height>
                       </size>
                      </property>
-                    </widget></item>></layout></item<item><widget class="QLabel" name="bad_slice_label">
+                    </widget></item></layout></item><item><widget class="QLabel" name="bad_slice_label">
                      <property name="text">
                       <string />
                      </property>
