@@ -36,10 +36,10 @@ QListWidget#nav_rail::item { color: #202124; margin: 2px 8px; padding: 7px 6px; 
 QListWidget#nav_rail::item:hover { background-color: #e6e9ef; }
 QListWidget#nav_rail::item:selected { color: #202124; background-color: #e0e7ff; border: 1px solid #c7d2fe; }
 QLabel#method_hint { color: #67676c; }
-QTableView#volume_list { border: 1px solid #dddddf; border-radius: 9px; background-color: #ffffff; alternate-background-color: #f7f7f8; font-size: 9pt; }
-QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }
+QListWidget#volume_list { border: 1px solid #dddddf; border-radius: 9px; background-color: #ffffff; alternate-background-color: #f7f7f8; font-size: 9pt; }
+QListWidget#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }
 QFrame#run_bar { background-color: #f7f7f8; border: 0px; border-top: 1px solid #e3e6ea; }
-QScrollArea#recon_scroll, QWidget#recon_content, QScrollArea#inspect_scroll, QWidget#inspect_content, QScrollArea#options_scroll, QWidget#options_content { background-color: transparent; }
+QScrollArea#recon_scroll, QWidget#recon_content, QScrollArea#methods_scroll, QWidget#methods_content, QScrollArea#inspect_scroll, QWidget#inspect_content, QScrollArea#options_scroll, QWidget#options_content { background-color: transparent; }
 QStackedWidget#pages QPushButton { color: #202124; background-color: #ffffff; border: 1px solid #d9d9dc; border-radius: 7px; padding: 5px 9px; min-height: 26px; }
 QStackedWidget#pages QPushButton:hover { background-color: #f1f1f3; border-color: #bfc0c4; }
 QStackedWidget#pages QPushButton:pressed { background-color: #e5e5e7; }
