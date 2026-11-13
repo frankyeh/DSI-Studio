@@ -67,6 +67,8 @@ QFrame#signal_group, QFrame#testing_group { border-top-color: #8b5cf6; }
 QFrame#correction_group { border-top-color: #ef4444; }
 QFrame#fsl_group { border-top-color: #2563eb; }
 QFrame#btable_table_card { border-top-color: #10b981; }
+QStackedWidget#pages QPushButton#method_more_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
+QStackedWidget#pages QPushButton#method_more_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#btable_orient_toggle { color: #2563eb; background-color: transparent; border: 0px; min-height: 0px; padding: 2px 0px; font-weight: bold; text-align: left; }
 QStackedWidget#pages QPushButton#btable_orient_toggle:hover { color: #1e40af; }
 QStackedWidget#pages QPushButton#zoom_in, QStackedWidget#pages QPushButton#zoom_out { min-height: 0px; padding: 3px; border-radius: 6px; }
@@ -628,7 +630,11 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </property>
                     </widget>
                    </item>
-                   <item>
+                   <item><widget class="QLabel" name="label_15">
+                     <property name="text">
+                      <string>Template</string>
+                     </property>
+                    </widget></item><item><widget class="QComboBox" name="primary_template" /></item><item>
                     <spacer name="method_spacer">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
@@ -653,8 +659,14 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                    </property>
                   </widget>
                  </item>
-                 <item>
-                  <widget class="QWidget" name="GQIOption_2" native="true">
+                 <item><widget class="QPushButton" name="method_more_toggle"><property name="checkable"><bool>true</bool></property><property name="flat"><bool>true</bool></property><property name="text"><string>▸ More...</string></property></widget></item><item><widget class="QWidget" name="method_advanced" native="true"><layout class="QVBoxLayout" name="method_advanced_layout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QCheckBox" name="high_accuracy">
+                     <property name="statusTip">
+                      <string>fixel</string>
+                     </property>
+                     <property name="text">
+                      <string>high accuracy</string>
+                     </property>
+                    </widget></item><item><widget class="QWidget" name="GQIOption_2" native="true">
                    <layout class="QHBoxLayout" name="GQIOption">
                     <property name="spacing">
                      <number>0</number>
@@ -717,10 +729,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </spacer>
                     </item>
                    </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QWidget" name="qsdr_options" native="true">
+                  </widget></item><item><widget class="QWidget" name="qsdr_options" native="true">
                    <layout class="QGridLayout" name="horizontalLayout_7">
                     <property name="leftMargin">
                      <number>0</number>
@@ -798,45 +807,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                      </widget>
                     </item>
                    </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="template_row">
-                   <item>
-                    <widget class="QLabel" name="label_15">
-                     <property name="text">
-                      <string> Template  </string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QComboBox" name="primary_template" />
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="high_accuracy">
-                     <property name="statusTip">
-                      <string>fixel</string>
-                     </property>
-                     <property name="text">
-                      <string>high accuracy</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="template_spacer">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>0</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
+                  </widget></item></layout></widget></item>
                 </layout>
                </widget>
               </item>
