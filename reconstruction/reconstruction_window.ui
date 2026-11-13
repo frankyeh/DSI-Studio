@@ -46,7 +46,14 @@ QStackedWidget#pages QPushButton#doDTI:hover { background-color: #1a50db; }
 QStackedWidget#pages QPushButton#doDTI:pressed { background-color: #1744b8; }
 QLabel#method_hint { color: #67676c; }
 QTableView#volume_list { border: 1px solid #dddddf; border-radius: 9px; background-color: #ffffff; alternate-background-color: #f7f7f8; font-size: 9pt; }
-QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }</string>
+QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7ff; }
+QRadioButton#DTI, QRadioButton#GQI, QRadioButton#QSDR { color: #202124; background-color: #ffffff; border: 1px solid #d9d9dc; border-radius: 15px; padding: 6px 18px; min-height: 18px; }
+QRadioButton#DTI::indicator, QRadioButton#GQI::indicator, QRadioButton#QSDR::indicator { width: 0px; height: 0px; }
+QRadioButton#DTI:hover, QRadioButton#GQI:hover, QRadioButton#QSDR:hover { background-color: #f4f4f5; }
+QRadioButton#DTI:focus, QRadioButton#GQI:focus, QRadioButton#QSDR:focus { border-color: #8aa8ff; }
+QRadioButton#DTI:checked, QRadioButton#GQI:checked, QRadioButton#QSDR:checked { color: #1f5eff; background-color: #e0e7ff; border: 1px solid #1f5eff; font-weight: 600; }
+QFrame#run_bar { background-color: #f7f7f8; border: 0px; border-top: 1px solid #e3e6ea; }
+QScrollArea#recon_scroll, QWidget#recon_content { background-color: transparent; }</string>
    </property>
    <layout class="QHBoxLayout" name="verticalLayout">
     <property name="spacing">
@@ -136,102 +143,742 @@ QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7f
        <number>0</number>
       </property>
       <widget class="QWidget" name="recon_page">
-       <layout class="QHBoxLayout" name="recon_layout" stretch="1,1">
+       <layout class="QVBoxLayout" name="recon_layout" stretch="1,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
         <item>
-         <widget class="QGroupBox" name="groupBox_2">
-          <property name="title">
-           <string>Mask</string>
+         <widget class="QScrollArea" name="recon_scroll">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="recon_content">
+           <layout class="QVBoxLayout" name="recon_content_layout">
+            <item>
+             <layout class="QHBoxLayout" name="recon_top_row" stretch="3,2">
+              <item>
+               <widget class="QGroupBox" name="groupBox_2">
+                <property name="title">
+                 <string>Mask</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_2">
+                 <item>
+                  <layout class="QHBoxLayout" name="mask_source_row">
+                   <item>
+                    <widget class="QPushButton" name="from_template">
+                     <property name="toolTip">
+                      <string>run mask_from_template</string>
+                     </property>
+                     <property name="text">
+                      <string>Template</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
+                     </property>
+                     <property name="iconSize">
+                      <size>
+                       <width>16</width>
+                       <height>16</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="from_unet">
+                     <property name="toolTip">
+                      <string>run mask_from_unet</string>
+                     </property>
+                     <property name="text">
+                      <string>U-Net</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/unet_brain.svg</normaloff>:/icons/icons/unet_brain.svg</iconset>
+                     </property>
+                     <property name="iconSize">
+                      <size>
+                       <width>16</width>
+                       <height>16</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="load_mask">
+                     <property name="toolTip">
+                      <string>run mask_open</string>
+                     </property>
+                     <property name="text">
+                      <string>Open...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="save_mask">
+                     <property name="text">
+                      <string>Save...</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="edit_mask">
+                     <property name="text">
+                      <string>Edit&gt;&gt;</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="../icons.qrc">
+                       <normaloff>:/icons/icons/mask_edit.svg</normaloff>:/icons/icons/mask_edit.svg</iconset>
+                     </property>
+                     <property name="iconSize">
+                      <size>
+                       <width>16</width>
+                       <height>16</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="mask_edit" native="true">
+                   <layout class="QGridLayout" name="horizontalLayout_9">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item row="0" column="0">
+                     <widget class="QPushButton" name="thresholding">
+                      <property name="toolTip">
+                       <string>run mask_threshold</string>
+                      </property>
+                      <property name="text">
+                       <string>Thresholding</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QPushButton" name="dilation">
+                      <property name="toolTip">
+                       <string>run mask_dilation</string>
+                      </property>
+                      <property name="text">
+                       <string>Dilation</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="2">
+                     <widget class="QPushButton" name="erosion">
+                      <property name="toolTip">
+                       <string>run mask_erosion</string>
+                      </property>
+                      <property name="text">
+                       <string>Erosion</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/morph_erode.svg</normaloff>:/icons/icons/morph_erode.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="3">
+                     <widget class="QPushButton" name="smoothing">
+                      <property name="toolTip">
+                       <string>run mask_smoothing</string>
+                      </property>
+                      <property name="text">
+                       <string>Smoothing</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QPushButton" name="fit">
+                      <property name="toolTip">
+                       <string>run mask_fit</string>
+                      </property>
+                      <property name="text">
+                       <string>Fit</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/roi_edge.svg</normaloff>:/icons/icons/roi_edge.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QPushButton" name="defragment">
+                      <property name="toolTip">
+                       <string>run mask_defragment</string>
+                      </property>
+                      <property name="text">
+                       <string>Defragment</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2">
+                     <widget class="QPushButton" name="slice_defragment">
+                      <property name="toolTip">
+                       <string>run mask_slice_defragment</string>
+                      </property>
+                      <property name="text">
+                       <string>Slice Defrag</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/slice_defrag.svg</normaloff>:/icons/icons/slice_defrag.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="3">
+                     <widget class="QPushButton" name="negate">
+                      <property name="toolTip">
+                       <string>run mask_negate</string>
+                      </property>
+                      <property name="text">
+                       <string>Negate</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../icons.qrc">
+                        <normaloff>:/icons/icons/invert_negate.svg</normaloff>:/icons/icons/invert_negate.svg</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>16</width>
+                        <height>16</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QGraphicsView" name="graphicsView" />
+                 </item>
+                 <item>
+                  <widget class="QSlider" name="SlicePos">
+                   <property name="maximum">
+                    <number>0</number>
+                   </property>
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="method_group">
+                <property name="title">
+                 <string>Method</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_10">
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_5">
+                   <item>
+                    <widget class="QRadioButton" name="DTI">
+                     <property name="text">
+                      <string>DTI</string>
+                     </property>
+                     <property name="checked">
+                      <bool>false</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="GQI">
+                     <property name="text">
+                      <string>GQI</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="QSDR">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
+                     <property name="text">
+                      <string>QSDR</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="method_spacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="method_hint">
+                   <property name="text">
+                    <string>DTI: tensor metrics  ·  GQI: fibers in native space  ·  QSDR: template space for group analysis</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="GQIOption_2" native="true">
+                   <layout class="QHBoxLayout" name="GQIOption">
+                    <property name="spacing">
+                     <number>0</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="label_7">
+                      <property name="text">
+                       <string>Diffusion sampling length ratio:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QDoubleSpinBox" name="diffusion_sampling">
+                      <property name="maximumSize">
+                       <size>
+                        <width>75</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="decimals">
+                       <number>2</number>
+                      </property>
+                      <property name="minimum">
+                       <double>0.050000000000000</double>
+                      </property>
+                      <property name="maximum">
+                       <double>3.000000000000000</double>
+                      </property>
+                      <property name="singleStep">
+                       <double>0.050000000000000</double>
+                      </property>
+                      <property name="value">
+                       <double>1.250000000000000</double>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_5">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QWidget" name="qsdr_options" native="true">
+                   <layout class="QGridLayout" name="horizontalLayout_7">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="qsdr_reso_title">
+                      <property name="text">
+                       <string>Resolution</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QDoubleSpinBox" name="qsdr_reso">
+                      <property name="decimals">
+                       <number>3</number>
+                      </property>
+                      <property name="maximum">
+                       <double>3.000000000000000</double>
+                      </property>
+                      <property name="singleStep">
+                       <double>0.500000000000000</double>
+                      </property>
+                      <property name="value">
+                       <double>1.000000000000000</double>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="2">
+                     <widget class="QLabel" name="qsdr_reso_label">
+                      <property name="text">
+                       <string>mm</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QPushButton" name="btn_Manual_Align">
+                      <property name="text">
+                       <string>Manual Align...</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QPushButton" name="btn_Partial_FOV">
+                      <property name="text">
+                       <string>Partial FOV...</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2">
+                     <widget class="QPushButton" name="btn_T1W_based_QSDR">
+                      <property name="text">
+                       <string>T1W-based QSDR...</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="template_row">
+                   <item>
+                    <widget class="QLabel" name="label_15">
+                     <property name="text">
+                      <string> Template  </string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QComboBox" name="primary_template" />
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="high_accuracy">
+                     <property name="statusTip">
+                      <string>fixel</string>
+                     </property>
+                     <property name="text">
+                      <string>high accuracy</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="template_spacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="hist_param_group">
+              <property name="title">
+               <string>Parameters</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_14">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <item>
+                  <widget class="QLabel" name="label_3">
+                   <property name="text">
+                    <string>in-plane resolution(mm)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDoubleSpinBox" name="hist_resolution">
+                   <property name="decimals">
+                    <number>3</number>
+                   </property>
+                   <property name="minimum">
+                    <double>0.001000000000000</double>
+                   </property>
+                   <property name="maximum">
+                    <double>0.500000000000000</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.050000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>0.050000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_2">
+                   <property name="text">
+                    <string>downsample (iterations)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="hist_downsampling">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each downsampling reduced the resolution by two fold.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="minimum">
+                    <number>0</number>
+                   </property>
+                   <property name="maximum">
+                    <number>8</number>
+                   </property>
+                   <property name="value">
+                    <number>3</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_3">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_8">
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_5">
+                   <property name="text">
+                    <string>raw image smoothing (iterations)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="hist_raw_smoothing">
+                   <property name="maximum">
+                    <number>12</number>
+                   </property>
+                   <property name="singleStep">
+                    <number>2</number>
+                   </property>
+                   <property name="value">
+                    <number>4</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_4">
+                   <property name="text">
+                    <string>tensor smoothing (iterations)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="hist_tensor_smoothing">
+                   <property name="minimum">
+                    <number>4</number>
+                   </property>
+                   <property name="maximum">
+                    <number>128</number>
+                   </property>
+                   <property name="singleStep">
+                    <number>8</number>
+                   </property>
+                   <property name="value">
+                    <number>8</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_9">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="recon_spacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="run_bar">
+          <layout class="QHBoxLayout" name="run_bar_layout" stretch="1,0,0,0">
+           <property name="leftMargin">
+            <number>10</number>
+           </property>
+           <property name="topMargin">
+            <number>8</number>
+           </property>
+           <property name="rightMargin">
+            <number>10</number>
+           </property>
+           <property name="bottomMargin">
+            <number>8</number>
+           </property>
            <item>
-            <layout class="QHBoxLayout" name="mask_source_row">
-             <item>
-              <widget class="QPushButton" name="from_template">
-               <property name="toolTip">
-                <string>run mask_from_template</string>
-               </property>
-               <property name="text">
-                <string>Template</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/template_fib.svg</normaloff>:/icons/icons/template_fib.svg</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>16</width>
-                 <height>16</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="from_unet">
-               <property name="toolTip">
-                <string>run mask_from_unet</string>
-               </property>
-               <property name="text">
-                <string>U-Net</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/unet_brain.svg</normaloff>:/icons/icons/unet_brain.svg</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>16</width>
-                 <height>16</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="load_mask">
-               <property name="toolTip">
-                <string>run mask_open</string>
-               </property>
-               <property name="text">
-                <string>Open...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="save_mask">
-               <property name="text">
-                <string>Save...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/save.svg</normaloff>:/icons/icons/save.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="edit_mask">
-               <property name="text">
-                <string>Edit&gt;&gt;</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/mask_edit.svg</normaloff>:/icons/icons/mask_edit.svg</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>16</width>
-                 <height>16</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QWidget" name="mask_edit" native="true">
-             <layout class="QGridLayout" name="horizontalLayout_9">
+            <widget class="QWidget" name="fib_output_widget" native="true">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>11</height>
+              </size>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <property name="spacing">
+               <number>0</number>
+              </property>
               <property name="leftMargin">
                <number>0</number>
               </property>
@@ -244,163 +891,24 @@ QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7f
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item row="0" column="0">
-               <widget class="QPushButton" name="thresholding">
-                <property name="toolTip">
-                 <string>run mask_threshold</string>
-                </property>
+              <item>
+               <widget class="QLabel" name="label_6">
                 <property name="text">
-                 <string>Thresholding</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/threshold_binary.svg</normaloff>:/icons/icons/threshold_binary.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
+                 <string>Save As</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QPushButton" name="dilation">
-                <property name="toolTip">
-                 <string>run mask_dilation</string>
-                </property>
-                <property name="text">
-                 <string>Dilation</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/morph_dilate.svg</normaloff>:/icons/icons/morph_dilate.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
+              <item>
+               <widget class="QLineEdit" name="fib_output" />
               </item>
-              <item row="0" column="2">
-               <widget class="QPushButton" name="erosion">
-                <property name="toolTip">
-                 <string>run mask_erosion</string>
-                </property>
+              <item>
+               <widget class="QPushButton" name="change_fib_output">
                 <property name="text">
-                 <string>Erosion</string>
+                 <string />
                 </property>
                 <property name="icon">
                  <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/morph_erode.svg</normaloff>:/icons/icons/morph_erode.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="3">
-               <widget class="QPushButton" name="smoothing">
-                <property name="toolTip">
-                 <string>run mask_smoothing</string>
-                </property>
-                <property name="text">
-                 <string>Smoothing</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/filter_smooth.svg</normaloff>:/icons/icons/filter_smooth.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QPushButton" name="fit">
-                <property name="toolTip">
-                 <string>run mask_fit</string>
-                </property>
-                <property name="text">
-                 <string>Fit</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/roi_edge.svg</normaloff>:/icons/icons/roi_edge.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QPushButton" name="defragment">
-                <property name="toolTip">
-                 <string>run mask_defragment</string>
-                </property>
-                <property name="text">
-                 <string>Defragment</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/morph_fill_holes.svg</normaloff>:/icons/icons/morph_fill_holes.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QPushButton" name="slice_defragment">
-                <property name="toolTip">
-                 <string>run mask_slice_defragment</string>
-                </property>
-                <property name="text">
-                 <string>Slice Defrag</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/slice_defrag.svg</normaloff>:/icons/icons/slice_defrag.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="3">
-               <widget class="QPushButton" name="negate">
-                <property name="toolTip">
-                 <string>run mask_negate</string>
-                </property>
-                <property name="text">
-                 <string>Negate</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="../icons.qrc">
-                  <normaloff>:/icons/icons/invert_negate.svg</normaloff>:/icons/icons/invert_negate.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
+                  <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                 </property>
                </widget>
               </item>
@@ -408,562 +916,62 @@ QTableView#volume_list::item:selected { color: #202124; background-color: #e0e7f
             </widget>
            </item>
            <item>
-            <widget class="QGraphicsView" name="graphicsView" />
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Threads:</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
            </item>
            <item>
-            <widget class="QSlider" name="SlicePos">
-             <property name="maximum">
-              <number>0</number>
+            <widget class="QSpinBox" name="ThreadCount">
+             <property name="minimum">
+              <number>1</number>
              </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+             <property name="maximum">
+              <number>128</number>
+             </property>
+             <property name="value">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="doDTI">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>run recon</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="text">
+              <string>Run Reconstruction</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../icons.qrc">
+               <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
              </property>
             </widget>
            </item>
           </layout>
          </widget>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_13">
-          <item>
-           <widget class="QGroupBox" name="method_group">
-            <property name="title">
-             <string>Method</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_10">
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
-               <item>
-                <widget class="QRadioButton" name="DTI">
-                 <property name="text">
-                  <string>DTI</string>
-                 </property>
-                 <property name="checked">
-                  <bool>false</bool>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QRadioButton" name="GQI">
-                 <property name="text">
-                  <string>GQI</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QRadioButton" name="QSDR">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="text">
-                  <string>QSDR</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="method_spacer">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <widget class="QLabel" name="method_hint">
-               <property name="text">
-                <string>DTI: tensor metrics  ·  GQI: fibers in native space  ·  QSDR: template space for group analysis</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="GQIOption_2" native="true">
-               <layout class="QHBoxLayout" name="GQIOption">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="leftMargin">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QLabel" name="label_7">
-                  <property name="text">
-                   <string>Diffusion sampling length ratio:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="diffusion_sampling">
-                  <property name="maximumSize">
-                   <size>
-                    <width>75</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>2</number>
-                  </property>
-                  <property name="minimum">
-                   <double>0.050000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>3.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.050000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>1.250000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_5">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="qsdr_options" native="true">
-               <layout class="QHBoxLayout" name="horizontalLayout_7">
-                <property name="leftMargin">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QLabel" name="qsdr_reso_title">
-                  <property name="text">
-                   <string>Resolution</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="qsdr_reso">
-                  <property name="decimals">
-                   <number>3</number>
-                  </property>
-                  <property name="maximum">
-                   <double>3.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.500000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>1.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="qsdr_reso_label">
-                  <property name="text">
-                   <string>mm</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="btn_Manual_Align">
-                  <property name="text">
-                   <string>Manual Align...</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="btn_Partial_FOV">
-                  <property name="text">
-                   <string>Partial FOV...</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="btn_T1W_based_QSDR">
-                  <property name="text">
-                   <string>T1W-based QSDR...</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="qsdr_options_spacer">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="template_row">
-               <item>
-                <widget class="QLabel" name="label_15">
-                 <property name="text">
-                  <string> Template  </string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="primary_template" />
-               </item>
-               <item>
-                <widget class="QCheckBox" name="high_accuracy">
-                 <property name="statusTip">
-                  <string>fixel</string>
-                 </property>
-                 <property name="text">
-                  <string>high accuracy</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="template_spacer">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="hist_param_group">
-            <property name="title">
-             <string>Parameters</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_14">
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout">
-               <item>
-                <widget class="QLabel" name="label_3">
-                 <property name="text">
-                  <string>in-plane resolution(mm)</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QDoubleSpinBox" name="hist_resolution">
-                 <property name="decimals">
-                  <number>3</number>
-                 </property>
-                 <property name="minimum">
-                  <double>0.001000000000000</double>
-                 </property>
-                 <property name="maximum">
-                  <double>0.500000000000000</double>
-                 </property>
-                 <property name="singleStep">
-                  <double>0.050000000000000</double>
-                 </property>
-                 <property name="value">
-                  <double>0.050000000000000</double>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_2">
-                 <property name="text">
-                  <string>downsample (iterations)</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="hist_downsampling">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Each downsampling reduced the resolution by two fold.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="minimum">
-                  <number>0</number>
-                 </property>
-                 <property name="maximum">
-                  <number>8</number>
-                 </property>
-                 <property name="value">
-                  <number>3</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="horizontalSpacer_3">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_8">
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QLabel" name="label_5">
-                 <property name="text">
-                  <string>raw image smoothing (iterations)</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="hist_raw_smoothing">
-                 <property name="maximum">
-                  <number>12</number>
-                 </property>
-                 <property name="singleStep">
-                  <number>2</number>
-                 </property>
-                 <property name="value">
-                  <number>4</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_4">
-                 <property name="text">
-                  <string>tensor smoothing (iterations)</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="hist_tensor_smoothing">
-                 <property name="minimum">
-                  <number>4</number>
-                 </property>
-                 <property name="maximum">
-                  <number>128</number>
-                 </property>
-                 <property name="singleStep">
-                  <number>8</number>
-                 </property>
-                 <property name="value">
-                  <number>8</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="horizontalSpacer_9">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <spacer name="recon_spacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint">
-             <size>
-              <width>20</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="run_group">
-            <property name="title">
-             <string>Run</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_9">
-             <item>
-              <widget class="QWidget" name="fib_output_widget" native="true">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>11</height>
-                </size>
-               </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_4">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="leftMargin">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QLabel" name="label_6">
-                  <property name="text">
-                   <string>Save As</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="fib_output" />
-                </item>
-                <item>
-                 <widget class="QPushButton" name="change_fib_output">
-                  <property name="text">
-                   <string />
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../icons.qrc">
-                    <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QLabel" name="label_9">
-                 <property name="text">
-                  <string>Threads:</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="ThreadCount">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>128</number>
-                 </property>
-                 <property name="value">
-                  <number>4</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="thread_spacer">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <widget class="QPushButton" name="doDTI">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>10</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="toolTip">
-                <string>run recon</string>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
-               </property>
-               <property name="text">
-                <string>Run
-Reconstruction</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../icons.qrc">
-                 <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
         </item>
        </layout>
       </widget>
