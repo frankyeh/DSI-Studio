@@ -1852,25 +1852,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                       </widget>
                      </item>
                      <item>
-                      <layout class="QVBoxLayout" name="volume_actions">
-                       <item>
-                        <widget class="QPushButton" name="align_slices">
-                         <property name="text">
-                          <string>Align Slice...</string>
-                         </property>
-                         <property name="icon">
-                          <iconset resource="../icons.qrc">
-                           <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
-                         </property>
-                         <property name="iconSize">
-                          <size>
-                           <width>16</width>
-                           <height>16</height>
-                          </size>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
+                      <layout class="QVBoxLayout" name="volume_actions"/>
                      </item>
                     </layout>
                    </item>
@@ -2216,7 +2198,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="1" column="2">
+                     <item row="2" column="0">
                       <widget class="QPushButton" name="btn_Align_ACPC">
                        <property name="text">
                         <string>Align AC-PC...</string>
@@ -2224,6 +2206,34 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <property name="icon">
                         <iconset resource="../icons.qrc">
                          <normaloff>:/icons/icons/crosshair_target.svg</normaloff>:/icons/icons/crosshair_target.svg</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="2">
+                      <widget class="QPushButton" name="btn_Overwrite_Voxel_Size">
+                       <property name="text">
+                        <string>Overwrite Voxel Size...</string>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../icons.qrc">
+                         <normaloff>:/icons/icons/ruler_measure.svg</normaloff>:/icons/icons/ruler_measure.svg</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="1">
+                      <widget class="QPushButton" name="align_slices">
+                       <property name="text">
+                        <string>Align Slice...</string>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../icons.qrc">
+                         <normaloff>:/icons/icons/linear_reg.svg</normaloff>:/icons/icons/linear_reg.svg</iconset>
+                       </property>
+                       <property name="iconSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
                        </property>
                       </widget>
                      </item>
@@ -2238,7 +2248,7 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        </property>
                       </widget>
                      </item>
-                     <item row="2" column="1">
+                     <item row="2" column="2">
                       <widget class="QPushButton" name="btn_Rotate">
                        <property name="text">
                         <string>Resample to T1w/T2w...</string>
@@ -2246,17 +2256,6 @@ QFrame#run_bar QPushButton#change_fib_output { color: #202124; background-color:
                        <property name="icon">
                         <iconset resource="../icons.qrc">
                          <normaloff>:/icons/icons/resize_grid.svg</normaloff>:/icons/icons/resize_grid.svg</iconset>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="2">
-                      <widget class="QPushButton" name="btn_Overwrite_Voxel_Size">
-                       <property name="text">
-                        <string>Overwrite Voxel Size...</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="../icons.qrc">
-                         <normaloff>:/icons/icons/ruler_measure.svg</normaloff>:/icons/icons/ruler_measure.svg</iconset>
                        </property>
                       </widget>
                      </item>
