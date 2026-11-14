@@ -1,5 +1,6 @@
 #ifndef FIB_DATA_HPP
 #define FIB_DATA_HPP
+#include <atomic>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -264,6 +265,9 @@ public:
     std::shared_ptr<fib_data> high_reso;
 public:
     int prog = 0;
+    bool async_mapping = false;                 // map_to_mni starts normalization in the background and returns at once (tracking window)
+    std::atomic<bool> mapping_running{false};
+    bool mapping_abort = false;                 // stops a background normalization (window closed)
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;
     float R2 = 1.0f;
     unsigned int search_count = 16;
@@ -378,6 +382,7 @@ public:
     }
     ~fib_data(void)
     {
+        mapping_abort = true;
         for(auto& each : reg_threads)
             each->join();
     }
