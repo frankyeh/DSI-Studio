@@ -1698,6 +1698,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         QObject::connect(&dialog,&QDialog::finished,&loop,&QEventLoop::quit);
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
+                        dialog.setStyleSheet( // the control ring's amber accent
+                            "QDialog{background:#fffbeb;border:3px solid #f59e0b;border-radius:8px}"
+                            "QLabel{color:#1f2937;font-size:11pt}"
+                            "QPushButton{background:#f59e0b;color:white;font-weight:bold;border:none;border-radius:6px;padding:6px 16px;min-width:60px}"
+                            "QPushButton:hover{background:#d97706}"
+                            "QLineEdit,QComboBox{border:1px solid #f59e0b;border-radius:6px;padding:4px;background:white}");
                         dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps a menu that highlight_ui opened from closing
                         QRect spot = ring ? ring->screen_rect() : QRect(); // the highlight, or its open menu
                         if(auto* action = qobject_cast<QAction*>(tutor_action))
@@ -1728,7 +1734,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     }
                     else // a few: one button each, such as Done and Cancel
                     {
-                        QMessageBox dialog(QMessageBox::Information,"DSI Studio AI",param,QMessageBox::NoButton,this);
+                        QMessageBox dialog(QMessageBox::NoIcon,"DSI Studio AI",param,QMessageBox::NoButton,this);
                         for(const auto& each : options)
                             dialog.addButton(each,QMessageBox::AcceptRole);
                         auto done = [&]{answered = true;dialog.done(0);};
