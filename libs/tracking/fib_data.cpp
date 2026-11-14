@@ -2112,6 +2112,8 @@ bool fib_data::map_to_mni(bool background)
         return false;
     if(is_mni && template_id == matched_template_id)
         return true;
+    if(mapping_running)
+        return error_msg = "normalization is running in the background (step "+std::to_string(prog)+" of 4); try again when it finishes",false;
     if(!s2t.empty() && !t2s.empty())
         return true;
     auto output_file_name = get_mapping_file_name();
@@ -2128,10 +2130,9 @@ bool fib_data::map_to_mni(bool background)
         }
     }
 
-    tipl::progress p("normalization");
-    prog = 0;
     auto lambda = [this,output_file_name]()
     {
+        bool& aborted = async_mapping ? mapping_abort : tipl::prog_aborted; // a background run must not abort or be aborted by other progress
         prog = 1;
         tipl::reg::mm_reg<tipl::out> reg;
         reg.linear_param.search_count = search_count;
@@ -2162,7 +2163,7 @@ bool fib_data::map_to_mni(bool background)
         if(mask.empty())
         {
             if(!to_t1wt2w_templates(reg,template_id,is_be))
-                return error_msg = "cannot perform normalization",tipl::prog_aborted = true,void();
+                return error_msg = "cannot perform normalization",aborted = true,void();
         }
         else
             reg.match_resolution(false);
@@ -2180,22 +2181,22 @@ bool fib_data::map_to_mni(bool background)
               !load_alternative_warping(reg,alternative_mapping[alternative_mapping_index]))
             {
                 error_msg = reg.error_msg;
-                tipl::prog_aborted = true;
+                aborted = true;
                 return;
             }
-            reg.linear_reg(tipl::prog_aborted);
+            reg.linear_reg(aborted);
         }
-        if(tipl::prog_aborted)
+        if(aborted)
             return;
         prog = 3;
 
-        reg.nonlinear_reg(tipl::prog_aborted);
+        reg.nonlinear_reg(aborted);
         if((R2 = tipl::max_value(reg.r)) < 0.3f)
         {
             error_msg = "poor registration result.";
-            tipl::prog_aborted = true;
+            aborted = true;
         }
-        if(tipl::prog_aborted)
+        if(aborted)
             return;
 
         reg.to_It_space(template_I.shape(),template_to_mni);
@@ -2210,6 +2211,15 @@ bool fib_data::map_to_mni(bool background)
     };
 
     error_msg.clear();
+    prog = 0;
+    if(async_mapping) // the caller tells the user and returns; the tracking window title shows the progress
+    {
+        mapping_abort = false;
+        mapping_running = true;
+        reg_threads.push_back(std::make_shared<std::thread>([this,lambda]{lambda();mapping_running = false;}));
+        return error_msg = "normalization started in the background; try again when it finishes",false;
+    }
+    tipl::progress p("normalization");
     if(background)
     {
         reg_threads.push_back(std::make_shared<std::thread>(lambda));
