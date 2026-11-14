@@ -25,6 +25,7 @@
 #include <QComboBox>
 #include <QShortcut>
 #include <QAbstractButton>
+#include <QAbstractScrollArea>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -32,6 +33,8 @@
 #include <QRegularExpression>
 
 #include <algorithm>
+#include <cmath>
+#include <utility>
 #include <filesystem>
 #include <mutex>
 #include "mainwindow.h"
@@ -134,7 +137,10 @@ public:
     {
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setFocusPolicy(Qt::NoFocus);
-        target->installEventFilter(this);
+        for(QWidget* w = target;w;w = w->isWindow() ? nullptr : w->parentWidget())
+            w->installEventFilter(this); // moving, scrolling, hiding, or resizing the target or any ancestor moves the ring
+        if(auto* view = qobject_cast<QAbstractScrollArea*>(target))
+            view->viewport()->installEventFilter(this); // a view's mouse presses arrive at its viewport
         connect(target,&QObject::destroyed,this,&QObject::deleteLater);
         if(!gesture.isEmpty())
             startTimer(40);
@@ -148,7 +154,7 @@ public:
     }
     void place(void) // covers the target's window, so the ring and caption are clamped inside it
     {
-        if(!target->isVisible())
+        if(!target || !target->isVisible())
             return hide();
         setGeometry(parentWidget()->rect());
         show();
@@ -233,32 +239,39 @@ static QString action_path(QAction* a) // "Tracts > Save Tracts As..." from the 
     }
 }
 // draws the accent around the one visible control named id (objectName, or class name such as GLWidget) in window;
+static bool in_window(QObject* o,QWidget* window) // excludes the separate windows that MainWindow parents
+{
+    for(;o;o = o->parent())
+        if(auto* w = qobject_cast<QWidget*>(o))
+            return w->window() == window;
+    return false;
+}
 // an option is revealed in the Options tree and its editor accented; a menu action is reported by its menu path as text; false with the reason in message otherwise
 static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QString& message)
 {
-    delete ring;
     QList<QWidget*> hits;
     for(auto* each : window->findChildren<QWidget*>())
-        if(each->isVisible() && (each->objectName() == id || each->metaObject()->className() == id))
+        if(each->isVisible() && in_window(each,window) && (each->objectName() == id || each->metaObject()->className() == id))
             hits << each;
-    if(hits.size() == 1 && hits[0]->isEnabled())
-    {
-        ring = new control_ring(hits[0],caption,gesture);
-        return message = "highlighted: "+id,true;
-    }
-    if(!hits.isEmpty())
+    if(hits.size() > 1 || (hits.size() == 1 && !hits[0]->isEnabled()))
         return message = (hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
+    QWidget* target = hits.isEmpty() ? nullptr : hits[0];
+    message = "highlighted: "+id;
     for(auto* tree : window->findChildren<RenderingTableWidget*>())
-        if(auto index = tree->treemodel->indexFor(id);tree->isVisible() && index.isValid())
+        if(auto index = tree->treemodel->indexFor(id);!target && tree->isVisible() && in_window(tree,window) && index.isValid())
         {
             tree->reveal(id);
-            auto* editor = tree->indexWidget(index.siblingAtColumn(1));
-            ring = new control_ring(editor ? editor : tree,caption,gesture);
-            return message = "option: "+option_path(index),true;
+            target = tree->indexWidget(index.siblingAtColumn(1)) ? tree->indexWidget(index.siblingAtColumn(1)) : tree;
+            message = "option: "+option_path(index);
         }
-    if(auto* action = window->findChild<QAction*>(id))
-        return message = "menu: "+action_path(action),true;
-    return message = "control not found or not visible: "+id,false;
+    for(auto* action : window->findChildren<QAction*>(id))
+        if(!target && in_window(action,window))
+            return delete ring,message = "menu: "+action_path(action),true;
+    if(!target)
+        return message = "control not found or not visible: "+id,false;
+    delete ring; // replaced only after the new request is valid
+    ring = new control_ring(target,caption,gesture);
+    return true;
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -273,14 +286,16 @@ MainWindow::MainWindow(QWidget *parent) :
         struct step{const char* window;const char* id;const char* text;const char* gesture;};
         static const std::vector<std::pair<const char*,std::vector<step>>> tutorials{
             {"DICOM to tracts",{
-                {"main","OpenDWI_DICOM","Import: click DICOM folder and select the diffusion DICOM folder to create an SRC file (.sz).",""},
+                {"main","nav_rail","Open the Tractography page.",""},
+                {"main","tract_fmt_dicom","Under Import, choose DICOM.",""},
+                {"main","OpenDWI_DICOM","Click DICOM file(s)... and select the diffusion DICOM files to create an SRC file (.sz).",""},
                 {"main","Reconstruction","Reconstruct: click SRC File(s) and open the SRC file.",""},
                 {"recon","doDTI","Check the mask and preprocessing, choose a method, then click Run Reconstruction to create a FIB file (.fz).",""},
                 {"main","FiberTracking","Track: click FIB File and open the FIB file.",""},
                 {"tracking","perform_tracking","Click Fiber Tracking to run whole-brain tracking.",""},
                 {"tracking","actionSaveTractAs","Save the tracts.",""}}},
             {"Edit tracts",{
-                {"tracking","actionSelect_Tracts","Choose Select Tracts (Ctrl+S). Delete, Cut, and Paint Tracts work the same way.",""},
+                {"tracking","actionSelect_Tracts","Choose Select Tracts (Ctrl+S). Delete and Cut Tracts work the same way; Paint Tracts also asks for a color after each drag.",""},
                 {"tracking","GLWidget","In the 3D view, press the left button, drag a line across the tracts, and release. Tracts crossing the line are edited.","drag"},
                 {"tracking","GLWidget","To draw a curved line, hold Shift while dragging.","shift"},
                 {"tracking","actionUndo","Undo (Ctrl+Z) reverts the last edit of every checked tract bundle.",""}}},
@@ -300,6 +315,8 @@ MainWindow::MainWindow(QWidget *parent) :
         {
             dock = new QDockWidget("Tutorial",this);
             dock->setObjectName("tutorial_dock");
+            dock->setAttribute(Qt::WA_DeleteOnClose); // reopening starts again from step 1
+            dock->setFeatures(dock->features() & ~QDockWidget::DockWidgetClosable); // closed only by Exit or Esc, which clear the accent
             auto* panel = new QWidget(dock);
             auto* choice = new QComboBox(panel);
             for(const auto& each : tutorials)
@@ -323,11 +340,12 @@ MainWindow::MainWindow(QWidget *parent) :
                     if(each->isVisible() && command_window_type(command_window_id(each)) == s.window)
                         window = each;
                 QString message = "Open the "+QString(s.window)+" window first.";
+                delete tutorial_ring; // no stale accent when this step's control is missing
                 if(window && highlight_control(window,s.id,QString(),s.gesture,tutorial_ring,message) && message.startsWith("highlighted"))
                     message.clear(); // the ring says it; a menu path or a failure reason stays as text
                 text->setText(QString("Step %1 of %2\n\n%3\n\n%4").arg(*index+1).arg(steps.size()).arg(s.text,message));
             };
-            auto exit = [this,dock]{delete tutorial_ring;dock->hide();};
+            auto exit = [this,dock]{delete tutorial_ring;dock->close();};
             for(const auto& each : std::initializer_list<std::pair<const char*,int>>{{"Back",-1},{"Next",1},{"Exit",0}})
             {
                 auto* button = new QPushButton(each.first,panel);
@@ -1628,7 +1646,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "a dialog is open; ask the user to close it first";
                 else if(command_name == "highlight_ui")
                 {
-                    if(param.isEmpty())
+                    if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !QStringList({"drag","shift","freehand","rect"}).contains(QString::fromStdString(cmd[3]))))
                         error = "usage: highlight_ui <id> [caption] [drag|shift|freehand|rect]";
                     else if(!highlight_control(target,param,cmd.size() > 2 ? QString::fromStdString(cmd[2]).simplified().left(120) : QString(),
                                                cmd.size() > 3 ? QString::fromStdString(cmd[3]) : QString(),tutorial_ring,output))
@@ -1646,17 +1664,21 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         controls.append(QJsonObject{{"id",id},{"kind",kind},{"label",label}});
                     };
                     for(auto* each : target->findChildren<QWidget*>())
-                        if(!each->isVisible())
+                        if(!each->isVisible() || !in_window(each,target))
                             continue;
                         else if(auto* button = qobject_cast<QAbstractButton*>(each))
                             add(button->objectName(),button->isEnabled() ? "button" : "disabled button",button->text().remove('&'));
                         else if(each->inherits("QOpenGLWidget") || each->inherits("QGraphicsView")) // the 3D and 2D views, for gestures
                             add(each->objectName().isEmpty() ? each->metaObject()->className() : each->objectName(),"view",QString());
-                        else if(auto* tree = qobject_cast<RenderingTableWidget*>(each)) // the Options tree, by option id
-                            for(const auto& id : tree->treemodel->getParamList())
+                        else if(auto* tree = qobject_cast<RenderingTableWidget*>(each)) // the Options tree, by option id in a stable order
+                        {
+                            auto ids = tree->treemodel->getParamList();
+                            ids.sort();
+                            for(const auto& id : ids)
                                 add(id,"option",option_path(tree->treemodel->indexFor(id)));
+                        }
                     for(auto* each : target->findChildren<QAction*>())
-                        if(auto path = action_path(each);path != each->text().remove('&')) // in a menu
+                        if(auto path = action_path(each);each->isVisible() && in_window(each,target) && path != each->text().remove('&')) // in a menu
                             add(each->objectName(),"menu",path);
                     output = QString::fromUtf8(QJsonDocument(QJsonObject{{"total",total},{"controls",controls}}).toJson(QJsonDocument::Compact));
                 }
