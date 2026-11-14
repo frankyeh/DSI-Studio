@@ -1699,6 +1699,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 else if(command_name.startsWith("ask_user")) // the local user's answer is the output; the request waits for it
                 {
                     bool act = command_name == "ask_user_act"; // only Cancel: acting on the highlighted control answers "done"
+                    auto* ring = static_cast<control_ring*>(tutor_ring.data()); // may be gone after waiting: check tutor_ring then
                     QStringList options;
                     for(size_t i = 2;i < cmd.size();++i)
                         options << QString::fromStdString(cmd[i]);
@@ -1711,17 +1712,18 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
                         dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps a menu that highlight_ui opened from closing
-                        QRect near = tutor_ring ? static_cast<control_ring*>(tutor_ring.data())->screen_rect() : QRect(); // the highlight, or its open menu
+                        QRect near = ring ? ring->screen_rect() : QRect(); // the highlight, or its open menu
                         if(auto* action = qobject_cast<QAction*>(tutor_action))
                             for(auto* each : action->associatedObjects())
                                 if(auto* menu = qobject_cast<QMenu*>(each);menu && menu->isVisible())
                                     near = menu->geometry();
                         dialog.show();
-                        auto* screen = near.isEmpty() || !QGuiApplication::screenAt(near.center()) ? dialog.screen() : QGuiApplication::screenAt(near.center());
-                        auto area = screen->availableGeometry();
+                        auto* screen = QGuiApplication::screenAt(near.center());
+                        auto area = (near.isEmpty() || !screen ? dialog.screen() : screen)->availableGeometry();
                         auto size = dialog.frameGeometry().size();
-                        auto at = near.isEmpty() ? area.topRight()+QPoint(-size.width()-24,24) : // a screen corner, or beside the highlight where it fits
-                                  near.right()+12+size.width() <= area.right() ? QPoint(near.right()+12,near.top()) : QPoint(near.left()-12-size.width(),near.top());
+                        QPoint at(area.right()-size.width()-24,area.top()+24); // a screen corner, or beside the highlight where it fits
+                        if(!near.isEmpty())
+                            at = QPoint(near.right()+12+size.width() <= area.right() ? near.right()+12 : near.left()-12-size.width(),near.top());
                         dialog.move(std::clamp(at.x(),area.left(),area.right()-size.width()),std::clamp(at.y(),area.top(),area.bottom()-size.height()));
                         loop.exec();
                     };
@@ -1743,9 +1745,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         for(const auto& each : options)
                             dialog.addButton(each,QMessageBox::AcceptRole);
                         auto done = [&]{answered = true;dialog.done(0);};
-                        if(act && tutor_ring)
-                            static_cast<control_ring*>(tutor_ring.data())->on_act = done;
-                        if(act && !tutor_ring) // dropped with the dialog
+                        if(act && ring)
+                            ring->on_act = done;
+                        if(act && !ring) // dropped with the dialog
                             connect(qobject_cast<QAction*>(tutor_action),&QAction::triggered,&dialog,done);
                         wait(dialog);
                         if(tutor_ring)
