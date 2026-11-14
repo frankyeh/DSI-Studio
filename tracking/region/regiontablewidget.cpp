@@ -677,8 +677,6 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : contain only single file name
         if(!cmd[1].empty())
         {
-            if(cmd[0] == "open_mni_region" && !cur_tracking_window.handle->map_to_mni())
-                return run->failed(cur_tracking_window.handle->error_msg);
             if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
                 return run->failed(error_msg);
             emit region_changed();
