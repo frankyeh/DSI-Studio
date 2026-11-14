@@ -154,16 +154,18 @@ public:
     }
     void place(void) // covers the target's window, so the ring and caption are clamped inside it
     {
-        if(!target || !target->isVisible() || target->window() != parentWidget()) // gone, hidden, or moved to a floating dock
+        if(!target || !target->isVisible())
             return hide();
+        if(target->window() != parentWidget()) // its dock was floated or docked again
+            setParent(target->window());
         setGeometry(parentWidget()->rect());
         show();
         raise();
         update();
     }
-    bool eventFilter(QObject*,QEvent* e) override
+    bool eventFilter(QObject* o,QEvent* e) override
     {
-        if(e->type() == QEvent::MouseButtonPress) // the user takes over: stop the demonstration
+        if(e->type() == QEvent::MouseButtonPress && (o == target || o->parent() == target)) // the user presses the target or its viewport: stop the demonstration
             gesture.clear();
         if(e->type() == QEvent::Move || e->type() == QEvent::Resize || e->type() == QEvent::Show || e->type() == QEvent::Hide || e->type() == QEvent::MouseButtonPress)
             place();
@@ -175,7 +177,12 @@ public:
             return;
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
-        auto ring = QRectF(target->mapTo(parentWidget(),QPoint(0,0)),target->size()).adjusted(-3,-3,3,3).intersected(QRectF(rect()).adjusted(2,2,-2,-2));
+        auto clip = QRectF(rect()).adjusted(2,2,-2,-2);
+        for(QWidget* w = target->parentWidget();w && w != parentWidget();w = w->parentWidget())
+            clip &= QRectF(w->mapTo(parentWidget(),QPoint(0,0)),w->size()).adjusted(-3,-3,3,3); // a scroll area hides the scrolled-out part
+        auto ring = QRectF(target->mapTo(parentWidget(),QPoint(0,0)),target->size()).adjusted(-3,-3,3,3).intersected(clip);
+        if(ring.isEmpty())
+            return;
         p.setPen(QPen(QColor("#f59e0b"),3));
         p.drawRoundedRect(ring,8,8);
         if(!caption.isEmpty()) // below the ring, or inside its bottom edge when there is no room
@@ -238,39 +245,61 @@ static QString action_path(QAction* a) // "Tracts > Save Tracts As..." from the 
             return path;
     }
 }
-// draws the accent around the one visible control named id (objectName, or class name such as GLWidget) in window;
-static bool in_window(QObject* o,QWidget* window) // excludes the separate windows that MainWindow parents
+static bool in_window(QObject* o,QWidget* window) // excludes the separate windows that MainWindow parents; a floating dock stays with its window
 {
     for(;o;o = o->parent())
         if(auto* w = qobject_cast<QWidget*>(o))
-            return w->window() == window;
+        {
+            auto* top = w->window();
+            while(qobject_cast<QDockWidget*>(top) && top->parentWidget())
+                top = top->parentWidget()->window();
+            return top == window;
+        }
     return false;
 }
-// an option is revealed in the Options tree and its editor accented; a menu action is reported by its menu path as text; false with the reason in message otherwise
+static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or highlights
+{
+    if(w->objectName() == "nav_rail")
+        return "pages";
+    if(qobject_cast<QAbstractButton*>(w))
+        return w->isEnabled() ? "button" : "disabled button";
+    return w->inherits("QOpenGLWidget") || w->inherits("QGraphicsView") ? "view" : nullptr;
+}
+// draws the accent around the one tutor control named id (objectName, or class name such as GLWidget) in window;
+// option:<id> reveals that option in the Options tree and accents its editor; a menu action is reported by its menu path as text;
+// false with the reason in message otherwise
 static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QString& message)
 {
     QList<QWidget*> hits;
-    for(auto* each : window->findChildren<QWidget*>())
-        if(each->isVisible() && in_window(each,window) && (each->objectName() == id || each->metaObject()->className() == id))
-            hits << each;
+    message = "highlighted: "+id;
+    if(id.startsWith("option:")) // kind-qualified, so a same-named button never hides an option
+    {
+        for(auto* tree : window->findChildren<RenderingTableWidget*>())
+            if(auto index = tree->treemodel->indexFor(id.mid(7));tree->isVisible() && in_window(tree,window) && index.isValid())
+            {
+                tree->reveal(id.mid(7));
+                hits << (tree->indexWidget(index.siblingAtColumn(1)) ? tree->indexWidget(index.siblingAtColumn(1)) : tree);
+                message = "option: "+option_path(index);
+            }
+    }
+    else
+        for(auto* each : window->findChildren<QWidget*>())
+            if(each->isVisible() && in_window(each,window) && tutor_kind(each) && (each->objectName() == id || each->metaObject()->className() == id))
+                hits << each;
     if(hits.size() > 1 || (hits.size() == 1 && !hits[0]->isEnabled()))
         return message = (hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
-    QWidget* target = hits.isEmpty() ? nullptr : hits[0];
-    message = "highlighted: "+id;
-    for(auto* tree : window->findChildren<RenderingTableWidget*>())
-        if(auto index = tree->treemodel->indexFor(id);!target && tree->isVisible() && in_window(tree,window) && index.isValid())
-        {
-            tree->reveal(id);
-            target = tree->indexWidget(index.siblingAtColumn(1)) ? tree->indexWidget(index.siblingAtColumn(1)) : tree;
-            message = "option: "+option_path(index);
-        }
     for(auto* action : window->findChildren<QAction*>(id))
-        if(!target && in_window(action,window))
-            return delete ring,message = "menu: "+action_path(action),true;
-    if(!target)
+        if(hits.isEmpty() && in_window(action,window) && action->isVisible())
+        {
+            if(!action->isEnabled())
+                return message = "control is disabled: "+id,false;
+            delete ring;
+            return message = "menu: "+action_path(action),true;
+        }
+    if(hits.isEmpty())
         return message = "control not found or not visible: "+id,false;
     delete ring; // replaced only after the new request is valid
-    ring = new control_ring(target,caption,gesture);
+    ring = new control_ring(hits[0],caption,gesture);
     return true;
 }
 
@@ -1654,11 +1683,14 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 else
                 {
-                    // buttons, options and menu actions by id and static label; no field values, tables or file paths
+                    // buttons, views, options and menu actions by id and static label; no field values, tables or file names
                     QJsonArray controls;
                     int total = 0;
-                    auto add = [&](const QString& id,const char* kind,const QString& label)
+                    auto add = [&](const QString& id,const char* kind,QString label)
                     {
+                        static const QRegularExpression file_like("\\w\\.\\w|[/\\\\]"); // a label showing a file name or path, such as a loaded slice
+                        if(label.contains(file_like))
+                            label.clear();
                         if(id.isEmpty() || !(id+" "+label).contains(param,Qt::CaseInsensitive) || ++total > 50)
                             return;
                         controls.append(QJsonObject{{"id",id},{"kind",kind},{"label",label}});
@@ -1666,20 +1698,21 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     for(auto* each : target->findChildren<QWidget*>())
                         if(!each->isVisible() || !in_window(each,target))
                             continue;
-                        else if(auto* button = qobject_cast<QAbstractButton*>(each))
-                            add(button->objectName(),button->isEnabled() ? "button" : "disabled button",button->text().remove('&'));
-                        else if(each->inherits("QOpenGLWidget") || each->inherits("QGraphicsView")) // the 3D and 2D views, for gestures
-                            add(each->objectName().isEmpty() ? each->metaObject()->className() : each->objectName(),"view",QString());
+                        else if(auto* kind = tutor_kind(each))
+                        {
+                            auto* button = qobject_cast<QAbstractButton*>(each);
+                            add(button || !each->objectName().isEmpty() ? each->objectName() : each->metaObject()->className(),kind,button ? button->text().remove('&') : QString());
+                        }
                         else if(auto* tree = qobject_cast<RenderingTableWidget*>(each)) // the Options tree, by option id in a stable order
                         {
                             auto ids = tree->treemodel->getParamList();
                             ids.sort();
                             for(const auto& id : ids)
-                                add(id,"option",option_path(tree->treemodel->indexFor(id)));
+                                add("option:"+id,"option",option_path(tree->treemodel->indexFor(id)));
                         }
                     for(auto* each : target->findChildren<QAction*>())
                         if(auto path = action_path(each);each->isVisible() && in_window(each,target) && path != each->text().remove('&')) // in a menu
-                            add(each->objectName(),"menu",path);
+                            add(each->objectName(),each->isEnabled() ? "menu" : "disabled menu",path);
                     output = QString::fromUtf8(QJsonDocument(QJsonObject{{"total",total},{"controls",controls}}).toJson(QJsonDocument::Compact));
                 }
             }
