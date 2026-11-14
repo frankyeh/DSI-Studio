@@ -1655,9 +1655,9 @@ void TractTableWidget::move_down(void)
 
 void TractTableWidget::edit_tracts(void)
 {
-    QRgb color = 0;
-    if(edit_option == paint)
-        color = QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb();
+    auto color = edit_option == paint ? QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel) : QColor(Qt::red);
+    if(!color.isValid())
+        return; // the color dialog was canceled: no edit
     auto angle = cur_tracking_window.glWidget->angular_selection ? cur_tracking_window["tract_sel_angle"].toFloat():0.0;
     for_each_bundle([&](unsigned int index)
     {
@@ -1677,7 +1677,7 @@ void TractTableWidget::edit_tracts(void)
         case paint:
             return tract_models[index]->paint(angle,
                              cur_tracking_window.glWidget->dirs,
-                             cur_tracking_window.glWidget->pos,color);
+                             cur_tracking_window.glWidget->pos,color.rgb());
             break;
         default:
             ;
