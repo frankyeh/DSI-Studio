@@ -28,7 +28,7 @@ public:
     bool command(std::vector<std::string> cmd,command_source source);
     std::string error_msg;
 public:
-    std::vector<QCheckBox*> outputs,adv_outputs;
+    std::vector<QCheckBox*> outputs;
 protected:
     void resizeEvent(QResizeEvent * event) override;
     void showEvent(QShowEvent * event) override;
@@ -57,6 +57,9 @@ private: // preprocessing flow
     std::vector<preproc_step> preproc; // in running order
     int path = 0; // the chosen column
     void update_preproc(void);
+private: // method card
+    void set_method(unsigned char id);
+    void update_method_card(void);
 private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);

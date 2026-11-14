@@ -128,16 +128,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_odf,
         ui->high_accuracy // fixel
     };
-    adv_outputs = {
-        ui->output_rd12,
-        ui->output_tensor,
-        ui->output_helix,
-        ui->output_gfa,
-        ui->output_odf,
-        ui->dti_ignore_high_b
-    };
-    for(auto each : adv_outputs)
-        each->hide();
     if(!load_src(0))
         throw std::runtime_error(handle->error_msg);
 
@@ -152,27 +142,15 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
     populate_templates(ui->primary_template,handle->voxel.template_id);
-    ui->diffusion_sampling->setValue(handle->voxel.param[0]);
+    connect(ui->diffusion_sampling,&QSlider::valueChanged,this,[this](int value){ui->diffusion_sampling_value->setText(QString::number(value*0.05,'f',2));});
+    ui->diffusion_sampling->setValue(int(std::round(handle->voxel.param[0]*20.0f))); // 0.05 per step
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
 
     ui->fib_output_widget->setVisible(filenames.size() == 1);
-    switch(settings.value("rec_method_id",int(handle->voxel.method_id)).toInt())
-    {
-    case 1:
-        ui->DTI->setChecked(true);
-        on_DTI_toggled(true);
-        break;
-    case 7:
-        ui->QSDR->setChecked(true);
-        on_QSDR_toggled(true);
-        break;
-    default:
-        ui->GQI->setChecked(true);
-        on_GQI_toggled(true);
-        break;
-    }
+    auto method = settings.value("rec_method_id",int(handle->voxel.method_id)).toInt();
+    (method == 1 ? ui->DTI : method == 7 ? ui->QSDR : ui->GQI)->setChecked(true); // none is checked in the .ui, so this emits toggled and sets the method
 
     ui->ThreadCount->setValue(handle->voxel.thread_count);
 
@@ -278,15 +256,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->signal_group_toggle->hide();
         ui->signal_group->show();
     });
-    ui->method_detail->hide();
-    connect(ui->method_more_toggle,&QPushButton::toggled,this,[this](bool checked)
-    {
-        ui->method_detail->setVisible(checked);
-        if(checked)
-            for(auto each : adv_outputs)
-                each->show();
-        ui->method_more_toggle->setText(checked ? "▾ Less..." : "▸ More...");
-    });
+    connect(ui->method_more_toggle,&QPushButton::toggled,this,&reconstruction_window::update_method_card);
 
     {
         foreach (QAction* action, findChildren<QAction*>())
@@ -637,8 +607,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
                 handle->voxel.template_id = ui->primary_template->currentIndex();
                 if(method_id == 4 || method_id == 7)
                 {
-                    handle->voxel.param[0] = float(ui->diffusion_sampling->value());
-                    settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
+                    handle->voxel.param[0] = float(ui->diffusion_sampling->value())*0.05f;
+                    settings.setValue("rec_gqi_sampling",handle->voxel.param[0]);
                 }
 
                 handle->voxel.other_output.clear();
@@ -833,72 +803,48 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
 }
 void reconstruction_window::on_DTI_toggled(bool checked)
 {
-    if(!checked)
-        return;
-    ui->DTI_metrics->setVisible(true);
-    ui->high_accuracy->setVisible(!checked); // GQI and QSDR only
     if(checked)
-        ui->high_accuracy->setChecked(false);
-    ui->qsdr_options->setVisible(!checked);
-    ui->GQIOption_2->setVisible(!checked);
-    ui->ODF_metrics->setVisible(!checked);
-
-
-    ui->qsdr_reso_row->setVisible(!checked);
-
-    if(filenames.size() == 1)
-    {
-        handle->voxel.method_id = 1;
-        handle->output_file_name = handle->file_name;
-        handle->check_output_file_name();
-        ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
-    }
+        set_method(1);
 }
-
-
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
-    if(!checked)
-        return;
-    ui->DTI_metrics->setVisible(false);
-    ui->high_accuracy->setVisible(true);
-    ui->qsdr_options->setVisible(!checked);
-    ui->GQIOption_2->setVisible(checked);
-    ui->ODF_metrics->setVisible(checked);
-
-
-    ui->qsdr_reso_row->setVisible(!checked);
-
-    if(filenames.size() == 1)
-    {
-        handle->voxel.method_id = 4;
-        handle->output_file_name = handle->file_name;
-        handle->check_output_file_name();
-        ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
-    }
-
+    if(checked)
+        set_method(4);
 }
-
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
-    if(!checked)
-        return;
-    ui->DTI_metrics->setVisible(false);
-    ui->high_accuracy->setVisible(true);
-    ui->qsdr_options->setVisible(checked);
-    ui->GQIOption_2->setVisible(checked);
-    ui->ODF_metrics->setVisible(checked);
-
-
-    ui->qsdr_reso_row->setVisible(checked);
-
+    if(checked)
+        set_method(7);
+}
+void reconstruction_window::set_method(unsigned char id)
+{
+    if(id == 1)
+        ui->high_accuracy->setChecked(false); // fixel: GQI and QSDR only
     if(filenames.size() == 1)
     {
-        handle->voxel.method_id = 7;
+        handle->voxel.method_id = id;
         handle->output_file_name = handle->file_name;
         handle->check_output_file_name();
         ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
     }
+    update_method_card();
+}
+// first view: method, sampling ratio, and QSDR template; More adds the options, the QSDR Registration card, and the Output Metrics card
+void reconstruction_window::update_method_card(void)
+{
+    bool odf = !ui->DTI->isChecked(),qsdr = ui->QSDR->isChecked(),more = ui->method_more_toggle->isChecked();
+    ui->method_hint->setText(qsdr ? "QSDR: template space for group analysis. Tensor metrics are also saved." :
+                             odf ? "GQI: fibers in native space. Tensor metrics are also saved." :
+                                   "DTI: tensor metrics only, no fiber orientation distribution.");
+    ui->GQIOption_2->setVisible(odf);
+    ui->qsdr_reso_row->setVisible(qsdr);
+    ui->method_detail->setVisible(more);
+    ui->high_accuracy->setVisible(odf);
+    ui->output_odf->setVisible(odf);
+    ui->qsdr_options->setVisible(more && qsdr);
+    ui->metrics_group->setVisible(more);
+    ui->ODF_metrics->setVisible(odf);
+    ui->method_more_toggle->setText(more ? "▾ Less..." : "▸ More...");
 }
 
 void reconstruction_window::on_zoom_in_clicked()
