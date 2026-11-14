@@ -3362,6 +3362,16 @@ Processing</string>
                   </widget>
                  </item>
                  <item>
+                  <widget class="QPushButton" name="tutorial">
+                   <property name="toolTip">
+                    <string>Step-by-step guide: DICOM to tractography</string>
+                   </property>
+                   <property name="text">
+                    <string>Tutorial...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <spacer name="settings_appearance_spacer">
                    <property name="orientation">
                     <enum>Qt::Vertical</enum>
