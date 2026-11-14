@@ -154,7 +154,7 @@ public:
     }
     void place(void) // covers the target's window, so the ring and caption are clamped inside it
     {
-        if(!target || !target->isVisible())
+        if(!target || !target->isVisible() || target->window() != parentWidget()) // gone, hidden, or moved to a floating dock
             return hide();
         setGeometry(parentWidget()->rect());
         show();
