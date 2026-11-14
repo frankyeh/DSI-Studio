@@ -1699,18 +1699,18 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
                         dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps a menu that highlight_ui opened from closing
-                        QRect near = ring ? ring->screen_rect() : QRect(); // the highlight, or its open menu
+                        QRect spot = ring ? ring->screen_rect() : QRect(); // the highlight, or its open menu
                         if(auto* action = qobject_cast<QAction*>(tutor_action))
                             for(auto* each : action->associatedObjects())
                                 if(auto* menu = qobject_cast<QMenu*>(each);menu && menu->isVisible())
-                                    near = menu->geometry();
+                                    spot = menu->geometry();
                         dialog.show();
-                        auto* screen = QGuiApplication::screenAt(near.center());
-                        auto area = (near.isEmpty() || !screen ? dialog.screen() : screen)->availableGeometry();
+                        auto* screen = QGuiApplication::screenAt(spot.center());
+                        auto area = (spot.isEmpty() || !screen ? dialog.screen() : screen)->availableGeometry();
                         auto size = dialog.frameGeometry().size();
                         QPoint at(area.right()-size.width()-24,area.top()+24); // a screen corner, or beside the highlight where it fits
-                        if(!near.isEmpty())
-                            at = QPoint(near.right()+12+size.width() <= area.right() ? near.right()+12 : near.left()-12-size.width(),near.top());
+                        if(!spot.isEmpty())
+                            at = QPoint(spot.right()+12+size.width() <= area.right() ? spot.right()+12 : spot.left()-12-size.width(),spot.top());
                         dialog.move(std::clamp(at.x(),area.left(),area.right()-size.width()),std::clamp(at.y(),area.top(),area.bottom()-size.height()));
                         loop.exec();
                     };
