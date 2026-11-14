@@ -917,6 +917,8 @@ QString command_window_id(QWidget* window)
 }
 static QString any_window_id(QWidget* w) // a data window's id, or "window<address>" for another visible window, such as the Fiber Data Hub or a dialog
 {
+    if(qobject_cast<AIAgent*>(w)) // the agent chat window, so an agent can move it off the window it teaches
+        return w->isVisible() ? "agent" : QString();
     auto id = command_window_id(w);
     return !id.isEmpty() || !w->isWindow() || !w->isVisible() || qobject_cast<QDockWidget*>(w) ||
            w->windowType() == Qt::Popup || w->windowType() == Qt::ToolTip ? id : command_window_id(w,"window");
@@ -1534,8 +1536,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 auto* target = find_window(info.current_window);
                 if(!target)
                     error = "target window not found, terminated by user? Use set_window to select a window first.";
-                else if(command_name == "close" && target == this)
-                    error = "the main window cannot be closed by AI";
+                else if(command_name == "close" && (target == this || target == ai_agent))
+                    error = "the main and agent windows cannot be closed by AI";
                 else if(command_name == "bring_to_front")
                 {
                     target->showNormal();
@@ -1649,7 +1651,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 for(auto it = shell_tasks.constBegin();it != shell_tasks.constEnd();++it)
                     windows[it.key()] = QJsonObject{{"status","busy"},{"title",it.value()}};
                 application_busy |= !shell_tasks.isEmpty();
-                QJsonArray progress;
+                QJsonArray progress,screens; // screens: available desktop areas, for arranging windows with move_window
+                for(auto* each : QGuiApplication::screens())
+                {
+                    auto g = each->availableGeometry();
+                    screens.append(QJsonArray{g.x(),g.y(),g.width(),g.height()});
+                }
                 for(size_t i = 1;i < tipl::status_list.size();++i)
                 {
                     const auto& s = tipl::status_list[i];
@@ -1663,6 +1670,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"application",QJsonObject{{"status",modal ? "waiting" : application_busy ? "busy" : "idle"}}},
                     {"current_window",info.current_window},
                     {"progress",progress},
+                    {"screens",screens},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
             else if(command_name == "clear_highlight")
@@ -1714,7 +1722,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         auto* screen = QGuiApplication::screenAt(spot.center());
                         auto area = (spot.isEmpty() || !screen ? dialog.screen() : screen)->availableGeometry();
                         auto size = dialog.frameGeometry().size();
-                        QPoint at(area.right()-size.width()-24,area.top()+24); // a screen corner, or beside the highlight where it fits
+                        QPoint at(area.center().x()-size.width()/2,area.center().y()-size.height()/2); // the screen center, or beside the highlight where it fits
                         if(!spot.isEmpty())
                             at = QPoint(spot.right()+12+size.width() <= area.right() ? spot.right()+12 : spot.left()-12-size.width(),spot.top());
                         dialog.move(std::clamp(at.x(),area.left(),area.right()-size.width()),std::clamp(at.y(),area.top(),area.bottom()-size.height()));
