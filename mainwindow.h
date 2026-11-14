@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QSettings>
 #include <QPointer>
+#include <QDialog>
 #include <memory>
 #include <QListWidgetItem>
 #include <QNetworkAccessManager>
@@ -56,6 +57,7 @@ public:
     AIAgent* ai_agent; // created in the constructor; callers (e.g. the local-socket server in main.cpp) use ai_agent->ai_request(...) directly
     void report_and_target_window(QWidget*); // logs "<type> window created, id: ..." and makes it the AI session's new target; call whenever a window is created
     QPointer<QWidget> tutor_ring; // the one accent the tutor draws around a live control (highlight_ui)
+    QPointer<QDialog> tutor_question; // only the active ask_user* dialog, never a file or approval dialog
     QPointer<QObject> tutor_action; // or the menu action highlight_ui opened the menus down to
 public:
     void open_DWI(QStringList files);

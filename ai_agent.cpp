@@ -585,15 +585,24 @@ static QJsonObject status_reply(const QString& status,const QString& error = {})
 void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
 {
     QJsonParseError parse_error;
-    auto doc = dispatching_info ? QJsonDocument() : QJsonDocument::fromJson(data,&parse_error); // busy: not even parsed
-    reply = QJsonDocument(dispatching_info || doc.isObject() ? ai_request(doc.object()) : status_reply("error","invalid JSON: "+parse_error.errorString())).toJson(QJsonDocument::Compact);
+    auto doc = QJsonDocument::fromJson(data,&parse_error); // parse even while busy: the owning tutor can cancel its question
+    reply = QJsonDocument(doc.isObject() ? ai_request(doc.object()) : status_reply("error","invalid JSON: "+parse_error.errorString())).toJson(QJsonDocument::Compact);
 }
 QJsonObject AIAgent::ai_request(const QJsonObject& request)
 {
-    // a request arriving in another request's nested event loop (e.g. its approval dialog) runs nothing and writes
-    // no history or status, so it cannot change the outer request's directory or capture; the agent retries
     if(dispatching_info)
-        return status_reply("busy");
+    {
+        // only the owning session's standalone cancellation may interrupt a tutor question
+        auto command = request["command"].toObject();
+        if(request["session"].toString().trimmed() != dispatching_info->sessions ||
+           command.size() != 1 || command["cmd"].toString() != "cancel_ask_user" ||
+           request.contains("chat") || request.contains("reasoning") || !main_window.tutor_question)
+            return status_reply("busy");
+        main_window.tutor_question->setProperty("agent_cancelled",true);
+        main_window.tutor_question->reject();
+        return QJsonObject{{"status","success"},{"result",QJsonArray{
+            QJsonObject{{"cmd","cancel_ask_user"},{"status","success"},{"output","cancelled"}}}}};
+    }
     auto session = request["session"].toString().trimmed();
     if(session.isEmpty())
         return status_reply("error","missing session: provide resumable provider thread ID");

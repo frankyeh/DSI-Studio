@@ -274,6 +274,9 @@ static QString action_path(QAction* a) // "Tracts > Save Tracts As..." from the 
 }
 static bool in_window(QObject* o,QWidget* window) // excludes the separate windows that MainWindow parents; a floating dock stays with its window
 {
+    if(auto* action = qobject_cast<QAction*>(o))
+        if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first))
+            return chain.back().first->window() == window;
     for(;o;o = o->parent())
         if(auto* w = qobject_cast<QWidget*>(o))
         {
@@ -346,12 +349,22 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& g
     {
         if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
         {
+            chain.back().first->window()->raise();
             chain.back().first->window()->activateWindow();
             for(auto each = chain.rbegin();each != chain.rend();++each)
                 if(auto* bar = qobject_cast<QMenuBar*>(each->first))
+                {
                     bar->setActiveAction(each->second);
+                    if(auto* menu = each->second->menu()) // explicitly open, without triggering the action
+                        menu->popup(bar->mapToGlobal(bar->actionGeometry(each->second).bottomLeft()));
+                }
                 else
-                    static_cast<QMenu*>(each->first)->setActiveAction(each->second);
+                {
+                    auto* menu = static_cast<QMenu*>(each->first);
+                    menu->setActiveAction(each->second);
+                    if(auto* submenu = each->second->menu())
+                        submenu->popup(menu->mapToGlobal(menu->actionGeometry(each->second).topRight()));
+                }
         }
         menu_action = action;
         return message = "menu: "+action_path(action),true;
@@ -1526,7 +1539,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             results.append(result);
             return error.isEmpty();
         };
-        bool tutor = QStringList({"list_ui","highlight_ui","clear_highlight","ask_user","ask_user_modal","ask_user_act"}).contains(command_name); // presentation only: not a recorded command
+        bool tutor = QStringList({"list_ui","highlight_ui","clear_highlight","cancel_ask_user","ask_user","ask_user_modal","ask_user_act"}).contains(command_name); // presentation only: not a recorded command
         tipl::progress prog(tutor ? cmd[0] : command_record(info.current_window,cmd,command_source::AI));
 
         try
@@ -1673,6 +1686,13 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"screens",screens},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
+            else if(command_name == "cancel_ask_user")
+            {
+                if(cmd.size() != 1)
+                    error = "usage: cancel_ask_user";
+                else
+                    output = "nothing to cancel"; // an active question is handled at the request boundary while busy
+            }
             else if(command_name == "clear_highlight")
             {
                 output = tutor_ring || tutor_action ? "cleared" : "nothing to clear";
@@ -1700,6 +1720,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         options << QString::fromStdString(cmd[i]);
                     if(act)
                         options = QStringList({"Cancel"});
+                    bool cancelled = false;
                     auto wait = [&](QDialog& dialog) // always on top; ask_user is modeless, so the user follows the instruction in DSI Studio, then answers
                     {
                         QEventLoop loop;
@@ -1718,6 +1739,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                             for(auto* each : action->associatedObjects())
                                 if(auto* menu = qobject_cast<QMenu*>(each);menu && menu->isVisible())
                                     spot = menu->geometry();
+                        tutor_question = &dialog;
                         dialog.show();
                         auto* screen = QGuiApplication::screenAt(spot.center());
                         auto area = (spot.isEmpty() || !screen ? dialog.screen() : screen)->availableGeometry();
@@ -1727,6 +1749,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                             at = QPoint(spot.right()+12+size.width() <= area.right() ? spot.right()+12 : spot.left()-12-size.width(),spot.top());
                         dialog.move(std::clamp(at.x(),area.left(),area.right()-size.width()),std::clamp(at.y(),area.top(),area.bottom()-size.height()));
                         loop.exec();
+                        cancelled = dialog.property("agent_cancelled").toBool();
+                        tutor_question = nullptr;
                     };
                     bool answered = false;
                     if(options.isEmpty() || options.size() > 4) // none: a typed answer; many: a list
@@ -1758,7 +1782,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         else if((answered = dialog.clickedButton()))
                             output = dialog.clickedButton()->text();
                     }
-                    if(!answered)
+                    if(cancelled)
+                        output = "Cancel";
+                    else if(!answered)
                         error = "the user closed the question without answering";
                 }
                 else if(command_name == "highlight_ui")
