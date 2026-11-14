@@ -28,6 +28,7 @@
 #include <QComboBox>
 #include <QInputDialog>
 #include <QEventLoop>
+#include <QScreen>
 #include <QAbstractScrollArea>
 
 #include <QJsonDocument>
@@ -1653,6 +1654,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
                         dialog.show();
+                        dialog.move(dialog.screen()->availableGeometry().topRight()+QPoint(-dialog.frameGeometry().width()-24,24)); // a screen corner, clear of the highlighted control
                         loop.exec();
                     };
                     bool answered = false;
@@ -1775,6 +1777,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
     };
     if(cmd.empty())
         return fail("empty command");
+    if(source == command_source::User)
+        tipl::out() << command_record("main",cmd,source); // the agent's log shows what the user clicked
 
     if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
     {
