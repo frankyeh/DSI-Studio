@@ -8,6 +8,9 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QPainter>
+#include <QButtonGroup>
+#include <QStyle>
+#include <QStyleOption>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
 
@@ -21,6 +24,7 @@ void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
 std::string to_cmd(const std::string& cmd);
+bool eddy_check_shell(const std::vector<float>& bvalues,std::string& cause);
 
 bool reconstruction_window::load_src(int index)
 {
@@ -197,6 +201,65 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     }
 
 
+    pills = {{ui->q1_yes,ui->q1_no},{ui->q2_yes,ui->q2_no},{ui->q3_yes,ui->q3_no},
+             {ui->q4_yes,ui->q4_no},{ui->q5_yes,ui->q5_no},{ui->q6_yes,ui->q6_no},{ui->q7_yes,ui->q7_no}};
+    preproc = {{ui->btn_Run_FSL_Topup,"topup_eddy","applytopup",0,6,1},
+               {ui->btn_TOPUP_shell,"topup","applytopup",0,6,2},
+               {ui->btn_TOPUP_only,"topup","applytopup",1,-1,0},
+               {ui->btn_Eddy_Motion_Correction,"motion_correction","Motion correction",1,2,1},
+               {ui->btn_EDDY,"eddy","using FSL eddy",2,6,1},
+               {ui->btn_T1w_Distortion_Correction,"correct_by_t1w","inverted b0",2,3,1},
+               {ui->btn_Motion_DSI,"motion_correction","Motion correction",3,2,1},
+               {ui->btn_T1w_DSI,"correct_by_t1w","inverted b0",3,3,1},
+               {ui->btn_Correct_Bias_Field,"bias_field_correction","bias field",-1,4,2},
+               {ui->btn_Resample,"resample","resampled to",-1,5,1}};
+    for(const auto& each : pills)
+    {
+        auto* group = new QButtonGroup(this); // always one answer
+        group->addButton(each.first);
+        group->addButton(each.second);
+        connect(group,&QButtonGroup::buttonClicked,this,[this,no = each.second](QAbstractButton* b)
+        {
+            if(b == ui->q1_yes || b == ui->q4_yes) // the reversed phase-encoding b0 or the T1w
+            {
+                auto file = tipl::qt::open_image_file(this,absolute_path,b == ui->q1_yes ?
+                            "Reversed phase-encoding images (*.sz *.rz *src.gz *.nii *nii.gz);;All files (*)" :
+                            "T1w images (*nii.gz);;All files (*)");
+                if(file.isEmpty()) // no file selected: back to No
+                    no->setChecked(true);
+                else
+                    (b == ui->q1_yes ? rev_pe_file : t1w_file) = file.toStdString();
+            }
+            update_preproc();
+        });
+    }
+    connect(ui->btn_Run_Preprocessing,&QPushButton::clicked,this,[this]()
+    {
+        for(const auto& s : preproc)
+        {
+            std::string cmd(s.cmd);
+            if(s.button->property("act").toBool() &&
+               !command({cmd,tipl::contains(cmd,"topup") ? rev_pe_file : cmd == "correct_by_t1w" ? t1w_file : std::string()},command_source::User))
+                return;
+        }
+    });
+    if(!handle->voxel.is_histology) // default answers from the b-table and voxel size
+    {
+        const auto& vs = handle->voxel.vs;
+        (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f ? ui->q6_yes : ui->q6_no)->setChecked(true);
+        std::string cause;
+        std::vector<float> shells;
+        for(auto b : handle->src_bvalues)
+            if(b > 50.0f && std::none_of(shells.begin(),shells.end(),[b](float s){return std::abs(s-b) < 100.0f;}))
+                shells.push_back(b);
+        bool shelled = eddy_check_shell(handle->src_bvalues,cause);
+        (shelled ? ui->q2_yes : ui->q2_no)->setChecked(true);
+        ui->preproc_chip->setText("Your data: " + (!shelled ? QString("DSI (%1 b-values)").arg(shells.size()) :
+                                  shells.size() == 1 ? QString("single-shell") : QString("multi-shell (%1 shells)").arg(shells.size())));
+    }
+    ui->preproc_flow->installEventFilter(this);
+    update_preproc();
+
     connect(ui->z_pos,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
@@ -249,6 +312,114 @@ void reconstruction_window::update_dimension(void)
     }
 }
 
+void reconstruction_window::update_preproc(void)
+{
+    auto done = [this](const char* text){return tipl::contains(handle->voxel.report,text);}; // the report records the applied steps
+    int a[7]; // 1: yes, 2: no
+    for(size_t i = 0;i < 7;++i)
+        a[i] = pills[i].first->isChecked() ? 1 : 2;
+    path = (a[0]-1)*2+a[1]-1;
+    const auto& vs = handle->voxel.vs;
+    bool distortion_done = done("applytopup") || done("inverted b0");
+    bool enabled[7] = {!distortion_done,true,
+                       !done("Motion correction") && !done("using FSL eddy") && path % 2,
+                       !distortion_done && path >= 2,
+                       !done("bias field"),
+                       !done("resampled to") && (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f), // not yet isotropic
+                       a[1] == 1 && !done("using FSL eddy")}; // FSL eddy needs shells
+    for(size_t i = 0;i < 7;++i)
+        pills[i].first->parentWidget()->setEnabled(enabled[i]);
+    ui->btn_Run_FSL_Topup->setVisible(a[6] == 1); // topup/eddy or topup alone, by the eddy question
+    ui->btn_TOPUP_shell->setVisible(a[6] == 2);
+    ui->q6_note->setText(QString("%1×%2×%3 mm").arg(vs[0]).arg(vs[1]).arg(vs[2]));
+
+    auto set = [](QWidget* w,const char* name,bool value)
+    {
+        if(w->property(name).toBool() == value)
+            return;
+        w->setProperty(name,value);
+        w->style()->unpolish(w);
+        w->style()->polish(w);
+    };
+    for(const auto& s : preproc) // a step runs on its path when its question, if any, is enabled and answered as required
+    {
+        bool d = done(s.report);
+        s.button->setText((d ? "✓ " : "") + s.button->text().remove("✓ "));
+        set(s.button,"done",d);
+        set(s.button,"act",!d && (s.path < 0 || s.path == path) && (s.q < 0 || (enabled[s.q] && a[s.q] == s.when)));
+        set(s.button,"fade",s.path >= 0 && s.path != path);
+    }
+    ui->br_yes->setEnabled(path < 2);
+    ui->br_no->setEnabled(path >= 2);
+    QLabel* br[4] = {ui->br_s1,ui->br_s2,ui->br_s3,ui->br_s4};
+    for(int i = 0;i < 4;++i)
+        br[i]->setEnabled(path == i);
+    ui->preproc_flow->update();
+}
+bool reconstruction_window::eventFilter(QObject* obj,QEvent* event)
+{
+    if(obj != ui->preproc_flow || event->type() != QEvent::Paint)
+        return QMainWindow::eventFilter(obj,event);
+    QPainter p(ui->preproc_flow);
+    QStyleOption opt;
+    opt.initFrom(ui->preproc_flow);
+    ui->preproc_flow->style()->drawPrimitive(QStyle::PE_Widget,&opt,&p,ui->preproc_flow);
+    p.setRenderHint(QPainter::Antialiasing);
+    auto font = p.font();
+    font.setPointSize(8);
+    font.setBold(true);
+    p.setFont(font);
+    auto line = [&](double x1,double y1,double x2,double y2,bool on)
+    {
+        p.setPen(QPen(QColor(on ? "#059669" : "#c8d6ce"),on ? 2.0 : 1.5));
+        p.setBrush(p.pen().color());
+        p.drawLine(QPointF(x1,y1),QPointF(x2,y2));
+    };
+    auto arrow = [&](double x,double y1,double y2,bool on,const char* text)
+    {
+        line(x,y1,x,y2-1,on);
+        p.drawPolygon(QPolygonF({QPointF(x-4,y2-7),QPointF(x,y2-1),QPointF(x+4,y2-7)}));
+        if(text)
+            p.drawText(QPointF(x+6,(y1+y2)/2+4),text);
+    };
+    auto g = [](QWidget* w){return QRectF(w->geometry());};
+    QRectF br[2] = {g(ui->br_yes),g(ui->br_no)},s[4] = {g(ui->br_s1),g(ui->br_s2),g(ui->br_s3),g(ui->br_s4)};
+    // Q1 fork, then Q2 forks under each answer
+    double y = br[0].top()-8,x0 = br[0].center().x(),x1 = br[1].center().x(),mid = (x0+x1)/2;
+    line(x0,y,mid,y,path < 2);
+    line(mid,y,x1,y,path >= 2);
+    line(x0,y,x0,br[0].top(),path < 2);
+    line(x1,y,x1,br[1].top(),path >= 2);
+    for(int side = 0;side < 2;++side)
+    {
+        double x = br[side].center().x(),ty = s[side*2].top()-6,xa = s[side*2].center().x(),xb = s[side*2+1].center().x();
+        line(x,br[side].bottom()+2,x,ty,path/2 == side);
+        line(xa,ty,x,ty,path == side*2);
+        line(x,ty,xb,ty,path == side*2+1);
+        line(xa,ty,xa,s[side*2].top(),path == side*2);
+        line(xb,ty,xb,s[side*2+1].top(),path == side*2+1);
+    }
+    // each column down to a shared bus, then the shared steps down to Run Preprocessing
+    QRectF bias = g(ui->btn_Correct_Bias_Field),resample = g(ui->btn_Resample),run = g(ui->btn_Run_Preprocessing);
+    double bus = bias.top()-16,cx = bias.center().x();
+    line(s[0].center().x(),bus,s[3].center().x(),bus,false);
+    for(int i = 0;i < 4;++i)
+    {
+        double x = s[i].center().x(),yy = s[i].bottom()+3;
+        for(const auto& st : preproc)
+            if(st.path == i && st.button->isVisible())
+            {
+                arrow(x,yy,g(st.button).top(),path == i,st.q < 0 || st.q == 6 ? nullptr : "Yes");
+                yy = g(st.button).bottom();
+            }
+        line(x,yy,x,bus,path == i);
+    }
+    line(s[path].center().x(),bus,cx,bus,true);
+    arrow(cx,bus,bias.top(),true,"No");
+    arrow(cx,bias.bottom(),resample.top(),true,"Yes");
+    arrow(cx,resample.bottom(),run.top(),true,nullptr);
+    return true;
+}
 void reconstruction_window::load_b_table(void)
 {
     if(handle->src_bvalues.empty())
@@ -630,6 +801,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         fail();
     else
         ui->report->setText(check_citation(handle->voxel.report.c_str()));
+    update_preproc();
 
     update_dimension();
     load_b_table();
