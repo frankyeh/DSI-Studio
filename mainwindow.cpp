@@ -275,9 +275,11 @@ static bool in_window(QObject* o,QWidget* window) // excludes the separate windo
 }
 static QString run_command(QObject* o) // "segment_brain" from a control's "run segment_brain" tip: the command its click or change sends
 {
+    auto* action = qobject_cast<QAction*>(o); // a generated menu item, such as a U-Net model, sends its data as the parameter
+    auto data = action && action->data().typeId() == QMetaType::QString ? action->data().toString() : QString();
     for(const auto& tip : {o->property("toolTip").toString(),o->property("statusTip").toString()})
         if(tip.startsWith("run "))
-            return tip.mid(4);
+            return tip.mid(4)+(data.isEmpty() || tip.contains('=') ? QString() : "="+data);
     return {};
 }
 static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or highlights
@@ -321,23 +323,26 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
                 hits << each;
     if(hits.size() > 1 || (hits.size() == 1 && !hits[0]->isEnabled()))
         return message = (hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
+    QList<QAction*> actions;
     for(auto* action : hits.isEmpty() ? window->findChildren<QAction*>() : QList<QAction*>())
         if(in_window(action,window) && action->isVisible() && named(action))
+            actions << action;
+    if(actions.size() > 1 || (actions.size() == 1 && !actions[0]->isEnabled()))
+        return message = (actions.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
+    if(!actions.isEmpty())
+    {
+        delete ring;
+        if(auto chain = menu_chain(actions[0]);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
         {
-            if(!action->isEnabled())
-                return message = "control is disabled: "+id,false;
-            delete ring;
-            if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
-            {
-                chain.back().first->window()->activateWindow();
-                for(auto each = chain.rbegin();each != chain.rend();++each)
-                    if(auto* bar = qobject_cast<QMenuBar*>(each->first))
-                        bar->setActiveAction(each->second);
-                    else
-                        static_cast<QMenu*>(each->first)->setActiveAction(each->second);
-            }
-            return message = "menu: "+action_path(action),true;
+            chain.back().first->window()->activateWindow();
+            for(auto each = chain.rbegin();each != chain.rend();++each)
+                if(auto* bar = qobject_cast<QMenuBar*>(each->first))
+                    bar->setActiveAction(each->second);
+                else
+                    static_cast<QMenu*>(each->first)->setActiveAction(each->second);
         }
+        return message = "menu: "+action_path(actions[0]),true;
+    }
     if(hits.isEmpty())
         return message = "control not found or not visible: "+id,false;
     delete ring; // replaced only after the new request is valid
@@ -1653,6 +1658,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         QObject::connect(&dialog,&QDialog::finished,&loop,&QEventLoop::quit);
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
+                        dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name == "ask_user"); // keeps a menu that highlight_ui opened from closing
                         dialog.show();
                         dialog.move(dialog.screen()->availableGeometry().topRight()+QPoint(-dialog.frameGeometry().width()-24,24)); // a screen corner, clear of the highlighted control
                         loop.exec();
@@ -1706,15 +1712,18 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                             control["run"] = run; // the command it sends: highlight_ui run:<command> finds it again
                         controls.append(control);
                     };
+                    auto id_of = [](QObject* o,const QString& run) // an unnamed toolbar button or generated menu item is found by its command
+                    {
+                        return !o->objectName().isEmpty() ? o->objectName() : run.isEmpty() ? QString() : "run:"+run;
+                    };
                     for(auto* each : target->findChildren<QWidget*>())
                         if(!each->isVisible() || !in_window(each,target))
                             continue;
                         else if(auto* kind = tutor_kind(each))
                         {
                             auto* button = qobject_cast<QAbstractButton*>(each);
-                            auto run = run_command(each); // an unnamed toolbar button is found by its command
-                            add(!each->objectName().isEmpty() ? each->objectName() : !run.isEmpty() ? "run:"+run : button ? QString() : QString(each->metaObject()->className()),
-                                kind,button ? button->text().remove('&') : QString(),run);
+                            auto run = run_command(each);
+                            add(id_of(each,run).isEmpty() && !button ? QString(each->metaObject()->className()) : id_of(each,run),kind,button ? button->text().remove('&') : QString(),run);
                         }
                         else if(auto* tree = qobject_cast<RenderingTableWidget*>(each)) // the Options tree, by option id in a stable order
                         {
@@ -1725,7 +1734,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         }
                     for(auto* each : target->findChildren<QAction*>())
                         if(auto path = action_path(each);each->isVisible() && in_window(each,target) && path != each->text().remove('&')) // in a menu
-                            add(each->objectName(),each->isEnabled() ? "menu" : "disabled menu",path,run_command(each));
+                            add(id_of(each,run_command(each)),each->isEnabled() ? "menu" : "disabled menu",path,run_command(each));
                     output = QString::fromUtf8(QJsonDocument(QJsonObject{{"total",total},{"controls",controls}}).toJson(QJsonDocument::Compact));
                 }
             }
