@@ -15,6 +15,7 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QMessageBox>
+#include <QTimer>
 #include <QListWidget>
 #include <QToolTip>
 
@@ -359,6 +360,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     ui->setupUi(this);
     ui->thread_count->setValue(tipl::max_thread_count >> 1);
+
+    handle->async_mapping = true; // normalization never blocks the window: the title shows its progress, and a step needing it says so and returns
+    auto* mapping_timer = new QTimer(this);
+    connect(mapping_timer,&QTimer::timeout,this,[this,was_running = false]() mutable
+    {
+        bool running = handle->mapping_running;
+        if(running || was_running) // "<title> - normalization 2/4" while running; the plain title, or the failure, when done
+            setWindowTitle(windowTitle().section(" - normalization",0,0)+(running ? QString(" - normalization %1/4").arg(handle->prog) :
+                           handle->s2t.empty() ? " - normalization failed: "+QString::fromStdString(handle->error_msg) : QString()));
+        was_running = running;
+    });
+    mapping_timer->start(1000);
 
     // setup GUI
     {
@@ -709,14 +722,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
 
     {
-        connect(ui->SliceModality,qOverload<int>(&QComboBox::currentIndexChanged),this,[this](int index)
+        connect(ui->SliceModality,qOverload<int>(&QComboBox::currentIndexChanged),this,[this](int)
         {
-            if(!command({"set_slice"}))
-            {
-                QMessageBox::critical(this,"ERROR",error_msg.c_str());
-                if(index)
-                    ui->SliceModality->setCurrentIndex(0);
-            }
+            if(!run_command("set_slice")) // e.g. vol waiting for the normalization: back to the metric shown
+                ui->SliceModality->setCurrentIndex(int(std::find(slices.begin(),slices.end(),current_slice)-slices.begin()));
         });
     }
     {
@@ -878,7 +887,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(slice_pos[2]*10.0)/10.0);
     }
 
-    if((handle->template_id == handle->matched_template_id && handle->is_mni && !handle->template_I.empty()) || !handle->s2t.empty())
+    if((handle->template_id == handle->matched_template_id && handle->is_mni && !handle->template_I.empty()) || (!handle->mapping_running && !handle->s2t.empty())) // not while a background normalization swaps it in
     {
         tipl::vector<3> mni(pos);
         handle->sub2mni(mni);
