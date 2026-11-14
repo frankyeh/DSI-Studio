@@ -277,7 +277,7 @@ private slots:
 
     void on_actionCommand_History_triggered();
 
-    void run_command(const std::string& cmd);
+    bool run_command(const std::string& cmd);
     void on_actionOpen_FIB_Directory_triggered();
     void on_device_coordinate_currentIndexChanged(int index);
     void on_segmentButton_clicked();
