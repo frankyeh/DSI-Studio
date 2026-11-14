@@ -22,9 +22,10 @@
 #include <QMenu>
 #include <QLabel>
 #include <QDockWidget>
-#include <QComboBox>
-#include <QShortcut>
 #include <QAbstractButton>
+#include <QAbstractSlider>
+#include <QComboBox>
+#include <QInputDialog>
 #include <QAbstractScrollArea>
 
 #include <QJsonDocument>
@@ -257,21 +258,37 @@ static bool in_window(QObject* o,QWidget* window) // excludes the separate windo
         }
     return false;
 }
+static QString run_command(QObject* o) // "segment_brain" from a control's "run segment_brain" tip: the command its click or change sends
+{
+    for(const auto& tip : {o->property("toolTip").toString(),o->property("statusTip").toString()})
+        if(tip.startsWith("run "))
+            return tip.mid(4);
+    return {};
+}
+static bool runs(QObject* o,const QString& command) // command alone, or command=param as list_ui reports it
+{
+    auto run = run_command(o);
+    return !command.isEmpty() && (run == command || run.startsWith(command+"="));
+}
 static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or highlights
 {
     if(w->objectName() == "nav_rail")
         return "pages";
     if(qobject_cast<QAbstractButton*>(w))
         return w->isEnabled() ? "button" : "disabled button";
+    if(qobject_cast<QComboBox*>(w) || qobject_cast<QAbstractSlider*>(w)) // only one that sends a command; never its value
+        return run_command(w).isEmpty() ? nullptr : w->isEnabled() ? "setting" : "disabled setting";
     return w->inherits("QOpenGLWidget") || w->inherits("QGraphicsView") ? "view" : nullptr;
 }
 // draws the accent around the one tutor control named id (objectName, or class name such as GLWidget) in window;
+// run:<command> finds the control that sends that command, so a skill's command maps to its current button;
 // option:<id> reveals that option in the Options tree and accents its editor; a menu action is reported by its menu path as text;
 // false with the reason in message otherwise
 static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QString& message)
 {
     QList<QWidget*> hits;
     message = "highlighted: "+id;
+    auto command = id.startsWith("run:") ? id.mid(4) : QString();
     if(id.startsWith("option:")) // kind-qualified, so a same-named button never hides an option
     {
         for(auto* tree : window->findChildren<RenderingTableWidget*>())
@@ -284,12 +301,13 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
     }
     else
         for(auto* each : window->findChildren<QWidget*>())
-            if(each->isVisible() && in_window(each,window) && tutor_kind(each) && (each->objectName() == id || each->metaObject()->className() == id))
+            if(each->isVisible() && in_window(each,window) && tutor_kind(each) &&
+               (command.isEmpty() ? each->objectName() == id || each->metaObject()->className() == id : runs(each,command)))
                 hits << each;
     if(hits.size() > 1 || (hits.size() == 1 && !hits[0]->isEnabled()))
         return message = (hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
-    for(auto* action : window->findChildren<QAction*>(id))
-        if(hits.isEmpty() && in_window(action,window) && action->isVisible())
+    for(auto* action : window->findChildren<QAction*>())
+        if(hits.isEmpty() && in_window(action,window) && action->isVisible() && (command.isEmpty() ? action->objectName() == id : runs(action,command)))
         {
             if(!action->isEnabled())
                 return message = "control is disabled: "+id,false;
@@ -310,86 +328,6 @@ MainWindow::MainWindow(QWidget *parent) :
     setAcceptDrops(true);
     ui->setupUi(this);
     ui->tabWidget->installEventFilter(this);
-    connect(ui->tutorial,&QPushButton::clicked,this,[this]() // a local walkthrough: the user clicks each control and moves on with Next
-    {
-        struct step{const char* window;const char* id;const char* text;const char* gesture;};
-        static const std::vector<std::pair<const char*,std::vector<step>>> tutorials{
-            {"DICOM to tracts",{
-                {"main","nav_rail","Open the Tractography page.",""},
-                {"main","tract_fmt_dicom","Under Import, choose DICOM.",""},
-                {"main","OpenDWI_DICOM","Click DICOM file(s)... and select the diffusion DICOM files to create an SRC file (.sz).",""},
-                {"main","Reconstruction","Reconstruct: click SRC File(s) and open the SRC file.",""},
-                {"recon","doDTI","Check the mask and preprocessing, choose a method, then click Run Reconstruction to create a FIB file (.fz).",""},
-                {"main","FiberTracking","Track: click FIB File and open the FIB file.",""},
-                {"tracking","perform_tracking","Click Fiber Tracking to run whole-brain tracking.",""},
-                {"tracking","actionSaveTractAs","Save the tracts.",""}}},
-            {"Edit tracts",{
-                {"tracking","actionSelect_Tracts","Choose Select Tracts (Ctrl+S). Delete and Cut Tracts work the same way; Paint Tracts also asks for a color after each drag.",""},
-                {"tracking","GLWidget","In the 3D view, press the left button, drag a line across the tracts, and release. Tracts crossing the line are edited.","drag"},
-                {"tracking","GLWidget","To draw a curved line, hold Shift while dragging.","shift"},
-                {"tracking","actionUndo","Undo (Ctrl+Z) reverts the last edit of every checked tract bundle.",""}}},
-            {"Draw a region",{
-                {"tracking","actionNewRegion","Create a region with New Region.",""},
-                {"tracking","tool1","Choose the freehand tool.",""},
-                {"tracking","graphicsView","In the slice view, hold the left button and draw around the area. Right-click, or hold Shift, to erase.","freehand"},
-                {"tracking","tool0","The rectangle tool draws from one corner to the opposite corner.",""},
-                {"tracking","graphicsView","Drag from one corner to the other.","rect"},
-                {"tracking","tool2","The sphere tool draws a ball: press at its center and drag out to set the radius.",""},
-                {"tracking","graphicsView","Press at the center and drag outward.","drag"},
-                {"tracking","tool3","The cube tool works the same way: press at the center and drag out to set the half width.",""},
-                {"tracking","tool4","The polygon tool: click each corner in the slice view, then double-click to close the shape.",""},
-                {"tracking","actionUndo_Edit","Undo (Ctrl+Shift+Z) reverts the last region edit.",""}}}};
-        auto* dock = findChild<QDockWidget*>("tutorial_dock");
-        if(!dock)
-        {
-            dock = new QDockWidget("Tutorial",this);
-            dock->setObjectName("tutorial_dock");
-            dock->setAttribute(Qt::WA_DeleteOnClose); // reopening starts again from step 1
-            dock->setFeatures(dock->features() & ~QDockWidget::DockWidgetClosable); // closed only by Exit or Esc, which clear the accent
-            auto* panel = new QWidget(dock);
-            auto* choice = new QComboBox(panel);
-            for(const auto& each : tutorials)
-                choice->addItem(each.first);
-            auto* text = new QLabel(panel);
-            text->setWordWrap(true);
-            auto* layout = new QVBoxLayout(panel);
-            auto* buttons = new QHBoxLayout;
-            layout->addWidget(choice);
-            layout->addWidget(text);
-            layout->addLayout(buttons);
-            layout->addStretch();
-            auto index = std::make_shared<int>(0);
-            auto show_step = [this,choice,text,index](int i)
-            {
-                const auto& steps = tutorials[size_t(choice->currentIndex())].second;
-                *index = std::clamp(i,0,int(steps.size())-1);
-                const auto& s = steps[*index];
-                QWidget* window = nullptr;
-                for(auto* each : QApplication::topLevelWidgets())
-                    if(each->isVisible() && command_window_type(command_window_id(each)) == s.window)
-                        window = each;
-                QString message = "Open the "+QString(s.window)+" window first.";
-                delete tutorial_ring; // no stale accent when this step's control is missing
-                if(window && highlight_control(window,s.id,QString(),s.gesture,tutorial_ring,message) && message.startsWith("highlighted"))
-                    message.clear(); // the ring says it; a menu path or a failure reason stays as text
-                text->setText(QString("Step %1 of %2\n\n%3\n\n%4").arg(*index+1).arg(steps.size()).arg(s.text,message));
-            };
-            auto exit = [this,dock]{delete tutorial_ring;dock->close();};
-            for(const auto& each : std::initializer_list<std::pair<const char*,int>>{{"Back",-1},{"Next",1},{"Exit",0}})
-            {
-                auto* button = new QPushButton(each.first,panel);
-                buttons->addWidget(button);
-                connect(button,&QPushButton::clicked,this,[=,move = each.second]{move ? show_step(*index+move) : exit();});
-            }
-            connect(choice,&QComboBox::currentIndexChanged,this,[show_step]{show_step(0);});
-            connect(new QShortcut(QKeySequence::Cancel,dock,nullptr,nullptr,Qt::WidgetWithChildrenShortcut),&QShortcut::activated,this,exit); // Esc while the panel has focus
-            dock->setWidget(panel);
-            addDockWidget(Qt::RightDockWidgetArea,dock);
-            show_step(0);
-        }
-        dock->show();
-        dock->raise();
-    });
     ui->workDir->lineEdit()->installEventFilter(this); // the work directory: typed or pasted, and its list drops on a click
 
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
@@ -1541,7 +1479,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             results.append(result);
             return error.isEmpty();
         };
-        bool tutor = command_name == "list_ui" || command_name == "highlight_ui" || command_name == "clear_highlight"; // presentation only: not a recorded command
+        bool tutor = command_name == "list_ui" || command_name == "highlight_ui" || command_name == "clear_highlight" || command_name == "ask_user"; // presentation only: not a recorded command
         tipl::progress prog(tutor ? cmd[0] : command_record(info.current_window,cmd,command_source::AI));
 
         try
@@ -1665,7 +1603,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
-            else if(command_name == "list_ui" || command_name == "highlight_ui") // the tutor's view of the current window: never triggers anything
+            else if(command_name == "list_ui" || command_name == "highlight_ui" || command_name == "ask_user") // the tutor's view of the current window: never triggers anything
             {
                 auto* target = find_window(info.current_window);
                 auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
@@ -1673,6 +1611,18 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "target window not found, terminated by user? Use set_window to select a window first.";
                 else if(QApplication::activeModalWidget())
                     error = "a dialog is open; ask the user to close it first";
+                else if(command_name == "ask_user") // the local user's answer is the output; the request waits for it
+                {
+                    QStringList options;
+                    for(size_t i = 2;i < cmd.size();++i)
+                        options << QString::fromStdString(cmd[i]);
+                    bool answered = false;
+                    if(param.isEmpty())
+                        error = "usage: ask_user <question> [option]...";
+                    else if(output = options.isEmpty() ? QInputDialog::getText(target,"DSI Studio AI",param,QLineEdit::Normal,QString(),&answered) :
+                                                         QInputDialog::getItem(target,"DSI Studio AI",param,options,0,false,&answered);!answered)
+                        error = "the user closed the question without answering";
+                }
                 else if(command_name == "highlight_ui")
                 {
                     if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !QStringList({"drag","shift","freehand","rect"}).contains(QString::fromStdString(cmd[3]))))
@@ -1686,14 +1636,17 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     // buttons, views, options and menu actions by id and static label; no field values, tables or file names
                     QJsonArray controls;
                     int total = 0;
-                    auto add = [&](const QString& id,const char* kind,QString label)
+                    auto add = [&](const QString& id,const char* kind,QString label,const QString& run = QString())
                     {
                         static const QRegularExpression file_like("\\w\\.\\w|[/\\\\]"); // a label showing a file name or path, such as a loaded slice
                         if(label.contains(file_like))
                             label.clear();
-                        if(id.isEmpty() || !(id+" "+label).contains(param,Qt::CaseInsensitive) || ++total > 50)
+                        if(id.isEmpty() || !(id+" "+label+" "+run).contains(param,Qt::CaseInsensitive) || ++total > 50)
                             return;
-                        controls.append(QJsonObject{{"id",id},{"kind",kind},{"label",label}});
+                        QJsonObject control{{"id",id},{"kind",kind},{"label",label}};
+                        if(!run.isEmpty())
+                            control["run"] = run; // the command it sends: highlight_ui run:<command> finds it again
+                        controls.append(control);
                     };
                     for(auto* each : target->findChildren<QWidget*>())
                         if(!each->isVisible() || !in_window(each,target))
@@ -1701,7 +1654,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         else if(auto* kind = tutor_kind(each))
                         {
                             auto* button = qobject_cast<QAbstractButton*>(each);
-                            add(button || !each->objectName().isEmpty() ? each->objectName() : each->metaObject()->className(),kind,button ? button->text().remove('&') : QString());
+                            auto run = run_command(each); // an unnamed toolbar button is found by its command
+                            add(!each->objectName().isEmpty() ? each->objectName() : !run.isEmpty() ? "run:"+run : button ? QString() : QString(each->metaObject()->className()),
+                                kind,button ? button->text().remove('&') : QString(),run);
                         }
                         else if(auto* tree = qobject_cast<RenderingTableWidget*>(each)) // the Options tree, by option id in a stable order
                         {
@@ -1712,7 +1667,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         }
                     for(auto* each : target->findChildren<QAction*>())
                         if(auto path = action_path(each);each->isVisible() && in_window(each,target) && path != each->text().remove('&')) // in a menu
-                            add(each->objectName(),each->isEnabled() ? "menu" : "disabled menu",path);
+                            add(each->objectName(),each->isEnabled() ? "menu" : "disabled menu",path,run_command(each));
                     output = QString::fromUtf8(QJsonDocument(QJsonObject{{"total",total},{"controls",controls}}).toJson(QJsonDocument::Compact));
                 }
             }
