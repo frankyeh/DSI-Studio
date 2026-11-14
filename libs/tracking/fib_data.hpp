@@ -266,7 +266,7 @@ public:
 public:
     int prog = 0;
     bool async_mapping = false;                 // map_to_mni starts normalization in the background and returns at once (tracking window)
-    std::atomic<bool> mapping_running{false};
+    bool mapping_running = false;
     bool mapping_abort = false;                 // stops a background normalization (window closed)
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;
     float R2 = 1.0f;
