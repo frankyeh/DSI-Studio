@@ -39,6 +39,8 @@
 #include <algorithm>
 #include <cmath>
 #include <utility>
+#include <functional>
+#include <map>
 #include <filesystem>
 #include <mutex>
 #include "mainwindow.h"
@@ -131,13 +133,28 @@ void checkForVersionSpecificBugs(const QString& bugListText)
 extern std::vector<std::filesystem::path> fib_template_list;
 std::vector<tracking_window*> tracking_windows;
 // AI tutor: points at a live control the user clicks; never clicks, triggers, or runs a command itself
-static const QStringList tutor_gestures({"drag","shift","freehand","rect","click","double","right","rotate","roll","zoom","pan","wheel"});
+// gesture -> its stroke in fractions of the control and its label; one point: the cursor glides in and acts there;
+// the 3D-view strokes follow GLWidget::mouseMoveEvent
+static const std::map<QString,std::pair<QPolygonF,QString>> tutor_gestures{
+    {"drag",{{{0.3,0.4},{0.7,0.6}},"drag"}},
+    {"rect",{{{0.3,0.4},{0.7,0.6}},"drag"}},
+    {"shift",{{{0.3,0.5},{0.4,0.38},{0.5,0.6},{0.6,0.4},{0.7,0.55}},"Shift + drag"}},
+    {"freehand",{[]{QPolygonF loop;for(int i = 0;i <= 24;++i) loop << QPointF(0.5+0.2*std::cos(i*0.2618),0.5+0.2*std::sin(i*0.2618)*(1.0+0.15*std::sin(i*0.7854)));return loop;}(),"drag"}},
+    {"rotate",{{{0.35,0.55},{0.5,0.45},{0.65,0.55}},"left drag: rotate"}},
+    {"roll",{{{0.95,0.8},{0.9,0.9},{0.8,0.95}},"left drag from a corner: roll"}}, // a press outside the inscribed circle rolls
+    {"zoom",{{{0.5,0.62},{0.5,0.38}},"right drag up: zoom in"}},
+    {"pan",{{{0.4,0.5},{0.6,0.5}},"middle drag: pan"}},
+    {"click",{{{0.5,0.5}},"click"}},
+    {"double",{{{0.5,0.5}},"double-click"}},
+    {"right",{{{0.5,0.5}},"right-click"}},
+    {"wheel",{{{0.5,0.5}},"scroll wheel: zoom"}}};
 class control_ring : public QWidget // a click-through accent around one control, following it until cleared or the control is gone
 {
     QPointer<QWidget> target;
-    QString caption,gesture; // one of tutor_gestures, animated over the control, drawn outside the GL framebuffer
+    QString caption,gesture; // a tutor_gestures key, animated over the control, drawn outside the GL framebuffer
     int frame = 0;
 public:
+    std::function<void(void)> on_act; // ask_user_act: the user clicked, chose, or finished a stroke on the target
     control_ring(QWidget* target_,const QString& caption_,const QString& gesture_) : QWidget(target_->window()),target(target_),caption(caption_),gesture(gesture_)
     {
         setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -147,6 +164,8 @@ public:
         if(auto* view = qobject_cast<QAbstractScrollArea*>(target))
             view->viewport()->installEventFilter(this); // a view's mouse presses arrive at its viewport
         connect(target,&QObject::destroyed,this,&QObject::deleteLater);
+        if(auto* combo = qobject_cast<QComboBox*>(target)) // choosing an item, not opening the list
+            connect(combo,&QComboBox::activated,this,[this]{if(on_act) on_act();});
         if(!gesture.isEmpty())
             startTimer(40);
         place();
@@ -170,8 +189,11 @@ public:
     }
     bool eventFilter(QObject* o,QEvent* e) override
     {
-        if(e->type() == QEvent::MouseButtonPress && (o == target || o->parent() == target)) // the user presses the target or its viewport: stop the demonstration
+        bool on_target = o == target || o->parent() == target; // the target or its viewport
+        if(e->type() == QEvent::MouseButtonPress && on_target) // the user takes over: stop the demonstration
             gesture.clear();
+        if(e->type() == QEvent::MouseButtonRelease && on_target && on_act && !qobject_cast<QComboBox*>(target.data()))
+            on_act();
         if(e->type() == QEvent::Move || e->type() == QEvent::Resize || e->type() == QEvent::Show || e->type() == QEvent::Hide || e->type() == QEvent::MouseButtonPress)
             place();
         return false;
@@ -205,32 +227,14 @@ public:
         }
         if(gesture.isEmpty())
             return;
-        // the stroke in fractions of the ring: press (frames 0-5), drag (6-39), release (40-49);
-        // a click glides in unpressed and clicks at the end; the 3D-view strokes follow GLWidget::mouseMoveEvent
-        auto at = [&](double x,double y){return QPointF(ring.left()+ring.width()*x,ring.top()+ring.height()*y);};
-        bool click = gesture == "click" || gesture == "double" || gesture == "right";
-        QString label = gesture == "shift" ? "Shift + drag" : "drag";
+        // a stroke: press (frames 0-5), drag (6-39), release (40-49); a single point: glide in (0-39), then act
+        const auto& [points,label] = tutor_gestures.at(gesture);
+        bool glide = points.size() == 1;
         QPolygonF stroke;
-        if(gesture == "freehand")
-            for(int i = 0;i <= 24;++i)
-                stroke << at(0.5+0.2*std::cos(i*0.2618),0.5+0.2*std::sin(i*0.2618)*(1.0+0.15*std::sin(i*0.7854)));
-        else if(gesture == "shift")
-            stroke << at(0.3,0.5) << at(0.4,0.38) << at(0.5,0.6) << at(0.6,0.4) << at(0.7,0.55);
-        else if(click)
-            stroke << at(0.5,0.5)+QPointF(60,50) << at(0.5,0.5),
-            label = gesture == "click" ? "click" : gesture == "double" ? "double-click" : "right-click";
-        else if(gesture == "rotate")
-            stroke << at(0.35,0.55) << at(0.5,0.45) << at(0.65,0.55),label = "left drag: rotate";
-        else if(gesture == "roll") // a press outside the inscribed circle rolls the view
-            stroke << at(0.95,0.8) << at(0.9,0.9) << at(0.8,0.95),label = "left drag from a corner: roll";
-        else if(gesture == "zoom")
-            stroke << at(0.5,0.62) << at(0.5,0.38),label = "right drag up: zoom in";
-        else if(gesture == "pan")
-            stroke << at(0.4,0.5) << at(0.6,0.5),label = "middle drag: pan";
-        else if(gesture == "wheel")
-            stroke << at(0.5,0.5) << at(0.5,0.5),label = "scroll wheel: zoom";
-        else
-            stroke << at(0.3,0.4) << at(0.7,0.6);
+        for(auto at : points)
+            stroke << QPointF(ring.left()+ring.width()*at.x(),ring.top()+ring.height()*at.y());
+        if(glide)
+            stroke.prepend(stroke[0]+QPointF(60,50));
         auto f = std::clamp((frame-6)/34.0,0.0,1.0)*(stroke.size()-1);
         int k = std::min(int(f),int(stroke.size())-2);
         auto m = stroke[k]+(stroke[k+1]-stroke[k])*(f-k);
@@ -238,16 +242,15 @@ public:
         p.setBrush(Qt::NoBrush);
         if(gesture == "rect")
             p.drawRect(QRectF(stroke[0],m));
-        else if(!click && gesture != "wheel")
+        else if(!glide)
             p.drawPolyline(stroke.mid(0,k+1) << m);
-        if(click && frame >= 40) // a ripple per click
-            for(int i = 0;i < (gesture == "double" ? 2 : 1);++i)
-                p.drawEllipse(m,(frame-40)*2+4+i*8,(frame-40)*2+4+i*8);
+        for(int i = 0;frame >= 40 && i < (gesture == "double" ? 2 : gesture == "wheel" ? 0 : glide);++i) // a ripple per click
+            p.drawEllipse(m,(frame-40)*2+4+i*8,(frame-40)*2+4+i*8);
         p.setPen(QPen(Qt::black,1));
         p.setBrush(Qt::white);
         p.drawPolygon(QPolygonF({m,m+QPointF(0,18),m+QPointF(5,13),m+QPointF(12,13)}));
         p.setPen(QColor("#f59e0b"));
-        p.drawText(m+QPointF(14,26),click ? (frame >= 40 ? label : QString()) : gesture == "wheel" || (frame >= 6 && frame < 40) ? label : frame < 6 ? "press" : "release");
+        p.drawText(m+QPointF(14,26),glide ? (frame >= 40 ? label : QString()) : frame < 6 ? "press" : frame >= 40 ? "release" : label);
     }
 };
 static QString option_path(const QModelIndex& index) // "Tracking Parameters > Step Size" from the Options tree
@@ -318,7 +321,7 @@ static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or
 // run:<command> finds the control that sends that command, so a skill's command maps to its current button;
 // option:<id> reveals that option in the Options tree and accents its editor; a menu action is reported by its menu path as text;
 // false with the reason in message otherwise
-static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QString& message)
+static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QPointer<QObject>& menu_action,QString& message)
 {
     QList<QObject*> hits; // the widgets named id, or else the menu actions
     message = "highlighted: "+id;
@@ -350,6 +353,7 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
     if(hits.size() != 1 || !hits[0]->property("enabled").toBool()) // QWidget and QAction both have "enabled"
         return message = (hits.isEmpty() ? "control not found or not visible: " : hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
     delete ring; // replaced only after the new request is valid
+    menu_action = nullptr;
     if(auto* action = qobject_cast<QAction*>(hits[0]))
     {
         if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
@@ -361,6 +365,7 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
                 else
                     static_cast<QMenu*>(each->first)->setActiveAction(each->second);
         }
+        menu_action = action;
         return message = "menu: "+action_path(action),true;
     }
     ring = new control_ring(static_cast<QWidget*>(hits[0]),caption,gesture);
@@ -1531,7 +1536,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             results.append(result);
             return error.isEmpty();
         };
-        bool tutor = QStringList({"list_ui","highlight_ui","clear_highlight","ask_user","ask_user_modal"}).contains(command_name); // presentation only: not a recorded command
+        bool tutor = QStringList({"list_ui","highlight_ui","clear_highlight","ask_user","ask_user_modal","ask_user_act"}).contains(command_name); // presentation only: not a recorded command
         tipl::progress prog(tutor ? cmd[0] : command_record(info.current_window,cmd,command_source::AI));
 
         try
@@ -1674,8 +1679,9 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             }
             else if(command_name == "clear_highlight")
             {
-                output = tutor_ring ? "cleared" : "nothing to clear";
+                output = tutor_ring || tutor_action ? "cleared" : "nothing to clear";
                 delete tutor_ring;
+                tutor_action = nullptr;
             }
             else if(tutor) // the tutor's view of the current window: never triggers anything
             {
@@ -1686,19 +1692,24 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 else if(QApplication::activeModalWidget())
                     error = "a dialog is open; ask the user to close it first";
                 else if(command_name.startsWith("ask_user") && param.isEmpty())
-                    error = "usage: "+command_name+" <question> [option]...";
+                    error = "usage: "+command_name+(command_name == "ask_user_act" ? " <instruction>" : " <question> [option]...");
+                else if(command_name == "ask_user_act" && !tutor_ring && !tutor_action)
+                    error = "highlight a control first";
                 else if(command_name.startsWith("ask_user")) // the local user's answer is the output; the request waits for it
                 {
+                    bool act = command_name == "ask_user_act"; // only Cancel: acting on the highlighted control answers "done"
                     QStringList options;
                     for(size_t i = 2;i < cmd.size();++i)
                         options << QString::fromStdString(cmd[i]);
+                    if(act)
+                        options = QStringList({"Cancel"});
                     auto wait = [&](QDialog& dialog) // always on top; ask_user is modeless, so the user follows the instruction in DSI Studio, then answers
                     {
                         QEventLoop loop;
                         QObject::connect(&dialog,&QDialog::finished,&loop,&QEventLoop::quit);
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
-                        dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name == "ask_user"); // keeps a menu that highlight_ui opened from closing
+                        dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps a menu that highlight_ui opened from closing
                         dialog.show();
                         dialog.move(dialog.screen()->availableGeometry().topRight()+QPoint(-dialog.frameGeometry().width()-24,24)); // a screen corner, clear of the highlighted control
                         loop.exec();
@@ -1720,8 +1731,17 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         QMessageBox dialog(QMessageBox::Information,"DSI Studio AI",param,QMessageBox::NoButton,this);
                         for(const auto& each : options)
                             dialog.addButton(each,QMessageBox::AcceptRole);
+                        auto done = [&]{answered = true;dialog.done(0);};
+                        if(act && tutor_ring)
+                            static_cast<control_ring*>(tutor_ring.data())->on_act = done;
+                        if(act && !tutor_ring) // dropped with the dialog
+                            connect(qobject_cast<QAction*>(tutor_action),&QAction::triggered,&dialog,done);
                         wait(dialog);
-                        if((answered = dialog.clickedButton()))
+                        if(tutor_ring)
+                            static_cast<control_ring*>(tutor_ring.data())->on_act = nullptr;
+                        if(answered)
+                            output = "done";
+                        else if((answered = dialog.clickedButton()))
                             output = dialog.clickedButton()->text();
                     }
                     if(!answered)
@@ -1729,10 +1749,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 else if(command_name == "highlight_ui")
                 {
-                    if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !tutor_gestures.contains(QString::fromStdString(cmd[3]))))
-                        error = "usage: highlight_ui <id> [caption] ["+tutor_gestures.join('|')+"]";
+                    if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !tutor_gestures.count(QString::fromStdString(cmd[3]))))
+                        error = "usage: highlight_ui <id> [caption] ["+[]{QStringList names;for(const auto& each : tutor_gestures) names << each.first;return names.join('|');}()+"]";
                     else if(!highlight_control(target,param,cmd.size() > 2 ? QString::fromStdString(cmd[2]).simplified().left(120) : QString(),
-                                               cmd.size() > 3 ? QString::fromStdString(cmd[3]) : QString(),tutor_ring,output))
+                                               cmd.size() > 3 ? QString::fromStdString(cmd[3]) : QString(),tutor_ring,tutor_action,output))
                         error = std::exchange(output,QString());
                 }
                 else
