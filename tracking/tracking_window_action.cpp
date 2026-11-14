@@ -105,22 +105,29 @@ std::string show_info_dialog(const std::string& title,
 
 
 
-void tracking_window::run_command(const std::string& cmd)
+bool tracking_window::run_command(const std::string& cmd)
 {
     if(!command({cmd}))
     {
-        if(!error_msg.empty() && error_msg != "canceled")
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        if(!error_msg.empty() && error_msg != "canceled") // a background normalization in progress is a notice, not an error
+            handle->mapping_running ? (void)QMessageBox::information(this,QApplication::applicationName(),error_msg.c_str()) :
+                                      (void)QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        return false;
     }
-    else
-        if(tipl::begins_with(cmd,"save_"))
-            QMessageBox::information(this,QApplication::applicationName(),"file saved");
+    if(tipl::begins_with(cmd,"save_"))
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
+    return true;
 }
 
 extern std::vector<tracking_window*> tracking_windows;
 extern std::vector<std::filesystem::path> iso_template_list;
 bool tracking_window::command(std::vector<std::string> cmd)
 {
+    // MNI/template-space commands (open_mni_tract, save_template_tract, ...) open a file dialog before using the mapping:
+    // without a mapping, the normalization starts (or keeps running) in the background and they return first.
+    // Other commands that need it (atlas regions, AutoTrack, recognition) fail with the same message from inside.
+    if(!cmd.empty() && (tipl::contains(cmd[0],"mni") || tipl::contains(cmd[0],"template")) && !handle->map_to_mni())
+        return error_msg = handle->error_msg,false;
     if(glWidget->command(cmd))
         return true;
     if(!glWidget->error_msg.empty() && glWidget->error_msg != "not_processed")
@@ -251,7 +258,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed("invalid slice index " + cmd[1]);
         auto new_slice = slices[index];
         auto new_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(new_slice);
-
+        if(new_slice->view->name == "vol" && !new_slice->view->image_ready() && !handle->map_to_mni()) // vol needs the normalization first
+            return run->failed(handle->error_msg);
 
         if(!new_slice->view->image_ready())
         {
@@ -1013,6 +1021,17 @@ bool tracking_window::command(std::vector<std::string> cmd)
         set_data("tolerance",handle->default_tolerance());
         return run->succeed();
     }
+    if(cmd[0] == "prepare_mapping") // the subject-to-template normalization that atlases, AutoTrack, and surfaces need;
+    {                                // starts it in the background ("check" never does) and reports ready, running <step>/4, failed, or needed
+        if((cmd.size() < 2 || cmd[1] != "check") && // a saved mapping loads at once; otherwise it starts (or keeps running) in the background
+           !handle->map_to_mni() && !handle->mapping_running)
+            return run->failed(handle->error_msg);
+        bool ready = !handle->mapping_running && ((handle->is_mni && handle->template_id == handle->matched_template_id) ||
+                     !handle->s2t.empty() || std::filesystem::exists(handle->get_mapping_file_name()));
+        tipl::out() << (ready ? "ready" : handle->mapping_running ? "running "+std::to_string(handle->prog)+"/4" :
+                        handle->mapping_abort ? "failed: "+handle->error_msg : "needed");
+        return run->succeed();
+    }
     if(cmd[0] == "enable_auto_tract")
     {
         if(!handle->load_track_atlas(true/*symmetric*/))
@@ -1352,8 +1371,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
         // cmd[1] : file name
         if(!cmd[1].empty())
         {
-            if(cmd[0] == "add_mni_slice" && !handle->map_to_mni())
-                return run->failed(handle->error_msg);
             auto slice = std::make_shared<CustomSliceModel>(handle,tipl::to_path(tipl::split(cmd[1],',')));
             slice->is_mni = (cmd[0] == "add_mni_slice");
             if(!slice->load_slices())
@@ -1775,6 +1792,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             // use ICBM152 wm as the surface
             tipl::matrix<4,4,float> trans;
+            if(!handle->map_to_mni() && handle->mapping_running) // the template surface waits for the background normalization
+                return run->failed(handle->error_msg);
             if(tipl::io::gz_nifti(handle->wm_template_file_name,std::ios::in) >> crop_image >> trans)
             {
                 if(handle->mni2sub(crop_image,trans))
@@ -2368,11 +2387,8 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         raise();
         return;
     }
-    if(!handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
+    if(!handle->map_to_mni()) // started or still running in the background: say so and return
+        return (void)QMessageBox::information(this,QApplication::applicationName(),handle->error_msg.c_str());
     auto* atlas_dialog = findChild<AtlasDialog*>(); // modeless and kept: Close hides it, the button shows the same one again
     if(!atlas_dialog)
         atlas_dialog = new AtlasDialog(this,handle);
