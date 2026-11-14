@@ -151,12 +151,12 @@ static const std::map<QString,std::pair<QPolygonF,QString>> tutor_gestures{
 class control_ring : public QWidget // a click-through accent around one control, following it until cleared or the control is gone
 {
     QPointer<QWidget> target;
-    QString caption,gesture; // a tutor_gestures key, animated over the control, drawn outside the GL framebuffer
+    QString gesture; // a tutor_gestures key, animated over the control, drawn outside the GL framebuffer; the words go in the ask_user dialog
     int frame = 0;
 public:
     std::function<void(void)> on_act; // ask_user_act: the user clicked, chose, or finished a stroke on the target
     QRect screen_rect(void) const {return target ? QRect(target->mapToGlobal(QPoint(0,0)),target->size()) : QRect();}
-    control_ring(QWidget* target_,const QString& caption_,const QString& gesture_) : QWidget(target_->window()),target(target_),caption(caption_),gesture(gesture_)
+    control_ring(QWidget* target_,const QString& gesture_) : QWidget(target_->window()),target(target_),gesture(gesture_)
     {
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setFocusPolicy(Qt::NoFocus);
@@ -177,7 +177,7 @@ public:
             killTimer(e->timerId());
         update();
     }
-    void place(void) // covers the target's window, so the ring and caption are clamped inside it
+    void place(void) // covers the target's window, so the ring is clamped inside it
     {
         if(!target || !target->isVisible())
             return hide();
@@ -213,19 +213,6 @@ public:
             return;
         p.setPen(QPen(QColor("#f59e0b"),3));
         p.drawRoundedRect(ring,8,8);
-        if(!caption.isEmpty()) // below the ring, or above it when there is no room, never over the control
-        {
-            QRectF box(ring.left(),ring.bottom()+4,fontMetrics().horizontalAdvance(caption)+16,fontMetrics().height()+6);
-            if(box.bottom() > height())
-                box.moveBottom(ring.top()-4);
-            if(box.right() > width())
-                box.moveRight(width()-2);
-            p.setPen(Qt::NoPen);
-            p.setBrush(QColor("#f59e0b"));
-            p.drawRoundedRect(box,6,6);
-            p.setPen(Qt::white);
-            p.drawText(box,Qt::AlignCenter,caption);
-        }
         if(gesture.isEmpty())
             return;
         // a stroke: press (frames 0-5), drag (6-39), release (40-49); a single point: glide in (0-39), then act
@@ -322,7 +309,7 @@ static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or
 // run:<command> finds the control that sends that command, so a skill's command maps to its current button;
 // option:<id> reveals that option in the Options tree and accents its editor; a menu action is reported by its menu path as text;
 // false with the reason in message otherwise
-static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QPointer<QObject>& menu_action,QString& message)
+static bool highlight_control(QWidget* window,const QString& id,const QString& gesture,QPointer<QWidget>& ring,QPointer<QObject>& menu_action,QString& message)
 {
     QList<QObject*> hits; // the widgets named id, or else the menu actions
     message = "highlighted: "+id;
@@ -369,7 +356,7 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
         menu_action = action;
         return message = "menu: "+action_path(action),true;
     }
-    ring = new control_ring(static_cast<QWidget*>(hits[0]),caption,gesture);
+    ring = new control_ring(static_cast<QWidget*>(hits[0]),gesture);
     return true;
 }
 
@@ -1762,10 +1749,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 else if(command_name == "highlight_ui")
                 {
-                    if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !tutor_gestures.count(QString::fromStdString(cmd[3]))))
-                        error = "usage: highlight_ui <id> [caption] ["+[]{QStringList names;for(const auto& each : tutor_gestures) names << each.first;return names.join('|');}()+"]";
-                    else if(!highlight_control(target,param,cmd.size() > 2 ? QString::fromStdString(cmd[2]).simplified().left(120) : QString(),
-                                               cmd.size() > 3 ? QString::fromStdString(cmd[3]) : QString(),tutor_ring,tutor_action,output))
+                    auto gesture = cmd.size() > 2 ? QString::fromStdString(cmd[2]) : QString();
+                    if(param.isEmpty() || cmd.size() > 3 || (!gesture.isEmpty() && !tutor_gestures.count(gesture)))
+                        error = "usage: highlight_ui <id> ["+[]{QStringList names;for(const auto& each : tutor_gestures) names << each.first;return names.join('|');}()+"]";
+                    else if(!highlight_control(target,param,gesture,tutor_ring,tutor_action,output))
                         error = std::exchange(output,QString());
                 }
                 else
