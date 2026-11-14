@@ -298,7 +298,7 @@ static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or
 // false with the reason in message otherwise
 static bool highlight_control(QWidget* window,const QString& id,const QString& caption,const QString& gesture,QPointer<QWidget>& ring,QString& message)
 {
-    QList<QWidget*> hits;
+    QList<QObject*> hits; // the widgets named id, or else the menu actions
     message = "highlighted: "+id;
     auto command = id.startsWith("run:") ? id.mid(4) : QString();
     auto named = [&](QObject* o) // by objectName (or class name such as GLWidget), or by the command it sends: command alone or command=param
@@ -321,18 +321,16 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
         for(auto* each : window->findChildren<QWidget*>())
             if(each->isVisible() && in_window(each,window) && tutor_kind(each) && named(each))
                 hits << each;
-    if(hits.size() > 1 || (hits.size() == 1 && !hits[0]->isEnabled()))
-        return message = (hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
-    QList<QAction*> actions;
-    for(auto* action : hits.isEmpty() ? window->findChildren<QAction*>() : QList<QAction*>())
-        if(in_window(action,window) && action->isVisible() && named(action))
-            actions << action;
-    if(actions.size() > 1 || (actions.size() == 1 && !actions[0]->isEnabled()))
-        return message = (actions.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
-    if(!actions.isEmpty())
+    if(hits.isEmpty())
+        for(auto* action : window->findChildren<QAction*>())
+            if(in_window(action,window) && action->isVisible() && named(action))
+                hits << action;
+    if(hits.size() != 1 || !hits[0]->property("enabled").toBool()) // QWidget and QAction both have "enabled"
+        return message = (hits.isEmpty() ? "control not found or not visible: " : hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
+    delete ring; // replaced only after the new request is valid
+    if(auto* action = qobject_cast<QAction*>(hits[0]))
     {
-        delete ring;
-        if(auto chain = menu_chain(actions[0]);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
+        if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
         {
             chain.back().first->window()->activateWindow();
             for(auto each = chain.rbegin();each != chain.rend();++each)
@@ -341,12 +339,9 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
                 else
                     static_cast<QMenu*>(each->first)->setActiveAction(each->second);
         }
-        return message = "menu: "+action_path(actions[0]),true;
+        return message = "menu: "+action_path(action),true;
     }
-    if(hits.isEmpty())
-        return message = "control not found or not visible: "+id,false;
-    delete ring; // replaced only after the new request is valid
-    ring = new control_ring(hits[0],caption,gesture);
+    ring = new control_ring(static_cast<QWidget*>(hits[0]),caption,gesture);
     return true;
 }
 
@@ -905,6 +900,12 @@ QString command_window_id(QWidget* window)
         qobject_cast<view_image*>(window) ? "image" : nullptr;
     return type ? command_window_id(window,type) : QString();
 }
+static QString any_window_id(QWidget* w) // a data window's id, or "window<address>" for another visible window, such as the Fiber Data Hub or a dialog
+{
+    auto id = command_window_id(w);
+    return !id.isEmpty() || !w->isWindow() || !w->isVisible() || qobject_cast<QDockWidget*>(w) ||
+           w->windowType() == Qt::Popup || w->windowType() == Qt::ToolTip ? id : command_window_id(w,"window");
+}
 QString command_window_type(const QString& id)
 {
     if(id == "main")
@@ -1452,7 +1453,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
         if(id == "main")
             return this;
         for(auto* each : QApplication::allWidgets())
-            if(command_window_id(each) == id)
+            if(any_window_id(each) == id)
                 return each;
         return nullptr;
     };
@@ -1513,8 +1514,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
 
         try
         {
-            if(command_name == "bring_to_front" || command_name == "close" ||
-               command_name == "minimize" || command_name == "maximize")
+            if(QStringList({"bring_to_front","close","minimize","maximize","move_window"}).contains(command_name))
             {
                 auto* target = find_window(info.current_window);
                 if(!target)
@@ -1531,6 +1531,22 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     target->showMinimized();
                 else if(command_name == "maximize")
                     target->showMaximized();
+                else if(command_name == "move_window") // x y [width height] in screen pixels, as list_window reports geometry
+                {
+                    QList<int> values;
+                    bool ok = cmd.size() == 3 || cmd.size() == 5;
+                    for(size_t i = 1;ok && i < cmd.size();++i)
+                        values << QString::fromStdString(cmd[i]).toInt(&ok);
+                    if(!ok)
+                        error = "usage: move_window <x> <y> [width] [height]";
+                    else
+                    {
+                        target->showNormal();
+                        target->move(values[0],values[1]);
+                        if(values.size() == 4)
+                            target->resize(values[2],values[3]);
+                    }
+                }
                 else
                     target->close();
             }
@@ -1586,7 +1602,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 QJsonObject windows;
                 for(auto* each : QApplication::allWidgets())
                 {
-                    auto id = command_window_id(each);
+                    auto id = any_window_id(each);
                     if(id.isEmpty())
                         continue;
                     bool busy = false;
@@ -1607,9 +1623,11 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     else if(auto* gc = qobject_cast<group_connectometry*>(each))
                         busy |= bool(gc->timer);
                     bool waiting = modal && (modal == each || each->isAncestorOf(modal));
+                    auto g = each->frameGeometry();
                     windows[id] = QJsonObject{
                         {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
-                        {"title",QDir::fromNativeSeparators(each->windowTitle())}
+                        {"title",QDir::fromNativeSeparators(each->windowTitle())},
+                        {"geometry",QJsonArray{g.x(),g.y(),g.width(),g.height()}} // for move_window
                     };
                     application_busy |= busy;
                 }
