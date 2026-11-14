@@ -131,10 +131,11 @@ void checkForVersionSpecificBugs(const QString& bugListText)
 extern std::vector<std::filesystem::path> fib_template_list;
 std::vector<tracking_window*> tracking_windows;
 // AI tutor: points at a live control the user clicks; never clicks, triggers, or runs a command itself
+static const QStringList tutor_gestures({"drag","shift","freehand","rect","click","double","right","rotate","roll","zoom","pan","wheel"});
 class control_ring : public QWidget // a click-through accent around one control, following it until cleared or the control is gone
 {
     QPointer<QWidget> target;
-    QString caption,gesture; // gesture: drag, shift, freehand, or rect, animated over the control, drawn outside the GL framebuffer
+    QString caption,gesture; // one of tutor_gestures, animated over the control, drawn outside the GL framebuffer
     int frame = 0;
 public:
     control_ring(QWidget* target_,const QString& caption_,const QString& gesture_) : QWidget(target_->window()),target(target_),caption(caption_),gesture(gesture_)
@@ -204,14 +205,30 @@ public:
         }
         if(gesture.isEmpty())
             return;
-        // the stroke in fractions of the ring: press (frames 0-5), drag (6-39), release (40-49)
+        // the stroke in fractions of the ring: press (frames 0-5), drag (6-39), release (40-49);
+        // a click glides in unpressed and clicks at the end; the 3D-view strokes follow GLWidget::mouseMoveEvent
         auto at = [&](double x,double y){return QPointF(ring.left()+ring.width()*x,ring.top()+ring.height()*y);};
+        bool click = gesture == "click" || gesture == "double" || gesture == "right";
+        QString label = gesture == "shift" ? "Shift + drag" : "drag";
         QPolygonF stroke;
         if(gesture == "freehand")
             for(int i = 0;i <= 24;++i)
                 stroke << at(0.5+0.2*std::cos(i*0.2618),0.5+0.2*std::sin(i*0.2618)*(1.0+0.15*std::sin(i*0.7854)));
         else if(gesture == "shift")
             stroke << at(0.3,0.5) << at(0.4,0.38) << at(0.5,0.6) << at(0.6,0.4) << at(0.7,0.55);
+        else if(click)
+            stroke << at(0.5,0.5)+QPointF(60,50) << at(0.5,0.5),
+            label = gesture == "click" ? "click" : gesture == "double" ? "double-click" : "right-click";
+        else if(gesture == "rotate")
+            stroke << at(0.35,0.55) << at(0.5,0.45) << at(0.65,0.55),label = "left drag: rotate";
+        else if(gesture == "roll") // a press outside the inscribed circle rolls the view
+            stroke << at(0.95,0.8) << at(0.9,0.9) << at(0.8,0.95),label = "left drag from a corner: roll";
+        else if(gesture == "zoom")
+            stroke << at(0.5,0.62) << at(0.5,0.38),label = "right drag up: zoom in";
+        else if(gesture == "pan")
+            stroke << at(0.4,0.5) << at(0.6,0.5),label = "middle drag: pan";
+        else if(gesture == "wheel")
+            stroke << at(0.5,0.5) << at(0.5,0.5),label = "scroll wheel: zoom";
         else
             stroke << at(0.3,0.4) << at(0.7,0.6);
         auto f = std::clamp((frame-6)/34.0,0.0,1.0)*(stroke.size()-1);
@@ -221,13 +238,16 @@ public:
         p.setBrush(Qt::NoBrush);
         if(gesture == "rect")
             p.drawRect(QRectF(stroke[0],m));
-        else
+        else if(!click && gesture != "wheel")
             p.drawPolyline(stroke.mid(0,k+1) << m);
+        if(click && frame >= 40) // a ripple per click
+            for(int i = 0;i < (gesture == "double" ? 2 : 1);++i)
+                p.drawEllipse(m,(frame-40)*2+4+i*8,(frame-40)*2+4+i*8);
         p.setPen(QPen(Qt::black,1));
         p.setBrush(Qt::white);
         p.drawPolygon(QPolygonF({m,m+QPointF(0,18),m+QPointF(5,13),m+QPointF(12,13)}));
         p.setPen(QColor("#f59e0b"));
-        p.drawText(m+QPointF(14,26),frame < 6 ? "press" : frame >= 40 ? "release" : gesture == "shift" ? "Shift + drag" : "drag");
+        p.drawText(m+QPointF(14,26),click ? (frame >= 40 ? label : QString()) : gesture == "wheel" || (frame >= 6 && frame < 40) ? label : frame < 6 ? "press" : "release");
     }
 };
 static QString option_path(const QModelIndex& index) // "Tracking Parameters > Step Size" from the Options tree
@@ -288,6 +308,8 @@ static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or
         return "pages";
     if(qobject_cast<QAbstractButton*>(w))
         return w->isEnabled() ? "button" : "disabled button";
+    if(qobject_cast<QDockWidget*>(w)) // a whole panel, such as the region list
+        return "panel";
     if(qobject_cast<QComboBox*>(w) || qobject_cast<QAbstractSlider*>(w)) // only one that sends a command; never its value
         return run_command(w).isEmpty() ? nullptr : w->isEnabled() ? "setting" : "disabled setting";
     return w->inherits("QOpenGLWidget") || w->inherits("QGraphicsView") ? "view" : nullptr;
@@ -323,7 +345,7 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
                 hits << each;
     if(hits.isEmpty())
         for(auto* action : window->findChildren<QAction*>())
-            if(in_window(action,window) && action->isVisible() && named(action))
+            if(in_window(action,window) && action->isVisible() && (named(action) || (action->menu() && named(action->menu())))) // a menu by its own name
                 hits << action;
     if(hits.size() != 1 || !hits[0]->property("enabled").toBool()) // QWidget and QAction both have "enabled"
         return message = (hits.isEmpty() ? "control not found or not visible: " : hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
@@ -1707,8 +1729,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                 }
                 else if(command_name == "highlight_ui")
                 {
-                    if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !QStringList({"drag","shift","freehand","rect"}).contains(QString::fromStdString(cmd[3]))))
-                        error = "usage: highlight_ui <id> [caption] [drag|shift|freehand|rect]";
+                    if(param.isEmpty() || cmd.size() > 4 || (cmd.size() > 3 && !tutor_gestures.contains(QString::fromStdString(cmd[3]))))
+                        error = "usage: highlight_ui <id> [caption] ["+tutor_gestures.join('|')+"]";
                     else if(!highlight_control(target,param,cmd.size() > 2 ? QString::fromStdString(cmd[2]).simplified().left(120) : QString(),
                                                cmd.size() > 3 ? QString::fromStdString(cmd[3]) : QString(),tutor_ring,output))
                         error = std::exchange(output,QString());
@@ -1732,7 +1754,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     };
                     auto id_of = [](QObject* o,const QString& run) // an unnamed toolbar button or generated menu item is found by its command
                     {
-                        return !o->objectName().isEmpty() ? o->objectName() : run.isEmpty() ? QString() : "run:"+run;
+                        auto* menu = qobject_cast<QAction*>(o) ? static_cast<QAction*>(o)->menu() : nullptr; // a menu's own action goes by the menu's name
+                        return !o->objectName().isEmpty() ? o->objectName() : menu && !menu->objectName().isEmpty() ? menu->objectName() : run.isEmpty() ? QString() : "run:"+run;
                     };
                     for(auto* each : target->findChildren<QWidget*>())
                         if(!each->isVisible() || !in_window(each,target))
@@ -1741,7 +1764,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         {
                             auto* button = qobject_cast<QAbstractButton*>(each);
                             auto run = run_command(each);
-                            add(id_of(each,run).isEmpty() && !button ? QString(each->metaObject()->className()) : id_of(each,run),kind,button ? button->text().remove('&') : QString(),run);
+                            add(id_of(each,run).isEmpty() && !button ? QString(each->metaObject()->className()) : id_of(each,run),kind,
+                                button ? button->text().remove('&') : qobject_cast<QDockWidget*>(each) ? each->windowTitle() : QString(),run);
                         }
                         else if(auto* tree = qobject_cast<RenderingTableWidget*>(each)) // the Options tree, by option id in a stable order
                         {
@@ -1751,8 +1775,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                                 add("option:"+id,"option",option_path(tree->treemodel->indexFor(id)));
                         }
                     for(auto* each : target->findChildren<QAction*>())
-                        if(auto path = action_path(each);each->isVisible() && in_window(each,target) && path != each->text().remove('&')) // in a menu
-                            add(id_of(each,run_command(each)),each->isEnabled() ? "menu" : "disabled menu",path,run_command(each));
+                        if(auto chain = menu_chain(each);each->isVisible() && in_window(each,target) && !chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // reached from the menu bar
+                            add(id_of(each,run_command(each)),each->isEnabled() ? "menu" : "disabled menu",action_path(each),run_command(each));
                     output = QString::fromUtf8(QJsonDocument(QJsonObject{{"total",total},{"controls",controls}}).toJson(QJsonDocument::Compact));
                 }
             }
