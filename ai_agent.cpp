@@ -590,20 +590,19 @@ void AIAgent::ai_request(const QByteArray& data,QByteArray& reply)
 }
 QJsonObject AIAgent::ai_request(const QJsonObject& request)
 {
+    auto session = request["session"].toString().trimmed();
+    auto command = request["command"].toObject();
+    auto lone_cmd = command.size() == 1 && !request.contains("chat") && !request.contains("reasoning") ?
+                    command["cmd"].toString() : QString();
     if(dispatching_info)
     {
         // only the owning session's standalone cancellation may interrupt a tutor question
-        auto command = request["command"].toObject();
-        if(request["session"].toString().trimmed() != dispatching_info->sessions ||
-           command.size() != 1 || command["cmd"].toString() != "cancel_ask_user" ||
-           request.contains("chat") || request.contains("reasoning") || !main_window.tutor_question)
+        if(session != dispatching_info->sessions || lone_cmd != "cancel_ask_user" || !main_window.tutor_question)
             return status_reply("busy");
-        main_window.tutor_question->setProperty("agent_cancelled",true);
-        main_window.tutor_question->reject();
+        std::exchange(main_window.tutor_question,nullptr)->done(-1);
         return QJsonObject{{"status","success"},{"result",QJsonArray{
             QJsonObject{{"cmd","cancel_ask_user"},{"status","success"},{"output","cancelled"}}}}};
     }
-    auto session = request["session"].toString().trimmed();
     if(session.isEmpty())
         return status_reply("error","missing session: provide resumable provider thread ID");
     if(!is_valid_session_id(session))
@@ -611,8 +610,7 @@ QJsonObject AIAgent::ai_request(const QJsonObject& request)
 
     auto* found = ai_info::find(session);
     // a lone `dsi.sh new_chat` (no param, batch or chat text) is the one way an unknown UUID joins: an external agent registers its own session
-    if(auto command = request["command"].toObject();request["command"].isObject() && command.size() == 1 &&
-       command["cmd"].toString() == "new_chat" && !request.contains("chat") && !request.contains("reasoning"))
+    if(lone_cmd == "new_chat")
     {
         auto agent = request["agent"].toString().trimmed();
         if(found)
