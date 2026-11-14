@@ -494,6 +494,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         return tipl::error() << (error_msg = "empty command"),false;
     if(cmds.size() > 2)
         return tipl::error() << (error_msg = "too many parameters"),false;
+    if(source == command_source::User)
+        tipl::out() << command_record(command_window_id(this),cmds,source); // the agent's log shows what the user clicked
     cmds.resize(2);
     std::string cmd = to_cmd(cmds[0]),param = cmds[1];
 
