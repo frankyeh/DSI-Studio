@@ -27,6 +27,7 @@
 #include <QAbstractSlider>
 #include <QComboBox>
 #include <QInputDialog>
+#include <QEventLoop>
 #include <QAbstractScrollArea>
 
 #include <QJsonDocument>
@@ -308,7 +309,8 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
             if(auto index = tree->treemodel->indexFor(id.mid(7));tree->isVisible() && in_window(tree,window) && index.isValid())
             {
                 tree->reveal(id.mid(7));
-                hits << (tree->indexWidget(index.siblingAtColumn(1)) ? tree->indexWidget(index.siblingAtColumn(1)) : tree);
+                auto* editor = tree->indexWidget(index.siblingAtColumn(1));
+                hits << (editor ? editor : tree);
                 message = "option: "+option_path(index);
             }
     }
@@ -1500,7 +1502,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
             results.append(result);
             return error.isEmpty();
         };
-        bool tutor = QStringList({"list_ui","highlight_ui","clear_highlight","ask_user"}).contains(command_name); // presentation only: not a recorded command
+        bool tutor = QStringList({"list_ui","highlight_ui","clear_highlight","ask_user","ask_user_modal"}).contains(command_name); // presentation only: not a recorded command
         tipl::progress prog(tutor ? cmd[0] : command_record(info.current_window,cmd,command_source::AI));
 
         try
@@ -1624,7 +1626,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"progress",progress},
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
-            else if(tutor && command_name != "clear_highlight") // the tutor's view of the current window: never triggers anything
+            else if(command_name == "clear_highlight")
+            {
+                output = tutor_ring ? "cleared" : "nothing to clear";
+                delete tutor_ring;
+            }
+            else if(tutor) // the tutor's view of the current window: never triggers anything
             {
                 auto* target = find_window(info.current_window);
                 auto param = cmd.size() > 1 ? QString::fromStdString(cmd[1]) : QString();
@@ -1632,25 +1639,42 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "target window not found, terminated by user? Use set_window to select a window first.";
                 else if(QApplication::activeModalWidget())
                     error = "a dialog is open; ask the user to close it first";
-                else if(command_name == "ask_user" && param.isEmpty())
-                    error = "usage: ask_user <question> [option]...";
-                else if(command_name == "ask_user") // the local user's answer is the output; the request waits for it
+                else if(command_name.startsWith("ask_user") && param.isEmpty())
+                    error = "usage: "+command_name+" <question> [option]...";
+                else if(command_name.startsWith("ask_user")) // the local user's answer is the output; the request waits for it
                 {
                     QStringList options;
                     for(size_t i = 2;i < cmd.size();++i)
                         options << QString::fromStdString(cmd[i]);
+                    auto wait = [&](QDialog& dialog) // always on top; ask_user is modeless, so the user follows the instruction in DSI Studio, then answers
+                    {
+                        QEventLoop loop;
+                        QObject::connect(&dialog,&QDialog::finished,&loop,&QEventLoop::quit);
+                        dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
+                        dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
+                        dialog.show();
+                        loop.exec();
+                    };
                     bool answered = false;
                     if(options.isEmpty() || options.size() > 4) // none: a typed answer; many: a list
-                        output = options.isEmpty() ? QInputDialog::getText(target,"DSI Studio AI",param,QLineEdit::Normal,QString(),&answered) :
-                                                     QInputDialog::getItem(target,"DSI Studio AI",param,options,0,false,&answered);
-                    else // a few: one button each
                     {
-                        QMessageBox box(QMessageBox::Question,"DSI Studio AI",param,QMessageBox::NoButton,target);
+                        QInputDialog dialog(this); // parented to MainWindow, so closing the selected window cannot delete it while waiting
+                        dialog.setWindowTitle("DSI Studio AI");
+                        dialog.setLabelText(param);
+                        if(!options.isEmpty())
+                            dialog.setComboBoxItems(options);
+                        wait(dialog);
+                        if((answered = dialog.result() == QDialog::Accepted))
+                            output = dialog.textValue();
+                    }
+                    else // a few: one button each, such as Done and Cancel
+                    {
+                        QMessageBox dialog(QMessageBox::Information,"DSI Studio AI",param,QMessageBox::NoButton,this);
                         for(const auto& each : options)
-                            box.addButton(each,QMessageBox::AcceptRole);
-                        box.exec();
-                        if((answered = box.clickedButton()))
-                            output = box.clickedButton()->text();
+                            dialog.addButton(each,QMessageBox::AcceptRole);
+                        wait(dialog);
+                        if((answered = dialog.clickedButton()))
+                            output = dialog.clickedButton()->text();
                     }
                     if(!answered)
                         error = "the user closed the question without answering";
@@ -1702,11 +1726,6 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                             add(each->objectName(),each->isEnabled() ? "menu" : "disabled menu",path,run_command(each));
                     output = QString::fromUtf8(QJsonDocument(QJsonObject{{"total",total},{"controls",controls}}).toJson(QJsonDocument::Compact));
                 }
-            }
-            else if(command_name == "clear_highlight")
-            {
-                output = tutor_ring ? "cleared" : "nothing to clear";
-                delete tutor_ring;
             }
             else if(ai_system_command(cmd,info,[this](const QStringList& providers){return ai_agent->agent_settings(providers);},
                                       [this](ai_info& target,const QString& text){return ai_agent->start_ai(target,text,target.model_settings.value("cwd").toString(work_dir()),false);},
