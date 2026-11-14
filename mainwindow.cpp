@@ -186,11 +186,13 @@ public:
             return;
         p.setPen(QPen(QColor("#f59e0b"),3));
         p.drawRoundedRect(ring,8,8);
-        if(!caption.isEmpty()) // below the ring, or inside its bottom edge when there is no room
+        if(!caption.isEmpty()) // below the ring, or above it when there is no room, never over the control
         {
             QRectF box(ring.left(),ring.bottom()+4,fontMetrics().horizontalAdvance(caption)+16,fontMetrics().height()+6);
             if(box.bottom() > height())
-                box.moveBottom(ring.bottom()-4);
+                box.moveBottom(ring.top()-4);
+            if(box.right() > width())
+                box.moveRight(width()-2);
             p.setPen(Qt::NoPen);
             p.setBrush(QColor("#f59e0b"));
             p.drawRoundedRect(box,6,6);
