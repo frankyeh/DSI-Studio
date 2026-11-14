@@ -2373,8 +2373,12 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
-    std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
-    atlas_dialog->exec();
+    auto* atlas_dialog = findChild<AtlasDialog*>(); // modeless and kept: Close hides it, the button shows the same one again
+    if(!atlas_dialog)
+        atlas_dialog = new AtlasDialog(this,handle);
+    atlas_dialog->show();
+    atlas_dialog->raise();
+    atlas_dialog->activateWindow();
 }
 
 void tracking_window::on_actionManual_Atlas_Alignment_triggered()
@@ -2406,15 +2410,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     handle->t2s.clear();
     handle->track_atlas.reset();
     std::filesystem::remove(handle->get_mapping_file_name());
-
-    if(!handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-
-    std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
-    atlas_dialog->exec();
+    on_addRegionFromAtlas_clicked(); // maps again, then shows the atlas list
 }
 
 
