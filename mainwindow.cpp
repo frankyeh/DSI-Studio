@@ -1617,10 +1617,21 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     for(size_t i = 2;i < cmd.size();++i)
                         options << QString::fromStdString(cmd[i]);
                     bool answered = false;
+                    if(!param.isEmpty() && !options.isEmpty() && options.size() <= 4) // a few options: one button each
+                    {
+                        QMessageBox box(QMessageBox::Question,"DSI Studio AI",param,QMessageBox::NoButton,target);
+                        for(const auto& each : options)
+                            box.addButton(each,QMessageBox::AcceptRole);
+                        box.exec();
+                        if((answered = box.clickedButton()))
+                            output = box.clickedButton()->text();
+                    }
+                    else if(!param.isEmpty()) // more options: a list; none: a typed answer
+                        output = options.isEmpty() ? QInputDialog::getText(target,"DSI Studio AI",param,QLineEdit::Normal,QString(),&answered) :
+                                                     QInputDialog::getItem(target,"DSI Studio AI",param,options,0,false,&answered);
                     if(param.isEmpty())
                         error = "usage: ask_user <question> [option]...";
-                    else if(output = options.isEmpty() ? QInputDialog::getText(target,"DSI Studio AI",param,QLineEdit::Normal,QString(),&answered) :
-                                                         QInputDialog::getItem(target,"DSI Studio AI",param,options,0,false,&answered);!answered)
+                    else if(!answered)
                         error = "the user closed the question without answering";
                 }
                 else if(command_name == "highlight_ui")
