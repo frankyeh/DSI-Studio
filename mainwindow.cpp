@@ -20,6 +20,7 @@
 #include <QProcess>
 #include <QPointer>
 #include <QMenu>
+#include <QMenuBar>
 #include <QLabel>
 #include <QDockWidget>
 #include <QAbstractButton>
@@ -235,18 +236,28 @@ static QString option_path(const QModelIndex& index) // "Tracking Parameters > S
         path = item->title.toString()+" > "+path;
     return path;
 }
+static std::vector<std::pair<QWidget*,QAction*>> menu_chain(QAction* a) // the action in its menu, then each menu's own action up to the menu bar
+{
+    std::vector<std::pair<QWidget*,QAction*>> chain;
+    while(a)
+    {
+        QWidget* owner = nullptr;
+        for(auto* each : a->associatedObjects())
+            if(each->inherits("QMenu") || each->inherits("QMenuBar"))
+                owner = qobject_cast<QWidget*>(each);
+        if(!owner)
+            break;
+        chain.emplace_back(owner,a);
+        a = qobject_cast<QMenu*>(owner) ? qobject_cast<QMenu*>(owner)->menuAction() : nullptr;
+    }
+    return chain;
+}
 static QString action_path(QAction* a) // "Tracts > Save Tracts As..." from the menus holding the action
 {
-    auto path = a->text().remove('&');
-    for(QMenu* menu;;path = menu->title().remove('&')+" > "+path,a = menu->menuAction())
-    {
-        menu = nullptr;
-        for(auto* each : a->associatedObjects())
-            if((menu = qobject_cast<QMenu*>(each)))
-                break;
-        if(!menu)
-            return path;
-    }
+    QStringList path;
+    for(const auto& each : menu_chain(a))
+        path.prepend(each.second->text().remove('&'));
+    return path.isEmpty() ? a->text().remove('&') : path.join(" > ");
 }
 static bool in_window(QObject* o,QWidget* window) // excludes the separate windows that MainWindow parents; a floating dock stays with its window
 {
@@ -267,11 +278,6 @@ static QString run_command(QObject* o) // "segment_brain" from a control's "run 
             return tip.mid(4);
     return {};
 }
-static bool runs(QObject* o,const QString& command) // command alone, or command=param as list_ui reports it
-{
-    auto run = run_command(o);
-    return !command.isEmpty() && (run == command || run.startsWith(command+"="));
-}
 static const char* tutor_kind(QWidget* w) // the only widgets the tutor lists or highlights
 {
     if(w->objectName() == "nav_rail")
@@ -291,6 +297,11 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
     QList<QWidget*> hits;
     message = "highlighted: "+id;
     auto command = id.startsWith("run:") ? id.mid(4) : QString();
+    auto named = [&](QObject* o) // by objectName (or class name such as GLWidget), or by the command it sends: command alone or command=param
+    {
+        auto run = run_command(o);
+        return command.isEmpty() ? o->objectName() == id || o->metaObject()->className() == id : run == command || run.startsWith(command+"=");
+    };
     if(id.startsWith("option:")) // kind-qualified, so a same-named button never hides an option
     {
         for(auto* tree : window->findChildren<RenderingTableWidget*>())
@@ -303,17 +314,25 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& c
     }
     else
         for(auto* each : window->findChildren<QWidget*>())
-            if(each->isVisible() && in_window(each,window) && tutor_kind(each) &&
-               (command.isEmpty() ? each->objectName() == id || each->metaObject()->className() == id : runs(each,command)))
+            if(each->isVisible() && in_window(each,window) && tutor_kind(each) && named(each))
                 hits << each;
     if(hits.size() > 1 || (hits.size() == 1 && !hits[0]->isEnabled()))
         return message = (hits.size() > 1 ? "ambiguous control: " : "control is disabled: ")+id,false;
     for(auto* action : hits.isEmpty() ? window->findChildren<QAction*>() : QList<QAction*>())
-        if(in_window(action,window) && action->isVisible() && (command.isEmpty() ? action->objectName() == id : runs(action,command)))
+        if(in_window(action,window) && action->isVisible() && named(action))
         {
             if(!action->isEnabled())
                 return message = "control is disabled: "+id,false;
             delete ring;
+            if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
+            {
+                chain.back().first->window()->activateWindow();
+                for(auto each = chain.rbegin();each != chain.rend();++each)
+                    if(auto* bar = qobject_cast<QMenuBar*>(each->first))
+                        bar->setActiveAction(each->second);
+                    else
+                        static_cast<QMenu*>(each->first)->setActiveAction(each->second);
+            }
             return message = "menu: "+action_path(action),true;
         }
     if(hits.isEmpty())
