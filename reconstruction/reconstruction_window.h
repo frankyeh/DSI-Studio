@@ -14,6 +14,8 @@ namespace Ui {
 
 struct src_data;
 enum class command_source;
+class QPushButton;
+struct preproc_step{QPushButton* button;const char* cmd;const char* report;int path,q,when;}; // report: its text in the processing report; path: column in the flow (-1: shared); runs if question q is answered "when" (1: yes, 2: no)
 class reconstruction_window : public QMainWindow
 {
     Q_OBJECT
@@ -31,6 +33,7 @@ protected:
     void resizeEvent(QResizeEvent * event) override;
     void showEvent(QShowEvent * event) override;
     void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject* obj,QEvent* event) override;
 private:
     QGraphicsScene source;
     float source_ratio = 1.0f;
@@ -48,6 +51,12 @@ private:
     std::string existing_steps;
     bool load_src(int index);
     void update_dimension(void);
+private: // preprocessing flow
+    std::string rev_pe_file,t1w_file;
+    std::vector<std::pair<QPushButton*,QPushButton*> > pills; // yes/no of each question
+    std::vector<preproc_step> preproc; // in running order
+    int path = 0; // the chosen column
+    void update_preproc(void);
 private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);
