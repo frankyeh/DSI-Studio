@@ -155,6 +155,7 @@ class control_ring : public QWidget // a click-through accent around one control
     int frame = 0;
 public:
     std::function<void(void)> on_act; // ask_user_act: the user clicked, chose, or finished a stroke on the target
+    QRect screen_rect(void) const {return target ? QRect(target->mapToGlobal(QPoint(0,0)),target->size()) : QRect();}
     control_ring(QWidget* target_,const QString& caption_,const QString& gesture_) : QWidget(target_->window()),target(target_),caption(caption_),gesture(gesture_)
     {
         setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -1710,8 +1711,18 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         dialog.setWindowModality(command_name == "ask_user_modal" ? Qt::ApplicationModal : Qt::NonModal);
                         dialog.setWindowFlag(Qt::WindowStaysOnTopHint);
                         dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps a menu that highlight_ui opened from closing
+                        QRect near = tutor_ring ? static_cast<control_ring*>(tutor_ring.data())->screen_rect() : QRect(); // the highlight, or its open menu
+                        if(auto* action = qobject_cast<QAction*>(tutor_action))
+                            for(auto* each : action->associatedObjects())
+                                if(auto* menu = qobject_cast<QMenu*>(each);menu && menu->isVisible())
+                                    near = menu->geometry();
                         dialog.show();
-                        dialog.move(dialog.screen()->availableGeometry().topRight()+QPoint(-dialog.frameGeometry().width()-24,24)); // a screen corner, clear of the highlighted control
+                        auto* screen = near.isEmpty() || !QGuiApplication::screenAt(near.center()) ? dialog.screen() : QGuiApplication::screenAt(near.center());
+                        auto area = screen->availableGeometry();
+                        auto size = dialog.frameGeometry().size();
+                        auto at = near.isEmpty() ? area.topRight()+QPoint(-size.width()-24,24) : // a screen corner, or beside the highlight where it fits
+                                  near.right()+12+size.width() <= area.right() ? QPoint(near.right()+12,near.top()) : QPoint(near.left()-12-size.width(),near.top());
+                        dialog.move(std::clamp(at.x(),area.left(),area.right()-size.width()),std::clamp(at.y(),area.top(),area.bottom()-size.height()));
                         loop.exec();
                     };
                     bool answered = false;
