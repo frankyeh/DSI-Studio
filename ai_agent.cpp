@@ -789,7 +789,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     auto markdown_to_html = [&](const QString& text)
     {
         QTextDocument doc;
-        doc.setMarkdown(text);
+        doc.setMarkdown(text,QTextDocument::MarkdownFeatures(QTextDocument::MarkdownDialectGitHub|QTextDocument::MarkdownNoHTML)); // <id>, <caption>, ... in a prompt are text, not HTML tags
         auto html = doc.toHtml();
         auto begin = html.indexOf("<body");
         begin = begin < 0 ? -1 : html.indexOf('>',begin);
