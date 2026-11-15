@@ -599,7 +599,7 @@ QJsonObject AIAgent::ai_request(const QJsonObject& request)
         // only the owning session's standalone cancellation may interrupt a tutor question
         if(session != dispatching_info->sessions || lone_cmd != "cancel_ask_user" || !main_window.tutor_question)
             return status_reply("busy");
-        std::exchange(main_window.tutor_question,nullptr)->done(-1);
+        main_window.tutor_question->done(-1);
         return QJsonObject{{"status","success"},{"result",QJsonArray{
             QJsonObject{{"cmd","cancel_ask_user"},{"status","success"},{"output","cancelled"}}}}};
     }
