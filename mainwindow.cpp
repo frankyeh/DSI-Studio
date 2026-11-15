@@ -26,6 +26,7 @@
 #include <QAbstractButton>
 #include <QAbstractSlider>
 #include <QComboBox>
+#include <QDialogButtonBox>
 #include <QInputDialog>
 #include <QEventLoop>
 #include <QScreen>
@@ -140,23 +141,35 @@ static const std::map<QString,std::pair<QPolygonF,QString>> tutor_gestures{
     {"rect",{{{0.3,0.4},{0.7,0.6}},"drag"}},
     {"shift",{{{0.3,0.5},{0.4,0.38},{0.5,0.6},{0.6,0.4},{0.7,0.55}},"Shift + drag"}},
     {"freehand",{[]{QPolygonF loop;for(int i = 0;i <= 24;++i) loop << QPointF(0.5+0.2*std::cos(i*0.2618),0.5+0.2*std::sin(i*0.2618)*(1.0+0.15*std::sin(i*0.7854)));return loop;}(),"drag"}},
-    {"rotate",{{{0.35,0.55},{0.5,0.45},{0.65,0.55}},"left drag: rotate"}},
-    {"roll",{{{0.95,0.8},{0.9,0.9},{0.8,0.95}},"left drag from a corner: roll"}}, // a press outside the inscribed circle rolls
+    {"sphere",{{{0.5,0.5},{0.62,0.58}},"drag from the center"}},
+    {"rotate",{[]{QPolygonF arc;for(int i = 0;i <= 16;++i) arc << QPointF(0.3+0.025*i,0.5+0.08*std::sin(i*0.19635));return arc;}(),"left drag: rotate"}},
+    {"roll",{[]{QPolygonF arc;for(int i = 0;i <= 8;++i) arc << QPointF(0.5+0.58*std::cos(0.6109+i*0.0436),0.5+0.58*std::sin(0.6109+i*0.0436));return arc;}(),"left drag from a corner: roll"}}, // a press outside the inscribed circle rolls
     {"zoom",{{{0.5,0.62},{0.5,0.38}},"right drag up: zoom in"}},
     {"pan",{{{0.4,0.5},{0.6,0.5}},"middle drag: pan"}},
     {"click",{{{0.5,0.5}},"click"}},
     {"double",{{{0.5,0.5}},"double-click"}},
     {"right",{{{0.5,0.5}},"right-click"}},
     {"wheel",{{{0.5,0.5}},"scroll wheel: zoom"}}};
-class control_ring : public QWidget // a click-through accent around one control, following it until cleared or the control is gone
+class control_ring : public QWidget // a click-through accent around one control (or its menu item), following it until cleared or the control is gone
 {
     QPointer<QWidget> target;
+    QPointer<QAction> item; // a menu-bar title or menu item of target
     QString gesture; // a tutor_gestures key, animated over the control, drawn outside the GL framebuffer; the words go in the ask_user dialog
     int frame = 0;
 public:
     std::function<void(void)> on_act; // ask_user_act: the user clicked, chose, or finished a stroke on the target
-    QRect screen_rect(void) const {return target ? QRect(target->mapToGlobal(QPoint(0,0)),target->size()) : QRect();}
-    control_ring(QWidget* target_,const QString& gesture_) : QWidget(target_->window()),target(target_),gesture(gesture_)
+    QRect screen_rect(void) const
+    {
+        if(!target)
+            return QRect();
+        auto area = target->rect();
+        if(auto* bar = qobject_cast<QMenuBar*>(target.data());bar && item)
+            area = bar->actionGeometry(item);
+        if(auto* menu = qobject_cast<QMenu*>(target.data());menu && item)
+            area = menu->actionGeometry(item);
+        return area.translated(target->mapToGlobal(QPoint(0,0)));
+    }
+    control_ring(QWidget* target_,const QString& gesture_,QAction* item_ = nullptr) : QWidget(target_->window()),target(target_),item(item_),gesture(gesture_)
     {
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setFocusPolicy(Qt::NoFocus);
@@ -206,9 +219,9 @@ public:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
         auto clip = QRectF(rect()).adjusted(2,2,-2,-2);
-        for(QWidget* w = target->parentWidget();w && w != parentWidget();w = w->parentWidget())
+        for(QWidget* w = target->isWindow() ? nullptr : target->parentWidget();w && w != parentWidget();w = w->parentWidget())
             clip &= QRectF(w->mapTo(parentWidget(),QPoint(0,0)),w->size()).adjusted(-3,-3,3,3); // a scroll area hides the scrolled-out part
-        auto ring = QRectF(target->mapTo(parentWidget(),QPoint(0,0)),target->size()).adjusted(-3,-3,3,3).intersected(clip);
+        auto ring = QRectF(screen_rect().translated(-mapToGlobal(QPoint(0,0)))).adjusted(-3,-3,3,3).intersected(clip);
         if(ring.isEmpty())
             return;
         p.setPen(QPen(QColor("#f59e0b"),3));
@@ -230,6 +243,8 @@ public:
         p.setBrush(Qt::NoBrush);
         if(gesture == "rect")
             p.drawRect(QRectF(stroke[0],m));
+        else if(gesture == "sphere")
+            p.drawEllipse(stroke[0],QLineF(stroke[0],m).length(),QLineF(stroke[0],m).length());
         else if(!glide)
             p.drawPolyline(stroke.mid(0,k+1) << m);
         for(int i = 0;frame >= 40 && i < (gesture == "double" ? 2 : gesture == "wheel" ? 0 : glide);++i) // a ripple per click
@@ -344,19 +359,13 @@ static bool highlight_control(QWidget* window,const QString& id,const QString& g
     menu_action = nullptr;
     if(auto* action = qobject_cast<QAction*>(hits[0]))
     {
-        if(auto chain = menu_chain(action);!chain.empty() && qobject_cast<QMenuBar*>(chain.back().first)) // open the menus down to it, as hovering does; nothing is triggered
-        {
-            window->raise();
-            window->activateWindow();
-            for(auto each = chain.rbegin();each != chain.rend();++each)
-            {
-                auto* bar = qobject_cast<QMenuBar*>(each->first);
-                auto* menu = qobject_cast<QMenu*>(each->first);
-                bar ? bar->setActiveAction(each->second) : menu->setActiveAction(each->second);
-                if(auto* sub = each->second->menu()) // explicitly open, without triggering the action
-                    sub->popup(each->first->mapToGlobal(bar ? bar->actionGeometry(each->second).bottomLeft() : menu->actionGeometry(each->second).topRight()));
-            }
-        }
+        // a ring on the menu-bar title, then on each item down to it, shown when the user opens its menu; nothing opens or triggers
+        auto chain = menu_chain(action);
+        for(auto each = chain.rbegin();each != chain.rend();++each)
+            if(auto* level = new control_ring(each->first,ring ? QString() : gesture,each->second);ring)
+                QObject::connect(ring,&QObject::destroyed,level,&QObject::deleteLater);
+            else
+                ring = level;
         menu_action = action;
         return message = "menu: "+action_path(action),true;
     }
@@ -1697,6 +1706,8 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     error = "usage: "+command_name+(command_name == "ask_user_act" ? " <instruction>" : " <question> [option]...");
                 else if(command_name == "ask_user_act" && !tutor_ring && !tutor_action)
                     error = "highlight a control first";
+                else if(command_name.startsWith("ask_user") && tipl::status_list.size() > 2) // a progress besides the startup one and this command's own: waiting would stall it
+                    error = "a progress is running; ask after it finishes";
                 else if(command_name.startsWith("ask_user")) // the local user's answer is the output; the request waits for it
                 {
                     bool act = command_name == "ask_user_act"; // only Cancel: acting on the highlighted control answers "done"
@@ -1719,12 +1730,10 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                             "QPushButton{background:#f59e0b;color:white;font-weight:bold;border:none;border-radius:6px;padding:6px 16px;min-width:60px}"
                             "QPushButton:hover{background:#d97706}"
                             "QLineEdit,QComboBox{border:1px solid #f59e0b;border-radius:6px;padding:4px;background:white}");
-                        dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps a menu that highlight_ui opened from closing
-                        QRect spot = ring ? ring->screen_rect() : QRect(); // the highlight, or its open menu
-                        if(auto* action = qobject_cast<QAction*>(tutor_action))
-                            for(auto* each : action->associatedObjects())
-                                if(auto* menu = qobject_cast<QMenu*>(each);menu && menu->isVisible())
-                                    spot = menu->geometry();
+                        dialog.setAttribute(Qt::WA_ShowWithoutActivating,command_name != "ask_user_modal"); // keeps an open menu from closing
+                        QRect spot = ring ? ring->screen_rect() : QRect(); // the highlight
+                        if(auto chain = menu_chain(qobject_cast<QAction*>(tutor_action));ring && !chain.empty() && chain.back().second->menu()) // and the menu that drops from its menu-bar title
+                            spot |= QRect(spot.bottomLeft(),chain.back().second->menu()->sizeHint());
                         tutor_question = &dialog;
                         dialog.show();
                         auto* screen = QGuiApplication::screenAt(spot.center());
@@ -1757,11 +1766,12 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                         QMessageBox dialog(QMessageBox::NoIcon,"DSI Studio AI",param,QMessageBox::NoButton,this);
                         for(const auto& each : options)
                             dialog.addButton(each,QMessageBox::AcceptRole);
+                        dialog.findChild<QDialogButtonBox*>()->setOrientation(Qt::Vertical); // one row each, so a long option shows in full
                         auto done = [&]{answered = true;output = "done";dialog.done(0);};
-                        if(act && ring)
-                            ring->on_act = done;
-                        if(act && !ring) // dropped with the dialog
+                        if(act && tutor_action) // dropped with the dialog; a click on its menu-bar title only opens the menu
                             connect(qobject_cast<QAction*>(tutor_action),&QAction::triggered,&dialog,done);
+                        else if(act && ring)
+                            ring->on_act = done;
                         wait(dialog);
                         if(tutor_ring)
                             static_cast<control_ring*>(tutor_ring.data())->on_act = nullptr;
@@ -2430,8 +2440,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             return false;
 #endif
         };
-        // a natural voice by edge-tts in a persistent python process, which queues the text and
-        // prints back what it cannot speak for the system voice
+        // a natural voice by edge-tts in a persistent python process; a newer line cuts the one playing and drops
+        // those waiting, so the voice keeps up with a user who is ahead; it prints back what it cannot speak for the system voice
         auto* process = findChild<QProcess*>("voice_process",Qt::FindDirectChildrenOnly);
         if(!process || process->state() == QProcess::NotRunning)
         {
@@ -2457,22 +2467,40 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
                     os_speak(QString::fromUtf8(process->readLine()).trimmed());
             });
             process->start(python,{"-X","utf8","-u","-c",
-                "import json,os,subprocess,sys,tempfile\n"
+                "import json,os,queue,subprocess,sys,tempfile,threading,time\n"
                 "tmp=os.path.join(tempfile.gettempdir(),'dsi_voice.mp3')\n"
+                "lines=queue.Queue()\n"
+                "def read():\n"
+                "    for raw in sys.stdin.buffer:\n"
+                "        lines.put(json.loads(raw)[0])\n"
+                "    lines.put(None)\n"
+                "threading.Thread(target=read,daemon=True).start()\n"
                 "def play():\n"
                 "    if sys.platform=='win32':\n"
                 "        import ctypes\n"
                 "        mci=ctypes.windll.winmm.mciSendStringW\n"
+                "        mode=ctypes.create_unicode_buffer(16)\n"
                 "        mci(f'open \"{tmp}\" type mpegvideo alias v',None,0,0)\n"
-                "        r=mci('play v wait',None,0,0)\n"
-                "        mci('close v',None,0,0)\n"
-                "        if r:\n"
+                "        if mci('play v',None,0,0):\n"
+                "            mci('close v',None,0,0)\n"
                 "            raise OSError()\n"
+                "        while lines.empty() and not mci('status v mode',mode,16,0) and mode.value=='playing':\n"
+                "            time.sleep(0.05)\n"
+                "        mci('close v',None,0,0)\n"
                 "    else:\n"
-                "        subprocess.run(['afplay',tmp] if sys.platform=='darwin' else\n"
-                "                       ['ffplay','-nodisp','-autoexit','-loglevel','quiet',tmp],check=True)\n"
-                "for raw in sys.stdin.buffer:\n"
-                "    t=json.loads(raw)[0]\n"
+                "        p=subprocess.Popen(['afplay',tmp] if sys.platform=='darwin' else\n"
+                "                           ['ffplay','-nodisp','-autoexit','-loglevel','quiet',tmp])\n"
+                "        while lines.empty() and p.poll() is None:\n"
+                "            time.sleep(0.05)\n"
+                "        p.kill()\n"
+                "        if p.wait()>0:\n"
+                "            raise OSError()\n"
+                "while True:\n"
+                "    t=lines.get()\n"
+                "    while not lines.empty():\n"
+                "        t=lines.get()\n"
+                "    if t is None:\n"
+                "        break\n"
                 "    try:\n"
                 "        import edge_tts\n"
                 "        edge_tts.Communicate(t,'en-US-AvaNeural').save_sync(tmp)\n"
