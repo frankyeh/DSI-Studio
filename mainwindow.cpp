@@ -1678,12 +1678,7 @@ QJsonObject MainWindow::dispatch_cmd(ai_info& info,const QJsonObject& request)
                     {"windows",windows}}).toJson(QJsonDocument::Compact));
             }
             else if(command_name == "cancel_ask_user")
-            {
-                if(cmd.size() != 1)
-                    error = "usage: cancel_ask_user";
-                else
-                    output = "nothing to cancel"; // an active question is handled at the request boundary while busy
-            }
+                output = "nothing to cancel"; // an active question is handled at the request boundary while busy
             else if(command_name == "clear_highlight")
             {
                 output = tutor_ring || tutor_action ? "cleared" : "nothing to clear";
