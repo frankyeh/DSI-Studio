@@ -2931,8 +2931,13 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     tipl::progress prog("regenerate b-table",true);
     src_data reference;
     std::vector<tipl::image<3> > b0,reference_b0;
+    // DSI (a q-space grid, as get_report() tells it): every DWI matches the whole reference grid, so the reference must be DSI too
+    auto is_dsi = [](const std::vector<float>& bvalues){std::vector<unsigned int> shell;calculate_shell(bvalues,shell);return shell.size() > 4 && shell[1]-shell[0] <= 6;};
+    bool dsi = is_dsi(src_bvalues);
     if(reference_file.empty()) // the current template's reference, released as data-others/atlas/<template>/<template>.sz and cached in the temp folder
     {
+        if(dsi)
+            return error_msg = "a DSI SRC needs an explicit DSI reference SRC: the template's reference is multishell",false;
         const auto& name = template_name_list[voxel.template_id];
         const std::string url = "https://github.com/data-others/atlas/releases/download/" + name + "/" + name + ".sz";
         reference_file = tipl::qt::to_path(QStandardPaths::writableLocation(QStandardPaths::TempLocation))/"data-others/atlas"/name/(name+".sz");
@@ -2949,10 +2954,12 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = reference.error_msg,false;
     if(!read_b0(b0))
         return false;
+    if(dsi && !is_dsi(reference.src_bvalues))
+        return error_msg = "a DSI SRC needs a DSI reference SRC",false;
 
-    // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean;
-    // gives each DWI's shell (-1 if excluded) and the shell mean b-values and sizes
-    auto group_shells = [](const std::vector<float>& bvalues,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<size_t>& shell_n)
+    // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean
+    // (DSI: all b-values >= 100 in one shell); gives each DWI's shell (-1 if excluded) and the shell mean b-values and sizes
+    auto group_shells = [dsi](const std::vector<float>& bvalues,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<size_t>& shell_n)
     {
         std::vector<size_t> order(bvalues.size());
         std::iota(order.begin(),order.end(),0);
@@ -2961,9 +2968,9 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         shell_b.clear();
         shell_n.clear();
         for(auto i : order)
-            if(bvalues[i] >= 500.0f)
+            if(bvalues[i] >= (dsi ? 100.0f : 500.0f))
             {
-                if(shell_b.empty() || bvalues[i]-shell_b.back()/float(shell_n.back()) > 100.0f)
+                if(shell_b.empty() || (!dsi && bvalues[i]-shell_b.back()/float(shell_n.back()) > 100.0f))
                 {
                     shell_b.push_back(0.0f);
                     shell_n.push_back(0);
@@ -3034,6 +3041,8 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "canceled",false;
 
     // each DWI (b >= 500) takes the kernel-regression direction of its three best-correlated reference DWIs in the matched shell; b-values are kept
+    // (DSI: the b-value and b-vector of the one best-correlated reference DWI)
+    auto new_bvalues = src_bvalues;
     auto new_bvectors = src_bvectors;
     std::atomic<bool> failed = false;
     std::atomic<size_t> p = 0;
@@ -3051,6 +3060,12 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
                     if(c.first > each.first)
                         std::swap(c,each);
             }
+        if(dsi)
+        {
+            new_bvalues[i] = reference.src_bvalues[best[0].second];
+            new_bvectors[i] = reference.src_bvectors[best[0].second];
+            return;
+        }
         // correlation as the kernel weight; directions folded into the hemisphere of the best match
         const auto& g0 = reference.src_bvectors[best[0].second];
         tipl::vector<3,float> g;
@@ -3065,8 +3080,9 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "canceled",false;
     if(failed)
         return error_msg = "cannot estimate one or more b-vectors from the reference SRC",false;
+    src_bvalues.swap(new_bvalues);
     src_bvectors.swap(new_bvectors);
-    voxel.report += " The b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
+    voxel.report += std::string(dsi ? " The b-values and b-vectors" : " The b-vectors")+" were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
     return true;
 }
 std::string src_data::get_report(bool dwi_part_only)
