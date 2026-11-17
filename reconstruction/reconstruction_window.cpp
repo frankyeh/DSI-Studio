@@ -762,11 +762,11 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     }
 
     if(((tipl::contains_case_insensitive(cmd,"open") || tipl::begins_with(cmd,"load_bv") ||
-        cmd == "add_other_image") && param.empty()) || (cmd == "regenerate_btable" && param == "src")) // "src": pick the reference SRC
+        cmd == "add_other_image" || cmd == "convert_btable") && param.empty()) || (cmd == "regenerate_btable" && param == "src")) // "src": pick the reference SRC
     {
         QString filename = tipl::qt::open_image_file(this,absolute_path,
             cmd == "add_other_image" ? "Images (*.nii *nii.gz);;All files (*)" :
-            cmd == "regenerate_btable" ? "SRC files (*.sz *src.gz);;All files (*)" :
+            cmd == "regenerate_btable" || cmd == "convert_btable" ? "SRC files (*.sz *src.gz);;All files (*)" :
             tipl::begins_with(cmd,"load_bv") ? "All files (*)" : "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)");
         if(filename.isEmpty())
             return fail("canceled");
