@@ -400,12 +400,12 @@ void reconstruction_window::load_b_table(void)
     ui->b_table->setRowCount(handle->src_bvalues.size());
     for(unsigned int index = 0;index < handle->src_bvalues.size();++index)
     {
-        ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(handle->src_bvalues[index])));
+        ui->b_table->setItem(index,0, new QTableWidgetItem(QString::number(std::lround(handle->src_bvalues[index])))); // b-values as integers
         ui->b_table->setItem(index,1, new QTableWidgetItem(QString::number(handle->src_bvectors[index][0],'f',3)));
         ui->b_table->setItem(index,2, new QTableWidgetItem(QString::number(handle->src_bvectors[index][1],'f',3)));
         ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2],'f',3)));
         ui->volume_list->addItem(QString("#%1  b%2  (%3, %4, %5)")
-            .arg(index+1).arg(handle->src_bvalues[index])
+            .arg(index+1).arg(std::lround(handle->src_bvalues[index]))
             .arg(handle->src_bvectors[index][0],0,'f',3)
             .arg(handle->src_bvectors[index][1],0,'f',3)
             .arg(handle->src_bvectors[index][2],0,'f',3));
