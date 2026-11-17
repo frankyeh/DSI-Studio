@@ -189,6 +189,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                {ui->btn_T1w_Distortion_Correction,"correct_by_t1w","inverted b0",2,3,1},
                {ui->btn_Motion_DSI,"motion_correction","Motion correction",3,2,1},
                {ui->btn_T1w_DSI,"correct_by_t1w","inverted b0",3,3,1},
+               {ui->btn_Scheme_Balance,"scheme_balance","sampling scheme was balanced",-1,1,1}, // shell data
                {ui->btn_Correct_Bias_Field,"bias_field_correction","bias field",-1,4,2},
                {ui->btn_Resample,"resample","resampled to",-1,5,1}};
     for(const auto& each : pills)
@@ -371,8 +372,8 @@ bool reconstruction_window::eventFilter(QObject* obj,QEvent* event)
         line(xb,ty,xb,s[side*2+1].top(),path == side*2+1);
     }
     // each column down to a shared bus, then the shared steps down to Run Preprocessing
-    QRectF bias = g(ui->btn_Correct_Bias_Field),resample = g(ui->btn_Resample),run = g(ui->btn_Run_Preprocessing);
-    double bus = bias.top()-16,cx = bias.center().x();
+    QRectF run = g(ui->btn_Run_Preprocessing);
+    double bus = g(ui->btn_Scheme_Balance).top()-16,cx = run.center().x();
     line(s[0].center().x(),bus,s[3].center().x(),bus,false);
     for(int i = 0;i < 4;++i)
     {
@@ -386,9 +387,14 @@ bool reconstruction_window::eventFilter(QObject* obj,QEvent* event)
         line(x,yy,x,bus,path == i);
     }
     line(s[path].center().x(),bus,cx,bus,true);
-    arrow(cx,bus,bias.top(),true,"No");
-    arrow(cx,bias.bottom(),resample.top(),true,"Yes");
-    arrow(cx,resample.bottom(),run.top(),true,nullptr);
+    y = bus;
+    for(const auto& st : preproc) // the shared steps, each labeled by the answer that runs it
+        if(st.path < 0)
+        {
+            arrow(cx,y,g(st.button).top(),true,st.when == 1 ? "Yes" : "No");
+            y = g(st.button).bottom();
+        }
+    arrow(cx,y,run.top(),true,nullptr);
     return true;
 }
 void reconstruction_window::load_b_table(void)

@@ -78,6 +78,7 @@ public:
     std::vector<const float*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
+    std::vector<tipl::image<3> > dwi_output; // qsdr --other_output=dwi: saved by save_fib as a 4D nifti with bval and bvec
 
     std::string intro,report,steps;
     std::ostringstream recon_report, step_report;

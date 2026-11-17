@@ -1560,20 +1560,41 @@ void src_data::smoothing(void)
     });
     update_dwi_sum();
 }
-// stores the gqi balanced scheme as physical signals; reconstruction then applies only the gqi scale
+// a preprocessing step: resamples each shell to an icosahedral scheme (181, 126, 81, or 46 directions by its mean b-value)
+// with the angular gaussian of shell_weights, keeping the first b0; reconstruction then applies only the gqi scale
 bool src_data::scheme_balance(void)
 {
     if(tipl::contains(voxel.steps,"scheme_balance"))
         return error_msg = "scheme balance was already applied",false;
-    Voxel v; // the sorted dwi, first b0, and shells used by gqi reconstruction
+    Voxel v; // the sorted dwi, first b0, and shells
     v.method_id = 4;
     v.load_from_src(*this);
     if(v.shell.size() >= 5)
         return error_msg = "cannot apply scheme balance due to many shells",false;
 
-    BalanceScheme b; // v gets the balanced b-table, b.trans the interpolation of the sorted dwi
-    b.init(v);
-    size_t old_count = v.dwi_data.size(),new_count = v.bvalues.size();
+    size_t old_count = v.dwi_data.size();
+    bool b0 = v.bvalues.front() == 0.0f; // the b0 keeps the first row
+    std::vector<float> trans(b0 ? old_count : 0),new_bvalues(b0); // the interpolation (new x old dwi, each row sums to one)
+    std::vector<tipl::vector<3,float> > new_bvectors(b0);
+    std::string counts;
+    if(b0)
+        trans[0] = 1.0f;
+    for(unsigned int k = 0;k < v.shell.size();++k)
+    {
+        unsigned int from = v.shell[k],to = (k + 1 == v.shell.size() ? uint32_t(old_count) : v.shell[k+1]);
+        double avg_b = tipl::mean(v.bvalues.begin()+from,v.bvalues.begin()+to);
+        tessellated_icosahedron new_dir(avg_b > 2500.0 ? 6 : avg_b > 1500.0 ? 5 : avg_b > 500.0 ? 4 : 3);
+        for(unsigned int i = 0;i < new_dir.half_vertices_count;++i)
+        {
+            auto t = shell_weights(v.bvectors,from,to,new_dir.vertices[i]);
+            trans.resize(trans.size()+old_count);
+            std::copy(t.begin(),t.end(),trans.end()-old_count+from);
+            new_bvalues.push_back(float(std::inner_product(t.begin(),t.end(),v.bvalues.begin()+from,0.0)));
+            new_bvectors.push_back(new_dir.vertices[i]);
+        }
+        counts += (k ? "/" : "") + std::to_string(new_dir.half_vertices_count);
+    }
+    size_t new_count = new_bvalues.size();
     tipl::out() << "balance " << old_count << " dwi to " << new_count << " dwi";
 
     std::vector<tipl::image<3> > balanced_dwi(new_count,tipl::image<3>(voxel.dim));
@@ -1589,7 +1610,7 @@ bool src_data::scheme_balance(void)
         {
             for(size_t j = 0;j < old_count;++j)
                 old_signal[j] = v.dwi_data[j][i];
-            tipl::mat::vector_product(b.trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
+            tipl::mat::vector_product(trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
             for(size_t j = 0;j < new_count;++j)
                 balanced_dwi[j][i] = std::max<float>(0.0f,new_signal[j]);
         }
@@ -1597,9 +1618,10 @@ bool src_data::scheme_balance(void)
     if(prog.aborted())
         return error_msg = "scheme balance canceled",false;
     src_dwi_data = std::move(balanced_dwi);
-    v.bvalues.swap(src_bvalues);
-    v.bvectors.swap(src_bvectors);
+    src_bvalues.swap(new_bvalues);
+    src_bvectors.swap(new_bvectors);
     update_dwi_sum();
+    voxel.report += " The diffusion sampling scheme was balanced by resampling each shell to " + counts + " directions.";
     return true;
 }
 
@@ -3287,7 +3309,7 @@ bool src_data::convert_b_table(const std::filesystem::path& target_file)
         for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
         {
             target.src_bvalues[j] = std::round(target_shell_b[t]);
-            auto w = BalanceScheme::shell_weights(dirs,0,uint32_t(dirs.size()),target.src_bvectors[j]);
+            auto w = shell_weights(dirs,0,uint32_t(dirs.size()),target.src_bvectors[j]);
             tipl::par_for(voxel.dim.size(),[&](size_t v)
             {
                 double sum = 0.0;
@@ -3565,7 +3587,7 @@ bool src_data::load_from_file(const std::vector<std::filesystem::path>& nii_name
 
 QImage read_qimage(QString filename,std::string& error);
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
-extern int src_ver,fixel_ver;
+extern int src_ver;
 bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
 {
     auto result = [&](void)->bool
@@ -3661,10 +3683,8 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
 
         if(!mat_reader.read_pointer("trans",voxel.trans_to_mni))
             tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
-        if(dwi_file_name.extension() == ".fz" && !mat_reader.has("image0")) // a qsdr fz with the dwi output (cli --action=rec only)
-            return error_msg = "the fz file has no dwi output for reconstruction",false;
         int this_src_ver(0);
-        if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > (dwi_file_name.extension() == ".fz" ? fixel_ver : src_ver))
+        if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > src_ver)
             return error_msg = "incompatible SRC format. please update DSI Studio to open this file.",false;
         if(!mat_reader.has("mask"))
             voxel.mask.clear();
@@ -3803,6 +3823,18 @@ bool src_data::save_fib(void)
         error_msg = error.message();
         std::filesystem::remove(tmp_file);
         return false;
+    }
+    if(!voxel.dwi_output.empty()) // qsdr --other_output=dwi: the src writer saves the template-space dwi with its bval and bvec
+    {
+        src_data dwi;
+        dwi.voxel.dim = voxel.dim;
+        dwi.voxel.vs = voxel.vs;
+        dwi.voxel.trans_to_mni = voxel.trans_to_mni;
+        dwi.src_bvalues = voxel.bvalues;
+        dwi.src_bvectors = voxel.bvectors;
+        dwi.src_dwi_data.swap(voxel.dwi_output);
+        if(!dwi.save_to_file(std::filesystem::path(output_file_name).replace_extension() += "_dwi.nii.gz"))
+            return error_msg = dwi.error_msg,false;
     }
     return true;
 }
