@@ -893,7 +893,7 @@ std::string to_cmd(const std::string& cmd)
             return tipl::warning() << "legacy command " << old_cmd << " will soon be replaced by " << new_cmd,new_cmd;
     return cmd;
 }
-bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps,bool check_only)
+bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
     std::string step;
@@ -925,7 +925,7 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
         cmds.push_back(cmd);
         params.push_back(param);
     }
-    if(check_only) // only the matched files are checked
+    if(src_dwi_data.empty()) // a file name without loaded data: only its matched files (e.g. its T1w) are checked
         return true;
     if(!cmds.empty())
     {
