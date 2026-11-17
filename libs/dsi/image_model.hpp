@@ -218,6 +218,7 @@ public:
     void resample(float nv);
     void smoothing(void);
     bool scheme_balance(void);
+    bool correct_signal_drift(void);
     bool align_acpc(float reso);
     void crop(tipl::vector<3,int> range_min,tipl::vector<3,int> range_max);
     void trim(size_t border = 0);
