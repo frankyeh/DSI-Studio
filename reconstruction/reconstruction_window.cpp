@@ -180,7 +180,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     pills = {{ui->q1_yes,ui->q1_no},{ui->q2_yes,ui->q2_no},{ui->q3_yes,ui->q3_no},
-             {ui->q4_yes,ui->q4_no},{ui->q5_yes,ui->q5_no},{ui->q6_yes,ui->q6_no},{ui->q7_yes,ui->q7_no},{ui->q8_yes,ui->q8_no}};
+             {ui->q4_yes,ui->q4_no},{ui->q5_yes,ui->q5_no},{ui->q6_yes,ui->q6_no},{ui->q7_yes,ui->q7_no},{ui->q8_yes,ui->q8_no},{ui->q9_yes,ui->q9_no}};
     preproc = {{ui->btn_Run_FSL_Topup,"topup_eddy","applytopup",0,6,1},
                {ui->btn_TOPUP_shell,"topup","applytopup",0,6,2},
                {ui->btn_TOPUP_only,"topup","applytopup",1,-1,0},
@@ -189,6 +189,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                {ui->btn_T1w_Distortion_Correction,"correct_by_t1w","inverted b0",2,3,1},
                {ui->btn_Motion_DSI,"motion_correction","Motion correction",3,2,1},
                {ui->btn_T1w_DSI,"correct_by_t1w","inverted b0",3,3,1},
+               {ui->btn_Signal_Drift,"correct_signal_drift","signal drift was corrected",-1,8,1},
                {ui->btn_Scheme_Balance,"scheme_balance","sampling scheme was balanced",-1,7,1},
                {ui->btn_Correct_Bias_Field,"bias_field_correction","bias field",-1,4,2},
                {ui->btn_Resample,"resample","resampled to",-1,5,1}};
@@ -236,6 +237,14 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->preproc_chip->setText("Your data: " + (!shelled ? QString("DSI (%1 b-values)").arg(shells.size()) :
                                   shells.size() == 1 ? QString("single-shell") : QString("multi-shell (%1 shells)").arg(shells.size())));
     }
+    auto show_advanced = [this](bool on) // the optional steps, hidden and not run by default
+    {
+        for(auto* each : std::initializer_list<QWidget*>{ui->q4_box,ui->btn_T1w_Distortion_Correction,ui->btn_T1w_DSI,ui->q9_box,ui->btn_Signal_Drift})
+            each->setVisible(on);
+        ui->preproc_flow->update();
+    };
+    connect(ui->preproc_advanced,&QPushButton::toggled,this,show_advanced);
+    show_advanced(false);
     ui->preproc_flow->installEventFilter(this);
     update_preproc();
 
@@ -287,23 +296,25 @@ void reconstruction_window::update_dimension(void)
 void reconstruction_window::update_preproc(void)
 {
     auto done = [this](const char* text){return tipl::contains(handle->voxel.report,text);}; // the report records the applied steps
-    int a[8]; // 1: yes, 2: no
-    for(size_t i = 0;i < 8;++i)
+    int a[9]; // 1: yes, 2: no
+    for(size_t i = 0;i < 9;++i)
         a[i] = pills[i].first->isChecked() ? 1 : 2;
     path = (a[0]-1)*2+a[1]-1;
     const auto& vs = handle->voxel.vs;
     bool distortion_done = done("applytopup") || done("inverted b0");
-    bool enabled[8] = {!distortion_done,true,
+    bool enabled[9] = {!distortion_done,true,
                        !done("Motion correction") && !done("using FSL eddy") && path % 2,
                        !distortion_done && path >= 2,
                        !done("bias field"),
                        !done("resampled to") && (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f), // not yet isotropic
                        a[1] == 1 && !done("using FSL eddy"), // FSL eddy needs shells
-                       a[1] == 1 && !done("sampling scheme was balanced")}; // scheme balance resamples shells
-    for(size_t i = 0;i < 8;++i)
+                       a[1] == 1 && !done("sampling scheme was balanced"), // scheme balance resamples shells
+                       a[1] == 1 && !done("signal drift was corrected")}; // drift is normalized within shells
+    for(size_t i = 0;i < 9;++i)
         pills[i].first->parentWidget()->setEnabled(enabled[i]);
     ui->btn_Resample->setEnabled(enabled[5]); // nothing to resample once isotropic
     ui->btn_Scheme_Balance->setEnabled(enabled[7]); // nor to balance without shells or once balanced
+    ui->btn_Signal_Drift->setEnabled(enabled[8]);
     ui->btn_Run_FSL_Topup->setVisible(a[6] == 1); // topup/eddy or topup alone, by the eddy question
     ui->btn_TOPUP_shell->setVisible(a[6] == 2);
     ui->q6_note->setText(QString("%1×%2×%3 mm").arg(vs[0]).arg(vs[1]).arg(vs[2]));
@@ -376,7 +387,8 @@ bool reconstruction_window::eventFilter(QObject* obj,QEvent* event)
     }
     // each column down to a shared bus, then the shared steps down to Run Preprocessing
     QRectF run = g(ui->btn_Run_Preprocessing);
-    double bus = g(ui->btn_Scheme_Balance).top()-16,cx = run.center().x();
+    double bus = g(std::find_if(preproc.begin(),preproc.end(),[](const auto& st){return st.path < 0 && st.button->isVisible();})->button).top()-16,
+           cx = run.center().x();
     line(s[0].center().x(),bus,s[3].center().x(),bus,false);
     for(int i = 0;i < 4;++i)
     {
@@ -392,7 +404,7 @@ bool reconstruction_window::eventFilter(QObject* obj,QEvent* event)
     line(s[path].center().x(),bus,cx,bus,true);
     y = bus;
     for(const auto& st : preproc) // the shared steps, each labeled by the answer that runs it
-        if(st.path < 0)
+        if(st.path < 0 && st.button->isVisible())
         {
             arrow(cx,y,g(st.button).top(),true,st.when == 1 ? "Yes" : "No");
             y = g(st.button).bottom();
