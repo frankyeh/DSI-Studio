@@ -538,6 +538,17 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
         return false;
     };
+    auto unmatched = [&](const std::string& steps) // a batch first confirms every other SRC has its matched files (e.g. its T1w)
+    {
+        for(int index = 1;index < filenames.size();++index)
+        {
+            src_data check;
+            check.file_name = filenames[index].toStdString();
+            if(!check.run_steps(handle->file_name.u8string(),steps)) // nothing loaded: only checks the matched files
+                return QFileInfo(filenames[index]).fileName().toStdString() + " : " + check.error_msg;
+        }
+        return std::string();
+    };
     if(cmd == "reconstruction")
         return fail("use recon");
     if(cmd == "recon")
@@ -562,6 +573,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         std::string ref_file_name = handle->file_name.u8string();
         std::string ref_output_file_name = handle->output_file_name.u8string();
         std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
+        if(auto msg = unmatched(ref_steps);!msg.empty())
+            return fail(msg);
         std::shared_ptr<src_data> ref_handle = handle;
         std::string ref_existing_steps = existing_steps;
         std::vector<std::filesystem::path> output_files;
@@ -788,11 +801,14 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
     {
         tipl::progress prog("apply to other SRC files");
         std::string previous_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
+        previous_steps += cmd + "=" + param + "\n";
+        if(auto msg = unmatched(previous_steps);!msg.empty())
+            return fail(msg);
         for(int index = 1;prog(index,filenames.size());++index)
         {
             src_data model;
             if (!model.load_from_file(filenames[index].toStdString()) ||
-                !model.run_steps(handle->file_name.u8string(),previous_steps + cmd + "=" + param + "\n"))
+                !model.run_steps(handle->file_name.u8string(),previous_steps))
             {
                 if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
