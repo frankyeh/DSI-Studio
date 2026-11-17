@@ -126,8 +126,7 @@ int rec(tipl::program_option<tipl::out>& po)
         }
 
         std::string cause; // scheme balance by default for shell data (--scheme_balance=0 to skip)
-        if(!tipl::contains(src.voxel.steps,"scheme_balance") &&
-            po.get("scheme_balance",eddy_check_shell(src.src_bvalues,cause) ? 1 : 0) &&
+        if(po.get("scheme_balance",eddy_check_shell(src.src_bvalues,cause) ? 1 : 0) &&
             !src.command({"scheme_balance"}))
             return fail();
         if(!tipl::contains(src.voxel.report,"bias field") &&
