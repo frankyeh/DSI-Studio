@@ -3892,6 +3892,7 @@ bool src_data::save_fib(void)
         dwi.voxel.dim = voxel.dim;
         dwi.voxel.vs = voxel.vs;
         dwi.voxel.trans_to_mni = voxel.trans_to_mni;
+        dwi.voxel.qsdr = true; // the nifti header is marked as mni
         dwi.src_bvalues = voxel.bvalues;
         dwi.src_bvectors = voxel.bvectors;
         dwi.src_dwi_data.swap(voxel.dwi_output);
