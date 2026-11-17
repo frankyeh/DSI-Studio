@@ -180,7 +180,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     pills = {{ui->q1_yes,ui->q1_no},{ui->q2_yes,ui->q2_no},{ui->q3_yes,ui->q3_no},
-             {ui->q4_yes,ui->q4_no},{ui->q5_yes,ui->q5_no},{ui->q6_yes,ui->q6_no},{ui->q7_yes,ui->q7_no}};
+             {ui->q4_yes,ui->q4_no},{ui->q5_yes,ui->q5_no},{ui->q6_yes,ui->q6_no},{ui->q7_yes,ui->q7_no},{ui->q8_yes,ui->q8_no}};
     preproc = {{ui->btn_Run_FSL_Topup,"topup_eddy","applytopup",0,6,1},
                {ui->btn_TOPUP_shell,"topup","applytopup",0,6,2},
                {ui->btn_TOPUP_only,"topup","applytopup",1,-1,0},
@@ -189,7 +189,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                {ui->btn_T1w_Distortion_Correction,"correct_by_t1w","inverted b0",2,3,1},
                {ui->btn_Motion_DSI,"motion_correction","Motion correction",3,2,1},
                {ui->btn_T1w_DSI,"correct_by_t1w","inverted b0",3,3,1},
-               {ui->btn_Scheme_Balance,"scheme_balance","sampling scheme was balanced",-1,1,1}, // shell data
+               {ui->btn_Scheme_Balance,"scheme_balance","sampling scheme was balanced",-1,7,1},
                {ui->btn_Correct_Bias_Field,"bias_field_correction","bias field",-1,4,2},
                {ui->btn_Resample,"resample","resampled to",-1,5,1}};
     for(const auto& each : pills)
@@ -287,19 +287,20 @@ void reconstruction_window::update_dimension(void)
 void reconstruction_window::update_preproc(void)
 {
     auto done = [this](const char* text){return tipl::contains(handle->voxel.report,text);}; // the report records the applied steps
-    int a[7]; // 1: yes, 2: no
-    for(size_t i = 0;i < 7;++i)
+    int a[8]; // 1: yes, 2: no
+    for(size_t i = 0;i < 8;++i)
         a[i] = pills[i].first->isChecked() ? 1 : 2;
     path = (a[0]-1)*2+a[1]-1;
     const auto& vs = handle->voxel.vs;
     bool distortion_done = done("applytopup") || done("inverted b0");
-    bool enabled[7] = {!distortion_done,true,
+    bool enabled[8] = {!distortion_done,true,
                        !done("Motion correction") && !done("using FSL eddy") && path % 2,
                        !distortion_done && path >= 2,
                        !done("bias field"),
                        !done("resampled to") && (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f), // not yet isotropic
-                       a[1] == 1 && !done("using FSL eddy")}; // FSL eddy needs shells
-    for(size_t i = 0;i < 7;++i)
+                       a[1] == 1 && !done("using FSL eddy"), // FSL eddy needs shells
+                       a[1] == 1 && !done("sampling scheme was balanced")}; // scheme balance resamples shells
+    for(size_t i = 0;i < 8;++i)
         pills[i].first->parentWidget()->setEnabled(enabled[i]);
     ui->btn_Run_FSL_Topup->setVisible(a[6] == 1); // topup/eddy or topup alone, by the eddy question
     ui->btn_TOPUP_shell->setVisible(a[6] == 2);
