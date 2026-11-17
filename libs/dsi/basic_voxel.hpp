@@ -68,9 +68,9 @@ public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     template<typename T>
-    auto bind(const T& I) const
+    auto bind(const T& I) const // a nifti output; template space (qsdr) is marked as mni
     {
-        return std::tie(vs,trans_to_mni,I);
+        return std::tie(vs,trans_to_mni,qsdr,I);
     }
 public:
     tipl::image<3,unsigned char> mask;
