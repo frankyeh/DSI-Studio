@@ -1050,6 +1050,8 @@ bool src_data::command(std::vector<std::string> cmds)
     }
     if(cmd == "scheme_balance")
         return scheme_balance() && log_step();
+    if(cmd == "correct_signal_drift")
+        return correct_signal_drift() && log_step();
     if(cmd == "remove") // DWI index ranges and b-value conditions, e.g. 1,3:5,8:end or b>3000 or b<100
     {
         const size_t n = src_bvalues.size();
@@ -2957,35 +2959,20 @@ static bool is_dsi(const std::vector<float>& bvalues)
 }
 // the SH- and b-table-free shell model: drift-normalized per-voxel mean and variance, quadrature noise subtraction,
 // and WM/GM/CSF fractions give the shell's equivalent b-value; with out, the shell's volumes converted to b2 are appended
-static float shell_b_value(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
-                          float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr)
+static float pct(std::vector<float> v,float p,float empty = 0.0f) // the p-th fraction percentile
 {
-    if(vols.size() < 2)
-        return 0.0f;
-    auto pct = [](std::vector<float> v,float p,float empty = 0.0f) // the p-th fraction percentile
-    {
-        if(v.empty())
-            return empty;
-        auto at = v.begin()+size_t(p*float(v.size()-1));
-        std::nth_element(v.begin(),at,v.end());
-        return *at;
-    };
-    std::vector<size_t> vox;
-    for(size_t i = 0;i < mask.size();++i)
-        if(mask[i])
-            vox.push_back(i);
-    // step 1: drift normalization, then the per-voxel mean and sample variance
-    std::vector<float> scale,m(vox.size()),s2(vox.size());
-    for(auto k : vols)
-    {
-        double sum = 0.0;
-        for(auto i : vox)
-            sum += dwi[k][i];
-        scale.push_back(float(sum/double(vox.size())));
-    }
-    auto mu = tipl::mean(scale);
-    for(auto& each : scale)
-        each = mu/each;
+    if(v.empty())
+        return empty;
+    auto at = v.begin()+size_t(p*float(v.size()-1));
+    std::nth_element(v.begin(),at,v.end());
+    return *at;
+}
+// the per-voxel mean m and sample variance s2 over the volumes vols, each multiplied by its scale, at the voxels vox
+static void shell_moments(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
+                          const std::vector<float>& scale,std::vector<float>& m,std::vector<float>& s2)
+{
+    m.resize(vox.size());
+    s2.resize(vox.size());
     tipl::par_for(vox.size(),[&](size_t j)
     {
         double sum = 0.0,sum2 = 0.0;
@@ -2998,6 +2985,26 @@ static float shell_b_value(const std::vector<tipl::image<3> >& dwi,const std::ve
         m[j] = float(sum/double(vols.size()));
         s2[j] = float(std::max(0.0,(sum2-sum*double(m[j]))/double(vols.size()-1)));
     });
+}
+static float shell_b_value(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+                          float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr)
+{
+    if(vols.size() < 2)
+        return 0.0f;
+    auto vox = tipl::get_sparse_index(mask);
+    // step 1: drift normalization, then the per-voxel mean and sample variance
+    std::vector<float> scale,m,s2;
+    for(auto k : vols)
+    {
+        double sum = 0.0;
+        for(auto i : vox)
+            sum += dwi[k][i];
+        scale.push_back(float(sum/double(vox.size())));
+    }
+    auto mu = tipl::mean(scale);
+    for(auto& each : scale)
+        each = mu/each;
+    shell_moments(dwi,vols,vox,scale,m,s2);
     // step 2: anchors and quadrature noise subtraction
     float M = pct(m,0.5f),eps = 0.2f*M,C = pct(m,0.04f);
     std::vector<size_t> P; // parenchyma, as indices of vox
@@ -3107,6 +3114,82 @@ static void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<
         tipl::out() << "shell recorded b=" << shell_b[k] << " HCP-equivalent b=" << eq_b;
         shell_b[k] = eq_b;
     }
+}
+// a preprocessing step for shell data, before scheme balance: within each shell (and the b0s), three passes divide each volume by its
+// gain gamma_k, its mean over core isotropic gm relative to the mean of all volumes there; the core gm is P45 < mu < P90 with the
+// noise-subtracted dispersion e <= P30 of that band, mu and e recomputed from the current iterate S/gamma at each pass
+bool src_data::correct_signal_drift(void)
+{
+    if(tipl::contains(voxel.steps,"correct_signal_drift"))
+        return error_msg = "signal drift correction was already applied",false;
+    std::vector<int> shell_id;
+    std::vector<float> shell_b;
+    std::vector<std::vector<size_t> > groups;
+    group_shells(src_bvalues,false,shell_id,shell_b,groups);
+    groups.emplace_back();
+    for(size_t i = 0;i < src_bvalues.size();++i)
+        if(src_bvalues[i] == 0.0f)
+            groups.back().push_back(i);
+    auto vox = tipl::get_sparse_index(voxel.mask);
+    std::vector<float> volume_scale(src_bvalues.size(),1.0f); // applied after all groups, so a cancel changes nothing
+    tipl::progress prog("signal drift correction");
+    for(size_t g = 0;prog(g,groups.size());++g)
+    {
+        const auto& vols = groups[g];
+        if(vols.size() < 2)
+            continue;
+        std::vector<float> scale(vols.size(),1.0f),m,s2;
+        for(int pass = 0;pass < 3;++pass)
+        {
+            shell_moments(src_dwi_data,vols,vox,scale,m,s2);
+            // the noise floor: the median variance of the most isotropic quarter of the parenchyma, as in shell_b_value
+            float M = pct(m,0.5f),eps = 0.2f*M,C = pct(m,0.04f);
+            std::vector<float> c_raw,par_s2,e(vox.size());
+            for(size_t j = 0;j < vox.size();++j)
+                if(m[j] > 0.5f*(C+M))
+                {
+                    c_raw.push_back(std::sqrt(s2[j])/(m[j]+eps));
+                    par_s2.push_back(s2[j]);
+                }
+            float lo = pct(c_raw,0.25f);
+            std::vector<float> g0_s2;
+            for(size_t p = 0;p < c_raw.size();++p)
+                if(c_raw[p] <= lo)
+                    g0_s2.push_back(par_s2[p]);
+            float s0 = pct(g0_s2,0.5f),m_lo = pct(m,0.45f),m_hi = pct(m,0.9f);
+            std::vector<float> band_e;
+            for(size_t j = 0;j < vox.size();++j)
+                if(m[j] > m_lo && m[j] < m_hi)
+                    band_e.push_back(e[j] = std::sqrt(std::max(s2[j]-s0,0.0f))/(m[j]+eps));
+            float e_max = pct(band_e,0.3f);
+            std::vector<double> sum(vols.size());
+            size_t n = 0;
+            for(size_t j = 0;j < vox.size();++j)
+                if(m[j] > m_lo && m[j] < m_hi && e[j] <= e_max)
+                {
+                    for(size_t k = 0;k < vols.size();++k)
+                        sum[k] += src_dwi_data[vols[k]][vox[j]];
+                    ++n;
+                }
+            if(!n)
+                break;
+            double mean = std::accumulate(sum.begin(),sum.end(),0.0)/double(vols.size());
+            for(size_t k = 0;k < vols.size();++k)
+                scale[k] = float(mean/sum[k]); // 1/gamma_k
+        }
+        for(size_t k = 0;k < vols.size();++k)
+            volume_scale[vols[k]] = scale[k];
+    }
+    if(prog.aborted())
+        return error_msg = "signal drift correction canceled",false;
+    for(size_t i = 0;i < src_dwi_data.size();++i)
+    {
+        tipl::out() << "volume " << i << " gain " << 1.0f/volume_scale[i];
+        src_dwi_data[i] *= volume_scale[i];
+    }
+    update_dwi_sum();
+    voxel.report += " The signal drift was corrected by normalizing each volume to the gray matter signal of its shell.";
+    return true;
 }
 bool src_data::regenerate_b_table(std::filesystem::path reference_file)
 {
