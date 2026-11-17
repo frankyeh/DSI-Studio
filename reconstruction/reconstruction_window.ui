@@ -1885,6 +1885,20 @@ correction</string></property><property name="opt" stdset="0"><bool>true</bool><
                           </property>
                          </widget>
                         </item>
+                        <item>
+                         <widget class="QPushButton" name="btn_Convert_b_table">
+                          <property name="toolTip">
+                           <string>run convert_btable</string>
+                          </property>
+                          <property name="text">
+                           <string>Convert to B-table of SRC...</string>
+                          </property>
+                          <property name="icon">
+                           <iconset resource="../icons.qrc">
+                            <normaloff>:/icons/icons/btable_vectors.svg</normaloff>:/icons/icons/btable_vectors.svg</iconset>
+                          </property>
+                         </widget>
+                        </item>
                        </layout>
                       </item>
                      </layout>
