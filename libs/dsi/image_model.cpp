@@ -328,7 +328,7 @@ bool src_data::correct_distortion_by_t1w(const std::string& t1w_filename,float t
     tipl::out() << "nonlinear registration of pseudo-T1 b0 to T1w";
     tipl::reg::mm_reg<tipl::out> reg;
     reg.I[0] = tipl::reg::subject_image_pre(b0);
-    reg.It[0] = tipl::reg::template_image_pre(t1w);
+    reg.It[0] = tipl::reg::template_image_pre(tipl::filter::gaussian(tipl::image<3>(t1w))); // smoothed like the subject; t1w itself guides the interpolation below
     reg.Is = reg.Its = b0.shape();
     reg.Ivs = reg.Itvs = target_vs;
     reg.IR = reg.ItR = target_R;
