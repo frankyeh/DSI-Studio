@@ -314,9 +314,6 @@ void reconstruction_window::update_preproc(void)
                        a[1] == 1 && !done("signal drift was corrected")}; // drift is normalized within shells
     for(size_t i = 0;i < 9;++i)
         pills[i].first->parentWidget()->setEnabled(enabled[i]);
-    ui->btn_Resample->setEnabled(enabled[5]); // nothing to resample once isotropic
-    ui->btn_Scheme_Balance->setEnabled(enabled[7]); // nor to balance without shells or once balanced
-    ui->btn_Signal_Drift->setEnabled(enabled[8]);
     ui->btn_Run_FSL_Topup->setVisible(a[6] == 1); // topup/eddy or topup alone, by the eddy question
     ui->btn_TOPUP_shell->setVisible(a[6] == 2);
     ui->q6_note->setText(QString("%1×%2×%3 mm").arg(vs[0]).arg(vs[1]).arg(vs[2]));
@@ -336,6 +333,8 @@ void reconstruction_window::update_preproc(void)
         set(s.button,"done",d);
         set(s.button,"act",!d && (s.path < 0 || s.path == path) && (s.q < 0 || (enabled[s.q] && a[s.q] == s.when)));
         set(s.button,"fade",s.path >= 0 && s.path != path);
+        if(s.path < 0) // a shared step is usable only while its question is, e.g. no resampling once isotropic
+            s.button->setEnabled(enabled[s.q]);
     }
     ui->br_yes->setEnabled(path < 2);
     ui->br_no->setEnabled(path >= 2);
