@@ -1317,9 +1317,9 @@ bool src_data::command(std::vector<std::string> cmds)
             return false;
         return log_step();
     }
-    if(cmd == "regenerate_btable" || cmd == "load_bval" || cmd == "load_bvec") // param: the reference SRC or the bval/bvec file
+    if(cmd == "regenerate_btable" || cmd == "convert_btable" || cmd == "load_bval" || cmd == "load_bvec") // param: the reference or target SRC, or the bval/bvec file
     {
-        if(!(cmd == "regenerate_btable" ? regenerate_b_table(param) : load_bval_or_bvec(param,cmd == "load_bvec")))
+        if(!(cmd == "regenerate_btable" ? regenerate_b_table(param) : cmd == "convert_btable" ? convert_b_table(param) : load_bval_or_bvec(param,cmd == "load_bvec")))
             return false;
         return log_step();
     }
@@ -2926,14 +2926,172 @@ bool src_data::run_topup(void)
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
 bool download_file(const std::string& url,const std::filesystem::path& local_path,std::string& error_msg,bool check_size);
+// DSI (a q-space grid, as get_report() tells it)
+static bool is_dsi(const std::vector<float>& bvalues)
+{
+    std::vector<unsigned int> shell;
+    calculate_shell(bvalues,shell);
+    return shell.size() > 4 && shell[1]-shell[0] <= 6;
+}
+// the SH- and b-table-free shell model: drift-normalized per-voxel mean and variance, quadrature noise subtraction,
+// and WM/GM/CSF fractions give the shell's equivalent b-value; with out, the shell's volumes converted to b2 are appended
+static float shell_b_value(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+                          float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr)
+{
+    if(vols.size() < 2)
+        return 0.0f;
+    auto pct = [](std::vector<float> v,float p,float empty = 0.0f) // the p-th fraction percentile
+    {
+        if(v.empty())
+            return empty;
+        auto at = v.begin()+size_t(p*float(v.size()-1));
+        std::nth_element(v.begin(),at,v.end());
+        return *at;
+    };
+    std::vector<size_t> vox;
+    for(size_t i = 0;i < mask.size();++i)
+        if(mask[i])
+            vox.push_back(i);
+    // step 1: drift normalization, then the per-voxel mean and sample variance
+    std::vector<float> scale,m(vox.size()),s2(vox.size());
+    for(auto k : vols)
+    {
+        double sum = 0.0;
+        for(auto i : vox)
+            sum += dwi[k][i];
+        scale.push_back(float(sum/double(vox.size())));
+    }
+    auto mu = tipl::mean(scale);
+    for(auto& each : scale)
+        each = mu/each;
+    tipl::par_for(vox.size(),[&](size_t j)
+    {
+        double sum = 0.0,sum2 = 0.0;
+        for(size_t k = 0;k < vols.size();++k)
+        {
+            double v = dwi[vols[k]][vox[j]]*scale[k];
+            sum += v;
+            sum2 += v*v;
+        }
+        m[j] = float(sum/double(vols.size()));
+        s2[j] = float(std::max(0.0,(sum2-sum*double(m[j]))/double(vols.size()-1)));
+    });
+    // step 2: anchors and quadrature noise subtraction
+    float M = pct(m,0.5f),eps = 0.2f*M,C = pct(m,0.04f);
+    std::vector<size_t> P; // parenchyma, as indices of vox
+    std::vector<float> c_raw,g0_m,g0_s2,w0_m;
+    for(size_t j = 0;j < vox.size();++j)
+        if(m[j] > 0.5f*(C+M))
+        {
+            P.push_back(j);
+            c_raw.push_back(std::sqrt(s2[j])/(m[j]+eps));
+        }
+    float lo = pct(c_raw,0.25f),hi = pct(c_raw,0.85f);
+    for(size_t p = 0;p < P.size();++p)
+    {
+        if(c_raw[p] <= lo)
+        {
+            g0_m.push_back(m[P[p]]);
+            g0_s2.push_back(s2[P[p]]);
+        }
+        if(c_raw[p] >= hi)
+            w0_m.push_back(m[P[p]]);
+    }
+    float s0 = pct(g0_s2,0.5f),G = pct(g0_m,0.5f),W = pct(w0_m,0.5f);
+    std::vector<float> sn(vox.size()),cn;
+    for(size_t j = 0;j < vox.size();++j)
+        sn[j] = std::sqrt(std::max(s2[j]-s0,0.0f));
+    for(auto j : P)
+        cn.push_back(sn[j]/(m[j]+eps));
+    // step 3: WM fraction from the initial anchors, refined anchors, then GM fraction
+    float sw = pct(cn,0.85f)*(W+eps);
+    std::vector<float> x(vox.size()),y(vox.size()),wr,gr;
+    for(size_t j = 0;j < vox.size();++j)
+    {
+        float d = sw*(m[j]+eps)+sn[j]*(G-W);
+        y[j] = d > 0.0f ? std::clamp(sn[j]*G/d,0.0f,1.0f) : 1.0f;
+    }
+    for(auto j : P)
+    {
+        if(y[j] >= 0.92f)
+            wr.push_back(m[j]);
+        if(y[j] <= 0.03f)
+            gr.push_back(m[j]);
+    }
+    W = pct(wr,0.5f,W);
+    G = pct(gr,0.5f,G);
+    for(size_t j = 0;j < vox.size();++j)
+        x[j] = std::clamp((m[j]-y[j]*W-(1.0f-y[j])*C)/(0.88f*G-C),0.0f,1.0f-y[j]);
+    // step 4A: equivalent b-value from the core WM perpendicular signal over the pure GM mean
+    float t = pct(cn,0.985f);
+    double wsum = 0.0,gsum = 0.0;
+    size_t wn = 0,gn = 0;
+    for(size_t p = 0;p < P.size();++p)
+    {
+        auto j = P[p];
+        if(cn[p] >= t)
+            wsum += m[j]+1.118f*sn[j],++wn;
+        if(x[j] > 0.95f && y[j] < 0.02f)
+            gsum += m[j],++gn;
+    }
+    float b1 = wn && gn ? std::max(2416.0f*(float(wsum*double(gn)/(double(wn)*gsum))-0.766f),0.0f) : 0.0f;
+    if(!out)
+        return b1;
+    // step 4B: compartment scaling from b1 to b2; each volume keeps its own (unknown) direction
+    float u1 = b1/1000.0f,u2 = b2/1000.0f;
+    auto kappa = [&](float a,float c){return std::exp(a*(u2-u1)+c*(u2*u2-u1*u1));};
+    float kw = kappa(-0.6275f,0.0790f),kg = kappa(-0.8436f,0.0775f),kc = kappa(-1.0353f,0.1555f),ka = kappa(0.1371f,-0.0656f);
+    size_t first = out->size();
+    for(auto k : vols) // outside the mask: the unconverted signal
+        out->push_back(dwi[k]);
+    tipl::par_for(vox.size(),[&](size_t j)
+    {
+        float z = 1.0f-x[j]-y[j],d = y[j]*W+x[j]*G+z*C;
+        float alpha = d > 0.0f ? (kw*y[j]*W+kg*x[j]*G+kc*z*C)/d : kc; // CSF scaling where no compartment has signal
+        for(size_t k = 0;k < vols.size();++k)
+            (*out)[first+k][vox[j]] = std::max(alpha*m[j]+ka*(dwi[vols[k]][vox[j]]*scale[k]-m[j]),0.0f);
+    });
+    return b1;
+}
+// groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean
+// (DSI: all b-values >= 100 in one shell); gives each DWI's shell (-1 if excluded) and the shell mean b-values and volumes;
+// with dwi and mask, the shell means become the equivalent b-values (0 if not estimable)
+static void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols,
+                         const std::vector<tipl::image<3> >* dwi = nullptr,const tipl::image<3,unsigned char>* mask = nullptr)
+{
+    std::vector<size_t> order(bvalues.size());
+    std::iota(order.begin(),order.end(),0);
+    std::sort(order.begin(),order.end(),[&](size_t l,size_t r){return bvalues[l] < bvalues[r];});
+    shell_id.assign(bvalues.size(),-1);
+    shell_b.clear();
+    shell_vols.clear();
+    for(auto i : order)
+        if(bvalues[i] >= (dsi ? 100.0f : 500.0f))
+        {
+            if(shell_b.empty() || (!dsi && bvalues[i]-shell_b.back()/float(shell_vols.back().size()) > 100.0f))
+            {
+                shell_b.push_back(0.0f);
+                shell_vols.emplace_back();
+            }
+            shell_id[i] = int(shell_b.size())-1;
+            shell_b.back() += bvalues[i];
+            shell_vols.back().push_back(i);
+        }
+    for(size_t k = 0;k < shell_b.size();++k)
+        shell_b[k] /= float(shell_vols[k].size());
+    for(size_t k = 0;dwi && k < shell_b.size();++k)
+    {
+        auto eq_b = shell_b_value(*dwi,shell_vols[k],*mask);
+        tipl::out() << "shell recorded b=" << shell_b[k] << " HCP-equivalent b=" << eq_b;
+        shell_b[k] = eq_b;
+    }
+}
 bool src_data::regenerate_b_table(std::filesystem::path reference_file)
 {
     tipl::progress prog("regenerate b-table",true);
     src_data reference;
     std::vector<tipl::image<3> > b0,reference_b0;
-    // DSI (a q-space grid, as get_report() tells it): every DWI matches the whole reference grid, so the reference must be DSI too
-    auto is_dsi = [](const std::vector<float>& bvalues){std::vector<unsigned int> shell;calculate_shell(bvalues,shell);return shell.size() > 4 && shell[1]-shell[0] <= 6;};
-    bool dsi = is_dsi(src_bvalues);
+    bool dsi = is_dsi(src_bvalues); // every DWI then matches the whole reference grid, so the reference must be DSI too
     if(reference_file.empty()) // the current template's reference, released as data-others/atlas/<template>/<template>.sz and cached in the temp folder
     {
         if(dsi)
@@ -2957,51 +3115,51 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     if(dsi && !is_dsi(reference.src_bvalues))
         return error_msg = "a DSI SRC needs a DSI reference SRC",false;
 
-    // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean
-    // (DSI: all b-values >= 100 in one shell); gives each DWI's shell (-1 if excluded) and the shell mean b-values and sizes
-    auto group_shells = [dsi](const std::vector<float>& bvalues,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<size_t>& shell_n)
-    {
-        std::vector<size_t> order(bvalues.size());
-        std::iota(order.begin(),order.end(),0);
-        std::sort(order.begin(),order.end(),[&](size_t l,size_t r){return bvalues[l] < bvalues[r];});
-        shell_id.assign(bvalues.size(),-1);
-        shell_b.clear();
-        shell_n.clear();
-        for(auto i : order)
-            if(bvalues[i] >= (dsi ? 100.0f : 500.0f))
-            {
-                if(shell_b.empty() || (!dsi && bvalues[i]-shell_b.back()/float(shell_n.back()) > 100.0f))
-                {
-                    shell_b.push_back(0.0f);
-                    shell_n.push_back(0);
-                }
-                shell_id[i] = int(shell_b.size())-1;
-                shell_b.back() += bvalues[i];
-                ++shell_n.back();
-            }
-        for(size_t k = 0;k < shell_b.size();++k)
-            shell_b[k] /= float(shell_n[k]);
-    };
-    // match each target shell (b >= 500) to the reference shell with the nearest mean b-value
+    // match each target shell (b >= 500) to the reference shell with the nearest mean b-value (multishell: equivalent b-value)
     std::vector<int> shell_id,ref_shell_id,match;
     std::vector<float> shell_b,ref_shell_b;
-    std::vector<size_t> shell_n,ref_shell_n;
-    group_shells(src_bvalues,shell_id,shell_b,shell_n);
-    group_shells(reference.src_bvalues,ref_shell_id,ref_shell_b,ref_shell_n);
+    std::vector<std::vector<size_t> > shell_vols,ref_shell_vols;
+    group_shells(src_bvalues,dsi,shell_id,shell_b,shell_vols,dsi ? nullptr : &src_dwi_data,&voxel.mask);
+    group_shells(reference.src_bvalues,dsi,ref_shell_id,ref_shell_b,ref_shell_vols,dsi ? nullptr : &reference.src_dwi_data,&reference.voxel.mask);
     if(shell_b.empty())
         return error_msg = "no DWI with b-value >= 500 to regenerate",false;
     if(ref_shell_b.empty())
         return error_msg = "the reference SRC has no DWI with b-value >= 500",false;
+    if(std::count(shell_b.begin(),shell_b.end(),0.0f))
+        return error_msg = "cannot estimate the equivalent b-value of a shell",false;
     for(size_t k = 0;k < shell_b.size();++k)
     {
         match.push_back(int(std::min_element(ref_shell_b.begin(),ref_shell_b.end(),[&](float l,float r)
                         {return std::fabs(l-shell_b[k]) < std::fabs(r-shell_b[k]);})-ref_shell_b.begin()));
-        if(ref_shell_n[match.back()] < 3)
+        if(ref_shell_vols[match.back()].size() < 3)
             return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[match.back()])) + " has fewer than three DWIs",false;
-        tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_n[k] << " dwi) uses reference shell b=" << ref_shell_b[match.back()] << " (" << ref_shell_n[match.back()] << " dwi)";
+        tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi) uses reference shell b=" << ref_shell_b[match.back()] << " (" << ref_shell_vols[match.back()].size() << " dwi)";
     }
 
-    // keep only the matched reference shells before rotate() resamples them
+    // multishell: each target shell gets its matched reference shell converted to the target's equivalent b-value
+    if(!dsi)
+    {
+        std::vector<tipl::image<3> > dwi;
+        std::vector<float> bvalues;
+        std::vector<tipl::vector<3,float> > bvectors;
+        std::vector<int> id;
+        for(size_t k = 0;k < shell_b.size();++k)
+        {
+            shell_b_value(reference.src_dwi_data,ref_shell_vols[match[k]],reference.voxel.mask,shell_b[k],&dwi);
+            for(auto j : ref_shell_vols[match[k]])
+            {
+                bvalues.push_back(shell_b[k]);
+                bvectors.push_back(reference.src_bvectors[j]);
+                id.push_back(int(k));
+            }
+            match[k] = int(k); // the converted copy is tagged by the target shell
+        }
+        reference.src_dwi_data.swap(dwi);
+        reference.src_bvalues.swap(bvalues);
+        reference.src_bvectors.swap(bvectors);
+        ref_shell_id.swap(id);
+    }
+    else // keep only the matched reference shells before rotate() resamples them
     {
         size_t out = 0;
         for(size_t j = 0;j < reference.src_bvalues.size();++j)
@@ -3040,10 +3198,11 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     if(prog.aborted())
         return error_msg = "canceled",false;
 
-    // each DWI (b >= 500) takes the kernel-regression direction of its three best-correlated reference DWIs in the matched shell; b-values are kept
-    // (DSI: the b-value and b-vector of the one best-correlated reference DWI)
+    // each DWI (b >= 500) takes the kernel-regression direction of its three best-correlated reference DWIs in the matched shell
+    // and its shell's equivalent b-value (DSI: the b-value and b-vector of the one best-correlated reference DWI)
     auto new_bvalues = src_bvalues;
     auto new_bvectors = src_bvectors;
+    std::vector<float> best_r(src_bvalues.size());
     std::atomic<bool> failed = false;
     std::atomic<size_t> p = 0;
     tipl::par_for(src_bvalues.size(),[&](size_t i)
@@ -3060,12 +3219,10 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
                     if(c.first > each.first)
                         std::swap(c,each);
             }
+        best_r[i] = best[0].first;
+        new_bvalues[i] = dsi ? reference.src_bvalues[best[0].second] : std::round(shell_b[shell_id[i]]);
         if(dsi)
-        {
-            new_bvalues[i] = reference.src_bvalues[best[0].second];
-            new_bvectors[i] = reference.src_bvectors[best[0].second];
-            return;
-        }
+            return void(new_bvectors[i] = reference.src_bvectors[best[0].second]);
         // correlation as the kernel weight; directions folded into the hemisphere of the best match
         const auto& g0 = reference.src_bvectors[best[0].second];
         tipl::vector<3,float> g;
@@ -3080,9 +3237,73 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "canceled",false;
     if(failed)
         return error_msg = "cannot estimate one or more b-vectors from the reference SRC",false;
+    for(size_t i = 0;i < src_bvalues.size();++i) // quality check: the new b-value and the best correlation with the reference
+        if(shell_id[i] >= 0)
+            tipl::out() << "dwi " << i << " b=" << new_bvalues[i] << " best r=" << best_r[i];
     src_bvalues.swap(new_bvalues);
     src_bvectors.swap(new_bvectors);
-    voxel.report += std::string(dsi ? " The b-values and b-vectors" : " The b-vectors")+" were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
+    voxel.report += " The b-values and b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
+    return true;
+}
+// converts shell DWI to the b-table of a shell SRC (the target), both by equivalent b-values (recorded b-values unused):
+// each target shell takes the shell of this data with the nearest equivalent b-value, converted to the target's and interpolated
+// to the target directions; b < 500: the mean b0
+bool src_data::convert_b_table(const std::filesystem::path& target_file)
+{
+    tipl::progress prog("convert to b-table",true);
+    src_data target;
+    if(!target.load_from_file(target_file))
+        return error_msg = target.error_msg,false;
+    if(is_dsi(src_bvalues) || is_dsi(target.src_bvalues))
+        return error_msg = "b-table conversion needs shell data and a shell SRC, not DSI",false;
+    std::vector<int> shell_id,target_shell_id;
+    std::vector<float> shell_b,target_shell_b;
+    std::vector<std::vector<size_t> > shell_vols,target_shell_vols;
+    group_shells(src_bvalues,false,shell_id,shell_b,shell_vols,&src_dwi_data,&voxel.mask);
+    group_shells(target.src_bvalues,false,target_shell_id,target_shell_b,target_shell_vols,&target.src_dwi_data,&target.voxel.mask);
+    if(shell_b.empty() || target_shell_b.empty())
+        return error_msg = "the data and the target SRC both need DWI with b-value >= 500",false;
+    if(std::count(shell_b.begin(),shell_b.end(),0.0f) || std::count(target_shell_b.begin(),target_shell_b.end(),0.0f))
+        return error_msg = "cannot estimate the equivalent b-value of a shell",false;
+    std::vector<tipl::image<3> > b0;
+    if(!read_b0(b0))
+        return false;
+    for(size_t i = 1;i < b0.size();++i)
+        b0[0] += b0[i];
+    b0[0] /= float(b0.size());
+
+    std::vector<tipl::image<3> > new_dwi(target.src_bvalues.size(),b0[0]);
+    for(size_t t = 0;t < target_shell_b.size();++t)
+    {
+        prog(t,target_shell_b.size());
+        auto k = size_t(std::min_element(shell_b.begin(),shell_b.end(),[&](float l,float r)
+                 {return std::fabs(l-target_shell_b[t]) < std::fabs(r-target_shell_b[t]);})-shell_b.begin());
+        tipl::out() << "target shell HCP-equivalent b=" << target_shell_b[t] << " (" << target_shell_vols[t].size() << " dwi) from shell HCP-equivalent b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi)";
+        std::vector<tipl::image<3> > converted;
+        std::vector<tipl::vector<3,float> > dirs;
+        shell_b_value(src_dwi_data,shell_vols[k],voxel.mask,target_shell_b[t],&converted);
+        for(auto i : shell_vols[k])
+            dirs.push_back(src_bvectors[i]);
+        for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
+        {
+            target.src_bvalues[j] = std::round(target_shell_b[t]);
+            auto w = BalanceScheme::shell_weights(dirs,0,uint32_t(dirs.size()),target.src_bvectors[j]);
+            tipl::par_for(voxel.dim.size(),[&](size_t v)
+            {
+                double sum = 0.0;
+                for(size_t i = 0;i < w.size();++i)
+                    sum += w[i]*converted[i][v];
+                new_dwi[j][v] = float(sum);
+            });
+        }
+        if(prog.aborted())
+            return error_msg = "canceled",false;
+    }
+    src_dwi_data.swap(new_dwi);
+    src_bvalues.swap(target.src_bvalues);
+    src_bvectors.swap(target.src_bvectors);
+    update_dwi_sum();
+    voxel.report += " The DWI were converted to the b-table of " + target_file.filename().u8string() + " using the equivalent b-value of each shell.";
     return true;
 }
 std::string src_data::get_report(bool dwi_part_only)
