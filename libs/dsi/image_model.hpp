@@ -209,6 +209,7 @@ public:
     std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);
     bool regenerate_b_table(std::filesystem::path reference_file); // from a reference SRC aligned to this subject; empty: the current template's reference (<template>.sz)
+    bool convert_b_table(const std::filesystem::path& target_file); // shell DWI converted to the directions and equivalent b-values of a shell SRC
     void flip_dwi(unsigned char type);
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
     void rotate(const tipl::shape<3>& new_geo,
