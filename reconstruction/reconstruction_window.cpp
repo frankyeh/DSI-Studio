@@ -302,6 +302,8 @@ void reconstruction_window::update_preproc(void)
                        a[1] == 1 && !done("sampling scheme was balanced")}; // scheme balance resamples shells
     for(size_t i = 0;i < 8;++i)
         pills[i].first->parentWidget()->setEnabled(enabled[i]);
+    ui->btn_Resample->setEnabled(enabled[5]); // nothing to resample once isotropic
+    ui->btn_Scheme_Balance->setEnabled(enabled[7]); // nor to balance without shells or once balanced
     ui->btn_Run_FSL_Topup->setVisible(a[6] == 1); // topup/eddy or topup alone, by the eddy question
     ui->btn_TOPUP_shell->setVisible(a[6] == 2);
     ui->q6_note->setText(QString("%1×%2×%3 mm").arg(vs[0]).arg(vs[1]).arg(vs[2]));
@@ -526,29 +528,6 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
         return fail("use recon");
     if(cmd == "recon")
     {
-        if(source == command_source::User)
-        {
-            auto confirm = [&](bool condition,const QString& question,std::vector<std::string> correction_cmd)
-            {
-                if(!condition)
-                    return true;
-                auto result = QMessageBox::information(this,QApplication::applicationName(),question,
-                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-                if(result == QMessageBox::Yes)
-                    handle->command(correction_cmd);
-                return result != QMessageBox::Cancel;
-            };
-            if(!confirm(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data && !ui->QSDR->isChecked(), // non isotropic resolution
-                "The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?",
-                {"resample","2"}) ||
-               !confirm(!tipl::contains(handle->voxel.report,"bias field"),
-                "Correct signal inhomogeneity using bias field correction?",
-                {"bias_field_correction"}) ||
-               !confirm(!handle->is_human_data && (handle->long_axis_direction() != 1),
-                "This seems to be an animal scan in non-axial orientation. Correct image orientation?",
-                {"orientation_correction"}))
-                return fail("canceled");
-        }
 
         unsigned char method_id = source == command_source::User ?
             (ui->DTI->isChecked() ? 1 : ui->QSDR->isChecked() ? 7 : 4) : handle->voxel.method_id;
