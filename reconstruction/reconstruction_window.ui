@@ -1180,6 +1180,13 @@ correction</string></property><property name="opt" stdset="0"><bool>true</bool><
                          </widget>
                         </item>
                         <item>
+                         <widget class="QCheckBox" name="show_mask">
+                          <property name="text">
+                           <string>mask</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
                          <spacer name="horizontalSpacer_4">
                           <property name="orientation">
                            <enum>Qt::Horizontal</enum>
