@@ -126,6 +126,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_rdi,
         ui->output_gfa,
         ui->output_odf,
+        ui->output_dwi, // qsdr only
         ui->high_accuracy // fixel
     };
     if(!load_src(0))
@@ -227,6 +228,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     {
         const auto& vs = handle->voxel.vs;
         (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f ? ui->q6_yes : ui->q6_no)->setChecked(true);
+        ui->resample_reso->setValue(vs[0]); // the in-plane resolution
         std::string cause;
         std::vector<float> shells;
         for(auto b : handle->src_bvalues)
@@ -690,7 +692,9 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             handle->voxel.template_id = v;
         }
     }
-    if((cmd == "resample" || cmd == "align_acpc") && param.empty())
+    if(cmd == "resample" && param.empty()) // the target resolution beside Resample to Isotropic
+        param = std::to_string(ui->resample_reso->value());
+    if(cmd == "align_acpc" && param.empty())
     {
         bool ok;
         float nv = float(QInputDialog::getDouble(this,
@@ -732,15 +736,8 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             return fail("canceled");
         param = filename.toStdString();
     }
-    if(cmd == "correct_by_t1w" && source == command_source::User && param.find('|') == std::string::npos)
-    {
-        bool ok;
-        QStringList items{"Native","1.5 mm isotropic","1.0 mm isotropic"};
-        auto item = QInputDialog::getItem(this,QApplication::applicationName(),"Output resolution:",items,1,false,&ok);
-        if(!ok)
-            return fail("canceled");
-        param += std::vector<std::string>{"|0","|1.5","|1.0"}[size_t(items.indexOf(item))];
-    }
+    if(cmd == "correct_by_t1w" && source == command_source::User && param.find('|') == std::string::npos) // the output resolution beside the T1w question
+        param += std::vector<std::string>{"|0","|1.5","|1.0"}[size_t(ui->t1w_reso->currentIndex())];
     if(source == command_source::User &&
        tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()) && param.empty())
     {
@@ -846,6 +843,7 @@ void reconstruction_window::update_method_card(void)
     ui->method_detail->setVisible(more);
     ui->high_accuracy->setVisible(odf);
     ui->output_odf->setVisible(odf);
+    ui->output_dwi->setVisible(qsdr);
     ui->qsdr_options->setVisible(more && qsdr);
     ui->metrics_group->setVisible(more);
     ui->ODF_metrics->setVisible(odf);
