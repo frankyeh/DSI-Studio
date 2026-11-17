@@ -206,7 +206,7 @@ int tmp(tipl::program_option<tipl::out>& po)
     if(tipl::ends_with(source,{".fib.gz",".fz"}))
         output = (name_list.front().parent_path()/"template").u8string();
     else if(tipl::ends_with(source,".nii.gz"))
-        output = source+".avg.nii.gz";
+        output = source+(std::filesystem::exists(tipl::remove_all_suffix(source)+".bval") ? ".avg.sz" : ".avg.nii.gz");
     else
         return tipl::error() << "unsupported format",1;
     output = po.get("output",output);
