@@ -893,14 +893,14 @@ std::string to_cmd(const std::string& cmd)
             return tipl::warning() << "legacy command " << old_cmd << " will soon be replaced by " << new_cmd,new_cmd;
     return cmd;
 }
-bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
+bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps,bool check_only)
 {
     std::istringstream in(ref_steps);
     std::string step;
     std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
-        if(step.empty())
+        if(step.empty() || tipl::contains("\n"+voxel.steps,"\n"+step+"\n")) // a step this file already has is passed, not applied twice
             continue;
         size_t pos = step.find('=');
         std::string cmd,param;
@@ -915,13 +915,18 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             param = step.substr(pos+1,step.size()-pos-1);
         }
         cmd = to_cmd(cmd);
-        if((tipl::ends_with(param,{".sz",".gz"})) &&
-           !tipl::match_files(reg_file_name,param,file_name.u8string(),param))
-            return error_msg = step + " cannot find a matched file for " + file_name.u8string(),false;
+        auto file = param.substr(0,param.find('|')); // a file parameter, before the |<mm> of correct_by_t1w
+        if(tipl::ends_with(file,{".sz",".gz",".rz"}))
+        {
+            if(!tipl::match_files(reg_file_name,file,file_name.u8string(),file) || !std::filesystem::exists(file))
+                return error_msg = step + " cannot find a matched file for " + file_name.u8string(),false;
+            param.replace(0,param.find('|'),file);
+        }
         cmds.push_back(cmd);
         params.push_back(param);
     }
-
+    if(check_only) // only the matched files are checked
+        return true;
     if(!cmds.empty())
     {
         tipl::progress prog("apply operations");
@@ -1048,10 +1053,8 @@ bool src_data::command(std::vector<std::string> cmds)
                cmd == "save_bval" ? save_bval(param) :
                cmd == "save_bvec" ? save_bvec(param) : (error_msg = "unknown command: " + cmd,false);
     }
-    if(cmd == "scheme_balance")
-        return scheme_balance() && log_step();
-    if(cmd == "correct_signal_drift")
-        return correct_signal_drift() && log_step();
+    if(cmd == "scheme_balance" || cmd == "correct_signal_drift") // already applied: passed
+        return tipl::contains(voxel.steps,cmd) || ((cmd == "scheme_balance" ? scheme_balance() : correct_signal_drift()) && log_step());
     if(cmd == "remove") // DWI index ranges and b-value conditions, e.g. 1,3:5,8:end or b>3000 or b<100
     {
         const size_t n = src_bvalues.size();
@@ -1566,8 +1569,6 @@ void src_data::smoothing(void)
 // with the angular gaussian of shell_weights, keeping the first b0; reconstruction then applies only the gqi scale
 bool src_data::scheme_balance(void)
 {
-    if(tipl::contains(voxel.steps,"scheme_balance"))
-        return error_msg = "scheme balance was already applied",false;
     Voxel v; // the sorted dwi, first b0, and shells
     v.method_id = 4;
     v.load_from_src(*this);
@@ -3120,8 +3121,6 @@ static void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<
 // noise-subtracted dispersion e <= P30 of that band, mu and e recomputed from the current iterate S/gamma at each pass
 bool src_data::correct_signal_drift(void)
 {
-    if(tipl::contains(voxel.steps,"correct_signal_drift"))
-        return error_msg = "signal drift correction was already applied",false;
     std::vector<int> shell_id;
     std::vector<float> shell_b;
     std::vector<std::vector<size_t> > groups;
