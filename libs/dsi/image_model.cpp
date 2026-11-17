@@ -1565,39 +1565,19 @@ void src_data::smoothing(void)
     });
     update_dwi_sum();
 }
-// a preprocessing step: resamples each shell to an icosahedral scheme (181, 126, 81, or 46 directions by its mean b-value)
-// with the angular gaussian of shell_weights, keeping the first b0; reconstruction then applies only the gqi scale
+// an optional preprocessing step that stores the gqi balanced scheme as physical signals (181, 126, 81, or 46 directions per shell);
+// otherwise gqi and qsdr balance their own copy of the b-table and leave the src unchanged
 bool src_data::scheme_balance(void)
 {
-    Voxel v; // the sorted dwi, first b0, and shells
+    Voxel v; // the sorted dwi, first b0, and shells used by gqi reconstruction
     v.method_id = 4;
     v.load_from_src(*this);
     if(v.shell.size() >= 5)
         return error_msg = "cannot apply scheme balance due to many shells",false;
 
-    size_t old_count = v.dwi_data.size();
-    bool b0 = v.bvalues.front() == 0.0f; // the b0 keeps the first row
-    std::vector<float> trans(b0 ? old_count : 0),new_bvalues(b0); // the interpolation (new x old dwi, each row sums to one)
-    std::vector<tipl::vector<3,float> > new_bvectors(b0);
-    std::string counts;
-    if(b0)
-        trans[0] = 1.0f;
-    for(unsigned int k = 0;k < v.shell.size();++k)
-    {
-        unsigned int from = v.shell[k],to = (k + 1 == v.shell.size() ? uint32_t(old_count) : v.shell[k+1]);
-        double avg_b = tipl::mean(v.bvalues.begin()+from,v.bvalues.begin()+to);
-        tessellated_icosahedron new_dir(avg_b > 2500.0 ? 6 : avg_b > 1500.0 ? 5 : avg_b > 500.0 ? 4 : 3);
-        for(unsigned int i = 0;i < new_dir.half_vertices_count;++i)
-        {
-            auto t = shell_weights(v.bvectors,from,to,new_dir.vertices[i]);
-            trans.resize(trans.size()+old_count);
-            std::copy(t.begin(),t.end(),trans.end()-old_count+from);
-            new_bvalues.push_back(float(std::inner_product(t.begin(),t.end(),v.bvalues.begin()+from,0.0)));
-            new_bvectors.push_back(new_dir.vertices[i]);
-        }
-        counts += (k ? "/" : "") + std::to_string(new_dir.half_vertices_count);
-    }
-    size_t new_count = new_bvalues.size();
+    BalanceScheme b; // v gets the balanced b-table, b.trans the interpolation of the sorted dwi
+    b.init(v);
+    size_t old_count = v.dwi_data.size(),new_count = v.bvalues.size();
     tipl::out() << "balance " << old_count << " dwi to " << new_count << " dwi";
 
     std::vector<tipl::image<3> > balanced_dwi(new_count,tipl::image<3>(voxel.dim));
@@ -1613,7 +1593,7 @@ bool src_data::scheme_balance(void)
         {
             for(size_t j = 0;j < old_count;++j)
                 old_signal[j] = v.dwi_data[j][i];
-            tipl::mat::vector_product(trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
+            tipl::mat::vector_product(b.trans.begin(),old_signal.begin(),new_signal.begin(),tipl::shape<2>(new_count,old_count));
             for(size_t j = 0;j < new_count;++j)
                 balanced_dwi[j][i] = std::max<float>(0.0f,new_signal[j]);
         }
@@ -1621,10 +1601,10 @@ bool src_data::scheme_balance(void)
     if(prog.aborted())
         return error_msg = "scheme balance canceled",false;
     src_dwi_data = std::move(balanced_dwi);
-    src_bvalues.swap(new_bvalues);
-    src_bvectors.swap(new_bvectors);
+    v.bvalues.swap(src_bvalues);
+    v.bvectors.swap(src_bvectors);
     update_dwi_sum();
-    voxel.report += " The diffusion sampling scheme was balanced by resampling each shell to " + counts + " directions.";
+    voxel.report += " The diffusion sampling scheme was balanced from " + std::to_string(old_count) + " to " + std::to_string(new_count) + " DWI.";
     return true;
 }
 

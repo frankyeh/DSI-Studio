@@ -10,7 +10,6 @@
  perform reconstruction
  */
 extern std::vector<std::string> template_name_list;
-bool eddy_check_shell(const std::vector<float>& bvalues,std::string& cause);
 int rec(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
@@ -125,10 +124,6 @@ int rec(tipl::program_option<tipl::out>& po)
                     }
         }
 
-        std::string cause; // scheme balance by default for shell data (--scheme_balance=0 to skip)
-        if(po.get("scheme_balance",eddy_check_shell(src.src_bvalues,cause) ? 1 : 0) &&
-            !src.command({"scheme_balance"}))
-            return fail();
         if(!tipl::contains(src.voxel.report,"bias field") &&
             po.get("bias_field_correction",src.voxel.method_id == 1/*DTI*/ ? 0 : 1) &&
             !src.correct_bias_field())

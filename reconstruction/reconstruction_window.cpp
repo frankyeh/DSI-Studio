@@ -241,7 +241,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     }
     auto show_advanced = [this](bool on) // the optional steps, hidden and not run by default
     {
-        for(auto* each : std::initializer_list<QWidget*>{ui->q4_box,ui->btn_T1w_Distortion_Correction,ui->btn_T1w_DSI,ui->q9_box,ui->btn_Signal_Drift})
+        for(auto* each : std::initializer_list<QWidget*>{ui->q4_box,ui->btn_T1w_Distortion_Correction,ui->btn_T1w_DSI,ui->q9_box,ui->btn_Signal_Drift,ui->q8_box,ui->btn_Scheme_Balance})
             each->setVisible(on);
         ui->preproc_flow->update();
     };

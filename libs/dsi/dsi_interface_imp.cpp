@@ -111,7 +111,7 @@ bool src_data::reconstruction(void)
             if (!reconstruct2<
                     ReadDWIData,
                     Dwi2Tensor,
-                    GQIShellScale,
+                    BalanceScheme,
                     GQI_Recon,
                     RDI_Recon,
                     SaveMetrics,
@@ -142,14 +142,13 @@ bool src_data::reconstruction(void)
                 // clear mask to create whole volume QA map
                 if (!reconstruct2<
                         ReadDWIData,
-                        GQIShellScale,
+                        BalanceScheme,
                         GQI_Recon,
                         RecordQA>("Preparing QA/ISO maps for normalization"))
                     return false;
                 if (!reconstruct2<DWINormalization,
                         Dwi2Tensor,
-                        OutputDWI,
-                        GQIShellScale,
+                        BalanceScheme,
                         GQI_Recon,
                         RDI_Recon,
                         SaveMetrics,
