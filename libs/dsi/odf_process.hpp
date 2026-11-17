@@ -20,9 +20,9 @@ public:
 private: // the dwi output of qsdr: template-space dwi under the balanced voxel b-table, written into the fz
     std::vector<tipl::vector<3,float> > src_bvectors; // native directions; voxel.shell keeps the native shells
     std::vector<tipl::image<3> > dwi;
-private:
-    // normalized angular weights of the dwi [from,to) of a shell at direction dir, a gaussian of 0.08 rad width
-    std::vector<double> shell_weights(const std::vector<tipl::vector<3,float> >& bvectors,unsigned int from,unsigned int to,const tipl::vector<3,float>& dir) const
+public:
+    // normalized angular weights of the dwi [from,to) of a shell at direction dir, a gaussian of 0.08 rad width (also used by src_data::convert_b_table)
+    static std::vector<double> shell_weights(const std::vector<tipl::vector<3,float> >& bvectors,unsigned int from,unsigned int to,const tipl::vector<3,float>& dir)
     {
         std::vector<double> t;
         for(unsigned int j = from;j < to;++j)
