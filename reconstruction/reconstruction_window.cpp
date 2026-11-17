@@ -632,7 +632,7 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
 
                 handle->voxel.other_output.clear();
                 for(auto each : outputs)
-                    if(each->isChecked())
+                    if(each->isChecked() && !each->isHidden()) // e.g. dwi only shows for qsdr
                     {
                         if(!handle->voxel.other_output.empty())
                             handle->voxel.other_output += ",";
