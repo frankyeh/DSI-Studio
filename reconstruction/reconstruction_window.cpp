@@ -241,6 +241,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     connect(ui->z_pos,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
     connect(ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(on_b_table_itemSelectionChanged()));
+    connect(ui->show_mask,SIGNAL(toggled(bool)),this,SLOT(on_b_table_itemSelectionChanged()));
 
     on_b_table_itemSelectionChanged();
 
@@ -420,12 +421,16 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
         return;
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
 
+    auto color = v2c[tipl::volume2slice_scaled(handle->src_dwi_data[ui->b_table->currentRow()],view_orientation,ui->z_pos->value(),source_ratio)];
+    if(ui->show_mask->isChecked()) // the mask page's red tint
+    {
+        auto mask = tipl::volume2slice_scaled(handle->voxel.mask,view_orientation,ui->z_pos->value(),source_ratio);
+        for(size_t index = 0;index < color.size();++index)
+            if(mask[index])
+                color[index].r = 255;
+    }
     QImage source_image;
-    source_image << v2c[
-                    tipl::volume2slice_scaled(
-                       handle->src_dwi_data[ui->b_table->currentRow()],
-                       view_orientation,ui->z_pos->value(),
-                       source_ratio)];
+    source_image << color;
 
     if(view_orientation != 2)
     {
