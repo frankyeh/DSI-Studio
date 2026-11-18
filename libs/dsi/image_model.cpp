@@ -3501,17 +3501,18 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
                         std::to_string(file_names.size()-n) + " outliers excluded by neighboring DWI correlation), each interpolated to the b-vectors of the scan with the highest correlation.";
     return avg.save_to_file(out_name) || (error_msg = avg.error_msg,false);
 }
-// converts each source SRC to the acquisition of a set of target SRC (all multishell), saved in out_dir under its file name:
+// converts each source SRC to the acquisition of a set of target SRC (single or multishell), saved as <source>.matched.sz in out_dir
+// (empty: the source folder):
 // the target b-table takes the b-vectors of the target with the highest neighboring dwi correlation and each shell's HCP-equivalent
 // b-value averaged over the targets (outliers excluded); each source is resampled to the target voxel size and converted
 bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
                   const std::filesystem::path& out_dir,bool overwrite,std::string& error_msg)
 {
-    if(targets.empty() || sources.empty() || out_dir.empty())
-        return error_msg = "please assign the target and source SRC files and the output folder",false;
+    if(targets.empty() || sources.empty())
+        return error_msg = "please assign the target and source SRC files",false;
     tipl::progress prog("b-table matching",true);
     std::string first; // the acquisition of the first file in the list
-    auto load = [&](src_data& src,const std::filesystem::path& file)->bool // multishell with the same acquisition as the first file
+    auto load = [&](src_data& src,const std::filesystem::path& file)->bool // the same acquisition as the first file
     {
         std::vector<int> shell_id;
         std::vector<float> shell_b;
@@ -3524,8 +3525,6 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         for(const auto& each : shell_vols)
             out << " " << each.size();
         out << " and " << std::count(shell_id.begin(),shell_id.end(),-1) << " other volumes";
-        if(shell_vols.size() < 2)
-            return error_msg = file.filename().u8string() + " is not multishell",false;
         if(first.empty())
             first = out.str();
         return out.str() == first || (error_msg = file.filename().u8string() + " has " + out.str() + ", unlike the first file with " + first,false);
@@ -3569,12 +3568,10 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
             b = avg_b[k]/float(n);
 
     first.clear(); // the sources are compared with the first source
-    std::filesystem::create_directories(out_dir);
     for(size_t i = 0;prog(targets.size()+i,targets.size()+sources.size()) && i < sources.size();++i)
     {
-        auto out_name = out_dir/sources[i].filename();
-        if(std::filesystem::exists(out_name) && std::filesystem::equivalent(out_name,sources[i]))
-            return error_msg = "the output folder must differ from the folder of " + sources[i].filename().u8string(),false;
+        auto out_name = (out_dir.empty() ? sources[i].parent_path() : out_dir)/(tipl::remove_all_suffix(sources[i].filename().u8string())+".matched.sz");
+        std::filesystem::create_directories(out_name.parent_path());
         if(std::filesystem::exists(out_name) && !overwrite)
         {
             tipl::out() << "skip existing " << out_name.u8string();
