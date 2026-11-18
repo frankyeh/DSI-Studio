@@ -200,7 +200,7 @@ void CreateDBDialog::on_open_dir1_clicked()
 
 void CreateDBDialog::on_select_output_file_clicked()
 {
-    QString filename = tipl::qt::save_image_file(this,"","FIB files (*.fz *fib.gz);;NIFTI Files(*nii.gz);;All files (*)");
+    QString filename = tipl::qt::save_image_file(this,"","FIB files (*.fz *fib.gz);;NIFTI Files(*nii.gz);;SRC files (*.sz);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__
@@ -286,7 +286,8 @@ void CreateDBDialog::update_output_file_name(void)
         if(create_db)
             ui->output_file_name->setText(base_name.remove(".nii.gz") + ".dz");
         else
-            ui->output_file_name->setText(base_name + (tipl::ends_with(front,{".nii.gz",".nii"}) ? ".nii.gz" : ".avg.fz"));
+            ui->output_file_name->setText(base_name + (std::filesystem::exists(tipl::remove_all_suffix(front)+".bval") ? ".avg.sz" :
+                                                       tipl::ends_with(front,{".nii.gz",".nii"}) ? ".nii.gz" : ".avg.fz"));
     }
 }
 
