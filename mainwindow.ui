@@ -2723,7 +2723,7 @@ Processing</string>
   QFrame#match_target_card,
   QFrame#match_source_card,
   QFrame#match_output_card {
-      background-color: rgba(250,250,250,0.45);
+      background-color: transparent;
       border: 1px solid #dddddf;
       border-radius: 9px;
   }
@@ -2792,10 +2792,16 @@ Processing</string>
       background-color: #f59e0b;
       border-color: #f59e0b;
   }
-  QWidget#tab_match QLineEdit,
-  QWidget#tab_match QListWidget {
+  QWidget#tab_match QLineEdit {
       color: #202124;
       background-color: #ffffff;
+      border: 1px solid #d9d9dc;
+      border-radius: 6px;
+      padding: 4px;
+  }
+  QWidget#tab_match QListWidget {
+      color: #202124;
+      background-color: transparent;
       border: 1px solid #d9d9dc;
       border-radius: 6px;
       padding: 4px;
