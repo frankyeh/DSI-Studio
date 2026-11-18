@@ -127,6 +127,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_gfa,
         ui->output_odf,
         ui->output_dwi, // qsdr only
+        ui->output_wmgm,
         ui->high_accuracy // fixel
     };
     if(!load_src(0))
@@ -655,7 +656,10 @@ bool reconstruction_window::command(std::vector<std::string> cmds,command_source
             auto vs = handle->voxel.vs;
             auto trans = handle->voxel.trans_to_mni;
             auto mask = handle->voxel.mask;
+            auto other = std::make_tuple(handle->voxel.other_image,handle->voxel.other_image_name, // qsdr warps them to the template space
+                                         handle->voxel.other_image_trans,handle->voxel.other_image_voxel_size);
             ok = handle->reconstruction();
+            std::tie(handle->voxel.other_image,handle->voxel.other_image_name,handle->voxel.other_image_trans,handle->voxel.other_image_voxel_size) = std::move(other);
             handle->voxel.mask = mask;
             handle->voxel.dim = dim_backup;
             handle->voxel.vs = vs;
