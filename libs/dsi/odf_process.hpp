@@ -25,6 +25,88 @@ inline std::vector<double> shell_weights(const std::vector<tipl::vector<3,float>
     tipl::multiply_constant(t.begin(),t.end(),1.0/std::accumulate(t.begin(),t.end(),0.0));
     return t;
 }
+// the brain-wide constants of a shell (fit) that give a voxel's WM fraction from its mean m and noise-subtracted dispersion sn,
+// then its GM fraction
+struct tissue_model
+{
+    float eps = 0.0f,C = 0.0f,s0 = 0.0f,sw = 0.0f,W0 = 0.0f,G0 = 0.0f,W = 0.0f,G = 0.0f; // W0,G0: the anchors of the WM fraction
+    float wm(float m,float sn) const
+    {
+        float d = sw*(m+eps)+sn*(G0-W0);
+        return d > 0.0f ? std::clamp(sn*G0/d,0.0f,1.0f) : 1.0f;
+    }
+    float gm(float m,float y) const
+    {
+        return std::clamp((m-y*W-(1.0f-y)*C)/(0.88f*G-C),0.0f,1.0f-y);
+    }
+    // fits the constants to the per-voxel mean m and sample variance s2 of a shell over the brain and returns its HCP-equivalent
+    // b-value (0 if not estimable); the template version takes the dwi vols of a shell (T: a volume or its pointer) after drift
+    // normalization, and out appends the shell converted to b-value b2 (image_model.cpp)
+    float fit(const std::vector<float>& m,const std::vector<float>& s2);
+    template<typename T>
+    float fit(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+              float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr);
+};
+// --other_output=wmgm: each voxel's WM and GM fractions from the mean and dispersion of each shell, averaged over the shells;
+// the constants are fitted at the end over the mask of the output space (qsdr: the template space), where the fractions are computed
+class TissueFraction : public BaseProcess{
+    std::vector<std::pair<size_t,size_t> > shells; // the dwi of each shell of b >= 500 (DSI: all dwi as one shell)
+    std::vector<std::vector<float> > m,s2; // the per-voxel mean and sample variance of each shell
+public:
+    virtual bool needed(Voxel& voxel)
+    {
+        return voxel.needs("wmgm");
+    }
+    virtual void init(Voxel& voxel)
+    {
+        bool dsi = voxel.shell.size() >= 5;
+        for(size_t k = 0;k < voxel.shell.size();++k)
+        {
+            size_t from = voxel.shell[k],to = (k + 1 == voxel.shell.size() || dsi ? voxel.bvalues.size() : voxel.shell[k+1]);
+            if(to-from >= 2 && (dsi || voxel.bvalues[from] >= 500.0f))
+                shells.push_back({from,to});
+            if(dsi)
+                break;
+        }
+        m.assign(shells.size(),std::vector<float>(voxel.dim.size()));
+        s2 = m;
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        for(size_t k = 0;k < shells.size();++k)
+        {
+            double sum = 0.0,sum2 = 0.0,n = double(shells[k].second-shells[k].first);
+            for(size_t i = shells[k].first;i < shells[k].second;++i)
+            {
+                sum += data.space[i];
+                sum2 += double(data.space[i])*data.space[i];
+            }
+            m[k][data.voxel_index] = float(sum/n);
+            s2[k][data.voxel_index] = float((sum2-sum*sum/n)/(n-1.0));
+        }
+    }
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
+    {
+        auto vox = tipl::get_sparse_index(voxel.mask);
+        std::vector<float> wm(voxel.dim.size()),gm(voxel.dim.size());
+        for(size_t k = 0;k < shells.size();++k)
+        {
+            std::vector<float> mk(vox.size()),sk(vox.size());
+            for(size_t j = 0;j < vox.size();++j)
+                mk[j] = m[k][vox[j]],sk[j] = s2[k][vox[j]];
+            tissue_model t;
+            t.fit(mk,sk);
+            for(size_t j = 0;j < vox.size();++j)
+            {
+                float y = t.wm(mk[j],std::sqrt(std::max(sk[j]-t.s0,0.0f))); // the noise-subtracted dispersion
+                wm[vox[j]] += y/float(shells.size());
+                gm[vox[j]] += t.gm(mk[j],y)/float(shells.size());
+            }
+        }
+        mat_writer.write<tipl::io::masked_sloped>("wm",wm,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("gm",gm,voxel.dim.plane_size());
+    }
+};
 class BalanceScheme : public BaseProcess{
     std::vector<float> scale; // the gqi weight of each balanced signal
     std::vector<unsigned int> new_shell; // the shells of the balanced b-table
