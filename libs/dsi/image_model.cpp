@@ -3199,8 +3199,9 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     if(dsi && !is_dsi(reference.src_bvalues))
         return error_msg = "a DSI SRC needs a DSI reference SRC",false;
 
-    // match each target shell (b >= 500) to the reference shell with the nearest mean b-value (multishell: equivalent b-value)
-    std::vector<int> shell_id,ref_shell_id,match;
+    // each target shell (b >= 500) takes the reference shell with the nearest mean b-value (multishell: equivalent b-value),
+    // converted to the target's equivalent b-value (DSI: kept as is) and tagged by the target shell, before rotate() resamples it
+    std::vector<int> shell_id,ref_shell_id;
     std::vector<float> shell_b,ref_shell_b;
     std::vector<std::vector<size_t> > shell_vols,ref_shell_vols;
     group_shells(src_bvalues,dsi,shell_id,shell_b,shell_vols,dsi ? nullptr : &src_dwi_data,&voxel.mask);
@@ -3211,54 +3212,31 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "the reference SRC has no DWI with b-value >= 500",false;
     if(std::count(shell_b.begin(),shell_b.end(),0.0f))
         return error_msg = "cannot estimate the equivalent b-value of a shell",false;
+    std::vector<tipl::image<3> > dwi;
+    std::vector<float> bvalues;
+    std::vector<tipl::vector<3,float> > bvectors;
+    ref_shell_id.clear();
     for(size_t k = 0;k < shell_b.size();++k)
     {
-        match.push_back(int(std::min_element(ref_shell_b.begin(),ref_shell_b.end(),[&](float l,float r)
-                        {return std::fabs(l-shell_b[k]) < std::fabs(r-shell_b[k]);})-ref_shell_b.begin()));
-        if(ref_shell_vols[match.back()].size() < 3)
-            return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[match.back()])) + " has fewer than three DWIs",false;
-        tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi) uses reference shell b=" << ref_shell_b[match.back()] << " (" << ref_shell_vols[match.back()].size() << " dwi)";
-    }
-
-    // multishell: each target shell gets its matched reference shell converted to the target's equivalent b-value
-    if(!dsi)
-    {
-        std::vector<tipl::image<3> > dwi;
-        std::vector<float> bvalues;
-        std::vector<tipl::vector<3,float> > bvectors;
-        std::vector<int> id;
-        for(size_t k = 0;k < shell_b.size();++k)
+        auto r = size_t(std::min_element(ref_shell_b.begin(),ref_shell_b.end(),[&](float x,float y)
+                        {return std::fabs(x-shell_b[k]) < std::fabs(y-shell_b[k]);})-ref_shell_b.begin());
+        if(ref_shell_vols[r].size() < 3)
+            return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[r])) + " has fewer than three DWIs",false;
+        tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi) uses reference shell b=" << ref_shell_b[r] << " (" << ref_shell_vols[r].size() << " dwi)";
+        if(!dsi)
+            shell_b_value(reference.src_dwi_data,ref_shell_vols[r],reference.voxel.mask,shell_b[k],&dwi);
+        for(auto j : ref_shell_vols[r])
         {
-            shell_b_value(reference.src_dwi_data,ref_shell_vols[match[k]],reference.voxel.mask,shell_b[k],&dwi);
-            for(auto j : ref_shell_vols[match[k]])
-            {
-                bvalues.push_back(shell_b[k]);
-                bvectors.push_back(reference.src_bvectors[j]);
-                id.push_back(int(k));
-            }
-            match[k] = int(k); // the converted copy is tagged by the target shell
+            if(dsi) // one shell
+                dwi.push_back(std::move(reference.src_dwi_data[j]));
+            bvalues.push_back(dsi ? reference.src_bvalues[j] : shell_b[k]);
+            bvectors.push_back(reference.src_bvectors[j]);
+            ref_shell_id.push_back(int(k));
         }
-        reference.src_dwi_data.swap(dwi);
-        reference.src_bvalues.swap(bvalues);
-        reference.src_bvectors.swap(bvectors);
-        ref_shell_id.swap(id);
     }
-    else // keep only the matched reference shells before rotate() resamples them
-    {
-        size_t out = 0;
-        for(size_t j = 0;j < reference.src_bvalues.size();++j)
-            if(std::find(match.begin(),match.end(),ref_shell_id[j]) != match.end())
-            {
-                reference.src_dwi_data[out].swap(reference.src_dwi_data[j]);
-                reference.src_bvalues[out] = reference.src_bvalues[j];
-                reference.src_bvectors[out] = reference.src_bvectors[j];
-                ref_shell_id[out++] = ref_shell_id[j];
-            }
-        reference.src_dwi_data.resize(out);
-        reference.src_bvalues.resize(out);
-        reference.src_bvectors.resize(out);
-        ref_shell_id.resize(out);
-    }
+    reference.src_dwi_data.swap(dwi);
+    reference.src_bvalues.swap(bvalues);
+    reference.src_bvectors.swap(bvectors);
 
     // affine b0-to-b0 registration; rotate() then resamples the reference DWIs into this space and rotates its b-vectors
     tipl::reg::mm_reg<tipl::out> reg;
@@ -3296,7 +3274,7 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
             return;
         std::pair<float,size_t> best[3] = {{-1.0f,0},{-1.0f,0},{-1.0f,0}};
         for(size_t j = 0;j < reference.src_bvalues.size();++j)
-            if(ref_shell_id[j] == match[shell_id[i]])
+            if(ref_shell_id[j] == shell_id[i])
             {
                 std::pair<float,size_t> c(masked_correlation(src_dwi_data[i].data(),reference.src_dwi_data[j].data(),voxel.mask),j);
                 for(auto& each : best) // keeps best[] sorted: a larger value displaces the rest down
