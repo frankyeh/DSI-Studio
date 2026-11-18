@@ -210,12 +210,13 @@ public:
     void flip_b_table(const unsigned char* order);
     bool regenerate_b_table(std::filesystem::path reference_file); // from a reference SRC aligned to this subject; empty: the current template's reference (<template>.sz)
     bool convert_b_table(const std::filesystem::path& target_file); // shell DWI converted to the directions and equivalent b-values of a shell SRC
+    bool convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors); // to a b-table with HCP-equivalent shell b-values
     void flip_dwi(unsigned char type);
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
     void rotate(const tipl::shape<3>& new_geo,
                 const tipl::vector<3>& new_vs,
                 const tipl::transformation_matrix<double>& affine);
-    void resample(float nv);
+    void resample(const tipl::vector<3>& new_vs);
     void smoothing(void);
     bool scheme_balance(void);
     bool correct_signal_drift(void);

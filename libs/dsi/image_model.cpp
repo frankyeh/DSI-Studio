@@ -1303,7 +1303,7 @@ bool src_data::command(std::vector<std::string> cmds)
         float reso = std::stof(param);
         if(reso <= 0.0f)
             return error_msg = "resample resolution must be positive",false;
-        resample(reso);
+        resample(tipl::vector<3>(reso,reso,reso));
         return log_step();
     }
     if(cmd == "align_acpc")
@@ -1532,13 +1532,10 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
     update_dwi_sum();
 
 }
-void src_data::resample(float nv)
+void src_data::resample(const tipl::vector<3>& new_vs)
 {
-    if(voxel.vs[0] == nv &&
-       voxel.vs[1] == nv &&
-       voxel.vs[2] == nv)
+    if(voxel.vs == new_vs)
         return;
-    tipl::vector<3,float> new_vs(nv,nv,nv);
     tipl::shape<3> new_geo(uint32_t(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
                               uint32_t(std::ceil(float(voxel.dim.height())*voxel.vs[1]/new_vs[1])),
                               uint32_t(std::ceil(float(voxel.dim.depth())*voxel.vs[2]/new_vs[2])));
@@ -1551,7 +1548,11 @@ void src_data::resample(float nv)
     T.sr[8] = double(new_vs[2]/voxel.vs[2]);
     rotate(new_geo,new_vs,T);
     std::ostringstream out;
-    out << " The images were resampled to " << std::fixed << std::setprecision(2) << nv << " mm isotropic resolution.";
+    out << " The images were resampled to " << std::fixed << std::setprecision(2) << new_vs[0];
+    if(new_vs[0] == new_vs[1] && new_vs[1] == new_vs[2])
+        out << " mm isotropic resolution.";
+    else
+        out << " x " << new_vs[1] << " x " << new_vs[2] << " mm resolution.";
     voxel.report += out.str();
 }
 void src_data::smoothing(void)
@@ -3307,25 +3308,45 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     voxel.report += " The b-values and b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
     return true;
 }
-// converts shell DWI to the b-table of a shell SRC (the target), both by equivalent b-values (recorded b-values unused):
-// each target shell takes the shell of this data with the nearest equivalent b-value, converted to the target's and interpolated
-// to the target directions; b < 500: the mean b0
+// replaces the recorded b-values of each shell (b >= 500) by its HCP-equivalent b-value; returns the shell values (empty if failed)
+static std::vector<float> equivalent_b_table(src_data& src)
+{
+    std::vector<int> shell_id;
+    std::vector<float> shell_b;
+    std::vector<std::vector<size_t> > shell_vols;
+    if(is_dsi(src.src_bvalues))
+        return src.error_msg = "the equivalent b-value needs shell data, not DSI",shell_b;
+    group_shells(src.src_bvalues,false,shell_id,shell_b,shell_vols,&src.src_dwi_data,&src.voxel.mask);
+    if(shell_b.empty() || std::count(shell_b.begin(),shell_b.end(),0.0f))
+        return src.error_msg = "cannot estimate the equivalent b-value of a shell (b >= 500)",std::vector<float>();
+    for(size_t k = 0;k < shell_b.size();++k)
+        for(auto i : shell_vols[k])
+            src.src_bvalues[i] = shell_b[k];
+    return shell_b;
+}
 bool src_data::convert_b_table(const std::filesystem::path& target_file)
 {
-    tipl::progress prog("convert to b-table",true);
     src_data target;
-    if(!target.load_from_file(target_file))
+    if(!target.load_from_file(target_file) || equivalent_b_table(target).empty())
         return error_msg = target.error_msg,false;
-    if(is_dsi(src_bvalues) || is_dsi(target.src_bvalues))
-        return error_msg = "b-table conversion needs shell data and a shell SRC, not DSI",false;
+    return convert_b_table(target.src_bvalues,target.src_bvectors);
+}
+// converts shell DWI to a target b-table whose shell b-values are HCP-equivalent (recorded b-values of this data unused):
+// each target shell takes the shell of this data with the nearest equivalent b-value, converted to the target's and interpolated
+// to the target directions; the other target volumes (b < 500) become b0 with the mean b0
+bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors)
+{
+    tipl::progress prog("convert to b-table",true);
+    if(is_dsi(src_bvalues))
+        return error_msg = "b-table conversion needs shell data, not DSI",false;
     std::vector<int> shell_id,target_shell_id;
     std::vector<float> shell_b,target_shell_b;
     std::vector<std::vector<size_t> > shell_vols,target_shell_vols;
     group_shells(src_bvalues,false,shell_id,shell_b,shell_vols,&src_dwi_data,&voxel.mask);
-    group_shells(target.src_bvalues,false,target_shell_id,target_shell_b,target_shell_vols,&target.src_dwi_data,&target.voxel.mask);
+    group_shells(bvalues,false,target_shell_id,target_shell_b,target_shell_vols);
     if(shell_b.empty() || target_shell_b.empty())
-        return error_msg = "the data and the target SRC both need DWI with b-value >= 500",false;
-    if(std::count(shell_b.begin(),shell_b.end(),0.0f) || std::count(target_shell_b.begin(),target_shell_b.end(),0.0f))
+        return error_msg = "the data and the target both need DWI with b-value >= 500",false;
+    if(std::count(shell_b.begin(),shell_b.end(),0.0f))
         return error_msg = "cannot estimate the equivalent b-value of a shell",false;
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
@@ -3334,7 +3355,10 @@ bool src_data::convert_b_table(const std::filesystem::path& target_file)
         b0[0] += b0[i];
     b0[0] /= float(b0.size());
 
-    std::vector<tipl::image<3> > new_dwi(target.src_bvalues.size(),b0[0]);
+    std::vector<tipl::image<3> > new_dwi(bvalues.size(),b0[0]);
+    for(size_t j = 0;j < bvalues.size();++j)
+        if(target_shell_id[j] < 0)
+            bvalues[j] = 0.0f,bvectors[j] = tipl::vector<3,float>();
     for(size_t t = 0;t < target_shell_b.size();++t)
     {
         prog(t,target_shell_b.size());
@@ -3348,8 +3372,8 @@ bool src_data::convert_b_table(const std::filesystem::path& target_file)
             dirs.push_back(src_bvectors[i]);
         for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
         {
-            target.src_bvalues[j] = std::round(target_shell_b[t]);
-            auto w = shell_weights(dirs,0,uint32_t(dirs.size()),target.src_bvectors[j]);
+            bvalues[j] = std::round(target_shell_b[t]);
+            auto w = shell_weights(dirs,0,uint32_t(dirs.size()),bvectors[j]);
             tipl::par_for(voxel.dim.size(),[&](size_t v)
             {
                 double sum = 0.0;
@@ -3362,10 +3386,10 @@ bool src_data::convert_b_table(const std::filesystem::path& target_file)
             return error_msg = "canceled",false;
     }
     src_dwi_data.swap(new_dwi);
-    src_bvalues.swap(target.src_bvalues);
-    src_bvectors.swap(target.src_bvectors);
+    src_bvalues.swap(bvalues);
+    src_bvectors.swap(bvectors);
     update_dwi_sum();
-    voxel.report += " The DWI were converted to the b-table of " + target_file.filename().u8string() + " using the equivalent b-value of each shell.";
+    voxel.report += " The DWI were converted to a target b-table using the equivalent b-value of each shell.";
     return true;
 }
 // averages QSDR dwi exports (4D nifti with bval/bvec and an mni header) into one SRC: scans with outlying neighboring dwi correlation
@@ -3476,6 +3500,94 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
     avg.voxel.report += " A group-average DWI was constructed from " + std::to_string(n) + " QSDR DWI outputs (" +
                         std::to_string(file_names.size()-n) + " outliers excluded by neighboring DWI correlation), each interpolated to the b-vectors of the scan with the highest correlation.";
     return avg.save_to_file(out_name) || (error_msg = avg.error_msg,false);
+}
+// converts each source SRC to the acquisition of a set of target SRC (all multishell), saved in out_dir under its file name:
+// the target b-table takes the b-vectors of the target with the highest neighboring dwi correlation and each shell's HCP-equivalent
+// b-value averaged over the targets (outliers excluded); each source is resampled to the target voxel size and converted
+bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
+                  const std::filesystem::path& out_dir,bool overwrite,std::string& error_msg)
+{
+    if(targets.empty() || sources.empty() || out_dir.empty())
+        return error_msg = "please assign the target and source SRC files and the output folder",false;
+    tipl::progress prog("b-table matching",true);
+    std::string first; // the acquisition of the first file in the list
+    auto load = [&](src_data& src,const std::filesystem::path& file)->bool // multishell with the same acquisition as the first file
+    {
+        std::vector<int> shell_id;
+        std::vector<float> shell_b;
+        std::vector<std::vector<size_t> > shell_vols;
+        if(!src.load_from_file(file))
+            return error_msg = src.error_msg,false;
+        group_shells(src.src_bvalues,false,shell_id,shell_b,shell_vols);
+        std::ostringstream out;
+        out << "dimension " << src.voxel.dim << ", voxel size " << src.voxel.vs << ", dwi per shell";
+        for(const auto& each : shell_vols)
+            out << " " << each.size();
+        out << " and " << std::count(shell_id.begin(),shell_id.end(),-1) << " other volumes";
+        if(shell_vols.size() < 2)
+            return error_msg = file.filename().u8string() + " is not multishell",false;
+        if(first.empty())
+            first = out.str();
+        return out.str() == first || (error_msg = file.filename().u8string() + " has " + out.str() + ", unlike the first file with " + first,false);
+    };
+    std::vector<float> ndc,bvalues,leader_b;
+    std::vector<std::vector<float> > shell_b; // the equivalent b-value of each shell of each target
+    std::vector<tipl::vector<3,float> > bvectors;
+    tipl::vector<3> vs;
+    for(size_t i = 0;prog(i,targets.size()+sources.size()) && i < targets.size();++i)
+    {
+        src_data target;
+        if(!load(target,targets[i]))
+            return false;
+        ndc.push_back(target.quality_control_neighboring_dwi_corr().second);
+        tipl::out() << targets[i].filename().u8string() << " neighboring dwi correlation: " << ndc.back();
+        shell_b.push_back(equivalent_b_table(target));
+        if(shell_b.back().empty())
+            return error_msg = targets[i].filename().u8string() + ": " + target.error_msg,false;
+        if(ndc.back() == tipl::max_value(ndc)) // the leader so far
+        {
+            bvalues.swap(target.src_bvalues);
+            bvectors.swap(target.src_bvectors);
+            vs = target.voxel.vs;
+            leader_b = shell_b.back();
+        }
+    }
+    auto threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
+    std::vector<float> avg_b(leader_b.size());
+    size_t n = 0;
+    for(size_t i = 0;i < shell_b.size();++i)
+        if(ndc[i] < threshold)
+            tipl::warning() << "excluding outlier target " << targets[i].filename().u8string() << " neighboring dwi correlation: " << ndc[i];
+        else
+        {
+            for(size_t k = 0;k < avg_b.size();++k)
+                avg_b[k] += shell_b[i][k];
+            ++n;
+        }
+    for(auto& b : bvalues) // each shell of the leader takes the averaged equivalent b-value
+        if(auto k = size_t(std::find(leader_b.begin(),leader_b.end(),b)-leader_b.begin());k < leader_b.size())
+            b = avg_b[k]/float(n);
+
+    first.clear(); // the sources are compared with the first source
+    std::filesystem::create_directories(out_dir);
+    for(size_t i = 0;prog(targets.size()+i,targets.size()+sources.size()) && i < sources.size();++i)
+    {
+        auto out_name = out_dir/sources[i].filename();
+        if(std::filesystem::exists(out_name) && std::filesystem::equivalent(out_name,sources[i]))
+            return error_msg = "the output folder must differ from the folder of " + sources[i].filename().u8string(),false;
+        if(std::filesystem::exists(out_name) && !overwrite)
+        {
+            tipl::out() << "skip existing " << out_name.u8string();
+            continue;
+        }
+        src_data source;
+        if(!load(source,sources[i]))
+            return false;
+        source.resample(vs);
+        if(!source.convert_b_table(bvalues,bvectors) || !source.save_to_file(out_name))
+            return error_msg = sources[i].filename().u8string() + ": " + source.error_msg,false;
+    }
+    return !prog.aborted() || (error_msg = "canceled",false);
 }
 std::string src_data::get_report(bool dwi_part_only)
 {
