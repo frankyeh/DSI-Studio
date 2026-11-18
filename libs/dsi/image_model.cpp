@@ -3390,6 +3390,115 @@ bool src_data::convert_b_table(const std::filesystem::path& target_file)
     voxel.report += " The DWI were converted to the b-table of " + target_file.filename().u8string() + " using the equivalent b-value of each shell.";
     return true;
 }
+// averages QSDR dwi exports (4D nifti with bval/bvec and an mni header) into one SRC: scans with outlying neighboring dwi correlation
+// are excluded, and each shell of a scan is interpolated (the angular gaussian of scheme balance) to the b-vectors of the leader,
+// the scan with the highest correlation; b0 and other non-shell volumes are averaged in order, and b-values are averaged
+bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::filesystem::path>& file_names,std::string& error_msg)
+{
+    tipl::progress prog("averaging dwi",true);
+    src_data avg; // the first scan as the reference, later the leader as the average
+    std::vector<std::vector<size_t> > avg_vols;
+    auto layout = [](const std::vector<std::vector<size_t> >& vols){std::string s;for(auto& each : vols) s += std::to_string(each.size()) + " ";return s;};
+    auto load = [&](src_data& src,size_t i) // returns the dwi in each shell, the non-shell ones last (empty if failed)
+    {
+        std::vector<int> shell_id;
+        std::vector<float> shell_b;
+        std::vector<std::vector<size_t> > vols;
+        if(!tipl::io::gz_nifti(file_names[i],std::ios::in).is_mni())
+            return error_msg = file_names[i].u8string() + " is not a QSDR dwi output in the MNI space",vols;
+        if(!src.load_from_file(file_names[i]))
+            return error_msg = src.error_msg,vols;
+        group_shells(src.src_bvalues,false,shell_id,shell_b,vols);
+        vols.emplace_back();
+        for(size_t j = 0;j < shell_id.size();++j)
+            if(shell_id[j] < 0)
+                vols.back().push_back(j);
+        if(avg_vols.empty()) // the reference itself
+            return vols;
+        std::ostringstream out;
+        out << file_names[i].filename().u8string() << " differs from " << file_names[0].filename().u8string() << " in ";
+        if(src.voxel.dim != avg.voxel.dim)
+            out << "dimension: " << src.voxel.dim << " vs " << avg.voxel.dim;
+        else if(src.voxel.vs != avg.voxel.vs)
+            out << "voxel size: " << src.voxel.vs << " vs " << avg.voxel.vs;
+        else if(src.voxel.trans_to_mni != avg.voxel.trans_to_mni)
+            out << "srow: " << src.voxel.trans_to_mni << " vs " << avg.voxel.trans_to_mni;
+        else if(layout(vols) != layout(avg_vols))
+            out << "dwi count per shell (non-shell last): " << layout(vols) << "vs " << layout(avg_vols);
+        else
+            return vols;
+        return error_msg = out.str(),std::vector<std::vector<size_t> >();
+    };
+    std::vector<float> ndc;
+    for(size_t i = 0;prog(i,2*file_names.size()) && i < file_names.size();++i)
+    {
+        src_data each;
+        auto& src = i ? each : avg;
+        auto vols = load(src,i);
+        if(vols.empty())
+            return false;
+        if(!i)
+            avg_vols.swap(vols);
+        ndc.push_back(src.quality_control_neighboring_dwi_corr().second);
+        tipl::out() << file_names[i].filename().u8string() << " neighboring dwi correlation: " << ndc.back();
+    }
+    auto threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
+    auto leader = size_t(std::max_element(ndc.begin(),ndc.end())-ndc.begin());
+    tipl::out() << "leader: " << file_names[leader].filename().u8string();
+    if(leader && (avg_vols = load(avg,leader)).empty())
+        return false;
+    size_t n = 1;
+    for(size_t i = 0;prog(file_names.size()+i,2*file_names.size()) && i < file_names.size();++i)
+    {
+        if(i == leader)
+            continue;
+        if(ndc[i] < threshold)
+        {
+            tipl::warning() << "excluding outlier " << file_names[i].filename().u8string() << " neighboring dwi correlation: " << ndc[i];
+            continue;
+        }
+        src_data each;
+        auto vols = load(each,i);
+        if(vols.empty())
+            return false;
+        for(size_t s = 0;s < vols.size();++s)
+        {
+            std::vector<tipl::vector<3,float> > dirs;
+            for(auto v : vols[s])
+                dirs.push_back(each.src_bvectors[v]);
+            for(size_t k = 0;k < avg_vols[s].size();++k)
+            {
+                auto j = avg_vols[s][k];
+                std::vector<double> w(dirs.size());
+                if(s+1 < vols.size())
+                    w = shell_weights(dirs,0,uint32_t(dirs.size()),avg.src_bvectors[j]);
+                else
+                    w[k] = 1.0; // non-shell volumes pair in order
+                for(size_t m = 0;m < w.size();++m)
+                    avg.src_bvalues[j] += float(w[m]*each.src_bvalues[vols[s][m]]);
+                tipl::par_for(avg.voxel.dim.size(),[&](size_t v)
+                {
+                    double sum = 0.0;
+                    for(size_t m = 0;m < w.size();++m)
+                        sum += w[m]*each.src_dwi_data[vols[s][m]][v];
+                    avg.src_dwi_data[j][v] += float(sum);
+                });
+            }
+        }
+        ++n;
+    }
+    if(prog.aborted())
+        return error_msg = "canceled",false;
+    for(size_t j = 0;j < avg.src_bvalues.size();++j)
+    {
+        avg.src_bvalues[j] /= float(n);
+        avg.src_dwi_data[j] /= float(n);
+    }
+    avg.update_dwi_sum();
+    avg.voxel.report += " A group-average DWI was constructed from " + std::to_string(n) + " QSDR DWI outputs (" +
+                        std::to_string(file_names.size()-n) + " outliers excluded by neighboring DWI correlation), each interpolated to the b-vectors of the scan with the highest correlation.";
+    return avg.save_to_file(out_name) || (error_msg = avg.error_msg,false);
+}
 std::string src_data::get_report(bool dwi_part_only)
 {
     std::vector<float> sorted_bvalues(src_bvalues);
@@ -3893,8 +4002,10 @@ bool src_data::save_fib(void)
         dwi.voxel.vs = voxel.vs;
         dwi.voxel.trans_to_mni = voxel.trans_to_mni;
         dwi.voxel.qsdr = true; // the nifti header is marked as mni
-        dwi.src_bvalues = voxel.bvalues;
-        dwi.src_bvectors = voxel.bvectors;
+        Voxel v; // the original b-table as reconstruction reads it: sorted dwi, first b0
+        v.load_from_src(*this);
+        dwi.src_bvalues.swap(v.bvalues);
+        dwi.src_bvectors.swap(v.bvectors);
         dwi.src_dwi_data.swap(voxel.dwi_output);
         if(!dwi.save_to_file(std::filesystem::path(output_file_name).replace_extension() += "_dwi.nii.gz"))
             return error_msg = dwi.error_msg,false;
