@@ -121,6 +121,7 @@ public://used in GQI
     float odf_at(const VoxelData& data,tipl::vector<3,float> u) const; // the gqi odf at direction u
 public://used in GQI
     std::vector<unsigned int> shell;
+    std::vector<float> shell_b; // gqi and qsdr: the HCP-equivalent b-value of each shell (the recorded mean if not estimable)
 public:// manual alignment used in QSDR
     bool manual_alignment = false;
     tipl::affine_param<float> qsdr_arg;
