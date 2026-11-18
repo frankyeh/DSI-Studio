@@ -900,7 +900,8 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
     std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
-        if(step.empty() || tipl::contains("\n"+voxel.steps,"\n"+step+"\n")) // a step this file already has is passed, not applied twice
+        if(step.empty() || (step != "scheme_balance" && tipl::contains("\n"+voxel.steps,"\n"+step+"\n"))) // a step this file already has is passed
+                                                                                                         // (scheme_balance checks the scheme itself)
             continue;
         size_t pos = step.find('=');
         std::string cmd,param;
@@ -1053,8 +1054,10 @@ bool src_data::command(std::vector<std::string> cmds)
                cmd == "save_bval" ? save_bval(param) :
                cmd == "save_bvec" ? save_bvec(param) : (error_msg = "unknown command: " + cmd,false);
     }
-    if(cmd == "scheme_balance" || cmd == "correct_signal_drift") // already applied: passed
-        return tipl::contains(voxel.steps,cmd) || ((cmd == "scheme_balance" ? scheme_balance() : correct_signal_drift()) && log_step());
+    if(cmd == "scheme_balance") // an already balanced scheme passes (checked by the dwi count of each shell, not the steps)
+        return scheme_balance() && log_step();
+    if(cmd == "correct_signal_drift") // already applied: passed
+        return tipl::contains(voxel.steps,cmd) || (correct_signal_drift() && log_step());
     if(cmd == "remove") // DWI index ranges and b-value conditions, e.g. 1,3:5,8:end or b>3000 or b<100
     {
         const size_t n = src_bvalues.size();
@@ -1578,6 +1581,8 @@ bool src_data::scheme_balance(void)
 
     BalanceScheme b; // v gets the balanced b-table, b.trans the interpolation of the sorted dwi
     b.init(v);
+    if(b.trans.empty())
+        return tipl::out() << "the sampling scheme is already balanced",true;
     size_t old_count = v.dwi_data.size(),new_count = v.bvalues.size();
     tipl::out() << "balance " << old_count << " dwi to " << new_count << " dwi";
 
@@ -2950,7 +2955,8 @@ static float pct(std::vector<float> v,float p,float empty = 0.0f) // the p-th fr
     return *at;
 }
 // the per-voxel mean m and sample variance s2 over the volumes vols, each multiplied by its scale, at the voxels vox
-static void shell_moments(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
+template<typename T> // T: a volume (tipl::image<3>) or its pointer
+static void shell_moments(const std::vector<T>& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
                           const std::vector<float>& scale,std::vector<float>& m,std::vector<float>& s2)
 {
     m.resize(vox.size());
@@ -2968,7 +2974,8 @@ static void shell_moments(const std::vector<tipl::image<3> >& dwi,const std::vec
         s2[j] = float(std::max(0.0,(sum2-sum*double(m[j]))/double(vols.size()-1)));
     });
 }
-static float shell_b_value(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+template<typename T>
+static float shell_b_value(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
                           float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr)
 {
     if(vols.size() < 2)
@@ -3054,7 +3061,7 @@ static float shell_b_value(const std::vector<tipl::image<3> >& dwi,const std::ve
     float kw = kappa(-0.6275f,0.0790f),kg = kappa(-0.8436f,0.0775f),kc = kappa(-1.0353f,0.1555f),ka = kappa(0.1371f,-0.0656f);
     size_t first = out->size();
     for(auto k : vols) // outside the mask: the unconverted signal
-        out->push_back(dwi[k]);
+        out->emplace_back(&dwi[k][0],mask.shape());
     tipl::par_for(vox.size(),[&](size_t j)
     {
         float z = 1.0f-x[j]-y[j],d = y[j]*W+x[j]*G+z*C;
@@ -3096,6 +3103,11 @@ static void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<
         tipl::out() << "shell recorded b=" << shell_b[k] << " HCP-equivalent b=" << eq_b;
         shell_b[k] = eq_b;
     }
+}
+// the equivalent b-value of the dwi vols (0 if not estimable), for the balanced scheme size of a Voxel shell (Voxel::load_from_src)
+float shell_b_value(const std::vector<const float*>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask)
+{
+    return shell_b_value<const float*>(dwi,vols,mask);
 }
 // a preprocessing step for shell data, before scheme balance: within each shell (and the b0s), three passes divide each volume by its
 // gain gamma_k, its mean over core isotropic gm relative to the mean of all volumes there; the core gm is P45 < mu < P90 with the
@@ -3327,14 +3339,17 @@ static std::vector<float> equivalent_b_table(src_data& src)
 bool src_data::convert_b_table(const std::filesystem::path& target_file)
 {
     src_data target;
-    if(!target.load_from_file(target_file) || equivalent_b_table(target).empty())
+    if(!target.load_from_file(target_file))
         return error_msg = target.error_msg,false;
-    return convert_b_table(target.src_bvalues,target.src_bvectors);
+    auto bvalues = target.src_bvalues;
+    if(equivalent_b_table(target).empty())
+        return error_msg = target.error_msg,false;
+    return convert_b_table(bvalues,target.src_bvectors,target.src_bvalues);
 }
-// converts shell DWI to a target b-table whose shell b-values are HCP-equivalent (recorded b-values of this data unused):
-// each target shell takes the shell of this data with the nearest equivalent b-value, converted to the target's and interpolated
-// to the target directions; the other target volumes (b < 500) become b0 with the mean b0
-bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors)
+// converts shell DWI to a target b-table (bvalues: recorded, kept in the output; eq_bvalues: HCP-equivalent, used for conversion;
+// the recorded b-values of this data unused): each target shell takes the shell of this data with the nearest equivalent b-value,
+// converted to the target's and interpolated to the target directions; the other target volumes (b < 500) become b0 with the mean b0
+bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors,const std::vector<float>& eq_bvalues)
 {
     tipl::progress prog("convert to b-table",true);
     if(is_dsi(src_bvalues))
@@ -3343,7 +3358,7 @@ bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vect
     std::vector<float> shell_b,target_shell_b;
     std::vector<std::vector<size_t> > shell_vols,target_shell_vols;
     group_shells(src_bvalues,false,shell_id,shell_b,shell_vols,&src_dwi_data,&voxel.mask);
-    group_shells(bvalues,false,target_shell_id,target_shell_b,target_shell_vols);
+    group_shells(eq_bvalues,false,target_shell_id,target_shell_b,target_shell_vols);
     if(shell_b.empty() || target_shell_b.empty())
         return error_msg = "the data and the target both need DWI with b-value >= 500",false;
     if(std::count(shell_b.begin(),shell_b.end(),0.0f))
@@ -3372,7 +3387,6 @@ bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vect
             dirs.push_back(src_bvectors[i]);
         for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
         {
-            bvalues[j] = std::round(target_shell_b[t]);
             auto w = shell_weights(dirs,0,uint32_t(dirs.size()),bvectors[j]);
             tipl::par_for(voxel.dim.size(),[&](size_t v)
             {
@@ -3504,7 +3518,8 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
 // converts each source SRC to the acquisition of a set of target SRC (single or multishell), saved as <source>.matched.sz in out_dir
 // (empty: the source folder): targets outside the most common shell configuration or with outlying neighboring dwi correlation are
 // ignored (notes: the reason for each target, empty if used); the target b-table takes the b-vectors of the used target with the highest
-// correlation and each shell's HCP-equivalent b-value averaged over the used targets; each source is resampled to that target's voxel size
+// correlation and each shell's HCP-equivalent b-value averaged over the used targets; each source is resampled to that target's voxel size,
+// converted, and saved with that target's recorded b-values
 bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
                   const std::filesystem::path& out_dir,bool overwrite,std::vector<std::string>& notes,std::string& error_msg)
 {
@@ -3529,7 +3544,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
     };
     std::vector<std::string> config(targets.size());
     std::vector<float> ndc(targets.size());
-    std::vector<std::vector<float> > bvalues(targets.size()),shell_b(targets.size()); // shell_b: the equivalent b-value of each shell
+    std::vector<std::vector<float> > recorded(targets.size()),bvalues(targets.size()),shell_b(targets.size()); // shell_b: the equivalent b-value of each shell
     std::vector<std::vector<tipl::vector<3,float> > > bvectors(targets.size());
     std::vector<tipl::vector<3> > vs(targets.size());
     for(size_t i = 0;prog(i,targets.size()+sources.size()) && i < targets.size();++i)
@@ -3539,6 +3554,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
             return error_msg = target.error_msg,false;
         config[i] = acquisition(target,false);
         ndc[i] = target.quality_control_neighboring_dwi_corr().second;
+        recorded[i] = target.src_bvalues;
         if((shell_b[i] = equivalent_b_table(target)).empty())
             notes[i] = target.error_msg;
         bvalues[i].swap(target.src_bvalues);
@@ -3600,7 +3616,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         if(a != first)
             return error_msg = sources[i].filename().u8string() + " has " + a + ", unlike the first source with " + first,false;
         source.resample(vs[leader]);
-        if(!source.convert_b_table(bvalues[leader],bvectors[leader]) || !source.save_to_file(out_name))
+        if(!source.convert_b_table(recorded[leader],bvectors[leader],bvalues[leader]) || !source.save_to_file(out_name))
             return error_msg = sources[i].filename().u8string() + ": " + source.error_msg,false;
     }
     return !prog.aborted() || (error_msg = "canceled",false);
