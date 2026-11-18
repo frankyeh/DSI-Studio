@@ -1,5 +1,6 @@
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
+float shell_b_value(const std::vector<const float*>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask);
 
 bool Voxel::init(void)
 {
@@ -75,6 +76,16 @@ void Voxel::load_from_src(src_data& image_model)
         }
 
     calculate_shell(bvalues,shell);
+    shell_b.clear();
+    for(size_t k = 0;(method_id == 4 || method_id == 7) && shell.size() < 5 && k < shell.size();++k) // gqi and qsdr: the balanced scheme size
+    {
+        size_t from = shell[k],to = (k + 1 == shell.size() ? bvalues.size() : shell[k+1]);
+        std::vector<size_t> vols(to-from);
+        std::iota(vols.begin(),vols.end(),from);
+        float b = shell_b_value(dwi_data,vols,mask);
+        shell_b.push_back(b > 0.0f ? b : float(tipl::mean(bvalues.begin()+from,bvalues.begin()+to)));
+        tipl::out() << "shell recorded b=" << bvalues[shell[k]] << " HCP-equivalent b=" << shell_b.back();
+    }
     if(method_id == 1)
         max_fiber_number = 1;
     else
