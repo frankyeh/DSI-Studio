@@ -234,8 +234,11 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
 }
 
 
+bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::filesystem::path>& file_names,std::string& error_msg);
 bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg)
 {
+    if(std::filesystem::exists(tipl::remove_all_suffix(file_names[0])+=".bval")) // qsdr dwi outputs
+        return dwi_average(out_name,file_names,error_msg);
     if(tipl::ends_with(file_names[0].u8string(),".nii.gz"))
     {
         tipl::image<3,double> sum;
