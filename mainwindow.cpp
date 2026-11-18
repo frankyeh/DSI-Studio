@@ -133,7 +133,7 @@ void checkForVersionSpecificBugs(const QString& bugListText)
 
 extern std::vector<std::filesystem::path> fib_template_list;
 bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
-                  const std::filesystem::path& out_dir,bool overwrite,std::string& error_msg);
+                  const std::filesystem::path& out_dir,bool overwrite,std::vector<std::string>& notes,std::string& error_msg);
 std::vector<tracking_window*> tracking_windows;
 // AI tutor: points at a live control the user clicks; never clicks, triggers, or runs a command itself
 // gesture -> its stroke in fractions of the control and its label; one point: the cursor glides in and acts there;
@@ -441,8 +441,11 @@ MainWindow::MainWindow(QWidget *parent) :
     for(auto [add,remove,list] : {std::tuple{ui->match_target_add,ui->match_target_remove,ui->match_target_list},
                                   std::tuple{ui->match_source_add,ui->match_source_remove,ui->match_source_list}})
     {
-        connect(add,&QPushButton::clicked,this,[this,list = list]
-            {list->addItems(tipl::qt::open_image_files(this,ui->workDir->currentText(),"SRC files (*.sz *src.gz);;All files (*)"));});
+        connect(add,&QPushButton::clicked,this,[this,list = list] // each item shows the file name and keeps the path
+        {
+            for(const auto& file : tipl::qt::open_image_files(this,ui->workDir->currentText(),"SRC files (*.sz *src.gz);;All files (*)"))
+                (new QListWidgetItem(QFileInfo(file).fileName(),list))->setData(Qt::UserRole,file);
+        });
         connect(remove,&QPushButton::clicked,this,[list = list]{qDeleteAll(list->selectedItems());});
     }
     connect(ui->match_output_browse,&QPushButton::clicked,this,[this]
@@ -456,12 +459,23 @@ MainWindow::MainWindow(QWidget *parent) :
         {
             std::vector<std::filesystem::path> result;
             for(int i = 0;i < list->count();++i)
-                result.push_back(tipl::qt::to_path(list->item(i)->text()));
+                result.push_back(tipl::qt::to_path(list->item(i)->data(Qt::UserRole).toString()));
             return result;
         };
         std::string error_msg;
-        if(match_btable(files(ui->match_target_list),files(ui->match_source_list),tipl::qt::to_path(ui->match_output->text()),
-                        ui->match_overwrite->isChecked(),error_msg))
+        std::vector<std::string> notes;
+        bool result = match_btable(files(ui->match_target_list),files(ui->match_source_list),tipl::qt::to_path(ui->match_output->text()),
+                                   ui->match_overwrite->isChecked(),notes,error_msg);
+        for(size_t i = 0;i < notes.size();++i) // an ignored target is struck out with its reason after the file name
+        {
+            auto* item = ui->match_target_list->item(int(i));
+            auto font = item->font();
+            font.setStrikeOut(!notes[i].empty());
+            item->setFont(font);
+            item->setForeground(notes[i].empty() ? QBrush() : QBrush(Qt::gray));
+            item->setText(QFileInfo(item->data(Qt::UserRole).toString()).fileName() + (notes[i].empty() ? QString() : "  ("+QString::fromStdString(notes[i])+")"));
+        }
+        if(result)
             QMessageBox::information(this,QApplication::applicationName(),"b-table matching completed");
         else
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
