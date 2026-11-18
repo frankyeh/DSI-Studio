@@ -3502,74 +3502,86 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
     return avg.save_to_file(out_name) || (error_msg = avg.error_msg,false);
 }
 // converts each source SRC to the acquisition of a set of target SRC (single or multishell), saved as <source>.matched.sz in out_dir
-// (empty: the source folder):
-// the target b-table takes the b-vectors of the target with the highest neighboring dwi correlation and each shell's HCP-equivalent
-// b-value averaged over the targets (outliers excluded); each source is resampled to the leader voxel size and converted
+// (empty: the source folder): targets outside the most common shell configuration or with outlying neighboring dwi correlation are
+// ignored (notes: the reason for each target, empty if used); the target b-table takes the b-vectors of the used target with the highest
+// correlation and each shell's HCP-equivalent b-value averaged over the used targets; each source is resampled to that target's voxel size
 bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
-                  const std::filesystem::path& out_dir,bool overwrite,std::string& error_msg)
+                  const std::filesystem::path& out_dir,bool overwrite,std::vector<std::string>& notes,std::string& error_msg)
 {
+    notes.assign(targets.size(),std::string());
     if(targets.empty() || sources.empty())
         return error_msg = "please assign the target and source SRC files",false;
     tipl::progress prog("b-table matching",true);
-    std::string first; // the acquisition of the first file in the list
-    auto load = [&](src_data& src,const std::filesystem::path& file,bool geometry)->bool // the same acquisition as the first file
+    auto acquisition = [](const src_data& src,bool geometry) // the dwi count per shell, and the image geometry of a source
     {
         std::vector<int> shell_id;
         std::vector<float> shell_b;
         std::vector<std::vector<size_t> > shell_vols;
-        if(!src.load_from_file(file))
-            return error_msg = src.error_msg,false;
         group_shells(src.src_bvalues,false,shell_id,shell_b,shell_vols);
         std::ostringstream out;
-        if(geometry) // sources only: targets may differ in dimension and voxel size
+        if(geometry)
             out << "dimension " << src.voxel.dim << ", voxel size " << src.voxel.vs << ", ";
         out << "dwi per shell";
         for(const auto& each : shell_vols)
             out << " " << each.size();
         out << " and " << std::count(shell_id.begin(),shell_id.end(),-1) << " other volumes";
-        if(first.empty())
-            first = out.str();
-        return out.str() == first || (error_msg = file.filename().u8string() + " has " + out.str() + ", unlike the first file with " + first,false);
+        return out.str();
     };
-    std::vector<float> ndc,bvalues,leader_b;
-    std::vector<std::vector<float> > shell_b; // the equivalent b-value of each shell of each target
-    std::vector<tipl::vector<3,float> > bvectors;
-    tipl::vector<3> vs;
+    std::vector<std::string> config(targets.size());
+    std::vector<float> ndc(targets.size());
+    std::vector<std::vector<float> > bvalues(targets.size()),shell_b(targets.size()); // shell_b: the equivalent b-value of each shell
+    std::vector<std::vector<tipl::vector<3,float> > > bvectors(targets.size());
+    std::vector<tipl::vector<3> > vs(targets.size());
     for(size_t i = 0;prog(i,targets.size()+sources.size()) && i < targets.size();++i)
     {
         src_data target;
-        if(!load(target,targets[i],false))
-            return false;
-        ndc.push_back(target.quality_control_neighboring_dwi_corr().second);
-        tipl::out() << targets[i].filename().u8string() << " neighboring dwi correlation: " << ndc.back();
-        shell_b.push_back(equivalent_b_table(target));
-        if(shell_b.back().empty())
-            return error_msg = targets[i].filename().u8string() + ": " + target.error_msg,false;
-        if(ndc.back() == tipl::max_value(ndc)) // the leader so far
-        {
-            bvalues.swap(target.src_bvalues);
-            bvectors.swap(target.src_bvectors);
-            vs = target.voxel.vs;
-            leader_b = shell_b.back();
-        }
+        if(!target.load_from_file(targets[i]))
+            return error_msg = target.error_msg,false;
+        config[i] = acquisition(target,false);
+        ndc[i] = target.quality_control_neighboring_dwi_corr().second;
+        if((shell_b[i] = equivalent_b_table(target)).empty())
+            notes[i] = target.error_msg;
+        bvalues[i].swap(target.src_bvalues);
+        bvectors[i].swap(target.src_bvectors);
+        vs[i] = target.voxel.vs;
     }
-    auto threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
-    std::vector<float> avg_b(leader_b.size());
-    size_t n = 0;
-    for(size_t i = 0;i < shell_b.size();++i)
-        if(ndc[i] < threshold)
-            tipl::warning() << "excluding outlier target " << targets[i].filename().u8string() << " neighboring dwi correlation: " << ndc[i];
-        else
+    if(prog.aborted())
+        return error_msg = "canceled",false;
+    auto common = *std::max_element(config.begin(),config.end(),[&](const auto& l,const auto& r)
+                  {return std::count(config.begin(),config.end(),l) < std::count(config.begin(),config.end(),r);});
+    std::vector<float> used_ndc;
+    for(size_t i = 0;i < targets.size();++i)
+        if(notes[i].empty() && config[i] != common)
+            notes[i] = config[i] + " (most targets: " + common + ")";
+        else if(notes[i].empty())
+            used_ndc.push_back(ndc[i]);
+    if(used_ndc.empty())
+        return error_msg = "no usable target SRC",false;
+    auto threshold = tipl::outlier_range(used_ndc.begin(),used_ndc.end()).first;
+    size_t leader = 0,n = 0;
+    std::vector<float> avg_b;
+    for(size_t i = 0;i < targets.size();++i)
+    {
+        if(notes[i].empty() && ndc[i] < threshold)
+            notes[i] = "outlying neighboring DWI correlation " + std::to_string(ndc[i]);
+        if(!notes[i].empty())
         {
-            for(size_t k = 0;k < avg_b.size();++k)
-                avg_b[k] += shell_b[i][k];
-            ++n;
+            tipl::warning() << "ignoring " << targets[i].filename().u8string() << ": " << notes[i];
+            continue;
         }
-    for(auto& b : bvalues) // each shell of the leader takes the averaged equivalent b-value
-        if(auto k = size_t(std::find(leader_b.begin(),leader_b.end(),b)-leader_b.begin());k < leader_b.size())
+        if(!n || ndc[i] > ndc[leader])
+            leader = i;
+        avg_b.resize(shell_b[i].size());
+        for(size_t k = 0;k < avg_b.size();++k)
+            avg_b[k] += shell_b[i][k];
+        ++n;
+    }
+    tipl::out() << "the target b-table takes the b-vectors of " << targets[leader].filename().u8string() << " and the b-values of " << n << " targets";
+    for(auto& b : bvalues[leader]) // each shell of the leader takes the averaged equivalent b-value
+        if(auto k = size_t(std::find(shell_b[leader].begin(),shell_b[leader].end(),b)-shell_b[leader].begin());k < avg_b.size())
             b = avg_b[k]/float(n);
 
-    first.clear(); // the sources are compared with the first source
+    std::string first; // the acquisition of the first source
     for(size_t i = 0;prog(targets.size()+i,targets.size()+sources.size()) && i < sources.size();++i)
     {
         auto out_name = (out_dir.empty() ? sources[i].parent_path() : out_dir)/(tipl::remove_all_suffix(sources[i].filename().u8string())+".matched.sz");
@@ -3580,10 +3592,15 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
             continue;
         }
         src_data source;
-        if(!load(source,sources[i],true))
-            return false;
-        source.resample(vs);
-        if(!source.convert_b_table(bvalues,bvectors) || !source.save_to_file(out_name))
+        if(!source.load_from_file(sources[i]))
+            return error_msg = source.error_msg,false;
+        auto a = acquisition(source,true);
+        if(first.empty())
+            first = a;
+        if(a != first)
+            return error_msg = sources[i].filename().u8string() + " has " + a + ", unlike the first source with " + first,false;
+        source.resample(vs[leader]);
+        if(!source.convert_b_table(bvalues[leader],bvectors[leader]) || !source.save_to_file(out_name))
             return error_msg = sources[i].filename().u8string() + ": " + source.error_msg,false;
     }
     return !prog.aborted() || (error_msg = "canceled",false);
