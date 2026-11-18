@@ -86,24 +86,27 @@ public:
             }
             tipl::multiply_constant(scale.begin(),scale.end(),float(1.0/sum_b));
         }
-        if(!src_bvectors.empty()) // the template-space dwi under the balanced voxel b-table, saved by save_fib as a nifti with bval and bvec
-            voxel.dwi_output.assign(voxel.bvalues.size(),tipl::image<3>(voxel.dim));
+        if(!src_bvectors.empty()) // the template-space dwi under the original b-table, saved by save_fib as a nifti with bval and bvec
+            voxel.dwi_output.assign(old_q_count,tipl::image<3>(voxel.dim));
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(!src_bvectors.empty() && data.jacobian.det() != 0.0f) // zero outside the native fov
         {
-            for(unsigned int j = 0;j < new_shell[0];++j) // b0
+            for(unsigned int j = 0;j < voxel.shell[0];++j) // b0
                 voxel.dwi_output[j][data.voxel_index] = data.space[j];
-            for(unsigned int k = 0;k < new_shell.size();++k)
-                for(unsigned int j = new_shell[k],end = (k + 1 == new_shell.size() ? uint32_t(voxel.dwi_output.size()) : new_shell[k+1]);j < end;++j)
+            for(unsigned int k = 0;k < voxel.shell.size();++k)
+            {
+                unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? uint32_t(voxel.dwi_output.size()) : voxel.shell[k+1]);
+                for(unsigned int j = from;j < to;++j)
                 {
-                    auto dir = voxel.bvectors[j]; // the qsdr convention: template direction t evaluates native normalize(J t)
+                    auto dir = src_bvectors[j]; // the qsdr convention: template direction t evaluates native normalize(J t)
                     dir.rotate(data.jacobian);
                     dir.normalize();
-                    auto w = shell_weights(src_bvectors,voxel.shell[k],k + 1 == voxel.shell.size() ? uint32_t(voxel.dwi_data.size()) : voxel.shell[k+1],dir);
-                    voxel.dwi_output[j][data.voxel_index] = float(std::inner_product(w.begin(),w.end(),data.space.begin()+voxel.shell[k],0.0));
+                    auto w = shell_weights(src_bvectors,from,to,dir);
+                    voxel.dwi_output[j][data.voxel_index] = float(std::inner_product(w.begin(),w.end(),data.space.begin()+from,0.0));
                 }
+            }
         }
         if(!trans.empty())
         {
