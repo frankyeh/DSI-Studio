@@ -2974,9 +2974,73 @@ static void shell_moments(const std::vector<T>& dwi,const std::vector<size_t>& v
         s2[j] = float(std::max(0.0,(sum2-sum*double(m[j]))/double(vols.size()-1)));
     });
 }
+// steps 2 to 4A on the per-voxel mean m and sample variance s2 of a shell over the brain: the anchors with quadrature noise subtraction,
+// the WM and GM fractions, and the HCP-equivalent b-value from the core WM perpendicular signal over the pure GM mean (0 if not estimable)
+float tissue_model::fit(const std::vector<float>& m,const std::vector<float>& s2)
+{
+    float M = pct(m,0.5f);
+    eps = 0.2f*M;
+    C = pct(m,0.04f);
+    std::vector<size_t> P; // parenchyma, as indices of m
+    std::vector<float> c_raw,g0_m,g0_s2,w0_m;
+    for(size_t j = 0;j < m.size();++j)
+        if(m[j] > 0.5f*(C+M))
+        {
+            P.push_back(j);
+            c_raw.push_back(std::sqrt(s2[j])/(m[j]+eps));
+        }
+    float lo = pct(c_raw,0.25f),hi = pct(c_raw,0.85f);
+    for(size_t p = 0;p < P.size();++p)
+    {
+        if(c_raw[p] <= lo)
+        {
+            g0_m.push_back(m[P[p]]);
+            g0_s2.push_back(s2[P[p]]);
+        }
+        if(c_raw[p] >= hi)
+            w0_m.push_back(m[P[p]]);
+    }
+    s0 = pct(g0_s2,0.5f);
+    G0 = pct(g0_m,0.5f);
+    W0 = pct(w0_m,0.5f);
+    std::vector<float> sn(m.size()),cn;
+    for(size_t j = 0;j < m.size();++j)
+        sn[j] = std::sqrt(std::max(s2[j]-s0,0.0f));
+    for(auto j : P)
+        cn.push_back(sn[j]/(m[j]+eps));
+    // WM fraction from the initial anchors, refined anchors, then GM fraction
+    sw = pct(cn,0.85f)*(W0+eps);
+    std::vector<float> x(m.size()),y(m.size()),wr,gr;
+    for(size_t j = 0;j < m.size();++j)
+        y[j] = wm(m[j],sn[j]);
+    for(auto j : P)
+    {
+        if(y[j] >= 0.92f)
+            wr.push_back(m[j]);
+        if(y[j] <= 0.03f)
+            gr.push_back(m[j]);
+    }
+    W = pct(wr,0.5f,W0);
+    G = pct(gr,0.5f,G0);
+    for(size_t j = 0;j < m.size();++j)
+        x[j] = gm(m[j],y[j]);
+    // the equivalent b-value
+    float t = pct(cn,0.985f);
+    double wsum = 0.0,gsum = 0.0;
+    size_t wn = 0,gn = 0;
+    for(size_t p = 0;p < P.size();++p)
+    {
+        auto j = P[p];
+        if(cn[p] >= t)
+            wsum += m[j]+1.118f*sn[j],++wn;
+        if(x[j] > 0.95f && y[j] < 0.02f)
+            gsum += m[j],++gn;
+    }
+    return wn && gn ? std::max(2416.0f*(float(wsum*double(gn)/(double(wn)*gsum))-0.766f),0.0f) : 0.0f;
+}
 template<typename T>
-static float shell_b_value(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
-                          float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr)
+float tissue_model::fit(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+                        float b2,std::vector<tipl::image<3> >* out)
 {
     if(vols.size() < 2)
         return 0.0f;
@@ -2994,65 +3058,7 @@ static float shell_b_value(const std::vector<T>& dwi,const std::vector<size_t>& 
     for(auto& each : scale)
         each = mu/each;
     shell_moments(dwi,vols,vox,scale,m,s2);
-    // step 2: anchors and quadrature noise subtraction
-    float M = pct(m,0.5f),eps = 0.2f*M,C = pct(m,0.04f);
-    std::vector<size_t> P; // parenchyma, as indices of vox
-    std::vector<float> c_raw,g0_m,g0_s2,w0_m;
-    for(size_t j = 0;j < vox.size();++j)
-        if(m[j] > 0.5f*(C+M))
-        {
-            P.push_back(j);
-            c_raw.push_back(std::sqrt(s2[j])/(m[j]+eps));
-        }
-    float lo = pct(c_raw,0.25f),hi = pct(c_raw,0.85f);
-    for(size_t p = 0;p < P.size();++p)
-    {
-        if(c_raw[p] <= lo)
-        {
-            g0_m.push_back(m[P[p]]);
-            g0_s2.push_back(s2[P[p]]);
-        }
-        if(c_raw[p] >= hi)
-            w0_m.push_back(m[P[p]]);
-    }
-    float s0 = pct(g0_s2,0.5f),G = pct(g0_m,0.5f),W = pct(w0_m,0.5f);
-    std::vector<float> sn(vox.size()),cn;
-    for(size_t j = 0;j < vox.size();++j)
-        sn[j] = std::sqrt(std::max(s2[j]-s0,0.0f));
-    for(auto j : P)
-        cn.push_back(sn[j]/(m[j]+eps));
-    // step 3: WM fraction from the initial anchors, refined anchors, then GM fraction
-    float sw = pct(cn,0.85f)*(W+eps);
-    std::vector<float> x(vox.size()),y(vox.size()),wr,gr;
-    for(size_t j = 0;j < vox.size();++j)
-    {
-        float d = sw*(m[j]+eps)+sn[j]*(G-W);
-        y[j] = d > 0.0f ? std::clamp(sn[j]*G/d,0.0f,1.0f) : 1.0f;
-    }
-    for(auto j : P)
-    {
-        if(y[j] >= 0.92f)
-            wr.push_back(m[j]);
-        if(y[j] <= 0.03f)
-            gr.push_back(m[j]);
-    }
-    W = pct(wr,0.5f,W);
-    G = pct(gr,0.5f,G);
-    for(size_t j = 0;j < vox.size();++j)
-        x[j] = std::clamp((m[j]-y[j]*W-(1.0f-y[j])*C)/(0.88f*G-C),0.0f,1.0f-y[j]);
-    // step 4A: equivalent b-value from the core WM perpendicular signal over the pure GM mean
-    float t = pct(cn,0.985f);
-    double wsum = 0.0,gsum = 0.0;
-    size_t wn = 0,gn = 0;
-    for(size_t p = 0;p < P.size();++p)
-    {
-        auto j = P[p];
-        if(cn[p] >= t)
-            wsum += m[j]+1.118f*sn[j],++wn;
-        if(x[j] > 0.95f && y[j] < 0.02f)
-            gsum += m[j],++gn;
-    }
-    float b1 = wn && gn ? std::max(2416.0f*(float(wsum*double(gn)/(double(wn)*gsum))-0.766f),0.0f) : 0.0f;
+    float b1 = fit(m,s2);
     if(!out)
         return b1;
     // step 4B: compartment scaling from b1 to b2; each volume keeps its own (unknown) direction
@@ -3064,8 +3070,8 @@ static float shell_b_value(const std::vector<T>& dwi,const std::vector<size_t>& 
         out->emplace_back(&dwi[k][0],mask.shape());
     tipl::par_for(vox.size(),[&](size_t j)
     {
-        float z = 1.0f-x[j]-y[j],d = y[j]*W+x[j]*G+z*C;
-        float alpha = d > 0.0f ? (kw*y[j]*W+kg*x[j]*G+kc*z*C)/d : kc; // CSF scaling where no compartment has signal
+        float y = wm(m[j],std::sqrt(std::max(s2[j]-s0,0.0f))),x = gm(m[j],y),z = 1.0f-x-y,d = y*W+x*G+z*C;
+        float alpha = d > 0.0f ? (kw*y*W+kg*x*G+kc*z*C)/d : kc; // CSF scaling where no compartment has signal
         for(size_t k = 0;k < vols.size();++k)
             (*out)[first+k][vox[j]] = std::max(alpha*m[j]+ka*(dwi[vols[k]][vox[j]]*scale[k]-m[j]),0.0f);
     });
@@ -3099,16 +3105,13 @@ static void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<
         shell_b[k] /= float(shell_vols[k].size());
     for(size_t k = 0;dwi && k < shell_b.size();++k)
     {
-        auto eq_b = shell_b_value(*dwi,shell_vols[k],*mask);
+        auto eq_b = tissue_model().fit(*dwi,shell_vols[k],*mask);
         tipl::out() << "shell recorded b=" << shell_b[k] << " HCP-equivalent b=" << eq_b;
         shell_b[k] = eq_b;
     }
 }
-// the equivalent b-value of the dwi vols (0 if not estimable), for the balanced scheme size of a Voxel shell (Voxel::load_from_src)
-float shell_b_value(const std::vector<const float*>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask)
-{
-    return shell_b_value<const float*>(dwi,vols,mask);
-}
+template float tissue_model::fit<const float*>(const std::vector<const float*>&,const std::vector<size_t>&,const tipl::image<3,unsigned char>&,
+                                               float,std::vector<tipl::image<3> >*); // reconstruction: the dwi pointers of Voxel
 // a preprocessing step for shell data, before scheme balance: within each shell (and the b0s), three passes divide each volume by its
 // gain gamma_k, its mean over core isotropic gm relative to the mean of all volumes there; the core gm is P45 < mu < P90 with the
 // noise-subtracted dispersion e <= P30 of that band, mu and e recomputed from the current iterate S/gamma at each pass
@@ -3134,7 +3137,7 @@ bool src_data::correct_signal_drift(void)
         for(int pass = 0;pass < 3;++pass)
         {
             shell_moments(src_dwi_data,vols,vox,scale,m,s2);
-            // the noise floor: the median variance of the most isotropic quarter of the parenchyma, as in shell_b_value
+            // the noise floor: the median variance of the most isotropic quarter of the parenchyma, as in tissue_model::fit
             float M = pct(m,0.5f),eps = 0.2f*M,C = pct(m,0.04f);
             std::vector<float> c_raw,par_s2,e(vox.size());
             for(size_t j = 0;j < vox.size();++j)
@@ -3237,7 +3240,7 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
             return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[r])) + " has fewer than three DWIs",false;
         tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi) uses reference shell b=" << ref_shell_b[r] << " (" << ref_shell_vols[r].size() << " dwi)";
         if(!dsi)
-            shell_b_value(reference.src_dwi_data,ref_shell_vols[r],reference.voxel.mask,shell_b[k],&dwi);
+            tissue_model().fit(reference.src_dwi_data,ref_shell_vols[r],reference.voxel.mask,shell_b[k],&dwi);
         for(auto j : ref_shell_vols[r])
         {
             if(dsi) // one shell
@@ -3382,7 +3385,7 @@ bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vect
         tipl::out() << "target shell HCP-equivalent b=" << target_shell_b[t] << " (" << target_shell_vols[t].size() << " dwi) from shell HCP-equivalent b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi)";
         std::vector<tipl::image<3> > converted;
         std::vector<tipl::vector<3,float> > dirs;
-        shell_b_value(src_dwi_data,shell_vols[k],voxel.mask,target_shell_b[t],&converted);
+        tissue_model().fit(src_dwi_data,shell_vols[k],voxel.mask,target_shell_b[t],&converted);
         for(auto i : shell_vols[k])
             dirs.push_back(src_bvectors[i]);
         for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
