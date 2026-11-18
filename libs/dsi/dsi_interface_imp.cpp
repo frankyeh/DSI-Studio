@@ -82,6 +82,7 @@ bool src_data::reconstruction(void)
         case 1://DTI
             voxel.step_report << "method=DTI" << std::endl;
             if (!reconstruct2<ReadDWIData,
+                    TissueFraction,
                     Dwi2Tensor>("DTI reconstruction"))
                 return false;
             break;
@@ -111,6 +112,7 @@ bool src_data::reconstruction(void)
 
             if (!reconstruct2<
                     ReadDWIData,
+                    TissueFraction,
                     Dwi2Tensor,
                     BalanceScheme,
                     GQI_Recon,
@@ -148,6 +150,7 @@ bool src_data::reconstruction(void)
                         RecordQA>("Preparing QA/ISO maps for normalization"))
                     return false;
                 if (!reconstruct2<DWINormalization,
+                        TissueFraction,
                         Dwi2Tensor,
                         BalanceScheme,
                         GQI_Recon,
