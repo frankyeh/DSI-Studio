@@ -2727,11 +2727,22 @@ Processing</string>
       border: 1px solid #dddddf;
       border-radius: 9px;
   }
+  QFrame#match_source_card {
+      border-top: 4px solid #10b981;
+  }
   QFrame#match_target_card {
       border-top: 4px solid #0ea5e9;
   }
-  QFrame#match_source_card {
-      border-top: 4px solid #10b981;
+  QLabel#match_arrow {
+      color: #ffffff;
+      background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #10b981, stop:1 #0ea5e9);
+      border-radius: 18px;
+      min-width: 36px;
+      max-width: 36px;
+      min-height: 36px;
+      max-height: 36px;
+      font-size: 15pt;
+      font-weight: bold;
   }
   QFrame#match_output_card {
       border-top: 4px solid #f59e0b;
@@ -2761,6 +2772,19 @@ Processing</string>
   }
   QWidget#tab_match QPushButton:pressed {
       background-color: #e2e2e4;
+  }
+  QWidget#tab_match QPushButton[small="true"] {
+      color: #3c4043;
+      background-color: #f4f4f5;
+      border: 1px solid #e2e2e5;
+      border-radius: 11px;
+      padding: 2px 9px;
+      min-height: 18px;
+      font-size: 8pt;
+  }
+  QWidget#tab_match QPushButton[small="true"]:hover {
+      background-color: #e9e9eb;
+      border-color: #c8c8cc;
   }
   QWidget#tab_match QPushButton#match_run {
       color: #ffffff;
@@ -2809,7 +2833,7 @@ Processing</string>
             <item>
              <widget class="QLabel" name="match_page_hint">
               <property name="text">
-               <string>Convert multishell source SRC files to the acquisition of multishell target SRC files: b-table, equivalent b-values, and voxel size.</string>
+               <string>Convert source SRC files to the acquisition of target SRC files (single or multishell): b-table, equivalent b-values, and voxel size.</string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -2817,73 +2841,10 @@ Processing</string>
              </widget>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="match_card_row" stretch="1,1">
+             <layout class="QHBoxLayout" name="match_card_row" stretch="1,0,1">
               <property name="spacing">
                <number>9</number>
               </property>
-              <item>
-               <widget class="QFrame" name="match_target_card">
-                <layout class="QVBoxLayout" name="match_target_layout">
-                 <property name="spacing">
-                  <number>6</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>12</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>12</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="match_target_title">
-                   <property name="text">
-                    <string>Target SRC Files</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLabel" name="match_target_hint">
-                   <property name="text">
-                    <string>The b-vectors come from the target with the highest neighboring DWI correlation; each shell takes the equivalent b-value averaged over the targets.</string>
-                   </property>
-                   <property name="wordWrap">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QListWidget" name="match_target_list">
-                   <property name="selectionMode">
-                    <enum>QAbstractItemView::ExtendedSelection</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="match_target_buttons">
-                   <item>
-                    <widget class="QPushButton" name="match_target_add">
-                     <property name="text">
-                      <string>Add...</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="match_target_remove">
-                     <property name="text">
-                      <string>Remove</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget>
-              </item>
               <item>
                <widget class="QFrame" name="match_source_card">
                 <layout class="QVBoxLayout" name="match_source_layout">
@@ -2903,11 +2864,59 @@ Processing</string>
                   <number>12</number>
                  </property>
                  <item>
-                  <widget class="QLabel" name="match_source_title">
-                   <property name="text">
-                    <string>Source SRC Files</string>
+                  <layout class="QHBoxLayout" name="match_source_header">
+                   <property name="spacing">
+                    <number>4</number>
                    </property>
-                  </widget>
+                   <item>
+                    <widget class="QLabel" name="match_source_title">
+                     <property name="text">
+                      <string>Source SRC Files</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="match_source_header_spacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="match_source_add">
+                     <property name="toolTip">
+                      <string>Add source SRC files</string>
+                     </property>
+                     <property name="text">
+                      <string>Add</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="icons.qrc">
+                       <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
+                     </property>
+                     <property name="small" stdset="0">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="match_source_remove">
+                     <property name="toolTip">
+                      <string>Remove the selected files</string>
+                     </property>
+                     <property name="text">
+                      <string>Remove</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="icons.qrc">
+                       <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                     </property>
+                     <property name="small" stdset="0">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                  <item>
                   <widget class="QLabel" name="match_source_hint">
@@ -2926,23 +2935,111 @@ Processing</string>
                    </property>
                   </widget>
                  </item>
+                </layout>
+               </widget>
+              </item>
+              <item alignment="Qt::AlignVCenter">
+               <widget class="QLabel" name="match_arrow">
+                <property name="toolTip">
+                 <string>Each source is converted to the target acquisition</string>
+                </property>
+                <property name="text">
+                 <string>→</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QFrame" name="match_target_card">
+                <layout class="QVBoxLayout" name="match_target_layout">
+                 <property name="spacing">
+                  <number>6</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>12</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>12</number>
+                 </property>
                  <item>
-                  <layout class="QHBoxLayout" name="match_source_buttons">
+                  <layout class="QHBoxLayout" name="match_target_header">
+                   <property name="spacing">
+                    <number>4</number>
+                   </property>
                    <item>
-                    <widget class="QPushButton" name="match_source_add">
+                    <widget class="QLabel" name="match_target_title">
                      <property name="text">
-                      <string>Add...</string>
+                      <string>Target SRC Files</string>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QPushButton" name="match_source_remove">
+                    <spacer name="match_target_header_spacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="match_target_add">
+                     <property name="toolTip">
+                      <string>Add target SRC files</string>
+                     </property>
+                     <property name="text">
+                      <string>Add</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="icons.qrc">
+                       <normaloff>:/icons/icons/open_file.svg</normaloff>:/icons/icons/open_file.svg</iconset>
+                     </property>
+                     <property name="small" stdset="0">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="match_target_remove">
+                     <property name="toolTip">
+                      <string>Remove the selected files</string>
+                     </property>
                      <property name="text">
                       <string>Remove</string>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="icons.qrc">
+                       <normaloff>:/icons/icons/delete_clear.svg</normaloff>:/icons/icons/delete_clear.svg</iconset>
+                     </property>
+                     <property name="small" stdset="0">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
                   </layout>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="match_target_hint">
+                   <property name="text">
+                    <string>The b-vectors come from the target with the highest neighboring DWI correlation; each shell takes the equivalent b-value averaged over the targets.</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QListWidget" name="match_target_list">
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::ExtendedSelection</enum>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </widget>
@@ -2974,7 +3071,7 @@ Processing</string>
                <item row="1" column="0">
                 <widget class="QLineEdit" name="match_output">
                  <property name="placeholderText">
-                  <string>Output folder (each source keeps its file name)</string>
+                  <string>Output folder (default: the source folder; saved as *.matched.sz)</string>
                  </property>
                 </widget>
                </item>
@@ -2982,6 +3079,10 @@ Processing</string>
                 <widget class="QPushButton" name="match_output_browse">
                  <property name="text">
                   <string>Browse...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="icons.qrc">
+                   <normaloff>:/icons/icons/open_folder.svg</normaloff>:/icons/icons/open_folder.svg</iconset>
                  </property>
                 </widget>
                </item>
@@ -2996,6 +3097,10 @@ Processing</string>
                 <widget class="QPushButton" name="match_run">
                  <property name="text">
                   <string>Run</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="icons.qrc">
+                   <normaloff>:/icons/icons/run_play.svg</normaloff>:/icons/icons/run_play.svg</iconset>
                  </property>
                 </widget>
                </item>
