@@ -65,6 +65,7 @@ bool src_data::reconstruction_hist(void)
 }
 bool src_data::reconstruction(void)
 {
+    voxel.dwi_output.clear(); // left by a canceled qsdr --other_output=dwi
     voxel.recon_report.clear();
     voxel.recon_report.str("");
     voxel.step_report.clear();
