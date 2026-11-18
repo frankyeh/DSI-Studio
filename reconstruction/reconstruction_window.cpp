@@ -193,7 +193,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
                {ui->btn_Signal_Drift,"correct_signal_drift","signal drift was corrected",-1,8,1},
                {ui->btn_Scheme_Balance,"scheme_balance","sampling scheme was balanced",-1,7,1},
                {ui->btn_Correct_Bias_Field,"bias_field_correction","bias field",-1,4,2},
-               {ui->btn_Resample,"resample","resampled to",-1,5,1}};
+               {ui->btn_Resample,"resample","isotropic resolution",-1,5,1}};
     for(const auto& each : pills)
     {
         auto* group = new QButtonGroup(this); // always one answer
@@ -308,7 +308,7 @@ void reconstruction_window::update_preproc(void)
                        !done("Motion correction") && !done("using FSL eddy") && path % 2,
                        !distortion_done && path >= 2,
                        !done("bias field"),
-                       !done("resampled to") && (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f), // not yet isotropic
+                       std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f, // not yet isotropic (by the voxel size, not the record)
                        a[1] == 1 && !done("using FSL eddy"), // FSL eddy needs shells
                        a[1] == 1 && !done("sampling scheme was balanced"), // scheme balance resamples shells
                        a[1] == 1 && !done("signal drift was corrected")}; // drift is normalized within shells
