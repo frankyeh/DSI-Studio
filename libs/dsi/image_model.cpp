@@ -3504,7 +3504,7 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
 // converts each source SRC to the acquisition of a set of target SRC (single or multishell), saved as <source>.matched.sz in out_dir
 // (empty: the source folder):
 // the target b-table takes the b-vectors of the target with the highest neighboring dwi correlation and each shell's HCP-equivalent
-// b-value averaged over the targets (outliers excluded); each source is resampled to the target voxel size and converted
+// b-value averaged over the targets (outliers excluded); each source is resampled to the leader voxel size and converted
 bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
                   const std::filesystem::path& out_dir,bool overwrite,std::string& error_msg)
 {
@@ -3512,7 +3512,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         return error_msg = "please assign the target and source SRC files",false;
     tipl::progress prog("b-table matching",true);
     std::string first; // the acquisition of the first file in the list
-    auto load = [&](src_data& src,const std::filesystem::path& file)->bool // the same acquisition as the first file
+    auto load = [&](src_data& src,const std::filesystem::path& file,bool geometry)->bool // the same acquisition as the first file
     {
         std::vector<int> shell_id;
         std::vector<float> shell_b;
@@ -3521,7 +3521,9 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
             return error_msg = src.error_msg,false;
         group_shells(src.src_bvalues,false,shell_id,shell_b,shell_vols);
         std::ostringstream out;
-        out << "dimension " << src.voxel.dim << ", voxel size " << src.voxel.vs << ", dwi per shell";
+        if(geometry) // sources only: targets may differ in dimension and voxel size
+            out << "dimension " << src.voxel.dim << ", voxel size " << src.voxel.vs << ", ";
+        out << "dwi per shell";
         for(const auto& each : shell_vols)
             out << " " << each.size();
         out << " and " << std::count(shell_id.begin(),shell_id.end(),-1) << " other volumes";
@@ -3536,7 +3538,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
     for(size_t i = 0;prog(i,targets.size()+sources.size()) && i < targets.size();++i)
     {
         src_data target;
-        if(!load(target,targets[i]))
+        if(!load(target,targets[i],false))
             return false;
         ndc.push_back(target.quality_control_neighboring_dwi_corr().second);
         tipl::out() << targets[i].filename().u8string() << " neighboring dwi correlation: " << ndc.back();
@@ -3578,7 +3580,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
             continue;
         }
         src_data source;
-        if(!load(source,sources[i]))
+        if(!load(source,sources[i],true))
             return false;
         source.resample(vs);
         if(!source.convert_b_table(bvalues,bvectors) || !source.save_to_file(out_name))
