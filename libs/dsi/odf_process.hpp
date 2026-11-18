@@ -37,39 +37,42 @@ public:
     {
         return voxel.shell.size() < 5; // shell schemes, including those already balanced by scheme_balance
     }
-    // balances the voxel b-table (unless already done by scheme_balance) and gets the gqi scale of the balanced signals;
-    // only the voxel copy of the b-table changes: the src b-table and dwi are untouched
+    // balances the voxel b-table and gets the gqi scale of the balanced signals; a b-table whose every shell already has the balanced
+    // direction count (e.g. from scheme_balance) is kept; only the voxel copy of the b-table changes: the src b-table and dwi are untouched
     virtual void init(Voxel& voxel)
     {
         unsigned int old_q_count = uint32_t(voxel.dwi_data.size());
         if(voxel.qsdr && voxel.needs("dwi") && !voxel.shell.empty())
             src_bvectors = voxel.bvectors;
         new_shell = voxel.shell;
-        if(!tipl::contains(voxel.steps,"scheme_balance"))
+        bool b0 = voxel.bvalues.front() == 0.0f,balanced = true; // the b0 keeps the first row
+        std::vector<float> new_bvalues(b0);
+        std::vector<tipl::vector<3,float> > new_bvectors(b0);
+        if(b0)
         {
-            bool b0 = voxel.bvalues.front() == 0.0f; // the b0 keeps the first row
-            std::vector<float> new_bvalues(b0);
-            std::vector<tipl::vector<3,float> > new_bvectors(b0);
-            if(b0)
+            trans.resize(old_q_count);
+            trans[0] = 1.0f;
+        }
+        for(unsigned int k = 0;k < voxel.shell.size();++k)
+        {
+            unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? old_q_count : voxel.shell[k+1]);
+            new_shell[k] = uint32_t(new_bvalues.size());
+            float b = voxel.shell_b[k]; // the HCP-equivalent b-value sets the balanced direction count
+            tessellated_icosahedron new_dir(b > 2500.0f ? 6 : b > 1500.0f ? 5 : b > 500.0f ? 4 : 3); // 181, 126, 81, or 46 directions
+            balanced = balanced && to-from == new_dir.half_vertices_count;
+            for(unsigned int i = 0;i < new_dir.half_vertices_count;++i)
             {
-                trans.resize(old_q_count);
-                trans[0] = 1.0f;
+                auto t = shell_weights(voxel.bvectors,from,to,new_dir.vertices[i]);
+                trans.resize(trans.size()+old_q_count);
+                std::copy(t.begin(),t.end(),trans.end()-old_q_count+from);
+                new_bvalues.push_back(float(std::inner_product(t.begin(),t.end(),voxel.bvalues.begin()+from,0.0)));
+                new_bvectors.push_back(new_dir.vertices[i]);
             }
-            for(unsigned int k = 0;k < voxel.shell.size();++k)
-            {
-                unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? old_q_count : voxel.shell[k+1]);
-                new_shell[k] = uint32_t(new_bvalues.size());
-                double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
-                tessellated_icosahedron new_dir(avg_b > 2500.0 ? 6 : avg_b > 1500.0 ? 5 : avg_b > 500.0 ? 4 : 3); // 181, 126, 81, or 46 directions
-                for(unsigned int i = 0;i < new_dir.half_vertices_count;++i)
-                {
-                    auto t = shell_weights(voxel.bvectors,from,to,new_dir.vertices[i]);
-                    trans.resize(trans.size()+old_q_count);
-                    std::copy(t.begin(),t.end(),trans.end()-old_q_count+from);
-                    new_bvalues.push_back(float(std::inner_product(t.begin(),t.end(),voxel.bvalues.begin()+from,0.0)));
-                    new_bvectors.push_back(new_dir.vertices[i]);
-                }
-            }
+        }
+        if(balanced) // the shells keep their positions, so new_shell equals voxel.shell
+            trans.clear();
+        else
+        {
             voxel.bvalues.swap(new_bvalues);
             voxel.bvectors.swap(new_bvectors);
         }
