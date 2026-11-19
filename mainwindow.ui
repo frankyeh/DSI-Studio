@@ -2839,7 +2839,7 @@ Processing</string>
             <item>
              <widget class="QLabel" name="match_page_hint">
               <property name="text">
-               <string>Convert source SRC files to the acquisition of target SRC files (single or multishell): b-table, equivalent b-values, and voxel size.</string>
+               <string>Convert source SRC files to the acquisition of target SRC files (single or multishell): b-table, shell attenuation, and voxel size.</string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -3033,7 +3033,7 @@ Processing</string>
                  <item>
                   <widget class="QLabel" name="match_target_hint">
                    <property name="text">
-                    <string>The b-vectors come from the target with the highest neighboring DWI correlation; each shell takes the equivalent b-value averaged over the targets.</string>
+                    <string>The b-vectors come from the target with the highest neighboring DWI correlation; each shell takes the anisotropic and isotropic attenuation averaged over the targets.</string>
                    </property>
                    <property name="wordWrap">
                     <bool>true</bool>
