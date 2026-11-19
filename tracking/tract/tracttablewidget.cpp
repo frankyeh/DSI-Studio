@@ -462,8 +462,15 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolu
 }
 bool TractTableWidget::render_tracts(GLWidget* glwidget)
 {
+    // while the view is dragged, each mouse move redraws anyway: a partial frame in the base time, without a longer re-render
+    // (the full render follows at the mouse release)
+    bool dragging = QApplication::mouseButtons() != Qt::NoButton;
+    if(dragging)
+        render_time = 200;
     if(!render_tracts(glwidget,std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
     {
+        if(dragging)
+            return false;
         render_time *= 2;
         emit cur_tracking_window.need_gl_update(); // still mid-render, not a data change: no need to touch the 2D slice
         return false;
