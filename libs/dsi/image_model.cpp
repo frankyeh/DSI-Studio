@@ -909,9 +909,10 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
         }
         cmd = to_cmd(cmd);
         auto file = param.substr(0,param.find('|')); // a file parameter, before the |<mm> of correct_by_t1w
-        if(tipl::ends_with(file,{".sz",".gz",".rz"}))
+        bool output = tipl::begins_with(cmd,"save_"); // an output name (also .txt, .bval, .bvec), matched but not yet existing
+        if(output || tipl::ends_with(file,{".sz",".gz",".rz"}))
         {
-            if(!tipl::match_files(reg_file_name,file,file_name.u8string(),file) || !std::filesystem::exists(file))
+            if(!tipl::match_files(reg_file_name,file,file_name.u8string(),file) || (!output && !std::filesystem::exists(file)))
                 return error_msg = step + " cannot find a matched file for " + file_name.u8string(),false;
             param.replace(0,param.find('|'),file);
         }
