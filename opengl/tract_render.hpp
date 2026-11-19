@@ -8,7 +8,7 @@ class GLWidget;
 struct TractRenderShader{
     int shift = 0; // a cell: 2^shift voxels
     float to_cell = 1.0f;
-    tipl::image<3> depth; // the occupancy depth of each cell of a 64^3 grid (TractRenderShader)
+    tipl::image<3> shade; // the shading of each cell of a 64^3 grid (TractRenderShader)
     std::vector<std::vector<unsigned int> > visible; // the drawn tracts of each checked bundle
     TractRenderShader(tracking_window& cur_tracking_window);
 

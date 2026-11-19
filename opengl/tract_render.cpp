@@ -237,15 +237,15 @@ TractRender::~TractRender(void)
     auto lock = start_writing();
 }
 
-// the occupancy depth at pos, linearly interpolated between cells
+// the shading at pos, linearly interpolated between cells
 float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
 {
-    return 1.0f+tipl::estimate(depth,tipl::vector<3>(pos[0]*to_cell,pos[1]*to_cell,pos[2]*to_cell));
+    return tipl::estimate(shade,tipl::vector<3>(pos[0]*to_cell,pos[1]*to_cell,pos[2]*to_cell));
 }
-// a random draw of tract_visible_tract tracts over the checked bundles, also drawn by prepare_update, and the cells of a 64^3 grid
-// (2^shift voxels each) they pass through; each occupied cell takes, along each axis, its distance to the nearest empty cell (in
-// voxels, at most 4), summed over x, y, and z, so gaps and concavities between tracts count as outside
-TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):depth(tipl::shape<3>(64,64,64))
+// a random draw of tract_visible_tract tracts over the checked bundles, also drawn by prepare_update, and the density of the cells of
+// a 64^3 grid (2^shift voxels each) they pass through, smoothed by three mean filters: tracts inside dense bundles are shaded more,
+// gaps and isolated tracts less, and nearby tracts share their shading; the shading is 1+20*density
+TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):shade(tipl::shape<3>(64,64,64))
 {
     const auto& dim = cur_tracking_window.handle->dim;
     for(auto max_dim = std::max({dim[0],dim[1],dim[2]});(max_dim >> shift) >= 64;++shift)
@@ -267,7 +267,7 @@ TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):depth
     }
 
     // the occupied cells: each thread fills its own grid over every thread_count-th drawn tract, then the grids are merged
-    std::vector<tipl::image<3,unsigned char> > occupied(std::min<int>(tipl::max_thread_count,8),tipl::image<3,unsigned char>(depth.shape()));
+    std::vector<tipl::image<3,unsigned char> > occupied(std::min<int>(tipl::max_thread_count,8),tipl::image<3,unsigned char>(shade.shape()));
     tipl::par_for(occupied.size(),[&](size_t t)
     {
         for(size_t m = 0;m < models.size();++m)
@@ -282,29 +282,13 @@ TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):depth
                 }
             }
     },occupied.size());
-    for(size_t t = 1;t < occupied.size();++t)
-        for(size_t i = 0;i < occupied[0].size();++i)
-            occupied[0][i] |= occupied[t][i];
-
-    // each line of cells along axis a (start cell, then step), by its runs of occupied cells; dist: the depth at a cell distance
-    float dist[32];
-    for(int d = 0;d < 32;++d)
-        dist[d] = std::min<float>(4.0f,(float(d)+0.5f)*float(1 << shift));
-    for(int a = 0;a < 3;++a)
-    {
-        const int step = a ? (a == 1 ? 64 : 64*64) : 1,u = a ? 1 : 64,v = a == 2 ? 64 : 64*64,line = 64*step,u_end = 64*u,v_end = 64*v;
-        for(int vo = 0;vo < v_end;vo += v)
-            for(int start = vo,end_u = vo+u_end;start < end_u;start += u)
-                for(int c = start,end = start+line;c < end;c += step)
-                {
-                    int r = c,n = 0;
-                    for(;r < end && occupied[0][r];r += step,++n)
-                        ;
-                    for(int k = c,low = 0;low < n;k += step,++low)
-                        depth[k] += dist[std::min(low,n-1-low)];
-                    c = r;
-                }
-    }
+    for(size_t t = 0;t < occupied.size();++t)
+        for(size_t i = 0;i < shade.size();++i)
+            if(occupied[t][i])
+                shade[i] = 20.0f;
+    for(int pass = 0;pass < 3;++pass)
+        tipl::filter::mean(shade);
+    shade += 1.0f;
 }
 void TractRender::prepare_update(tracking_window& param,
                                  std::shared_ptr<TractModel>& active_tract_model,
