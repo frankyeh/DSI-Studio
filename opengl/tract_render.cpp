@@ -81,7 +81,6 @@ void TractRenderData::add_tract(const TractRenderSetting& s,
         if(s.shader != 0.0f)
         {
             cur_color *= 1.0f-std::min<float>(shader.get_shade(pos)*s.shader,0.95f);
-            cur_color += 0.05f;
         }
         if(!s.style)
         {
@@ -244,7 +243,9 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
 }
 // a random draw of tract_visible_tract tracts over the checked bundles, also drawn by prepare_update, and the density of the cells of
 // a 64^3 grid (2^shift voxels each) they pass through, smoothed by three mean filters: tracts inside dense bundles are shaded more,
-// gaps and isolated tracts less, and nearby tracts share their shading; the shading is 1+20*density
+// gaps and isolated tracts less, and nearby tracts share their shading; the shading is 24*(density/its maximum)^2: the densest core
+// reaches black at the default shade (4), the squaring keeps outer tracts bright, and a single thin bundle, whose density never
+// reaches that of a whole-brain tractogram, is shaded as much
 TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):shade(tipl::shape<3>(64,64,64))
 {
     const auto& dim = cur_tracking_window.handle->dim;
@@ -285,10 +286,12 @@ TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):shade
     for(size_t t = 0;t < occupied.size();++t)
         for(size_t i = 0;i < shade.size();++i)
             if(occupied[t][i])
-                shade[i] = 20.0f;
+                shade[i] = 1.0f;
     for(int pass = 0;pass < 3;++pass)
         tipl::filter::mean(shade);
-    shade += 1.0f;
+    float max_density = tipl::max_value(shade),scale = 24.0f/(max_density*max_density);
+    for(auto& each : shade)
+        each *= each*scale;
 }
 void TractRender::prepare_update(tracking_window& param,
                                  std::shared_ptr<TractModel>& active_tract_model,
