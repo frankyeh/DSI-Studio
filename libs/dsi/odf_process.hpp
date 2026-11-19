@@ -25,10 +25,7 @@ inline std::vector<double> shell_weights(const std::vector<tipl::vector<3,float>
     tipl::multiply_constant(t,1.0/tipl::sum(t));
     return t;
 }
-// each voxel's 1/b0, with the inverse of dark voxels capped at its upper outlier limit so that dividing by b0 stays well posed
-// (0 where b0 = 0; group_connectometry_analysis.cpp)
-std::vector<float> get_outlier_limited_iso(const float* iso_ptr,size_t n);
-// the reference levels of a shell (fit), on signals divided by b0: the baseline B, isotropic level I, anisotropic level A, anisotropic dispersion d_A, and noise
+// the reference levels of a shell (fit; receive-coil shading corrected beforehand by bias_field_correction): the baseline B, isotropic level I, anisotropic level A, anisotropic dispersion d_A, and noise
 // variance s0; they give a voxel's anisotropic fraction from its variance s2 (Eq. 4) and then its isotropic fraction from its mean m (Eq. 5)
 struct tissue_model
 {
@@ -41,12 +38,12 @@ struct tissue_model
     {
         return std::clamp((m-fa*A-(1.0f-fa)*B)/std::max(I-B,1e-6f),0.0f,1.0f-fa);
     }
-    // fits the levels to the per-voxel mean m and sample variance s2 of a shell over the brain, both divided by b0, and returns its
-    // HCP-equivalent b-value (0 if not estimable); the template version takes the dwi vols of a shell (T: a volume or its pointer),
-    // the b0 being the first dwi with b-value 0, and out appends the shell converted to b-value b2 (image_model.cpp)
+    // fits the levels to the per-voxel mean m and sample variance s2 of a shell over the brain and returns its HCP-equivalent b-value
+    // (0 if not estimable); the template version takes the dwi vols of a shell (T: a volume or its pointer), and out appends the shell
+    // converted to b-value b2 (image_model.cpp)
     float fit(const std::vector<float>& m,const std::vector<float>& s2);
     template<typename T>
-    float fit(const std::vector<T>& dwi,const std::vector<float>& bvalues,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+    float fit(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
               float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr);
 };
 // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean (DSI: all b >= 100
@@ -58,7 +55,6 @@ void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& s
 class TissueFraction : public BaseProcess{
     std::vector<std::vector<size_t> > shells; // the dwi of each shell with at least two dwi (five or more shells: one DSI shell)
     std::vector<std::vector<float> > m,s2; // the per-voxel mean and sample variance of each shell
-    std::vector<float> b0;
 public:
     virtual bool needed(Voxel& voxel)
     {
@@ -74,11 +70,9 @@ public:
         shells.erase(std::remove_if(shells.begin(),shells.end(),[](const auto& each){return each.size() < 2;}),shells.end());
         m.assign(shells.size(),std::vector<float>(voxel.dim.size()));
         s2 = m;
-        b0.resize(voxel.dim.size());
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        b0[data.voxel_index] = data.space[0]; // the b0 if bvalues[0] is 0
         for(size_t k = 0;k < shells.size();++k)
         {
             double sum = 0.0,sum2 = 0.0,n = double(shells[k].size());
@@ -94,14 +88,12 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         auto vox = tipl::get_sparse_index(voxel.mask);
-        std::vector<float> wm(voxel.dim.size()),gm(voxel.dim.size()),w(voxel.dim.size(),1.0f); // w: 1/b0 (no b0: 1)
-        if(voxel.bvalues[0] == 0.0f)
-            w = get_outlier_limited_iso(b0.data(),b0.size());
+        std::vector<float> wm(voxel.dim.size()),gm(voxel.dim.size());
         for(size_t k = 0;k < shells.size();++k)
         {
             std::vector<float> mk(vox.size()),sk(vox.size());
             for(size_t j = 0;j < vox.size();++j)
-                mk[j] = m[k][vox[j]]*w[vox[j]],sk[j] = s2[k][vox[j]]*w[vox[j]]*w[vox[j]];
+                mk[j] = m[k][vox[j]],sk[j] = s2[k][vox[j]];
             tissue_model t;
             t.fit(mk,sk);
             for(size_t j = 0;j < vox.size();++j)
