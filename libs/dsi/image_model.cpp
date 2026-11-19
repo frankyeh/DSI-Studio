@@ -2946,8 +2946,7 @@ static float pct(std::vector<float> v,float p) // the p-th fraction percentile (
     return *at;
 }
 // the per-voxel mean m and sample variance s2 over the volumes vols, each multiplied by its scale, at the voxels vox
-template<typename T> // T: a volume (tipl::image<3>) or its pointer
-static void shell_moments(const std::vector<T>& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
+static void shell_moments(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
                           const std::vector<float>& scale,std::vector<float>& m,std::vector<float>& s2)
 {
     m.resize(vox.size());
@@ -2992,15 +2991,19 @@ static float l1_split(std::vector<float> v)
 }
 // the reference levels of a shell from the per-voxel mean m and sample variance s2 over the brain (voxels with m > 0), each from a
 // median of a set given by L1 two-medians splits: the baseline B, the noise variance s0 and isotropic level I, and the anisotropic
-// level A and dispersion d_A; returns the HCP-equivalent b-value from the anisotropic-to-isotropic ratio R (Eq. 6)
-float tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>& s2_all)
+// level A and dispersion d_A; with the per-voxel b0 S0, also the attenuation summaries u_A and u_I over the anisotropic and isotropic cores
+void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>& s2_all,const std::vector<float>& b0_all)
 {
-    std::vector<float> m,s2;
+    std::vector<float> m,s2,b0;
     for(size_t i = 0;i < m_all.size();++i)
         if(m_all[i] > 0.0f)
+        {
             m.push_back(m_all[i]),s2.push_back(s2_all[i]);
+            if(!b0_all.empty())
+                b0.push_back(b0_all[i]);
+        }
     if(m.empty())
-        return 0.0f;
+        return;
     auto select = [&](const std::vector<float>& v,auto in) // the values of v at the voxels in a set
     {
         std::vector<float> r;
@@ -3032,43 +3035,51 @@ float tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>
     auto ani_core = [&](size_t j){return ani(j) && d[j] > t_core;};
     A = median(select(m,ani_core));
     d_A = median(select(d,ani_core));
-    float R = (A+d_A*(A+B))/std::max(I,1e-6f);
-    return std::max(3002.4f*(R-0.6966f),0.0f); // R = R0 + b/alpha, fitted on the three shells of human.sz
+    if(b0.empty())
+        return;
+    // S0/m = 1+u_A in the anisotropic core and (1+u_I)^2 in the isotropic core, u growing with the b-value
+    for(size_t j = 0;j < m.size();++j)
+        b0[j] /= m[j];
+    u_A = median(select(b0,ani_core))-1.0f;
+    u_I = std::sqrt(median(select(b0,iso_core)))-1.0f;
 }
-template<typename T>
-float tissue_model::fit(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
-                        float b2,std::vector<tipl::image<3> >* out)
+std::vector<float> get_outlier_limited_iso(const float* iso_ptr,size_t n); // 1/b0, its dark voxels capped (group_connectometry_analysis.cpp)
+// fits the shell vols of src over its mask, the attenuation from its first b0 (false: fewer than two dwi or no b0); with target, out
+// appends the shell converted to the target's attenuation: a signal S at attenuation a = S/S0 (in [0,1]) becomes S/(a+rho_A(1-a)) as
+// anisotropic and S/(sqrt(a)+rho_I(1-sqrt(a)))^2 as isotropic signal, rho the target-to-source ratio of u, mixed by the voxel's f_A
+bool tissue_model::fit(const src_data& src,const std::vector<size_t>& vols,const tissue_model* target,std::vector<tipl::image<3> >* out)
 {
-    if(vols.size() < 2)
-        return 0.0f;
-    auto vox = tipl::get_sparse_index(mask);
-    std::vector<float> m,s2,scale(vols.size(),1.0f); // no volume-wise drift equalization: correct drift beforehand if needed
+    const auto& dwi = src.src_dwi_data;
+    auto b0 = size_t(std::find(src.src_bvalues.begin(),src.src_bvalues.end(),0.0f)-src.src_bvalues.begin());
+    if(vols.size() < 2 || b0 == src.src_bvalues.size())
+        return false;
+    auto vox = tipl::get_sparse_index(src.voxel.mask);
+    std::vector<float> m,s2,S0(vox.size()),scale(vols.size(),1.0f); // no volume-wise drift equalization: correct drift beforehand if needed
     shell_moments(dwi,vols,vox,scale,m,s2);
-    float b1 = fit(m,s2);
-    if(!out)
-        return b1;
-    // conversion from b1 to b2 (Eq. 8): the anisotropic and isotropic parts of the mean, and the directional deviation, each scaled
-    // by its own b-value dependence calibrated on human.sz
-    auto phi = [](float u,float r){return r+(1.0f-r)*std::exp(-0.88f*u);};
-    auto psi = [](float u){return std::sqrt(std::max(u,1e-8f))*std::exp(-0.39f*u);};
-    float u1 = std::max(b1/1000.0f,0.1f),u2 = b2/1000.0f;
-    float kA = phi(u2,0.256f)/phi(u1,0.256f),kI = phi(u2,0.108f)/phi(u1,0.108f),kd = psi(u2)/psi(u1);
+    for(size_t j = 0;j < vox.size();++j)
+        S0[j] = dwi[b0][vox[j]];
+    fit(m,s2,S0);
+    if(!target)
+        return true;
+    auto w = get_outlier_limited_iso(&dwi[b0][0],dwi[b0].size());
+    float rA = target->u_A/u_A,rI = target->u_I/u_I;
     size_t first = out->size();
     for(auto k : vols) // outside the mask: the unconverted signal
-        out->emplace_back(&dwi[k][0],mask.shape());
+        out->push_back(dwi[k]);
     tipl::par_for(vox.size(),[&](size_t j)
     {
-        float mA = std::min(fa(s2[j])*A,m[j]),m2 = kA*mA+kI*(m[j]-mA); // mA: the anisotropic part of m
+        float fA = fa(s2[j]);
         for(size_t k = 0;k < vols.size();++k)
-            (*out)[first+k][vox[j]] = std::max(m2+kd*(dwi[vols[k]][vox[j]]-m[j]),0.0f);
+        {
+            float S = dwi[vols[k]][vox[j]],a = std::clamp(S*w[vox[j]],0.0f,1.0f),r = std::sqrt(a),dI = r+rI*(1.0f-r);
+            (*out)[first+k][vox[j]] = fA*S/(a+rA*(1.0f-a))+(1.0f-fA)*S/(dI*dI);
+        }
     });
-    return b1;
+    return true;
 }
 // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean
-// (DSI: all b-values >= 100 in one shell); gives each DWI's shell (-1 if excluded) and the shell mean b-values and volumes;
-// with dwi and mask, the shell means become the equivalent b-values (0 if not estimable)
-void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols,
-                  const std::vector<tipl::image<3> >* dwi,const tipl::image<3,unsigned char>* mask)
+// (DSI: all b-values >= 100 in one shell); gives each DWI's shell (-1 if excluded) and the shell mean b-values and volumes
+void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols)
 {
     shell_id.assign(bvalues.size(),-1);
     shell_b.clear();
@@ -3087,15 +3098,24 @@ void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& s
         }
     for(size_t k = 0;k < shell_b.size();++k)
         shell_b[k] /= float(shell_vols[k].size());
-    for(size_t k = 0;dwi && k < shell_b.size();++k)
-    {
-        auto eq_b = tissue_model().fit(*dwi,shell_vols[k],*mask);
-        tipl::out() << "shell recorded b=" << shell_b[k] << " HCP-equivalent b=" << eq_b;
-        shell_b[k] = eq_b;
-    }
 }
-template float tissue_model::fit<const float*>(const std::vector<const float*>&,const std::vector<size_t>&,const tipl::image<3,unsigned char>&,
-                                               float,std::vector<tipl::image<3> >*); // reconstruction: the dwi pointers of Voxel
+// the tissue model of each shell grouped by group_shells (empty if failed: DSI, no shell, no b0, or a shell of one dwi)
+static std::vector<tissue_model> fit_shells(src_data& src)
+{
+    std::vector<int> shell_id;
+    std::vector<float> shell_b;
+    std::vector<std::vector<size_t> > shell_vols;
+    if(is_dsi(src.src_bvalues))
+        return src.error_msg = "the tissue model needs shell data, not DSI",std::vector<tissue_model>();
+    group_shells(src.src_bvalues,false,shell_id,shell_b,shell_vols);
+    std::vector<tissue_model> t(shell_vols.size());
+    for(size_t k = 0;k < t.size();++k)
+        if(!t[k].fit(src,shell_vols[k]))
+            return src.error_msg = "the tissue model needs a b0 and at least two dwi per shell",std::vector<tissue_model>();
+    if(t.empty())
+        src.error_msg = "no DWI with b-value >= 500";
+    return t;
+}
 // a preprocessing step for shell data, before scheme balance: within each shell (and the b0s), three passes divide each volume by its
 // gain gamma_k, its mean over core isotropic gm relative to the mean of all volumes there; the core gm is P45 < mu < P90 with the
 // noise-subtracted dispersion e <= P30 of that band, mu and e recomputed from the current iterate S/gamma at each pass
@@ -3199,32 +3219,49 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     if(dsi && !is_dsi(reference.src_bvalues))
         return error_msg = "a DSI SRC needs a DSI reference SRC",false;
 
-    // each target shell (b >= 500) takes the reference shell with the nearest mean b-value (multishell: equivalent b-value),
-    // converted to the target's equivalent b-value (DSI: kept as is) and tagged by the target shell, before rotate() resamples it
+    // each target shell (b >= 500) takes the reference shell nearest in attenuation (DSI: the one shell), converted to the target's
+    // attenuation (DSI: kept as is) and tagged by the target shell, before rotate() resamples it; a multishell reference also gives each
+    // target shell its b-value, interpolated from its attenuation over the reference shells (otherwise the recorded b-value is kept)
     std::vector<int> shell_id,ref_shell_id;
     std::vector<float> shell_b,ref_shell_b;
     std::vector<std::vector<size_t> > shell_vols,ref_shell_vols;
-    group_shells(src_bvalues,dsi,shell_id,shell_b,shell_vols,dsi ? nullptr : &src_dwi_data,&voxel.mask);
-    group_shells(reference.src_bvalues,dsi,ref_shell_id,ref_shell_b,ref_shell_vols,dsi ? nullptr : &reference.src_dwi_data,&reference.voxel.mask);
+    group_shells(src_bvalues,dsi,shell_id,shell_b,shell_vols);
+    group_shells(reference.src_bvalues,dsi,ref_shell_id,ref_shell_b,ref_shell_vols);
     if(shell_b.empty())
         return error_msg = "no DWI with b-value >= 500 to regenerate",false;
     if(ref_shell_b.empty())
         return error_msg = "the reference SRC has no DWI with b-value >= 500",false;
-    if(std::count(shell_b.begin(),shell_b.end(),0.0f))
-        return error_msg = "cannot estimate the equivalent b-value of a shell",false;
+    std::vector<tissue_model> t,ref_t;
+    if(!dsi && (t = fit_shells(*this)).empty())
+        return false;
+    if(!dsi && (ref_t = fit_shells(reference)).empty())
+        return error_msg = "reference SRC: " + reference.error_msg,false;
+    auto interpolated_b = [&](float u,float tissue_model::* u_t) // the b-value at attenuation u, from b = 0 at u = 0 over the reference shells
+    {
+        size_t r = 0;
+        while(r+1 < ref_t.size() && u > ref_t[r].*u_t)
+            ++r;
+        float u0 = r ? ref_t[r-1].*u_t : 0.0f,b0 = r ? ref_shell_b[r-1] : 0.0f;
+        return b0+(u-u0)*(ref_shell_b[r]-b0)/(ref_t[r].*u_t-u0);
+    };
+    for(size_t k = 0;ref_t.size() > 1 && k < shell_b.size();++k)
+    {
+        float bA = interpolated_b(t[k].u_A,&tissue_model::u_A),bI = interpolated_b(t[k].u_I,&tissue_model::u_I);
+        tipl::out() << "target shell recorded b=" << shell_b[k] << " estimated b=" << 0.5f*(bA+bI) << " (anisotropic " << bA << ", isotropic " << bI << ")";
+        shell_b[k] = 0.5f*(bA+bI);
+    }
     std::vector<tipl::image<3> > dwi;
     std::vector<float> bvalues;
     std::vector<tipl::vector<3,float> > bvectors;
     ref_shell_id.clear();
     for(size_t k = 0;k < shell_b.size();++k)
     {
-        auto r = size_t(std::min_element(ref_shell_b.begin(),ref_shell_b.end(),[&](float x,float y)
-                        {return std::fabs(x-shell_b[k]) < std::fabs(y-shell_b[k]);})-ref_shell_b.begin());
+        size_t r = dsi ? 0 : t[k].nearest(ref_t);
         if(ref_shell_vols[r].size() < 3)
             return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[r])) + " has fewer than three DWIs",false;
         tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi) uses reference shell b=" << ref_shell_b[r] << " (" << ref_shell_vols[r].size() << " dwi)";
         if(!dsi)
-            tissue_model().fit(reference.src_dwi_data,ref_shell_vols[r],reference.voxel.mask,shell_b[k],&dwi);
+            ref_t[r].fit(reference,ref_shell_vols[r],&t[k],&dwi);
         for(auto j : ref_shell_vols[r])
         {
             if(dsi) // one shell
@@ -3261,7 +3298,7 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "canceled",false;
 
     // each DWI (b >= 500) takes the kernel-regression direction of its three best-correlated reference DWIs in the matched shell
-    // and its shell's equivalent b-value (DSI: the b-value and b-vector of the one best-correlated reference DWI)
+    // and its shell's b-value (DSI: the b-value and b-vector of the one best-correlated reference DWI)
     auto new_bvalues = src_bvalues;
     auto new_bvectors = src_bvectors;
     std::vector<float> best_r(src_bvalues.size());
@@ -3307,47 +3344,31 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
     voxel.report += " The b-values and b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
     return true;
 }
-// the HCP-equivalent b-value of each shell (b >= 500) grouped from the recorded b-values (empty if failed)
-static std::vector<float> equivalent_b_table(src_data& src)
-{
-    std::vector<int> shell_id;
-    std::vector<float> shell_b;
-    std::vector<std::vector<size_t> > shell_vols;
-    if(is_dsi(src.src_bvalues))
-        return src.error_msg = "the equivalent b-value needs shell data, not DSI",shell_b;
-    group_shells(src.src_bvalues,false,shell_id,shell_b,shell_vols,&src.src_dwi_data,&src.voxel.mask);
-    if(shell_b.empty() || std::count(shell_b.begin(),shell_b.end(),0.0f))
-        return src.error_msg = "cannot estimate the equivalent b-value of a shell (b >= 500)",std::vector<float>();
-    return shell_b;
-}
 bool src_data::convert_b_table(const std::filesystem::path& target_file)
 {
     src_data target;
     if(!target.load_from_file(target_file))
         return error_msg = target.error_msg,false;
-    auto target_shell_b = equivalent_b_table(target);
-    if(target_shell_b.empty())
+    auto target_t = fit_shells(target);
+    if(target_t.empty())
         return error_msg = target.error_msg,false;
-    return convert_b_table(target.src_bvalues,target.src_bvectors,target_shell_b);
+    return convert_b_table(target.src_bvalues,target.src_bvectors,target_t);
 }
-// converts shell DWI to a target b-table (bvalues: recorded, kept in the output and grouped into shells as in group_shells;
-// target_shell_b: the HCP-equivalent b-value of each target shell; the recorded b-values of this data unused): each target shell
-// takes the shell of this data with the nearest equivalent b-value, converted to the target's and interpolated to the target
-// directions; the other target volumes (b < 500) become b0 with the mean b0
-bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors,const std::vector<float>& target_shell_b)
+// converts shell DWI to a target b-table (bvalues: recorded, kept in the output and grouped into shells as in group_shells; target:
+// the tissue model of each target shell; the recorded b-values of this data unused): each target shell takes the shell of this data
+// nearest in attenuation, converted to the target's attenuation and interpolated to the target directions; the other target volumes
+// (b < 500) become b0 with the mean b0
+bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors,const std::vector<tissue_model>& target)
 {
     tipl::progress prog("convert to b-table",true);
-    if(is_dsi(src_bvalues))
-        return error_msg = "b-table conversion needs shell data, not DSI",false;
     std::vector<int> shell_id,target_shell_id;
-    std::vector<float> shell_b,target_recorded_b;
+    std::vector<float> shell_b,target_shell_b;
     std::vector<std::vector<size_t> > shell_vols,target_shell_vols;
-    group_shells(src_bvalues,false,shell_id,shell_b,shell_vols,&src_dwi_data,&voxel.mask);
-    group_shells(bvalues,false,target_shell_id,target_recorded_b,target_shell_vols);
-    if(shell_b.empty() || target_shell_b.empty())
-        return error_msg = "the data and the target both need DWI with b-value >= 500",false;
-    if(std::count(shell_b.begin(),shell_b.end(),0.0f))
-        return error_msg = "cannot estimate the equivalent b-value of a shell",false;
+    group_shells(src_bvalues,false,shell_id,shell_b,shell_vols);
+    group_shells(bvalues,false,target_shell_id,target_shell_b,target_shell_vols);
+    auto models = fit_shells(*this);
+    if(models.empty())
+        return false;
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
         return false;
@@ -3359,15 +3380,14 @@ bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vect
     for(size_t j = 0;j < bvalues.size();++j)
         if(target_shell_id[j] < 0)
             bvalues[j] = 0.0f,bvectors[j] = tipl::vector<3,float>();
-    for(size_t t = 0;t < target_shell_b.size();++t)
+    for(size_t t = 0;t < target.size();++t)
     {
-        prog(t,target_shell_b.size());
-        auto k = size_t(std::min_element(shell_b.begin(),shell_b.end(),[&](float l,float r)
-                 {return std::fabs(l-target_shell_b[t]) < std::fabs(r-target_shell_b[t]);})-shell_b.begin());
-        tipl::out() << "target shell HCP-equivalent b=" << target_shell_b[t] << " (" << target_shell_vols[t].size() << " dwi) from shell HCP-equivalent b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi)";
+        prog(t,target.size());
+        auto k = target[t].nearest(models);
+        tipl::out() << "target shell b=" << target_shell_b[t] << " (" << target_shell_vols[t].size() << " dwi) from shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi)";
         std::vector<tipl::image<3> > converted;
         std::vector<tipl::vector<3,float> > dirs;
-        tissue_model().fit(src_dwi_data,shell_vols[k],voxel.mask,target_shell_b[t],&converted);
+        models[k].fit(*this,shell_vols[k],&target[t],&converted);
         for(auto i : shell_vols[k])
             dirs.push_back(src_bvectors[i]);
         for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
@@ -3388,7 +3408,7 @@ bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vect
     src_bvalues.swap(bvalues);
     src_bvectors.swap(bvectors);
     update_dwi_sum();
-    voxel.report += " The DWI were converted to a target b-table using the equivalent b-value of each shell.";
+    voxel.report += " The DWI were converted to a target b-table by matching the anisotropic and isotropic attenuation of each shell.";
     return true;
 }
 // averages QSDR dwi exports (4D nifti with bval/bvec and an mni header) into one SRC: scans with outlying neighboring dwi correlation
@@ -3503,7 +3523,7 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
 // converts each source SRC to the acquisition of a set of target SRC (single or multishell), saved as <source>.matched.sz in out_dir
 // (empty: the source folder): targets outside the most common shell configuration or with outlying neighboring dwi correlation are
 // ignored (notes: the reason for each target, empty if used); the target b-table takes the b-vectors of the used target with the highest
-// correlation and each shell's HCP-equivalent b-value averaged over the used targets; each source is resampled to that target's voxel size,
+// correlation and each shell's anisotropic and isotropic attenuation averaged over the used targets; each source is resampled to that target's voxel size,
 // converted, and saved with that target's recorded b-values
 bool match_btable(const std::vector<std::filesystem::path>& targets,const std::vector<std::filesystem::path>& sources,
                   const std::filesystem::path& out_dir,bool overwrite,std::vector<std::string>& notes,std::string& error_msg)
@@ -3529,7 +3549,8 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
     };
     std::vector<std::string> config(targets.size());
     std::vector<float> ndc(targets.size());
-    std::vector<std::vector<float> > recorded(targets.size()),shell_b(targets.size()); // shell_b: the equivalent b-value of each shell
+    std::vector<std::vector<float> > recorded(targets.size());
+    std::vector<std::vector<tissue_model> > models(targets.size()); // the tissue model of each shell
     std::vector<std::vector<tipl::vector<3,float> > > bvectors(targets.size());
     std::vector<tipl::vector<3> > vs(targets.size());
     for(size_t i = 0;prog(i,targets.size()+sources.size()) && i < targets.size();++i)
@@ -3540,7 +3561,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         config[i] = acquisition(target,false);
         ndc[i] = target.quality_control_neighboring_dwi_corr().second;
         recorded[i] = target.src_bvalues;
-        if((shell_b[i] = equivalent_b_table(target)).empty())
+        if((models[i] = fit_shells(target)).empty())
             notes[i] = target.error_msg;
         bvectors[i].swap(target.src_bvectors);
         vs[i] = target.voxel.vs;
@@ -3559,7 +3580,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         return error_msg = "no usable target SRC",false;
     auto threshold = tipl::outlier_range(used_ndc.begin(),used_ndc.end()).first;
     size_t leader = 0,n = 0;
-    std::vector<float> avg_b;
+    std::vector<tissue_model> avg;
     for(size_t i = 0;i < targets.size();++i)
     {
         if(notes[i].empty() && ndc[i] < threshold)
@@ -3571,12 +3592,14 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         }
         if(!n || ndc[i] > ndc[leader])
             leader = i;
-        avg_b.resize(shell_b[i].size());
-        tipl::add(avg_b,shell_b[i]);
+        avg.resize(models[i].size());
+        for(size_t k = 0;k < avg.size();++k)
+            avg[k].u_A += models[i][k].u_A,avg[k].u_I += models[i][k].u_I;
         ++n;
     }
-    tipl::out() << "the target b-table takes the b-vectors of " << targets[leader].filename().u8string() << " and the b-values of " << n << " targets";
-    tipl::divide_constant(avg_b,float(n));
+    tipl::out() << "the target b-table takes the b-vectors of " << targets[leader].filename().u8string() << " and the attenuation of " << n << " targets";
+    for(auto& each : avg)
+        each.u_A /= float(n),each.u_I /= float(n);
 
     std::string first; // the acquisition of the first source
     for(size_t i = 0;prog(targets.size()+i,targets.size()+sources.size()) && i < sources.size();++i)
@@ -3597,7 +3620,7 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         if(a != first)
             return error_msg = sources[i].filename().u8string() + " has " + a + ", unlike the first source with " + first,false;
         source.resample(vs[leader]);
-        if(!source.convert_b_table(recorded[leader],bvectors[leader],avg_b) || !source.save_to_file(out_name))
+        if(!source.convert_b_table(recorded[leader],bvectors[leader],avg) || !source.save_to_file(out_name))
             return error_msg = sources[i].filename().u8string() + ": " + source.error_msg,false;
     }
     return !prog.aborted() || (error_msg = "canceled",false);
