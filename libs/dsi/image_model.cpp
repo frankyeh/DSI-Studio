@@ -2991,7 +2991,7 @@ static float l1_split(std::vector<float> v)
 }
 // the reference levels of a shell from the per-voxel mean m and sample variance s2 over the brain (voxels with m > 0), each from a
 // median of a set given by L1 two-medians splits: the baseline B, the noise variance s0 and isotropic level I, and the anisotropic
-// level A and dispersion d_A; with m divided by b0, I is the isotropic attenuation, which gives the HCP-equivalent b-value (Eq. 6)
+// level A and dispersion d_A; returns the HCP-equivalent b-value from the anisotropic-to-isotropic ratio R (Eq. 6)
 float tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>& s2_all)
 {
     std::vector<float> m,s2;
@@ -3031,23 +3031,19 @@ float tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>
     auto ani_core = [&](size_t j){return ani(j) && d[j] > t_core;};
     A = median(select(m,ani_core));
     d_A = median(select(d,ani_core));
-    const float D_I = 0.0008f; // PLACEHOLDER (mm2/s): the isotropic-core diffusivity, to be calibrated on the three shells of human.sz
-    return std::max(-std::log(I)/D_I,0.0f);
+    float R = (A+d_A*(A+B))/std::max(I,1e-6f);
+    return std::max(3002.4f*(R-0.6966f),0.0f); // R = R0 + b/alpha, fitted on the three shells of human.sz
 }
 template<typename T>
-float tissue_model::fit(const std::vector<T>& dwi,const std::vector<float>& bvalues,const std::vector<size_t>& vols,
-                        const tipl::image<3,unsigned char>& mask,float b2,std::vector<tipl::image<3> >* out)
+float tissue_model::fit(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
+                        float b2,std::vector<tipl::image<3> >* out)
 {
-    auto b0 = size_t(std::find(bvalues.begin(),bvalues.end(),0.0f)-bvalues.begin());
-    if(vols.size() < 2 || b0 == bvalues.size())
+    if(vols.size() < 2)
         return 0.0f;
     auto vox = tipl::get_sparse_index(mask);
-    auto w = get_outlier_limited_iso(&dwi[b0][0],mask.size());
-    std::vector<float> m,s2,mn(vox.size()),s2n(vox.size()),scale(vols.size(),1.0f); // no volume-wise drift equalization: correct drift beforehand if needed
+    std::vector<float> m,s2,scale(vols.size(),1.0f); // no volume-wise drift equalization: correct drift beforehand if needed
     shell_moments(dwi,vols,vox,scale,m,s2);
-    for(size_t j = 0;j < vox.size();++j) // divided by b0
-        mn[j] = m[j]*w[vox[j]],s2n[j] = s2[j]*w[vox[j]]*w[vox[j]];
-    float b1 = fit(mn,s2n);
+    float b1 = fit(m,s2);
     if(!out)
         return b1;
     // conversion from b1 to b2 (Eq. 8): the anisotropic and isotropic parts of the mean, and the directional deviation, each scaled
@@ -3061,7 +3057,7 @@ float tissue_model::fit(const std::vector<T>& dwi,const std::vector<float>& bval
         out->emplace_back(&dwi[k][0],mask.shape());
     tipl::par_for(vox.size(),[&](size_t j)
     {
-        float mA = mn[j] > 0.0f ? m[j]*std::min(fa(s2n[j])*A/mn[j],1.0f) : 0.0f,m2 = kA*mA+kI*(m[j]-mA); // mA: the anisotropic part of m
+        float mA = std::min(fa(s2[j])*A,m[j]),m2 = kA*mA+kI*(m[j]-mA); // mA: the anisotropic part of m
         for(size_t k = 0;k < vols.size();++k)
             (*out)[first+k][vox[j]] = std::max(m2+kd*(dwi[vols[k]][vox[j]]-m[j]),0.0f);
     });
@@ -3092,12 +3088,12 @@ void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& s
         shell_b[k] /= float(shell_vols[k].size());
     for(size_t k = 0;dwi && k < shell_b.size();++k)
     {
-        auto eq_b = tissue_model().fit(*dwi,bvalues,shell_vols[k],*mask);
+        auto eq_b = tissue_model().fit(*dwi,shell_vols[k],*mask);
         tipl::out() << "shell recorded b=" << shell_b[k] << " HCP-equivalent b=" << eq_b;
         shell_b[k] = eq_b;
     }
 }
-template float tissue_model::fit<const float*>(const std::vector<const float*>&,const std::vector<float>&,const std::vector<size_t>&,const tipl::image<3,unsigned char>&,
+template float tissue_model::fit<const float*>(const std::vector<const float*>&,const std::vector<size_t>&,const tipl::image<3,unsigned char>&,
                                                float,std::vector<tipl::image<3> >*); // reconstruction: the dwi pointers of Voxel
 // a preprocessing step for shell data, before scheme balance: within each shell (and the b0s), three passes divide each volume by its
 // gain gamma_k, its mean over core isotropic gm relative to the mean of all volumes there; the core gm is P45 < mu < P90 with the
@@ -3227,7 +3223,7 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
             return error_msg = "the matched reference shell at b=" + std::to_string(int(ref_shell_b[r])) + " has fewer than three DWIs",false;
         tipl::out() << "target shell b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi) uses reference shell b=" << ref_shell_b[r] << " (" << ref_shell_vols[r].size() << " dwi)";
         if(!dsi)
-            tissue_model().fit(reference.src_dwi_data,reference.src_bvalues,ref_shell_vols[r],reference.voxel.mask,shell_b[k],&dwi);
+            tissue_model().fit(reference.src_dwi_data,ref_shell_vols[r],reference.voxel.mask,shell_b[k],&dwi);
         for(auto j : ref_shell_vols[r])
         {
             if(dsi) // one shell
@@ -3370,7 +3366,7 @@ bool src_data::convert_b_table(std::vector<float> bvalues,std::vector<tipl::vect
         tipl::out() << "target shell HCP-equivalent b=" << target_shell_b[t] << " (" << target_shell_vols[t].size() << " dwi) from shell HCP-equivalent b=" << shell_b[k] << " (" << shell_vols[k].size() << " dwi)";
         std::vector<tipl::image<3> > converted;
         std::vector<tipl::vector<3,float> > dirs;
-        tissue_model().fit(src_dwi_data,src_bvalues,shell_vols[k],voxel.mask,target_shell_b[t],&converted);
+        tissue_model().fit(src_dwi_data,shell_vols[k],voxel.mask,target_shell_b[t],&converted);
         for(auto i : shell_vols[k])
             dirs.push_back(src_bvectors[i]);
         for(auto j : target_shell_vols[t]) // the angular gaussian interpolation of scheme balance
