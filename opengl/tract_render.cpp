@@ -145,7 +145,7 @@ void TractRenderData::add_tract(const TractRenderSetting& s,
                         add_tube(cur_point,cur_color,-vec_n,s.alpha);
                     }
                     if(s.style == 2)
-                        end_tube_strip();
+                        end_strip();
                 }
 
             }
@@ -195,44 +195,40 @@ void TractRenderData::add_tract(const TractRenderSetting& s,
         prev_vec_n = vec_n;
         last_pos = pos;
     }
-    if(s.style)
-        end_tube_strip();
-    else
-        end_line_strip();
+    end_strip();
 }
 bool TractRenderData::draw(std::chrono::high_resolution_clock::time_point end_time)
 {
     if(std::chrono::high_resolution_clock::now() > end_time)
         return false;
-    if(!tube_strip_size.empty())
+    if(strip_size.empty())
+        return true;
+    if(!buffer.isCreated()) // the first draw uploads the mesh to the gpu and frees it here
     {
-        glEnableClientState(GL_VERTEX_ARRAY);
+        buffer.create();
+        buffer.bind();
+        buffer.allocate(vertices.data(),int(vertices.size()*sizeof(float)));
+        std::vector<float>().swap(vertices);
+    }
+    else
+        buffer.bind();
+    GLsizei stride = (tube ? 10 : 7)*sizeof(float); // offsets in the bound buffer: vertex, normal (tube), then color
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glVertexPointer(3, GL_FLOAT, stride, nullptr);
+    glColorPointer(3, GL_FLOAT, stride, reinterpret_cast<void*>((tube ? 6 : 3)*sizeof(float)));
+    if(tube)
+    {
         glEnableClientState(GL_NORMAL_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
-        GLsizei stride = 10*sizeof(float); // 3 vertices + 3 normal + 4 color
-        glVertexPointer(3, GL_FLOAT, stride, &tube_vertices[0]);
-        glNormalPointer(GL_FLOAT, stride, &tube_vertices[0]+3);
-        glColorPointer(3, GL_FLOAT, stride, &tube_vertices[0]+6);
-
-        for(size_t i = 0;i < tube_strip_size.size() && std::chrono::high_resolution_clock::now() < end_time;++i)
-            glDrawArrays(GL_TRIANGLE_STRIP,tube_strip_pos[i],tube_strip_size[i]);
-        glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
-        glDisableClientState(GL_COLOR_ARRAY);
-        glDisableClientState(GL_NORMAL_ARRAY);
+        glNormalPointer(GL_FLOAT, stride, reinterpret_cast<void*>(3*sizeof(float)));
     }
-
-    if(!line_strip_size.empty())
-    {
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
-        GLsizei stride = 7*sizeof(float); // 3 vertices + 4 color
-        glVertexPointer(3, GL_FLOAT, stride, &line_vertices[0]);
-        glColorPointer(3, GL_FLOAT, stride, &line_vertices[0]+3);
-        for(size_t i = 0;i < line_strip_size.size();++i)
-            glDrawArrays(GL_LINE_STRIP,line_strip_pos[i],line_strip_size[i]);
-        glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
-        glDisableClientState(GL_COLOR_ARRAY);
-    }
+    auto mode = tube ? GL_TRIANGLE_STRIP : GL_LINE_STRIP;
+    for(size_t i = 0;i < strip_size.size() && std::chrono::high_resolution_clock::now() < end_time;++i)
+        glDrawArrays(mode,strip_pos[i],strip_size[i]);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+    buffer.release();
     return std::chrono::high_resolution_clock::now() < end_time;
 }
 
