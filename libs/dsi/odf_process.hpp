@@ -27,9 +27,11 @@ inline std::vector<double> shell_weights(const std::vector<tipl::vector<3,float>
 }
 // the reference levels of a shell (fit; receive-coil shading corrected beforehand by bias_field_correction): the baseline B, isotropic level I, anisotropic level A, anisotropic dispersion d_A, and noise
 // variance s0; they give a voxel's anisotropic fraction from its variance s2 (Eq. 4) and then its isotropic fraction from its mean m (Eq. 5)
+struct src_data;
 struct tissue_model
 {
     float B = 0.0f,I = 0.0f,A = 0.0f,d_A = 0.0f,s0 = 0.0f;
+    float u_A = 0.0f,u_I = 0.0f; // the attenuation of the anisotropic and isotropic cores (S0/m = 1+u_A and (1+u_I)^2)
     float fa(float s2) const // the noise-subtracted dispersion over that of the pure anisotropic level (linear mixing)
     {
         return std::clamp(std::sqrt(std::max(s2-s0,0.0f))/std::max(d_A*(A+B),1e-12f),0.0f,1.0f);
@@ -38,18 +40,19 @@ struct tissue_model
     {
         return std::clamp((m-fa*A-(1.0f-fa)*B)/std::max(I-B,1e-6f),0.0f,1.0f-fa);
     }
-    // fits the levels to the per-voxel mean m and sample variance s2 of a shell over the brain and returns its HCP-equivalent b-value
-    // (0 if not estimable); the template version takes the dwi vols of a shell (T: a volume or its pointer), and out appends the shell
-    // converted to b-value b2 (image_model.cpp)
-    float fit(const std::vector<float>& m,const std::vector<float>& s2);
-    template<typename T>
-    float fit(const std::vector<T>& dwi,const std::vector<size_t>& vols,const tipl::image<3,unsigned char>& mask,
-              float b2 = 0.0f,std::vector<tipl::image<3> >* out = nullptr);
+    size_t nearest(const std::vector<tissue_model>& shells) const // the shell nearest in attenuation (|ln| of the u ratios)
+    {
+        auto distance = [&](const tissue_model& t){return std::fabs(std::log(t.u_A/u_A))+std::fabs(std::log(t.u_I/u_I));};
+        return size_t(std::min_element(shells.begin(),shells.end(),[&](const auto& x,const auto& y){return distance(x) < distance(y);})-shells.begin());
+    }
+    // fits the levels to the per-voxel mean m and sample variance s2 of a shell over the brain (with the per-voxel b0, also u_A and u_I);
+    // the src version takes the dwi vols of a shell, and with target, out appends the shell converted to its attenuation (image_model.cpp)
+    void fit(const std::vector<float>& m,const std::vector<float>& s2,const std::vector<float>& b0 = {});
+    bool fit(const src_data& src,const std::vector<size_t>& vols,const tissue_model* target = nullptr,std::vector<tipl::image<3> >* out = nullptr);
 };
 // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean (DSI: all b >= 100
-// in one shell); with dwi and mask, the shell means become the equivalent b-values (image_model.cpp)
-void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols,
-                  const std::vector<tipl::image<3> >* dwi = nullptr,const tipl::image<3,unsigned char>* mask = nullptr);
+// in one shell; image_model.cpp)
+void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols);
 // --other_output=wmgm: each voxel's anisotropic (wm) and isotropic (gm) signal fractions from the mean and variance of each shell,
 // averaged over the shells; the levels are fitted at the end over the mask of the output space (qsdr: the template space)
 class TissueFraction : public BaseProcess{
@@ -140,7 +143,7 @@ public:
         {
             unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? old_q_count : voxel.shell[k+1]);
             new_shell[k] = uint32_t(new_bvalues.size());
-            float b = voxel.shell_b[k]; // the HCP-equivalent b-value sets the balanced direction count
+            float b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to); // the shell b-value sets the balanced direction count
             tessellated_icosahedron new_dir(b > 2500.0f ? 6 : b > 1500.0f ? 5 : b > 500.0f ? 4 : 3); // 181, 126, 81, or 46 directions
             balanced = balanced && to-from == new_dir.half_vertices_count;
             for(unsigned int i = 0;i < new_dir.half_vertices_count;++i)
