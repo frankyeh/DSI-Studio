@@ -2964,9 +2964,9 @@ static void shell_moments(const std::vector<T>& dwi,const std::vector<size_t>& v
         s2[j] = float(std::max(0.0,(sum2-sum*double(m[j]))/double(vols.size()-1)));
     });
 }
-static float median(std::vector<float> v) // 0 if empty; takes the temporary sets of tissue_model::fit
+static float median(std::vector<float> v) // 0 if empty; a copy, as tissue_model::fit passes temporary sets
 {
-    return v.empty() ? 0.0f : tipl::median(v.begin(),v.end());
+    return tipl::median(v.begin(),v.end());
 }
 // the threshold of the L1 two-medians split of a 1D set (Eq. 2): sorted values and prefix sums give the cost of every split exactly
 static float l1_split(std::vector<float> v)
@@ -3011,7 +3011,7 @@ float tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>
     // the baseline core: the lower split of the lower split of m
     float t_dwi = l1_split(m);
     auto dark = select(m,[&](size_t j){return m[j] <= t_dwi;});
-    float t_dark = dark.size() >= 4 ? l1_split(dark) : *std::min_element(m.begin(),m.end());
+    float t_dark = dark.size() >= 4 ? l1_split(dark) : tipl::min_value(m);
     B = std::max(median(select(m,[&](size_t j){return m[j] <= t_dark;})),1e-3f);
     // DWI-bearing voxels split by s/(m+B) into isotropic and anisotropic voxels; the isotropic core gives s0 and I
     std::vector<float> d0(m.size()),d(m.size());
@@ -3125,7 +3125,7 @@ bool src_data::correct_signal_drift(void)
         {
             shell_moments(src_dwi_data,vols,vox,scale,m,s2);
             // the noise floor: the median variance of the most isotropic quarter of the parenchyma
-            float M = pct(m,0.5f),eps = 0.2f*M,C = pct(m,0.04f);
+            float M = median(m),eps = 0.2f*M,C = pct(m,0.04f);
             std::vector<float> c_raw,par_s2,e(vox.size());
             for(size_t j = 0;j < vox.size();++j)
                 if(m[j] > 0.5f*(C+M))
@@ -3138,7 +3138,7 @@ bool src_data::correct_signal_drift(void)
             for(size_t p = 0;p < c_raw.size();++p)
                 if(c_raw[p] <= lo)
                     g0_s2.push_back(par_s2[p]);
-            float s0 = pct(g0_s2,0.5f),m_lo = pct(m,0.45f),m_hi = pct(m,0.9f);
+            float s0 = median(g0_s2),m_lo = pct(m,0.45f),m_hi = pct(m,0.9f);
             std::vector<float> band_e;
             for(size_t j = 0;j < vox.size();++j)
                 if(m[j] > m_lo && m[j] < m_hi)
@@ -3155,7 +3155,7 @@ bool src_data::correct_signal_drift(void)
                 }
             if(!n)
                 break;
-            double mean = std::accumulate(sum.begin(),sum.end(),0.0)/double(vols.size());
+            double mean = tipl::mean(sum);
             for(size_t k = 0;k < vols.size();++k)
                 scale[k] = float(mean/sum[k]); // 1/gamma_k
         }
@@ -3447,7 +3447,7 @@ bool dwi_average(const std::filesystem::path& out_name,const std::vector<std::fi
         tipl::out() << file_names[i].filename().u8string() << " neighboring dwi correlation: " << ndc.back();
     }
     auto threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
-    auto leader = size_t(std::max_element(ndc.begin(),ndc.end())-ndc.begin());
+    auto leader = tipl::arg_max(ndc);
     tipl::out() << "leader: " << file_names[leader].filename().u8string();
     if(leader && (avg_vols = load(avg,leader)).empty())
         return false;
@@ -3575,13 +3575,11 @@ bool match_btable(const std::vector<std::filesystem::path>& targets,const std::v
         if(!n || ndc[i] > ndc[leader])
             leader = i;
         avg_b.resize(shell_b[i].size());
-        for(size_t k = 0;k < avg_b.size();++k)
-            avg_b[k] += shell_b[i][k];
+        tipl::add(avg_b,shell_b[i]);
         ++n;
     }
     tipl::out() << "the target b-table takes the b-vectors of " << targets[leader].filename().u8string() << " and the b-values of " << n << " targets";
-    for(auto& b : avg_b)
-        b /= float(n);
+    tipl::divide_constant(avg_b,float(n));
 
     std::string first; // the acquisition of the first source
     for(size_t i = 0;prog(targets.size()+i,targets.size()+sources.size()) && i < sources.size();++i)
