@@ -145,6 +145,7 @@ class fib_data;
 struct tissue_model;
 struct src_data
 {
+    friend struct tissue_model;
     src_data(void){}
     src_data(const src_data&) = delete;
     src_data operator=(const src_data&) = delete;
