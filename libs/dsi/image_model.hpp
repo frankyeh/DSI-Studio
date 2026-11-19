@@ -142,6 +142,7 @@ struct distortion_map{
 
 class DwiHeader;
 class fib_data;
+struct tissue_model;
 struct src_data
 {
     src_data(void){}
@@ -209,8 +210,8 @@ public:
     std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);
     bool regenerate_b_table(std::filesystem::path reference_file); // from a reference SRC aligned to this subject; empty: the current template's reference (<template>.sz)
-    bool convert_b_table(const std::filesystem::path& target_file); // shell DWI converted to the directions and equivalent b-values of a shell SRC
-    bool convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors,const std::vector<float>& target_shell_b); // converted by the HCP-equivalent b-value of each target shell
+    bool convert_b_table(const std::filesystem::path& target_file); // shell DWI converted to the directions and attenuation of a shell SRC
+    bool convert_b_table(std::vector<float> bvalues,std::vector<tipl::vector<3,float> > bvectors,const std::vector<tissue_model>& target); // converted to the attenuation of each target shell
     void flip_dwi(unsigned char type);
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
     void rotate(const tipl::shape<3>& new_geo,
