@@ -1853,11 +1853,8 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         angular_selection = (event->button() == Qt::RightButton);
         cur_tracking_window.tractWidget->edit_tracts();
     }
-    if(device_selected)
-    {
-        device_selected = false;
-        update();
-    }
+    device_selected = false;
+    update(); // the full render after a drag (TractTableWidget::render_tracts)
     tract_color_bar_selected = false;
     region_color_bar_selected = false;
     editing_option = none;
