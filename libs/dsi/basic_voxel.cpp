@@ -82,7 +82,7 @@ void Voxel::load_from_src(src_data& image_model)
         size_t from = shell[k],to = (k + 1 == shell.size() ? bvalues.size() : shell[k+1]);
         std::vector<size_t> vols(to-from);
         std::iota(vols.begin(),vols.end(),from);
-        float b = bvalues[from] >= 500.0f ? tissue_model().fit(dwi_data,bvalues,vols,mask) : 0.0f;
+        float b = bvalues[from] >= 500.0f ? tissue_model().fit(dwi_data,vols,mask) : 0.0f;
         shell_b.push_back(b > 0.0f ? b : float(tipl::mean(bvalues.begin()+from,bvalues.begin()+to)));
         tipl::out() << "shell recorded b=" << bvalues[from] << " HCP-equivalent b=" << shell_b.back();
     }
