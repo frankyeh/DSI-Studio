@@ -22,7 +22,7 @@ inline std::vector<double> shell_weights(const std::vector<tipl::vector<3,float>
         double angle = std::acos(std::min<double>(1.0,std::abs(double(dir*bvectors[j]))))/0.08;
         t.push_back(std::exp(-2.0*angle*angle));
     }
-    tipl::multiply_constant(t.begin(),t.end(),1.0/std::accumulate(t.begin(),t.end(),0.0));
+    tipl::multiply_constant(t,1.0/tipl::sum(t));
     return t;
 }
 // each voxel's 1/b0, with the inverse of dark voxels capped at its upper outlier limit so that dividing by b0 stays well posed
