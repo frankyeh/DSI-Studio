@@ -105,8 +105,8 @@ public:
     }
 public:
     unsigned int render_time = 200;
-    bool render_tracts(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
-    bool render_tracts(GLWidget* glwidget);
+    bool render_tracts(std::chrono::high_resolution_clock::time_point end_time);
+    bool render_tracts(void);
     std::string error_msg;
     bool command(std::vector<std::string> cmd);
 

@@ -433,7 +433,7 @@ void TractTableWidget::need_update_all(void)
     for(auto& t:tract_rendering)
         t->need_update = true;
 }
-bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time)
+bool TractTableWidget::render_tracts(std::chrono::high_resolution_clock::time_point end_time)
 {
     auto tracks = get_checked_tracks();
     auto renders = get_checked_tracks_rendering();
@@ -448,26 +448,26 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolu
         TractRenderShader shader(cur_tracking_window);
         tipl::par_for(update_list.size(),[&](size_t index)
         {
-            renders[update_list[index]]->prepare_update(cur_tracking_window,tracks[update_list[index]],shader);
+            renders[update_list[index]]->prepare_update(cur_tracking_window,tracks[update_list[index]],shader,shader.visible[update_list[index]]);
         },update_list.size());
     }
 
     for(size_t index = 0;index < TractRender::data_block_count;++index)
     {
         for(auto each : renders)
-            if(!each->render_tracts(index,glwidget,end_time))
+            if(!each->render_tracts(index,end_time))
                 return false;
     }
     return true;
 }
-bool TractTableWidget::render_tracts(GLWidget* glwidget)
+bool TractTableWidget::render_tracts(void)
 {
     // while the view is dragged, each mouse move redraws anyway: a partial frame in the base time, without a longer re-render
     // (the full render follows at the mouse release)
     bool dragging = QApplication::mouseButtons() != Qt::NoButton;
     if(dragging)
         render_time = 200;
-    if(!render_tracts(glwidget,std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
+    if(!render_tracts(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
     {
         if(dragging)
             return false;

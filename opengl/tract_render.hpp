@@ -6,13 +6,20 @@ class tracking_window;
 class GLWidget;
 
 struct TractRenderShader{
-    tipl::shape<3> dim;
-    tipl::vector<3> to64;
-    tipl::image<2,float> max_z_map,min_z_map,max_x_map,min_x_map,min_y_map,max_y_map;
-    float skip_rate = 0.0f;
+    int shift = 0; // a cell: 2^shift voxels
+    float to_cell = 1.0f;
+    tipl::image<3> depth; // the occupancy depth of each cell of a 64^3 grid (TractRenderShader)
+    std::vector<std::vector<unsigned int> > visible; // the drawn tracts of each checked bundle
     TractRenderShader(tracking_window& cur_tracking_window);
 
     float get_shade(const tipl::vector<3>& pos) const;
+};
+
+struct TractRenderSetting{ // the rendering settings, read once per update
+    float alpha,saturation,saturation_base,diameter,shader,color_min,color_r,detail;
+    int style,color_style,end_point_shift;
+    const tipl::color_map& color_map;
+    TractRenderSetting(const tracking_window& param);
 };
 
 class TractRenderData{
@@ -25,7 +32,7 @@ class TractRenderData{
     std::vector<GLsizei> tube_strip_size;
     std::vector<GLsizei> line_strip_size;
 public:
-    bool draw(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
+    bool draw(std::chrono::high_resolution_clock::time_point end_time);
 public:
     TractRenderData(void)
     {
@@ -33,7 +40,6 @@ public:
         line_strip_pos.push_back(0);
     }
 public:
-    void clear(void);
     void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n,float alpha)
     {
         tube_vertices.push_back(v[0]);
@@ -69,7 +75,7 @@ public:
         line_strip_size.push_back(line_vertices_count-line_strip_pos.back());
         line_strip_pos.push_back(line_vertices_count);
     }
-    void add_tract(const tracking_window& param,
+    void add_tract(const TractRenderSetting& s,
                    const std::vector<float>& tract,
                    const TractRenderShader& shader,
                    const tipl::vector<3>& assign_color,
@@ -80,9 +86,6 @@ struct TractRender{
 public:
     std::vector<TractRenderData> data;
     static const size_t data_block_count = 16;
-public:
-    bool terminated = false;
-    std::shared_ptr<std::thread> calculation_thread;
 public:
     bool need_update = true;
     unsigned int update_data_count = 0;
@@ -138,11 +141,10 @@ public:
         about_to_write = false;
         return std::make_shared<end_writing>(*this);
     }
-    TractRender(void);
     ~TractRender(void);
     void prepare_update(tracking_window& param,
                         std::shared_ptr<TractModel>& active_tract_model,
-                        const TractRenderShader& shader);
-    bool render_tracts(size_t index,GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
+                        const TractRenderShader& shader,const std::vector<unsigned int>& visible);
+    bool render_tracts(size_t index,std::chrono::high_resolution_clock::time_point end_time);
 };
 #endif // TRACT_RENDER_HPP
