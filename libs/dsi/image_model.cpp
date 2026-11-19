@@ -2937,14 +2937,6 @@ static bool is_dsi(const std::vector<float>& bvalues)
     calculate_shell(bvalues,shell);
     return shell.size() > 4 && shell[1]-shell[0] <= 6;
 }
-static float pct(std::vector<float> v,float p) // the p-th fraction percentile (0 if empty)
-{
-    if(v.empty())
-        return 0.0f;
-    auto at = v.begin()+size_t(p*float(v.size()-1));
-    std::nth_element(v.begin(),at,v.end());
-    return *at;
-}
 // the per-voxel mean m and sample variance s2 over the volumes vols, each multiplied by its scale, at the voxels vox
 static void shell_moments(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
                           const std::vector<float>& scale,std::vector<float>& m,std::vector<float>& s2)
@@ -3013,7 +3005,7 @@ void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>&
         return r;
     };
     // the baseline core: the lower split of the lower split of m
-    float t_dwi = l1_split(m);
+    t_dwi = l1_split(m);
     auto dark = select(m,[&](size_t j){return m[j] <= t_dwi;});
     float t_dark = dark.size() >= 4 ? l1_split(dark) : tipl::min_value(m);
     B = std::max(median(select(m,[&](size_t j){return m[j] <= t_dark;})),1e-3f);
@@ -3023,7 +3015,7 @@ void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>&
         d0[j] = std::sqrt(s2[j])/(m[j]+B);
     auto dwi = [&](size_t j){return m[j] > t_dwi;};
     float t_ani = l1_split(select(d0,dwi));
-    float t_iso = l1_split(select(d0,[&](size_t j){return dwi(j) && d0[j] <= t_ani;}));
+    t_iso = l1_split(select(d0,[&](size_t j){return dwi(j) && d0[j] <= t_ani;}));
     auto iso_core = [&](size_t j){return dwi(j) && d0[j] <= t_iso;};
     s0 = median(select(s2,iso_core));
     I = median(select(m,iso_core));
@@ -3044,24 +3036,30 @@ void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>&
     u_I = std::sqrt(median(select(b0,iso_core)))-1.0f;
 }
 std::vector<float> get_outlier_limited_iso(const float* iso_ptr,size_t n); // 1/b0, its dark voxels capped (group_connectometry_analysis.cpp)
-// fits the shell vols of src over its mask, the attenuation from its first b0 (false: fewer than two dwi or no b0); with target, out
+// fits the shell vols of src over its mask, the attenuation from its mean b0 (false: fewer than two dwi, no b0, or no attenuation in a
+// core, e.g., a mislabeled b0); with target, out
 // appends the shell converted to the target's attenuation: a signal S at attenuation a = S/S0 (in [0,1]) becomes S/(a+rho_A(1-a)) as
 // anisotropic and S/(sqrt(a)+rho_I(1-sqrt(a)))^2 as isotropic signal, rho the target-to-source ratio of u, mixed by the voxel's f_A
 bool tissue_model::fit(const src_data& src,const std::vector<size_t>& vols,const tissue_model* target,std::vector<tipl::image<3> >* out)
 {
     const auto& dwi = src.src_dwi_data;
-    auto b0 = size_t(std::find(src.src_bvalues.begin(),src.src_bvalues.end(),0.0f)-src.src_bvalues.begin());
-    if(vols.size() < 2 || b0 == src.src_bvalues.size())
+    std::vector<tipl::image<3> > b0;
+    if(vols.size() < 2 || !src.read_b0(b0))
         return false;
+    for(size_t i = 1;i < b0.size();++i)
+        b0[0] += b0[i];
+    b0[0] /= float(b0.size());
     auto vox = tipl::get_sparse_index(src.voxel.mask);
     std::vector<float> m,s2,S0(vox.size()),scale(vols.size(),1.0f); // no volume-wise drift equalization: correct drift beforehand if needed
     shell_moments(dwi,vols,vox,scale,m,s2);
     for(size_t j = 0;j < vox.size();++j)
-        S0[j] = dwi[b0][vox[j]];
+        S0[j] = b0[0][vox[j]];
     fit(m,s2,S0);
+    if(!(u_A > 0.0f && u_I > 0.0f)) // also NaN
+        return false;
     if(!target)
         return true;
-    auto w = get_outlier_limited_iso(&dwi[b0][0],dwi[b0].size());
+    auto w = get_outlier_limited_iso(&b0[0][0],b0[0].size());
     float rA = target->u_A/u_A,rI = target->u_I/u_I;
     size_t first = out->size();
     for(auto k : vols) // outside the mask: the unconverted signal
@@ -3111,14 +3109,14 @@ static std::vector<tissue_model> fit_shells(src_data& src)
     std::vector<tissue_model> t(shell_vols.size());
     for(size_t k = 0;k < t.size();++k)
         if(!t[k].fit(src,shell_vols[k]))
-            return src.error_msg = "the tissue model needs a b0 and at least two dwi per shell",std::vector<tissue_model>();
+            return src.error_msg = "the tissue model needs a b0, at least two dwi per shell, and DWI signals below the b0",std::vector<tissue_model>();
     if(t.empty())
         src.error_msg = "no DWI with b-value >= 500";
     return t;
 }
 // a preprocessing step for shell data, before scheme balance: within each shell (and the b0s), three passes divide each volume by its
-// gain gamma_k, its mean over core isotropic gm relative to the mean of all volumes there; the core gm is P45 < mu < P90 with the
-// noise-subtracted dispersion e <= P30 of that band, mu and e recomputed from the current iterate S/gamma at each pass
+// gain gamma_k, its mean over the isotropic core (tissue_model) relative to the mean of all volumes there, the core recomputed from
+// the current iterate S/gamma at each pass
 bool src_data::correct_signal_drift(void)
 {
     std::vector<int> shell_id;
@@ -3141,30 +3139,12 @@ bool src_data::correct_signal_drift(void)
         for(int pass = 0;pass < 3;++pass)
         {
             shell_moments(src_dwi_data,vols,vox,scale,m,s2);
-            // the noise floor: the median variance of the most isotropic quarter of the parenchyma
-            float M = median(m),eps = 0.2f*M,C = pct(m,0.04f);
-            std::vector<float> c_raw,par_s2,e(vox.size());
-            for(size_t j = 0;j < vox.size();++j)
-                if(m[j] > 0.5f*(C+M))
-                {
-                    c_raw.push_back(std::sqrt(s2[j])/(m[j]+eps));
-                    par_s2.push_back(s2[j]);
-                }
-            float lo = pct(c_raw,0.25f);
-            std::vector<float> g0_s2;
-            for(size_t p = 0;p < c_raw.size();++p)
-                if(c_raw[p] <= lo)
-                    g0_s2.push_back(par_s2[p]);
-            float s0 = median(g0_s2),m_lo = pct(m,0.45f),m_hi = pct(m,0.9f);
-            std::vector<float> band_e;
-            for(size_t j = 0;j < vox.size();++j)
-                if(m[j] > m_lo && m[j] < m_hi)
-                    band_e.push_back(e[j] = std::sqrt(std::max(s2[j]-s0,0.0f))/(m[j]+eps));
-            float e_max = pct(band_e,0.3f);
+            tissue_model t;
+            t.fit(m,s2);
             std::vector<double> sum(vols.size());
             size_t n = 0;
             for(size_t j = 0;j < vox.size();++j)
-                if(m[j] > m_lo && m[j] < m_hi && e[j] <= e_max)
+                if(t.in_iso_core(m[j],s2[j]))
                 {
                     for(size_t k = 0;k < vols.size();++k)
                         sum[k] += src_dwi_data[vols[k]][vox[j]];
@@ -3187,7 +3167,7 @@ bool src_data::correct_signal_drift(void)
         src_dwi_data[i] *= volume_scale[i];
     }
     update_dwi_sum();
-    voxel.report += " The signal drift was corrected by normalizing each volume to the gray matter signal of its shell.";
+    voxel.report += " The signal drift was corrected by normalizing each volume to the isotropic core signal of its shell.";
     return true;
 }
 bool src_data::regenerate_b_table(std::filesystem::path reference_file)
