@@ -32,6 +32,11 @@ struct tissue_model
 {
     float B = 0.0f,I = 0.0f,A = 0.0f,d_A = 0.0f,s0 = 0.0f;
     float u_A = 0.0f,u_I = 0.0f; // the attenuation of the anisotropic and isotropic cores (S0/m = 1+u_A and (1+u_I)^2)
+    float t_dwi = 0.0f,t_iso = 0.0f; // the splits of m (DWI-bearing voxels) and of s/(m+B) (the isotropic core)
+    bool in_iso_core(float m,float s2) const
+    {
+        return m > t_dwi && std::sqrt(s2)/(m+B) <= t_iso;
+    }
     float fa(float s2) const // the noise-subtracted dispersion over that of the pure anisotropic level (linear mixing)
     {
         return std::clamp(std::sqrt(std::max(s2-s0,0.0f))/std::max(d_A*(A+B),1e-12f),0.0f,1.0f);
