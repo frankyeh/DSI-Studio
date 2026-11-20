@@ -166,7 +166,7 @@ QMainWindow#FiberDataHub QScrollBar::sub-page {
           <widget class="QWidget" name="widget_9" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>2</horstretch>
+             <horstretch>3</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -204,6 +204,9 @@ QMainWindow#FiberDataHub QScrollBar::sub-page {
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
+                </property>
+                <property name="sizeAdjustPolicy">
+                 <enum>QComboBox::AdjustToContents</enum>
                 </property>
                </widget>
               </item>
