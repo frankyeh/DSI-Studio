@@ -6,11 +6,10 @@ class tracking_window;
 class GLWidget;
 
 struct TractRenderShader{
-    int shift = 0; // a cell: 2^shift voxels
-    float to_cell = 1.0f;
-    tipl::image<3> shade; // the shading of each cell of a 64^3 grid (TractRenderShader)
-    std::vector<std::vector<unsigned int> > visible; // the drawn tracts of each checked bundle
-    TractRenderShader(tracking_window& cur_tracking_window);
+    float to_cell = 1.0f; // voxel to cell coordinates
+    tipl::image<3> shade; // the shading of each cell of a 64^3 grid
+    std::vector<std::vector<unsigned int> > visible; // the drawn tracts of each bundle
+    TractRenderShader(tracking_window& cur_tracking_window,const std::vector<std::shared_ptr<TractModel> >& models);
 
     float get_shade(const tipl::vector<3>& pos) const;
 };
