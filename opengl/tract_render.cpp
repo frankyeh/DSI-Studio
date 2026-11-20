@@ -246,14 +246,15 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
 // gaps and isolated tracts less, and nearby tracts share their shading; the shading is 24*(density/its maximum)^2: the densest core
 // reaches black at the default shade (4), the squaring keeps outer tracts bright, and a single thin bundle, whose density never
 // reaches that of a whole-brain tractogram, is shaded as much
-TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):shade(tipl::shape<3>(64,64,64))
+TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window,const std::vector<std::shared_ptr<TractModel> >& models):
+    shade(tipl::shape<3>(64,64,64))
 {
     const auto& dim = cur_tracking_window.handle->dim;
+    int shift = 0; // a cell: 2^shift voxels
     for(auto max_dim = std::max({dim[0],dim[1],dim[2]});(max_dim >> shift) >= 64;++shift)
         ;
     to_cell = 1.0f/float(1 << shift);
 
-    auto models = cur_tracking_window.tractWidget->get_checked_tracks();
     size_t total_visible_tract = 0;
     for(auto each : models)
         total_visible_tract += each->get_visible_track_count();
@@ -283,9 +284,9 @@ TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):shade
                 }
             }
     },occupied.size());
-    for(size_t t = 0;t < occupied.size();++t)
+    for(const auto& each : occupied)
         for(size_t i = 0;i < shade.size();++i)
-            if(occupied[t][i])
+            if(each[i])
                 shade[i] = 1.0f;
     for(int pass = 0;pass < 3;++pass)
         tipl::filter::mean(shade);
