@@ -445,7 +445,7 @@ bool TractTableWidget::render_tracts(std::chrono::high_resolution_clock::time_po
 
     if(!update_list.empty())
     {
-        TractRenderShader shader(cur_tracking_window);
+        TractRenderShader shader(cur_tracking_window,tracks);
         tipl::par_for(update_list.size(),[&](size_t index)
         {
             renders[update_list[index]]->prepare_update(cur_tracking_window,tracks[update_list[index]],shader,shader.visible[update_list[index]]);
@@ -453,11 +453,9 @@ bool TractTableWidget::render_tracts(std::chrono::high_resolution_clock::time_po
     }
 
     for(size_t index = 0;index < TractRender::data_block_count;++index)
-    {
         for(auto each : renders)
             if(!each->render_tracts(index,end_time))
                 return false;
-    }
     return true;
 }
 bool TractTableWidget::render_tracts(void)
@@ -467,16 +465,14 @@ bool TractTableWidget::render_tracts(void)
     bool dragging = QApplication::mouseButtons() != Qt::NoButton;
     if(dragging)
         render_time = 200;
-    if(!render_tracts(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
+    if(render_tracts(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
+        return render_time = 200,true;
+    if(!dragging)
     {
-        if(dragging)
-            return false;
         render_time *= 2;
         emit cur_tracking_window.need_gl_update(); // still mid-render, not a data change: no need to touch the 2D slice
-        return false;
     }
-    render_time = 200;
-    return true;
+    return false;
 }
 
 bool TractTableWidget::command(std::vector<std::string> cmd)
