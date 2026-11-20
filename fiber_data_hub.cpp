@@ -696,7 +696,7 @@ void FiberDataHub::loadFiles()
         if(file_name.contains(".tsv"))
         {
             ui->github_release_note->addTab(new QWidget(ui->github_release_note),file_name.remove(".tsv"));
-            github_tsv_link.push_back(assetObject.value("browser_download_url").toString());
+            github_tsv_link.push_back(ui->github_release_files->item(row,4)->text()); // API url for restricted repos, as the token requires
         }
     }
     downloads.on_progress(QString());
