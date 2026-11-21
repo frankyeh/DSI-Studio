@@ -2225,7 +2225,7 @@ bool src_data::run_plugin(std::string exec_name,
     if(!fsl_path.empty())
     {
         auto p = tipl::qt::to_qstring(fsl_path);
-        env.insert("FSLDIR",tipl::qt::to_qstring(fsl_path.parent_path()));
+        env.insert("FSLDIR",tipl::qt::to_qstring(fsl_path == plugin_dir ? fsl_path : fsl_path.parent_path()));
         env.insert("PATH",p + ":" + env.value("PATH"));
     }
     #endif
