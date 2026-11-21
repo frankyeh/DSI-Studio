@@ -96,7 +96,7 @@ jobs:
   macos-build:
     if: ${{ inputs.run_macos }}
     name: macOS ARM build
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -420,7 +420,7 @@ jobs:
   macos-test:
     name: macOS ARM / ${{ matrix.routine }}
     needs: macos-build
-    runs-on: macos-14
+    runs-on: macos-15
     strategy: *test_strategy
     env:
       ARTIFACT: dsi_studio_macos_arm
@@ -473,10 +473,10 @@ jobs:
           for i in {1..120}; do
             status="$(bash "$DSI_SH" list_tract status)"
             echo "$status"
-            grep -q $'^done\t' <<<"$status" && break
+            jq -r '.result[0].output // ""' <<<"$status" | grep -q $'done\t' && break
             sleep 2
           done
-          grep -q $'^done\t' <<<"$status"
+          jq -r '.result[0].output // ""' <<<"$status" | grep -q $'done\t'
 
           bash "$DSI_SH" save_lr_screen "$PWD/arcuate.png" "1280 800"
           test -s arcuate.png
