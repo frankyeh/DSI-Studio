@@ -2181,16 +2181,13 @@ bool src_data::run_plugin(std::string exec_name,
             return error_msg = "cannot find plugin: " + exec_list.back().u8string(),false;
         #else
         std::filesystem::path fsl_path;
-        if(std::filesystem::exists(plugin_dir/exec_name))
+        auto fsl = qEnvironmentVariable("FSLDIR");
+        if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"))
+            fsl_path = tipl::qt::to_path(fsl)/"bin";
+        else if(std::filesystem::exists(plugin_dir/exec_name))
             fsl_path = plugin_dir;
         else if(std::filesystem::exists("/usr/local/fsl/bin"))
             fsl_path = "/usr/local/fsl/bin";
-        else
-        {
-            auto fsl = qEnvironmentVariable("FSLDIR");
-            if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"))
-                fsl_path = tipl::qt::to_path(fsl)/"bin";
-        }
 
         if(fsl_path.empty())
             tipl::warning() << "Cannot locate bundled TinyFSL or system FSL. Proceeding to call FSL tools via PATH.";
@@ -2221,7 +2218,7 @@ bool src_data::run_plugin(std::string exec_name,
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("FSLOUTPUTTYPE","NIFTI_GZ");
     #ifndef _WIN32
-    if(std::filesystem::exists(plugin_dir))
+    if(std::filesystem::exists(plugin_dir) && env.value("FSLDIR").isEmpty())
     {
         auto p = tipl::qt::to_qstring(plugin_dir);
         env.insert("FSLDIR",p);
