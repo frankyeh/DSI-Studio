@@ -136,7 +136,6 @@ jobs:
         set -e
         for pkg in dsi-studio-linux-universal-cpu dsi-studio-linux-universal-cuda; do
           test -x "$pkg/dsi_studio"
-          printf '%s\n' 'TOPUP/EDDY: install official FSL 6.0 separately (https://fsl.fmrib.ox.ac.uk/fsl/docs/install/).' 'Set FSLDIR to the FSL installation root before launching DSI Studio.' > "$pkg/FSL_SETUP.txt"
           if find "$pkg/plugin" -maxdepth 1 -type f \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
             echo "Error: $pkg bundles TinyFSL; install official FSL 6.0 separately"
             exit 1
@@ -204,7 +203,6 @@ jobs:
         set -e
         for pkg in dsi-studio-linux-universal-cpu-arm64 dsi-studio-linux-universal-cuda-arm64; do
           test -x "$pkg/dsi_studio"
-          printf '%s\n' 'TOPUP/EDDY: install official FSL 6.0 separately (https://fsl.fmrib.ox.ac.uk/fsl/docs/install/).' 'Set FSLDIR to the FSL installation root before launching DSI Studio.' > "$pkg/FSL_SETUP.txt"
           if find "$pkg/plugin" -maxdepth 1 -type f \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
             echo "Error: $pkg bundles TinyFSL; install official FSL 6.0 separately"
             exit 1
@@ -260,7 +258,6 @@ jobs:
         set -e
         pkg=dsi-studio-linux-universal-legacy-cpu
         test -x "$pkg/dsi_studio"
-        printf '%s\n' 'TOPUP/EDDY: install official FSL 6.0 separately (https://fsl.fmrib.ox.ac.uk/fsl/docs/install/).' 'Set FSLDIR to the FSL installation root before launching DSI Studio.' > "$pkg/FSL_SETUP.txt"
         if find "$pkg/plugin" -maxdepth 1 -type f \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
           echo "Error: legacy universal package bundles TinyFSL"
           exit 1
