@@ -2169,6 +2169,9 @@ bool src_data::run_plugin(std::string exec_name,
                           std::function<bool(void)> check)
 {
     std::filesystem::path plugin_dir = tipl::qt::to_path(QCoreApplication::applicationDirPath())/"plugin";
+    #ifndef _WIN32
+    std::filesystem::path fsl_path;
+    #endif
     // executables tried in order until one exits normally and passes check; an explicit exec has no fallback
     std::vector<std::filesystem::path> exec_list;
     if(!exec.empty())
@@ -2180,20 +2183,18 @@ bool src_data::run_plugin(std::string exec_name,
         if(!std::filesystem::exists(exec_list.back()))
             return error_msg = "cannot find plugin: " + exec_list.back().u8string(),false;
         #else
-        std::filesystem::path fsl_path;
-        if(std::filesystem::exists(plugin_dir/exec_name))
-            fsl_path = plugin_dir;
+        auto fsl = qEnvironmentVariable("FSLDIR");
+        if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"))
+            fsl_path = tipl::qt::to_path(fsl)/"bin";
         else if(std::filesystem::exists("/usr/local/fsl/bin"))
             fsl_path = "/usr/local/fsl/bin";
-        else
-        {
-            auto fsl = qEnvironmentVariable("FSLDIR");
-            if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"))
-                fsl_path = tipl::qt::to_path(fsl)/"bin";
-        }
+        else if(std::filesystem::exists(tipl::qt::to_path(QDir::homePath())/"fsl/bin"))
+            fsl_path = tipl::qt::to_path(QDir::homePath())/"fsl/bin";
+        else if(std::filesystem::exists(plugin_dir/exec_name))
+            fsl_path = plugin_dir;
 
         if(fsl_path.empty())
-            tipl::warning() << "Cannot locate bundled TinyFSL or system FSL. Proceeding to call FSL tools via PATH.";
+            tipl::warning() << "Cannot locate FSL 6.0 or a bundled plugin. Proceeding to call FSL tools via PATH.";
 
         if(!fsl_path.empty() && (exec_name == "eddy" || exec_name == "eddy_cuda"))
         {
@@ -2221,10 +2222,10 @@ bool src_data::run_plugin(std::string exec_name,
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("FSLOUTPUTTYPE","NIFTI_GZ");
     #ifndef _WIN32
-    if(std::filesystem::exists(plugin_dir))
+    if(!fsl_path.empty())
     {
-        auto p = tipl::qt::to_qstring(plugin_dir);
-        env.insert("FSLDIR",p);
+        auto p = tipl::qt::to_qstring(fsl_path);
+        env.insert("FSLDIR",tipl::qt::to_qstring(fsl_path == plugin_dir ? fsl_path : fsl_path.parent_path()));
         env.insert("PATH",p + ":" + env.value("PATH"));
     }
     #endif
