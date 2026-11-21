@@ -129,7 +129,7 @@ jobs:
 
       - name: Build macOS ARM
         run: |
-          sh build_mac.sh macos-15 3
+          sh build_mac.sh 3
           file dsi_studio.app/Contents/MacOS/dsi_studio
 
       - uses: actions/upload-artifact@v4
