@@ -136,7 +136,7 @@ jobs:
         set -e
         for pkg in dsi-studio-linux-universal-cpu dsi-studio-linux-universal-cuda; do
           test -x "$pkg/dsi_studio"
-          if find "$pkg/plugin" -maxdepth 1 -type f \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
+          if find "$pkg/plugin" -maxdepth 1 \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
             echo "Error: $pkg bundles TinyFSL; install official FSL 6.0 separately"
             exit 1
           fi
@@ -203,7 +203,7 @@ jobs:
         set -e
         for pkg in dsi-studio-linux-universal-cpu-arm64 dsi-studio-linux-universal-cuda-arm64; do
           test -x "$pkg/dsi_studio"
-          if find "$pkg/plugin" -maxdepth 1 -type f \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
+          if find "$pkg/plugin" -maxdepth 1 \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
             echo "Error: $pkg bundles TinyFSL; install official FSL 6.0 separately"
             exit 1
           fi
@@ -258,7 +258,7 @@ jobs:
         set -e
         pkg=dsi-studio-linux-universal-legacy-cpu
         test -x "$pkg/dsi_studio"
-        if find "$pkg/plugin" -maxdepth 1 -type f \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
+        if find "$pkg/plugin" -maxdepth 1 \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
           echo "Error: legacy universal package bundles TinyFSL"
           exit 1
         fi
