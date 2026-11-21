@@ -2184,14 +2184,21 @@ bool src_data::run_plugin(std::string exec_name,
             return error_msg = "cannot find plugin: " + exec_list.back().u8string(),false;
         #else
         auto fsl = qEnvironmentVariable("FSLDIR");
-        if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"))
+        auto fsl_name = (exec_name == "eddy" || exec_name == "eddy_cuda") ? "eddy_cpu" : exec_name;
+        if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"/fsl_name))
             fsl_path = tipl::qt::to_path(fsl)/"bin";
-        else if(std::filesystem::exists("/usr/local/fsl/bin"))
+        else if(std::filesystem::exists(std::filesystem::path("/usr/local/fsl/bin")/fsl_name))
             fsl_path = "/usr/local/fsl/bin";
-        else if(std::filesystem::exists(tipl::qt::to_path(QDir::homePath())/"fsl/bin"))
+        else if(std::filesystem::exists(tipl::qt::to_path(QDir::homePath())/"fsl/bin"/fsl_name))
             fsl_path = tipl::qt::to_path(QDir::homePath())/"fsl/bin";
-        else if(std::filesystem::exists(plugin_dir/exec_name))
-            fsl_path = plugin_dir;
+        else
+        {
+            auto found = QStandardPaths::findExecutable(QString::fromStdString(fsl_name));
+            if(!found.isEmpty())
+                fsl_path = tipl::qt::to_path(QFileInfo(found).absolutePath());
+            else if(std::filesystem::exists(plugin_dir/exec_name))
+                fsl_path = plugin_dir;
+        }
 
         if(fsl_path.empty())
             tipl::warning() << "Cannot locate FSL 6.0 or a bundled plugin. Proceeding to call FSL tools via PATH.";
