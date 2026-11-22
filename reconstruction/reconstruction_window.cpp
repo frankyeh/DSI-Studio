@@ -24,8 +24,6 @@ void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
 std::string to_cmd(const std::string& cmd);
-void calculate_shell(std::vector<float> sorted_bvalues,std::vector<unsigned int>& shell);
-bool is_dsi(const std::vector<float>& bvalues);
 
 bool reconstruction_window::load_src(int index)
 {
