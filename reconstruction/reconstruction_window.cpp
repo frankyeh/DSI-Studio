@@ -24,7 +24,8 @@ void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 
 std::string to_cmd(const std::string& cmd);
-bool eddy_check_shell(const std::vector<float>& bvalues,std::string& cause);
+void calculate_shell(std::vector<float> sorted_bvalues,std::vector<unsigned int>& shell);
+bool is_dsi(const std::vector<float>& bvalues);
 
 bool reconstruction_window::load_src(int index)
 {
@@ -127,7 +128,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_gfa,
         ui->output_odf,
         ui->output_dwi, // qsdr only
-        ui->output_anif_isof,
+        ui->output_wmgm,
         ui->high_accuracy // fixel
     };
     if(!load_src(0))
@@ -230,12 +231,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         const auto& vs = handle->voxel.vs;
         (std::abs(vs[0]-vs[1]) > 0.01f || std::abs(vs[1]-vs[2]) > 0.01f ? ui->q6_yes : ui->q6_no)->setChecked(true);
         ui->resample_reso->setValue(vs[0]); // the in-plane resolution
-        std::string cause;
-        std::vector<float> shells;
-        for(auto b : handle->src_bvalues)
-            if(b > 50.0f && std::none_of(shells.begin(),shells.end(),[b](float s){return std::abs(s-b) < 100.0f;}))
-                shells.push_back(b);
-        bool shelled = eddy_check_shell(handle->src_bvalues,cause);
+        std::vector<unsigned int> shells;
+        calculate_shell(handle->src_bvalues,shells);
+        bool shelled = !is_dsi(handle->src_bvalues);
         (shelled ? ui->q2_yes : ui->q2_no)->setChecked(true);
         ui->preproc_chip->setText("Your data: " + (!shelled ? QString("DSI (%1 b-values)").arg(shells.size()) :
                                   shells.size() == 1 ? QString("single-shell") : QString("multi-shell (%1 shells)").arg(shells.size())));
