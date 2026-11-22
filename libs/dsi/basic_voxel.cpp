@@ -28,27 +28,24 @@ bool Voxel::init(void)
     return !prog.aborted();
 }
 
+// a new shell starts at a b-value (> 100) more than 100 above the current shell mean, the same rule as group_shells (image_model.cpp),
+// so b-values fluctuating within a shell stay in one shell; shell gives the sorted index where each shell starts
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell)
 {
     shell.clear();
-    float b_dif_threshold = 0.0f;
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
+    float sum = 0.0f;
     for(uint32_t i = 0;i < sorted_bvalues.size();++i)
         if(sorted_bvalues[i] > 100.0f)
+        {
+            if(shell.empty() || sorted_bvalues[i]-sum/float(i-shell.back()) > 100.0f)
             {
                 shell.push_back(i);
-                b_dif_threshold = sorted_bvalues[i];
-                for(uint32_t index = i+1;index < sorted_bvalues.size();++index)
-                    b_dif_threshold = std::max<float>(b_dif_threshold,std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]));
-                b_dif_threshold *= 0.5f;
-                break;
+                sum = 0.0f;
             }
-    if(shell.empty())
-        return;
-    for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > b_dif_threshold)
-            shell.push_back(index);
+            sum += sorted_bvalues[i];
+        }
 }
 
 void Voxel::load_from_src(src_data& image_model)
