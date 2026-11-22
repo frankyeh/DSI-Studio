@@ -2169,6 +2169,9 @@ bool src_data::run_plugin(std::string exec_name,
                           std::function<bool(void)> check)
 {
     std::filesystem::path plugin_dir = tipl::qt::to_path(QCoreApplication::applicationDirPath())/"plugin";
+    #ifndef _WIN32
+    std::filesystem::path fsl_path;
+    #endif
     // executables tried in order until one exits normally and passes check; an explicit exec has no fallback
     std::vector<std::filesystem::path> exec_list;
     if(!exec.empty())
@@ -2180,20 +2183,25 @@ bool src_data::run_plugin(std::string exec_name,
         if(!std::filesystem::exists(exec_list.back()))
             return error_msg = "cannot find plugin: " + exec_list.back().u8string(),false;
         #else
-        std::filesystem::path fsl_path;
-        if(std::filesystem::exists(plugin_dir/exec_name))
-            fsl_path = plugin_dir;
-        else if(std::filesystem::exists("/usr/local/fsl/bin"))
+        auto fsl = qEnvironmentVariable("FSLDIR");
+        auto fsl_name = (exec_name == "eddy" || exec_name == "eddy_cuda") ? "eddy_cpu" : exec_name;
+        if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"/fsl_name))
+            fsl_path = tipl::qt::to_path(fsl)/"bin";
+        else if(std::filesystem::exists(std::filesystem::path("/usr/local/fsl/bin")/fsl_name))
             fsl_path = "/usr/local/fsl/bin";
+        else if(std::filesystem::exists(tipl::qt::to_path(QDir::homePath())/"fsl/bin"/fsl_name))
+            fsl_path = tipl::qt::to_path(QDir::homePath())/"fsl/bin";
         else
         {
-            auto fsl = qEnvironmentVariable("FSLDIR");
-            if(!fsl.isEmpty() && std::filesystem::exists(tipl::qt::to_path(fsl)/"bin"))
-                fsl_path = tipl::qt::to_path(fsl)/"bin";
+            auto found = QStandardPaths::findExecutable(QString::fromStdString(fsl_name));
+            if(!found.isEmpty())
+                fsl_path = tipl::qt::to_path(QFileInfo(found).absolutePath());
+            else if(std::filesystem::exists(plugin_dir/exec_name))
+                fsl_path = plugin_dir;
         }
 
         if(fsl_path.empty())
-            tipl::warning() << "Cannot locate bundled TinyFSL or system FSL. Proceeding to call FSL tools via PATH.";
+            tipl::warning() << "Cannot locate FSL 6.0 or a bundled plugin. Proceeding to call FSL tools via PATH.";
 
         if(!fsl_path.empty() && (exec_name == "eddy" || exec_name == "eddy_cuda"))
         {
@@ -2221,10 +2229,10 @@ bool src_data::run_plugin(std::string exec_name,
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("FSLOUTPUTTYPE","NIFTI_GZ");
     #ifndef _WIN32
-    if(std::filesystem::exists(plugin_dir))
+    if(!fsl_path.empty())
     {
-        auto p = tipl::qt::to_qstring(plugin_dir);
-        env.insert("FSLDIR",p);
+        auto p = tipl::qt::to_qstring(fsl_path);
+        env.insert("FSLDIR",tipl::qt::to_qstring(fsl_path == plugin_dir ? fsl_path : fsl_path.parent_path()));
         env.insert("PATH",p + ":" + env.value("PATH"));
     }
     #endif
@@ -2927,16 +2935,7 @@ bool src_data::run_topup(void)
 }
 
 
-void calculate_shell(std::vector<float> sorted_bvalues,
-                     std::vector<unsigned int>& shell);
 bool download_file(const std::string& url,const std::filesystem::path& local_path,std::string& error_msg,bool check_size);
-// DSI (a q-space grid, as get_report() tells it)
-bool is_dsi(const std::vector<float>& bvalues)
-{
-    std::vector<unsigned int> shell;
-    calculate_shell(bvalues,shell);
-    return shell.size() > 4 && shell[1]-shell[0] <= 6;
-}
 // the per-voxel mean m and sample variance s2 over the volumes vols, each multiplied by its scale, at the voxels vox
 static void shell_moments(const std::vector<tipl::image<3> >& dwi,const std::vector<size_t>& vols,const std::vector<size_t>& vox,
                           const std::vector<float>& scale,std::vector<float>& m,std::vector<float>& s2)
@@ -3066,7 +3065,7 @@ bool tissue_model::fit(const src_data& src,const std::vector<size_t>& vols,const
         out->push_back(dwi[k]);
     tipl::par_for(vox.size(),[&](size_t j)
     {
-        float fA = fa(s2[j]);
+        float fA = anif(s2[j]);
         for(size_t k = 0;k < vols.size();++k)
         {
             float S = dwi[vols[k]][vox[j]],a = std::clamp(S*w[vox[j]],0.0f,1.0f),r = std::sqrt(a),dI = r+rI*(1.0f-r);
@@ -3617,7 +3616,7 @@ std::string src_data::get_report(bool dwi_part_only)
 
     std::vector<unsigned int> shell;
     calculate_shell(src_bvalues,shell);
-    if(shell.size() > 4 && shell[1] - shell[0] <= 6)
+    if(is_dsi(src_bvalues))
     {
         out << "A diffusion spectrum imaging scheme was used, and a total of " << num_dir
             << " diffusion sampling were acquired."
