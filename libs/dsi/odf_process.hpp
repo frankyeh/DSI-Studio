@@ -58,7 +58,7 @@ struct tissue_model
 // groups b-values >= 500 into shells, starting a new shell at a b-value more than 100 above the current shell mean (DSI: all b >= 100
 // in one shell; image_model.cpp)
 void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols);
-// --other_output=wmgm: each voxel's anisotropic (wm) and isotropic (gm) signal fractions from the mean and variance of each shell,
+// --other_output=anif,isof: each voxel's anisotropic (anif) and isotropic (isof) signal fractions from the mean and variance of each shell,
 // averaged over the shells; the levels are fitted at the end over the mask of the output space (qsdr: the template space)
 class TissueFraction : public BaseProcess{
     std::vector<std::vector<size_t> > shells; // the dwi of each shell with at least two dwi (five or more shells: one DSI shell)
@@ -66,7 +66,7 @@ class TissueFraction : public BaseProcess{
 public:
     virtual bool needed(Voxel& voxel)
     {
-        return voxel.needs("wmgm");
+        return voxel.needs("anif") || voxel.needs("isof");
     }
     virtual void init(Voxel& voxel)
     {
@@ -96,7 +96,7 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         auto vox = tipl::get_sparse_index(voxel.mask);
-        std::vector<float> wm(voxel.dim.size()),gm(voxel.dim.size());
+        std::vector<float> anif(voxel.dim.size()),isof(voxel.dim.size());
         for(size_t k = 0;k < shells.size();++k)
         {
             std::vector<float> mk(vox.size()),sk(vox.size());
@@ -108,12 +108,12 @@ public:
                 if(mk[j] > 0.0f)
                 {
                     float fa = t.fa(sk[j]);
-                    wm[vox[j]] += fa/float(shells.size());
-                    gm[vox[j]] += t.fi(mk[j],fa)/float(shells.size());
+                    anif[vox[j]] += fa/float(shells.size());
+                    isof[vox[j]] += t.fi(mk[j],fa)/float(shells.size());
                 }
         }
-        mat_writer.write<tipl::io::masked_sloped>("wm",wm,voxel.dim.plane_size());
-        mat_writer.write<tipl::io::masked_sloped>("gm",gm,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("anif",anif,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("isof",isof,voxel.dim.plane_size());
     }
 };
 class BalanceScheme : public BaseProcess{
