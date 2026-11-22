@@ -4107,10 +4107,8 @@ bool src_data::save_fib(void)
         dwi.voxel.vs = voxel.vs;
         dwi.voxel.trans_to_mni = voxel.trans_to_mni;
         dwi.voxel.qsdr = true; // the nifti header is marked as mni
-        Voxel v; // the original b-table as reconstruction reads it: sorted dwi, first b0
-        v.load_from_src(*this);
-        dwi.src_bvalues.swap(v.bvalues);
-        dwi.src_bvectors.swap(v.bvectors);
+        dwi.src_bvalues = voxel.bvalues; // the balanced b-table of BalanceScheme
+        dwi.src_bvectors = voxel.bvectors;
         dwi.src_dwi_data.swap(voxel.dwi_output);
         if(!dwi.save_to_file(std::filesystem::path(output_file_name).replace_extension() += "_dwi.nii.gz"))
             return error_msg = dwi.error_msg,false;
