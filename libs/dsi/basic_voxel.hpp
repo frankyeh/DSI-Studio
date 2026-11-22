@@ -4,6 +4,9 @@
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
 #include "tessellated_icosahedron.hpp"
+// the sorted index where each shell starts (b > 100), and whether the scheme is DSI (basic_voxel.cpp)
+void calculate_shell(std::vector<float> sorted_bvalues,std::vector<unsigned int>& shell);
+bool is_dsi(const std::vector<float>& bvalues);
 
 
 struct src_data;
