@@ -127,7 +127,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_gfa,
         ui->output_odf,
         ui->output_dwi, // qsdr only
-        ui->output_wmgm,
+        ui->output_anif_isof,
         ui->high_accuracy // fixel
     };
     if(!load_src(0))
