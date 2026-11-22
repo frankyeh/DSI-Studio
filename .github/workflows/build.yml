@@ -136,6 +136,17 @@ jobs:
         set -e
         for pkg in dsi-studio-linux-universal-cpu dsi-studio-linux-universal-cuda; do
           test -x "$pkg/dsi_studio"
+          if find "$pkg/plugin" -maxdepth 1 \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
+            if [ ! -s "$pkg/plugin/FSL_LICENSE" ] || ! grep -q 'fsl\.fmrib\.ox\.ac\.uk/fsldownloads/' "$pkg/plugin/FSL_SOURCE.txt" 2>/dev/null; then
+              echo "Error: $pkg bundles unverified/TinyFSL preprocessing binaries; only official Oxford FSL 6.0 is allowed"
+              exit 1
+            fi
+            for tool in topup applytopup eddy_cpu; do
+              test -x "$pkg/plugin/$tool"
+              env -u LD_LIBRARY_PATH ldd "$pkg/plugin/$tool" | tee "/tmp/${pkg}_${tool}.ldd"
+              ! grep -q 'not found' "/tmp/${pkg}_${tool}.ldd"
+            done
+          fi
           if find "$pkg" \( \
             -name 'libc.so*' -o -name 'ld-linux*.so*' -o -name 'libpthread.so*' -o \
             -name 'libm.so*' -o -name 'libdl.so*' -o -name 'librt.so*' -o \
@@ -199,6 +210,17 @@ jobs:
         set -e
         for pkg in dsi-studio-linux-universal-cpu-arm64 dsi-studio-linux-universal-cuda-arm64; do
           test -x "$pkg/dsi_studio"
+          if find "$pkg/plugin" -maxdepth 1 \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
+            if [ ! -s "$pkg/plugin/FSL_LICENSE" ] || ! grep -q 'fsl\.fmrib\.ox\.ac\.uk/fsldownloads/' "$pkg/plugin/FSL_SOURCE.txt" 2>/dev/null; then
+              echo "Error: $pkg bundles unverified/TinyFSL preprocessing binaries; only official Oxford FSL 6.0 is allowed"
+              exit 1
+            fi
+            for tool in topup applytopup eddy_cpu; do
+              test -x "$pkg/plugin/$tool"
+              env -u LD_LIBRARY_PATH ldd "$pkg/plugin/$tool" | tee "/tmp/${pkg}_${tool}.ldd"
+              ! grep -q 'not found' "/tmp/${pkg}_${tool}.ldd"
+            done
+          fi
           file "$pkg/dsi_studio" | grep -q 'ARM aarch64'
           if find "$pkg" \( \
             -name 'libc.so*' -o -name 'ld-linux*.so*' -o -name 'libpthread.so*' -o \
@@ -250,6 +272,17 @@ jobs:
         set -e
         pkg=dsi-studio-linux-universal-legacy-cpu
         test -x "$pkg/dsi_studio"
+        if find "$pkg/plugin" -maxdepth 1 \( -name topup -o -name applytopup -o -name 'eddy*' \) -print -quit 2>/dev/null | grep -q .; then
+          if [ ! -s "$pkg/plugin/FSL_LICENSE" ] || ! grep -q 'fsl\.fmrib\.ox\.ac\.uk/fsldownloads/' "$pkg/plugin/FSL_SOURCE.txt" 2>/dev/null; then
+            echo "Error: legacy universal package bundles unverified/TinyFSL preprocessing binaries"
+            exit 1
+          fi
+          for tool in topup applytopup eddy_cpu; do
+            test -x "$pkg/plugin/$tool"
+            env -u LD_LIBRARY_PATH ldd "$pkg/plugin/$tool" | tee "/tmp/legacy_${tool}.ldd"
+            ! grep -q 'not found' "/tmp/legacy_${tool}.ldd"
+          done
+        fi
         file "$pkg/dsi_studio" | grep -q 'x86-64'
         if find "$pkg" \( \
           -name 'libc.so*' -o -name 'ld-linux*.so*' -o -name 'libpthread.so*' -o \
@@ -341,11 +374,9 @@ jobs:
         include:
           - runner: macos-15
             name: macos-arm64
-            tiny_fsl: macos-15
             jobs: 3
           - runner: macos-15-intel
             name: macos-intel
-            tiny_fsl: macos-13
             jobs: 4
       fail-fast: false
     runs-on: ${{ matrix.runner }}
@@ -377,7 +408,7 @@ jobs:
             macos-ccache-${{ matrix.name }}-
       - name: Build DSI Studio
         run: |
-          sh build_mac.sh "${{ matrix.tiny_fsl }}" "${{ matrix.jobs }}"
+          sh build_mac.sh "${{ matrix.jobs }}"
           file dsi_studio.app/Contents/MacOS/dsi_studio
       - name: Sign and notarize macOS app
         env:

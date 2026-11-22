@@ -96,7 +96,7 @@ jobs:
   macos-build:
     if: ${{ inputs.run_macos }}
     name: macOS ARM build
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -129,7 +129,7 @@ jobs:
 
       - name: Build macOS ARM
         run: |
-          sh build_mac.sh macos-15 3
+          sh build_mac.sh 3
           file dsi_studio.app/Contents/MacOS/dsi_studio
 
       - uses: actions/upload-artifact@v4
@@ -175,50 +175,13 @@ jobs:
         run: |
           ls -l "$BIN/$EXE"
           chmod +x "$BIN/$EXE" || true
+          chmod +x "$BIN"/plugin/* 2>/dev/null || true
           echo "$PWD/$BIN" >> "$GITHUB_PATH"
-
-      - name: Cache FSL
-        if: runner.os == 'Linux' && matrix.routine == 'topup'
-        id: cache-fsl
-        uses: actions/cache@v4
-        with:
-          path: /opt/fsl
-          key: linux-fsl6.0.5.2
-
-      - name: Install FSL
-        if: runner.os == 'Linux' && matrix.routine == 'topup' && steps.cache-fsl.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.5.2-centos7_64.tar.gz | sudo tar zxv --no-same-owner -C /opt \
-            --exclude='fsl/doc' \
-            --exclude='fsl/refdoc' \
-            --exclude='fsl/python/oxford_asl' \
-            --exclude='fsl/data/possum' \
-            --exclude='fsl/data/first' \
-            --exclude='fsl/data/mist' \
-            --exclude='fsl/data/atlases' \
-            --exclude='fsl/data/xtract_data' \
-            --exclude='fsl/extras/doc' \
-            --exclude='fsl/extras/man' \
-            --exclude='fsl/extras/src' \
-            --exclude='fsl/src'
-
-      - name: Set FSL Environment
-        if: runner.os == 'Linux' && matrix.routine == 'topup'
-        shell: bash
-        run: |
-          echo "OS=Linux" >> "$GITHUB_ENV"
-          echo "FSLDIR=/opt/fsl" >> "$GITHUB_ENV"
-          echo "FSL_DIR=/opt/fsl" >> "$GITHUB_ENV"
-          echo "FSLOUTPUTTYPE=NIFTI_GZ" >> "$GITHUB_ENV"
-          echo "FSLMULTIFILEQUIT=TRUE" >> "$GITHUB_ENV"
-          echo "LD_LIBRARY_PATH=/opt/fsl/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
-          echo "FSLTCLSH=/usr/bin/tclsh" >> "$GITHUB_ENV"
-          echo "FSLWISH=/usr/bin/wish" >> "$GITHUB_ENV"
-          echo "/opt/fsl/bin" >> "$GITHUB_PATH"
 
       - name: Run ${{ matrix.routine }}
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
           which dsi_studio
@@ -313,7 +276,7 @@ jobs:
               ;;
 
             db)
-              curl -fsSL https://api.github.com/repos/data-openneuro/disease/releases/tags/ds001378 -o release.json
+              curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/data-openneuro/disease/releases/tags/ds001378 -o release.json
 
               jq -r '.assets[]
                 | select((.name | endswith(".qsdr.fz")) or .name == "participants.tsv")
@@ -396,6 +359,11 @@ jobs:
               ;;
 
             topup)
+              if [ "${RUNNER_OS:-}" = "Linux" ]; then
+                test -x "$BIN/plugin/topup"
+                test -x "$BIN/plugin/applytopup"
+                test -x "$BIN/plugin/eddy_cpu"
+              fi
               aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002080/sub-CON02/ses-postop .
 
               dsi_studio --action=src --bids=1 --topup_eddy=1 --source=./dwi
@@ -417,7 +385,7 @@ jobs:
   macos-test:
     name: macOS ARM / ${{ matrix.routine }}
     needs: macos-build
-    runs-on: macos-14
+    runs-on: macos-15
     strategy: *test_strategy
     env:
       ARTIFACT: dsi_studio_macos_arm
@@ -470,10 +438,10 @@ jobs:
           for i in {1..120}; do
             status="$(bash "$DSI_SH" list_tract status)"
             echo "$status"
-            grep -q $'^done\t' <<<"$status" && break
+            jq -r '.result[0].output // ""' <<<"$status" | grep -q $'done\t' && break
             sleep 2
           done
-          grep -q $'^done\t' <<<"$status"
+          jq -r '.result[0].output // ""' <<<"$status" | grep -q $'done\t'
 
           bash "$DSI_SH" save_lr_screen "$PWD/arcuate.png" "1280 800"
           test -s arcuate.png
