@@ -47,6 +47,13 @@ void calculate_shell(std::vector<float> sorted_bvalues,
             sum += sorted_bvalues[i];
         }
 }
+// DSI: a q-space grid, many shells with only a few dwi in the first (get_report() tells it)
+bool is_dsi(const std::vector<float>& bvalues)
+{
+    std::vector<unsigned int> shell;
+    calculate_shell(bvalues,shell);
+    return shell.size() > 4 && shell[1]-shell[0] <= 6;
+}
 
 void Voxel::load_from_src(src_data& image_model)
 {
