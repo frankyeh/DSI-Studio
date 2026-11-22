@@ -37,13 +37,13 @@ struct tissue_model
     {
         return m > t_dwi && std::sqrt(s2)/(m+B) <= t_iso;
     }
-    float fa(float s2) const // the noise-subtracted dispersion over that of the pure anisotropic level (linear mixing)
+    float anif(float s2) const // the anisotropic fraction: the noise-subtracted dispersion over that of the pure anisotropic level (linear mixing)
     {
         return std::clamp(std::sqrt(std::max(s2-s0,0.0f))/std::max(d_A*(A+B),1e-12f),0.0f,1.0f);
     }
-    float fi(float m,float fa) const
+    float isof(float m,float fA) const // the isotropic fraction, given the anisotropic fraction fA
     {
-        return std::clamp((m-fa*A-(1.0f-fa)*B)/std::max(I-B,1e-6f),0.0f,1.0f-fa);
+        return std::clamp((m-fA*A-(1.0f-fA)*B)/std::max(I-B,1e-6f),0.0f,1.0f-fA);
     }
     size_t nearest(const std::vector<tissue_model>& shells) const // the shell nearest in attenuation (|ln| of the u ratios)
     {
@@ -107,9 +107,9 @@ public:
             for(size_t j = 0;j < vox.size();++j)
                 if(mk[j] > 0.0f)
                 {
-                    float fa = t.fa(sk[j]);
-                    anif[vox[j]] += fa/float(shells.size());
-                    isof[vox[j]] += t.fi(mk[j],fa)/float(shells.size());
+                    float fA = t.anif(sk[j]);
+                    anif[vox[j]] += fA/float(shells.size());
+                    isof[vox[j]] += t.isof(mk[j],fA)/float(shells.size());
                 }
         }
         mat_writer.write<tipl::io::masked_sloped>("anif",anif,voxel.dim.plane_size());
