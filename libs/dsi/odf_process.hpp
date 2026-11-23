@@ -118,11 +118,11 @@ public:
 };
 class BalanceScheme : public BaseProcess{
     std::vector<float> scale; // the gqi weight of each balanced signal
-    std::vector<unsigned int> new_shell; // the shells of the balanced b-table
+    std::vector<unsigned int> shell,new_shell; // where each shell starts in the native and balanced b-table, ending with the dwi count
 public:
     std::vector<float> trans; // the interpolation (new x old dwi, each row sums to one), also used by src_data::scheme_balance
 private:
-    std::vector<tipl::vector<3,float> > src_bvectors; // qsdr --other_output=dwi: native directions; voxel.shell keeps the native shells, new_shell the balanced ones
+    std::vector<tipl::vector<3,float> > src_bvectors; // qsdr --other_output=dwi: the native directions
 public:
     virtual bool needed(Voxel& voxel)
     {
@@ -135,7 +135,9 @@ public:
         unsigned int old_q_count = uint32_t(voxel.dwi_data.size());
         if(voxel.qsdr && voxel.needs("dwi") && !voxel.shell.empty())
             src_bvectors = voxel.bvectors;
-        new_shell = voxel.shell;
+        shell = voxel.shell;
+        shell.push_back(old_q_count);
+        new_shell.clear();
         bool b0 = voxel.bvalues.front() == 0.0f,balanced = true; // the b0 keeps the first row
         std::vector<float> new_bvalues(b0);
         std::vector<tipl::vector<3,float> > new_bvectors(b0);
@@ -144,10 +146,10 @@ public:
             trans.resize(old_q_count);
             trans[0] = 1.0f;
         }
-        for(unsigned int k = 0;k < voxel.shell.size();++k)
+        for(unsigned int k = 0;k+1 < shell.size();++k)
         {
-            unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? old_q_count : voxel.shell[k+1]);
-            new_shell[k] = uint32_t(new_bvalues.size());
+            unsigned int from = shell[k],to = shell[k+1];
+            new_shell.push_back(uint32_t(new_bvalues.size()));
             float b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to); // the shell b-value sets the balanced direction count
             tessellated_icosahedron new_dir(b > 2500.0f ? 6 : b > 1500.0f ? 5 : b > 500.0f ? 4 : 3); // 181, 126, 81, or 46 directions
             balanced = balanced && to-from == new_dir.half_vertices_count;
@@ -160,7 +162,8 @@ public:
                 new_bvectors.push_back(new_dir.vertices[i]);
             }
         }
-        if(balanced) // the shells keep their positions, so new_shell equals voxel.shell
+        new_shell.push_back(uint32_t(new_bvalues.size()));
+        if(balanced) // the shells keep their positions, so new_shell equals shell
             trans.clear();
         else
         {
@@ -171,9 +174,9 @@ public:
         {
             double sum_b = 0.0;
             scale.resize(voxel.bvalues.size());
-            for(unsigned int k = 0;k < new_shell.size();++k)
+            for(unsigned int k = 0;k+1 < new_shell.size();++k)
             {
-                unsigned int from = new_shell[k],to = (k + 1 == new_shell.size() ? uint32_t(scale.size()) : new_shell[k+1]);
+                unsigned int from = new_shell[k],to = new_shell[k+1];
                 double b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
                 sum_b += b;
                 std::fill(scale.begin()+from,scale.begin()+to,float(b/double(to-from)));
@@ -189,10 +192,10 @@ public:
         {
             for(unsigned int j = 0;j < new_shell[0];++j) // b0
                 voxel.dwi_output[j][data.voxel_index] = data.space[j];
-            for(unsigned int k = 0;k < new_shell.size();++k)
+            for(unsigned int k = 0;k+1 < shell.size();++k)
             {
-                unsigned int from = voxel.shell[k],to = (k + 1 == voxel.shell.size() ? uint32_t(src_bvectors.size()) : voxel.shell[k+1]);
-                for(unsigned int j = new_shell[k];j < (k + 1 == new_shell.size() ? uint32_t(scale.size()) : new_shell[k+1]);++j)
+                unsigned int from = shell[k],to = shell[k+1];
+                for(unsigned int j = new_shell[k];j < new_shell[k+1];++j)
                 {
                     auto dir = voxel.bvectors[j]; // the qsdr convention: balanced template direction t evaluates native normalize(J t)
                     dir.rotate(data.jacobian);
