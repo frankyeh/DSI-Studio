@@ -1517,9 +1517,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
         }
     voxel.dim = new_geo;
     voxel.vs = new_vs;
-    auto trans = T.to_matrix();
-    trans *= voxel.trans_to_mni;
-    voxel.trans_to_mni = trans;
+    voxel.trans_to_mni *= T.to_matrix(); // T maps new voxels to old ones, so new voxel to mm = trans_to_mni*T
 
     // rotate the mask
     tipl::image<3,unsigned char> mask(voxel.dim);
