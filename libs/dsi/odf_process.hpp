@@ -37,14 +37,13 @@ struct tissue_model
     {
         return m > t_dwi && std::sqrt(s2)/(m+B) <= t_iso;
     }
-    // w: the voxel's b0 normalization (get_outlier_limited_iso) when the levels were fitted with a b0, otherwise 1
-    float anif(float s2,float w = 1.0f) const // the anisotropic fraction: the noise-subtracted dispersion over that of the pure anisotropic level (linear mixing)
+    float anif(float s2) const // the anisotropic fraction: the noise-subtracted dispersion over that of the pure anisotropic level (linear mixing)
     {
-        return std::clamp(std::sqrt(std::max(s2-s0,0.0f))*w/std::max(d_A*(A+B),1e-12f),0.0f,1.0f);
+        return std::clamp(std::sqrt(std::max(s2-s0,0.0f))/std::max(d_A*(A+B),1e-12f),0.0f,1.0f);
     }
-    float isof(float m,float fA,float w = 1.0f) const // the isotropic fraction, given the anisotropic fraction fA
+    float isof(float m,float fA) const // the isotropic fraction, given the anisotropic fraction fA
     {
-        return std::clamp((m*w-fA*A-(1.0f-fA)*B)/std::max(I-B,1e-6f),0.0f,1.0f-fA);
+        return std::clamp((m-fA*A-(1.0f-fA)*B)/std::max(I-B,1e-6f),0.0f,1.0f-fA);
     }
     size_t nearest(const std::vector<tissue_model>& shells) const // the shell nearest in attenuation (|ln| of the u ratios)
     {
@@ -61,11 +60,9 @@ struct tissue_model
 void group_shells(const std::vector<float>& bvalues,bool dsi,std::vector<int>& shell_id,std::vector<float>& shell_b,std::vector<std::vector<size_t> >& shell_vols);
 // --other_output=anif,isof: each voxel's anisotropic (anif) and isotropic (isof) signal fractions from the mean and variance of each shell,
 // averaged over the shells; the levels are fitted at the end over the mask of the output space (qsdr: the template space)
-std::vector<float> get_outlier_limited_iso(const float* iso_ptr,size_t n); // 1/b0, its dark voxels capped (group_connectometry_analysis.cpp)
 class TissueFraction : public BaseProcess{
     std::vector<std::vector<size_t> > shells; // the dwi of each shell with at least two dwi (five or more shells: one DSI shell)
     std::vector<std::vector<float> > m,s2; // the per-voxel mean and sample variance of each shell
-    std::vector<float> b0; // the first dwi when it is a b0 (the voxel keeps only the first b0): the levels are then b0 normalized
 public:
     virtual bool needed(Voxel& voxel)
     {
@@ -81,12 +78,9 @@ public:
         shells.erase(std::remove_if(shells.begin(),shells.end(),[](const auto& each){return each.size() < 2;}),shells.end());
         m.assign(shells.size(),std::vector<float>(voxel.dim.size()));
         s2 = m;
-        b0.assign(voxel.bvalues.front() == 0.0f ? voxel.dim.size() : 0,0.0f);
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(!b0.empty())
-            b0[data.voxel_index] = data.space[0];
         for(size_t k = 0;k < shells.size();++k)
         {
             double sum = 0.0,sum2 = 0.0,n = double(shells[k].size());
@@ -102,26 +96,20 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         auto vox = tipl::get_sparse_index(voxel.mask);
-        std::vector<float> anif(voxel.dim.size()),isof(voxel.dim.size()),b0k,w(vox.size(),1.0f);
-        if(!b0.empty())
-        {
-            for(auto v : vox)
-                b0k.push_back(b0[v]);
-            w = get_outlier_limited_iso(b0k.data(),b0k.size());
-        }
+        std::vector<float> anif(voxel.dim.size()),isof(voxel.dim.size());
         for(size_t k = 0;k < shells.size();++k)
         {
             std::vector<float> mk(vox.size()),sk(vox.size());
             for(size_t j = 0;j < vox.size();++j)
                 mk[j] = m[k][vox[j]],sk[j] = s2[k][vox[j]];
             tissue_model t;
-            t.fit(mk,sk,b0k);
+            t.fit(mk,sk);
             for(size_t j = 0;j < vox.size();++j)
                 if(mk[j] > 0.0f)
                 {
-                    float fA = t.anif(sk[j],w[j]);
+                    float fA = t.anif(sk[j]);
                     anif[vox[j]] += fA/float(shells.size());
-                    isof[vox[j]] += t.isof(mk[j],fA,w[j])/float(shells.size());
+                    isof[vox[j]] += t.isof(mk[j],fA)/float(shells.size());
                 }
         }
         mat_writer.write<tipl::io::masked_sloped>("anif",anif,voxel.dim.plane_size());
