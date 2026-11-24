@@ -201,6 +201,7 @@ public:
             }
         }
 
+        data.space.resize(ptr_images.size()); // before the out-of-fov return, so the zeros cover every dwi even at a thread's first voxel
         tipl::interpolator::cubic<3> interpolation;
         if(!interpolation.get_location(native_geo,mapping[data.voxel_index]))
         {
@@ -208,7 +209,6 @@ public:
             std::fill(data.jacobian.begin(),data.jacobian.end(),0.0);
             return;
         }
-        data.space.resize(ptr_images.size());
         for (unsigned int i = 0; i < ptr_images.size(); ++i)
             interpolation.estimate(ptr_images[i],data.space[i]);
 
