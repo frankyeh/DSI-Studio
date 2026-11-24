@@ -90,7 +90,7 @@ public:
                 sum2 += double(data.space[i])*data.space[i];
             }
             m[k][data.voxel_index] = float(sum/n);
-            s2[k][data.voxel_index] = float((sum2-sum*sum/n)/(n-1.0));
+            s2[k][data.voxel_index] = float(std::max(0.0,(sum2-sum*sum/n)/(n-1.0))); // rounding can make a constant voxel negative, and sqrt then NaN
         }
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
