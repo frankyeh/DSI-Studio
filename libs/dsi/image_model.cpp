@@ -4020,7 +4020,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
     {
         voxel.method_id = 4;
         voxel.dti_ignore_high_b = is_human_data;
-        voxel.other_output = "fa,md,rd,rdi";
+        voxel.other_output = "fa,md,rd,anif,isof";
         voxel.param[0] = tipl::max_value(src_bvalues) < 5000.0f ? voxel.param[0] : get_optimal_L();
         voxel.r2_weighted = false;
         if(is_human_data)
