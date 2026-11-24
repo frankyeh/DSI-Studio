@@ -2983,13 +2983,15 @@ static float l1_split(std::vector<float> v)
 // level A and dispersion d_A; with the per-voxel b0 S0, also the attenuation summaries u_A and u_I over the anisotropic and isotropic cores
 void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>& s2_all,const std::vector<float>& b0_all)
 {
-    std::vector<float> m,s2,b0;
+    std::vector<float> m,s2,b0,w,w_all; // w: the b0 normalization over the same voxels as the callers' anif/isof
+    if(!b0_all.empty())
+        w_all = get_outlier_limited_iso(b0_all.data(),b0_all.size());
     for(size_t i = 0;i < m_all.size();++i)
         if(m_all[i] > 0.0f)
         {
             m.push_back(m_all[i]),s2.push_back(s2_all[i]);
             if(!b0_all.empty())
-                b0.push_back(b0_all[i]);
+                b0.push_back(b0_all[i]),w.push_back(w_all[i]);
         }
     if(m.empty())
         return;
@@ -3005,7 +3007,8 @@ void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>&
     t_dwi = l1_split(m);
     auto dark = select(m,[&](size_t j){return m[j] <= t_dwi;});
     float t_dark = dark.size() >= 4 ? l1_split(dark) : tipl::min_value(m);
-    B = std::max(median(select(m,[&](size_t j){return m[j] <= t_dark;})),1e-3f);
+    auto dark_core = [&](size_t j){return m[j] <= t_dark;};
+    B = std::max(median(select(m,dark_core)),1e-3f);
     // DWI-bearing voxels split by s/(m+B) into isotropic and anisotropic voxels; the isotropic core gives s0 and I
     std::vector<float> d0(m.size()),d(m.size());
     for(size_t j = 0;j < m.size();++j)
@@ -3026,13 +3029,22 @@ void tissue_model::fit(const std::vector<float>& m_all,const std::vector<float>&
     d_A = median(select(d,ani_core));
     if(b0.empty())
         return;
+    // with a b0, the levels are refitted in the b0-normalized signal m*w (coil gain and T2 cancel) over the same cores, s0 kept in s2
+    std::vector<float> mw(m.size()),dw(m.size());
+    for(size_t j = 0;j < m.size();++j)
+        mw[j] = m[j]*w[j];
+    B = std::max(median(select(mw,dark_core)),1e-6f);
+    for(size_t j = 0;j < m.size();++j)
+        dw[j] = std::sqrt(std::max(s2[j]-s0,0.0f))*w[j]/(mw[j]+B);
+    I = median(select(mw,iso_core));
+    A = median(select(mw,ani_core));
+    d_A = median(select(dw,ani_core));
     // S0/m = 1+u_A in the anisotropic core and (1+u_I)^2 in the isotropic core, u growing with the b-value
     for(size_t j = 0;j < m.size();++j)
         b0[j] /= m[j];
     u_A = median(select(b0,ani_core))-1.0f;
     u_I = std::sqrt(median(select(b0,iso_core)))-1.0f;
 }
-std::vector<float> get_outlier_limited_iso(const float* iso_ptr,size_t n); // 1/b0, its dark voxels capped (group_connectometry_analysis.cpp)
 // fits the shell vols of src over its mask, the attenuation from its mean b0 (false: fewer than two dwi, no b0, or no attenuation in a
 // core, e.g., a mislabeled b0); with target, out
 // appends the shell converted to the target's attenuation: a signal S at attenuation a = S/S0 (in [0,1]) becomes S/(a+rho_A(1-a)) as
@@ -3056,17 +3068,17 @@ bool tissue_model::fit(const src_data& src,const std::vector<size_t>& vols,const
         return false;
     if(!target)
         return true;
-    auto w = get_outlier_limited_iso(&b0[0][0],b0[0].size());
+    auto w = get_outlier_limited_iso(S0.data(),S0.size()); // over the mask, as in fit
     float rA = target->u_A/u_A,rI = target->u_I/u_I;
     size_t first = out->size();
     for(auto k : vols) // outside the mask: the unconverted signal
         out->push_back(dwi[k]);
     tipl::par_for(vox.size(),[&](size_t j)
     {
-        float fA = anif(s2[j]);
+        float fA = anif(s2[j],w[j]);
         for(size_t k = 0;k < vols.size();++k)
         {
-            float S = dwi[vols[k]][vox[j]],a = std::clamp(S*w[vox[j]],0.0f,1.0f),r = std::sqrt(a),dI = r+rI*(1.0f-r);
+            float S = dwi[vols[k]][vox[j]],a = std::clamp(S*w[j],0.0f,1.0f),r = std::sqrt(a),dI = r+rI*(1.0f-r);
             (*out)[first+k][vox[j]] = fA*S/(a+rA*(1.0f-a))+(1.0f-fA)*S/(dI*dI);
         }
     });
