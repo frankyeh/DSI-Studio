@@ -3197,8 +3197,7 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "a DSI SRC needs a DSI reference SRC",false;
 
     // each target shell (b >= 500) takes the reference shell nearest in attenuation (DSI: the one shell), converted to the target's
-    // attenuation (DSI: kept as is) and tagged by the target shell, before rotate() resamples it; a multishell reference also gives each
-    // target shell its b-value, interpolated from its attenuation over the reference shells (otherwise the recorded b-value is kept)
+    // attenuation (DSI: kept as is) and tagged by the target shell, before rotate() resamples it
     std::vector<int> shell_id,ref_shell_id;
     std::vector<float> shell_b,ref_shell_b;
     std::vector<std::vector<size_t> > shell_vols,ref_shell_vols;
@@ -3213,20 +3212,6 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return false;
     if(!dsi && (ref_t = fit_shells(reference)).empty())
         return error_msg = "reference SRC: " + reference.error_msg,false;
-    auto interpolated_b = [&](float u,float tissue_model::* u_t) // the b-value at attenuation u, from b = 0 at u = 0 over the reference shells
-    {
-        size_t r = 0;
-        while(r+1 < ref_t.size() && u > ref_t[r].*u_t)
-            ++r;
-        float u0 = r ? ref_t[r-1].*u_t : 0.0f,b0 = r ? ref_shell_b[r-1] : 0.0f;
-        return b0+(u-u0)*(ref_shell_b[r]-b0)/(ref_t[r].*u_t-u0);
-    };
-    for(size_t k = 0;ref_t.size() > 1 && k < shell_b.size();++k)
-    {
-        float bA = interpolated_b(t[k].u_A,&tissue_model::u_A),bI = interpolated_b(t[k].u_I,&tissue_model::u_I);
-        tipl::out() << "target shell recorded b=" << shell_b[k] << " estimated b=" << 0.5f*(bA+bI) << " (anisotropic " << bA << ", isotropic " << bI << ")";
-        shell_b[k] = 0.5f*(bA+bI);
-    }
     std::vector<tipl::image<3> > dwi;
     std::vector<float> bvalues;
     std::vector<tipl::vector<3,float> > bvectors;
@@ -3275,8 +3260,7 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "canceled",false;
 
     // each DWI (b >= 500) takes the kernel-regression direction of its three best-correlated reference DWIs in the matched shell
-    // and its shell's b-value (DSI: the b-value and b-vector of the one best-correlated reference DWI)
-    auto new_bvalues = src_bvalues;
+    // (DSI: the b-vector of the one best-correlated reference DWI); the b-values are kept
     auto new_bvectors = src_bvectors;
     std::vector<float> best_r(src_bvalues.size());
     std::atomic<bool> failed = false;
@@ -3296,7 +3280,6 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
                         std::swap(c,each);
             }
         best_r[i] = best[0].first;
-        new_bvalues[i] = dsi ? reference.src_bvalues[best[0].second] : std::round(shell_b[shell_id[i]]);
         if(dsi)
             return void(new_bvectors[i] = reference.src_bvectors[best[0].second]);
         // correlation as the kernel weight; directions folded into the hemisphere of the best match
@@ -3313,12 +3296,11 @@ bool src_data::regenerate_b_table(std::filesystem::path reference_file)
         return error_msg = "canceled",false;
     if(failed)
         return error_msg = "cannot estimate one or more b-vectors from the reference SRC",false;
-    for(size_t i = 0;i < src_bvalues.size();++i) // quality check: the new b-value and the best correlation with the reference
+    for(size_t i = 0;i < src_bvalues.size();++i) // quality check: the best correlation with the reference
         if(shell_id[i] >= 0)
-            tipl::out() << "dwi " << i << " b=" << new_bvalues[i] << " best r=" << best_r[i];
-    src_bvalues.swap(new_bvalues);
+            tipl::out() << "dwi " << i << " b=" << src_bvalues[i] << " best r=" << best_r[i];
     src_bvectors.swap(new_bvectors);
-    voxel.report += " The b-values and b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
+    voxel.report += " The b-vectors were regenerated from a reference scan (" + reference_file.filename().u8string() + ").";
     return true;
 }
 bool src_data::convert_b_table(const std::filesystem::path& target_file)
